@@ -45,4 +45,14 @@ class AppSettingsTest {
         assertEquals(listOf(normal), hidden.filterScheduleEvents(listOf(cancelled, normal)))
         assertEquals(listOf(cancelled, normal), revealed.filterScheduleEvents(listOf(cancelled, normal)))
     }
+
+    @Test
+    fun visualPreferencesHaveApprovedDefaults() {
+        val settings = AppSettings()
+
+        assertEquals(CardAppearance.ELEVATED, settings.cardAppearance)
+        assertEquals(ThemeFamily.BLUE, settings.themeFamily)
+        assertEquals(AppThemeMode.SYSTEM, settings.themeMode)
+        assertEquals(WeekLayout.TIMETABLE, settings.weekLayout)
+    }
 }
