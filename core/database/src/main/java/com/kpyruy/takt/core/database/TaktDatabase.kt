@@ -10,10 +10,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CourseEntity::class,
         ScheduleRuleEntity::class,
         OneOffScheduleEventEntity::class,
+        ScheduleExceptionEntity::class,
         GradeItemEntity::class,
         GradeScaleEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -78,6 +79,25 @@ abstract class TaktDatabase : RoomDatabase() {
                         cMin REAL NOT NULL,
                         dMin REAL NOT NULL,
                         eMin REAL NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS schedule_exceptions (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        ruleId TEXT NOT NULL,
+                        dateEpochDay INTEGER NOT NULL,
+                        type TEXT NOT NULL,
+                        replacementDateEpochDay INTEGER,
+                        replacementStartMinute INTEGER,
+                        replacementEndMinute INTEGER,
+                        replacementRoom TEXT
                     )
                     """.trimIndent()
                 )
