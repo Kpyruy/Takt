@@ -521,6 +521,8 @@ git commit -m "feat: migrate academic progress storage"
 ### Task 4: Map new fields and add ExamRepository
 
 **Files:**
+- Modify: `core/database/src/main/java/com/kpyruy/takt/core/database/CourseDao.kt`
+- Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/StudyPlanRepository.kt`
 - Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/RoomStudyPlanRepository.kt`
 - Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/RoomGradeRepository.kt`
 - Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/RoomStudyContentRepository.kt`
@@ -543,7 +545,28 @@ passFailResult = passFailResult?.let {
 },
 ```
 
-- [ ] **Step 2: Map GradeItem fields**
+- [ ] **Step 2: Add course grading configuration writes**
+
+Add to `CourseDao`:
+
+```kotlin
+@Query("UPDATE courses SET gradingType = :gradingType WHERE id = :courseId")
+suspend fun updateGradingType(courseId: String, gradingType: String)
+
+@Query("UPDATE courses SET passFailResult = :result WHERE id = :courseId")
+suspend fun updatePassFailResult(courseId: String, result: String?)
+```
+
+Add to `StudyPlanRepository`:
+
+```kotlin
+suspend fun setGradingType(courseId: String, gradingType: CourseGradingType)
+suspend fun setPassFailResult(courseId: String, result: PassFailResult?)
+```
+
+Implement in `RoomStudyPlanRepository` by storing enum names. When switching away from `PASS_FAIL`, clear `passFailResult` so a stale pass/fail result never appears on a letter-graded course.
+
+- [ ] **Step 3: Map GradeItem fields**
 
 Update entity/domain conversions:
 
@@ -561,11 +584,11 @@ completed = completed,
 requiredForExam = requiredForExam,
 ```
 
-- [ ] **Step 3: Map StudyTask field**
+- [ ] **Step 4: Map StudyTask field**
 
 Add `requiredForExam` both directions.
 
-- [ ] **Step 4: Define ExamRepository**
+- [ ] **Step 5: Define ExamRepository**
 
 ```kotlin
 package com.kpyruy.takt.core.data
@@ -583,11 +606,11 @@ interface ExamRepository {
 }
 ```
 
-- [ ] **Step 5: Implement RoomExamRepository**
+- [ ] **Step 6: Implement RoomExamRepository**
 
 Map date with `LocalDate.ofEpochDay`, times with `LocalTime.ofSecondOfDay(minute * 60L)`, and store times as minute-of-day.
 
-- [ ] **Step 6: Register repository**
+- [ ] **Step 7: Register repository**
 
 In `TaktDataContainer`:
 
@@ -595,7 +618,7 @@ In `TaktDataContainer`:
 val examRepository: ExamRepository = RoomExamRepository(database.examDao())
 ```
 
-- [ ] **Step 7: Run data tests**
+- [ ] **Step 8: Run data tests**
 
 ```bash
 gradle :core:data:testDebugUnitTest --stacktrace
@@ -603,7 +626,7 @@ gradle :core:data:testDebugUnitTest --stacktrace
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add core/data
@@ -749,6 +772,8 @@ git commit -m "feat: preserve exam progress in backup v2"
 ### Task 6: Replace generic course detail with segmented academic views
 
 **Files:**
+- Modify: `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/SubjectsScreen.kt`
+- Modify: `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/SubjectCard.kt`
 - Modify: `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/SubjectDetailScreen.kt`
 - Create: `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/CourseOverviewTab.kt`
 - Create: `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/CourseAssessmentsTab.kt`
@@ -761,7 +786,25 @@ git commit -m "feat: preserve exam progress in backup v2"
 
 Add `examRepository` parameter to `TaktApp` and `SubjectDetailScreen`, sourced from `TaktDataContainer.examRepository`.
 
-- [ ] **Step 2: Use left-side back navigation**
+- [ ] **Step 2: Turn Subjects into the semester overview opened from Home**
+
+Update `SubjectsScreen` to accept `gradeRepository` and `studyContentRepository` in addition to the study-plan repository.
+
+Render:
+1. `Цей семестр` section containing enrolled courses first;
+2. other planned/fulfilled courses below in compact grouped sections;
+3. each `SubjectCard` with course title, code/credits/status, and one truthful progress line.
+
+Progress-line rules:
+- `EXAM_LETTER`: show secured points / maximum possible grade ceiling or exam-readiness text; never show a predicted final letter as owned.
+- `CONTINUOUS_LETTER`: show normal percentage/letter summary.
+- `PASS_FAIL`: show pass/fail result or required-work completion.
+
+Keep the whole card tappable to open `SubjectDetailScreen`.
+
+Pass the two additional repositories from `TaktApp`.
+
+- [ ] **Step 3: Use left-side back navigation**
 
 Call:
 
@@ -777,7 +820,7 @@ ScreenHeader(
 )
 ```
 
-- [ ] **Step 3: Add tab state**
+- [ ] **Step 4: Add tab state**
 
 Use five tabs for exam-capable courses:
 
@@ -791,7 +834,7 @@ val tabs = if (item.gradingType == CourseGradingType.EXAM_LETTER) {
 
 Render through `TaktSegmentedTabs`.
 
-- [ ] **Step 4: Build Overview tab**
+- [ ] **Step 5: Build Overview tab**
 
 Show:
 - credits/semester/status;
@@ -803,7 +846,7 @@ Show:
 
 For `PASS_FAIL`, show `Зараховано`, `Не зараховано`, or `Результату ще немає`.
 
-- [ ] **Step 5: Build Assessments tab around pre-exam task importance**
+- [ ] **Step 6: Build Assessments tab around pre-exam task importance**
 
 For `EXAM_LETTER`:
 - list scored `GradeItem` rows;
@@ -814,7 +857,7 @@ For `EXAM_LETTER`:
 
 Do not display `GradeSummary.letter` as the student's current final grade when the exam is unfinished.
 
-- [ ] **Step 6: Build Tasks tab**
+- [ ] **Step 7: Build Tasks tab**
 
 List `StudyTask`, visually distinguish:
 - required for exam,
@@ -834,11 +877,17 @@ Text(
 )
 ```
 
-- [ ] **Step 7: Build Notes tab**
+- [ ] **Step 8: Preserve custom grade scales and explicit manual final results**
+
+Keep the existing course-specific grade-scale editor.
+
+Keep the existing manual A–FX override, but label it explicitly as `Підсумкова оцінка вручну`. For `EXAM_LETTER` courses, place that control in the Exam tab/final-result area rather than presenting it as a pre-exam prediction. `GradeProjection` must ignore the manual override; when a manual final result is set, the UI may show it as the explicit final result with a `Вручну` label.
+
+- [ ] **Step 9: Build Notes tab**
 
 Reuse `CourseNoteCard`, but move permanent delete icons into contextual overflow/actions.
 
-- [ ] **Step 8: Compile**
+- [ ] **Step 10: Compile**
 
 ```bash
 gradle :feature:subjects:assembleDebug :app:assembleDebug --stacktrace
@@ -920,7 +969,7 @@ Allow:
 - URI/link string,
 - delete action.
 
-Persist through `ExamRepository`. File picking can store a durable URI string when the Android document picker returns one; web links are stored directly.
+Persist through `ExamRepository`. For Android document-picker files, use `ActivityResultContracts.OpenDocument`, call `contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)` when allowed, then store the URI string. Web links are stored directly.
 
 - [ ] **Step 6: Extend assessment form**
 
