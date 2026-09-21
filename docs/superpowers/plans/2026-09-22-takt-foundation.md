@@ -793,7 +793,7 @@ git commit -m "feat: expose redesign appearance settings"
 
 ---
 
-### Task 7: Add a reusable FAB + four-tab bottom-navigation shell
+### Task 7: Add a reusable four-tab navigation shell with optional center action
 
 **Files:**
 - Create: `core/ui/src/main/java/com/kpyruy/takt/core/ui/components/TaktBottomNavigation.kt`
@@ -828,6 +828,7 @@ data class TaktNavItem(
 @Composable
 fun TaktBottomNavigation(
     items: List<TaktNavItem>,
+    centerContent: (@Composable () -> Unit)? = null,
 ) {
     require(items.size == 4)
 
@@ -841,7 +842,9 @@ fun TaktBottomNavigation(
             )
         }
 
-        Spacer(Modifier.width(72.dp))
+        if (centerContent != null) {
+            Spacer(Modifier.width(72.dp))
+        }
 
         items.drop(2).forEach { item ->
             NavigationBarItem(
@@ -862,13 +865,14 @@ fun TaktAddFab(onClick: () -> Unit) {
 }
 ```
 
-- [ ] **Step 2: Replace direct NavigationBar construction**
+The `centerContent` hook exists for the approved central Add action, but it is not rendered until the real global Add flow is implemented in the Home/Calendar phase. This avoids shipping a fake or non-functional action.
 
-In `TaktApp.kt`, build four `TaktNavItem` values from `Destination.entries`, render `TaktBottomNavigation` in `bottomBar`, and add a centered FAB only on root destinations:
+- [ ] **Step 2: Replace direct NavigationBar construction without changing behavior**
+
+In `TaktApp.kt`, build four `TaktNavItem` values from `Destination.entries` and render:
 
 ```kotlin
 val showRootNavigation = Destination.entries.any { it.route == currentRoute }
-var quickAddRequested by rememberSaveable { mutableStateOf(false) }
 
 Scaffold(
     bottomBar = {
@@ -876,36 +880,18 @@ Scaffold(
             TaktBottomNavigation(items = navItems)
         }
     },
-    floatingActionButton = {
-        if (showRootNavigation) {
-            TaktAddFab(onClick = { quickAddRequested = true })
-        }
-    },
-    floatingActionButtonPosition = FabPosition.Center,
 ) { padding ->
-    // existing NavHost
-}
-```
-
-For this foundation phase, consume the request with a small informational sheet so the FAB is functional until Phase 2 replaces it:
-
-```kotlin
-if (quickAddRequested) {
-    ModalBottomSheet(onDismissRequest = { quickAddRequested = false }) {
-        Text(
-            "Швидке додавання",
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Text(
-            "Повний вибір типу елемента додається в наступному етапі.",
-            modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp),
-        )
+    NavHost(
+        navController = navController,
+        startDestination = Destination.HOME.route,
+        modifier = Modifier.padding(padding),
+    ) {
+        // existing destinations
     }
 }
 ```
 
-This text is a temporary implementation-state message only on the feature branch and must be replaced by Phase 2 before final delivery.
+Do not add the center FAB in this task. Phase 2 wires `TaktAddFab` directly to the complete six-type Add sheet, so every visible action is functional when introduced.
 
 - [ ] **Step 3: Compile**
 
@@ -921,7 +907,7 @@ Expected: `BUILD SUCCESSFUL`.
 
 ```bash
 git add core/ui app
-git commit -m "feat: add FAB navigation shell"
+git commit -m "feat: add reusable navigation shell"
 ```
 
 ---
