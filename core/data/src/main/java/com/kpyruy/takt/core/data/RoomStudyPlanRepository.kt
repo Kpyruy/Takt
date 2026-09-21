@@ -12,6 +12,8 @@ class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository 
 
     override fun observeSemester(semester: Int) = dao.observeSemester(semester).map { items -> items.map(CourseEntity::toDomain) }
 
+    override fun observeCourse(courseId: String) = dao.observeById(courseId).map { it?.toDomain() }
+
     override suspend fun updateStatus(courseId: String, status: CourseStatus) {
         dao.updateStatus(courseId, status.storageValue)
     }
