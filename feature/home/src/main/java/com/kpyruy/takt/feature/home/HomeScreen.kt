@@ -46,6 +46,7 @@ fun HomeScreen(
     val semesterCourses by repository.observeSemester(3).collectAsState(initial = emptyList())
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
+    val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
     val today = LocalDate.now()
     val week = today.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = WeekParity.fromIsoWeek(week)
@@ -53,7 +54,7 @@ fun HomeScreen(
     val enrolledCount = semesterCourses.count { it.status == CourseStatus.ENROLLED }
     val todayEvents = ScheduleResolver.eventsForDate(
         rules = rules,
-        exceptions = emptyList(),
+        exceptions = exceptions,
         oneOffEvents = oneOffEvents,
         date = today,
     )

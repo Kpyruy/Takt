@@ -31,15 +31,24 @@ import java.util.UUID
 @Composable
 fun AddLessonSheet(
     initialDay: DayOfWeek,
+    initialRule: ScheduleRule? = null,
     onDismiss: () -> Unit,
     onSave: (ScheduleRule) -> Unit,
 ) {
-    var title by remember { mutableStateOf("") }
-    var room by remember { mutableStateOf("") }
-    var startText by remember { mutableStateOf("08:00") }
-    var endText by remember { mutableStateOf("09:50") }
-    var day by remember(initialDay) { mutableStateOf(initialDay) }
-    var recurrence by remember { mutableStateOf(ScheduleRecurrence.WEEKLY) }
+    var title by remember(initialRule) { mutableStateOf(initialRule?.title.orEmpty()) }
+    var room by remember(initialRule) { mutableStateOf(initialRule?.room.orEmpty()) }
+    var startText by remember(initialRule) {
+        mutableStateOf(initialRule?.startTime?.toString() ?: "08:00")
+    }
+    var endText by remember(initialRule) {
+        mutableStateOf(initialRule?.endTime?.toString() ?: "09:50")
+    }
+    var day by remember(initialRule, initialDay) {
+        mutableStateOf(initialRule?.dayOfWeek ?: initialDay)
+    }
+    var recurrence by remember(initialRule) {
+        mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
+    }
     var showTimeError by remember { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -51,7 +60,7 @@ fun AddLessonSheet(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "Додати пару",
+                text = if (initialRule == null) "Додати пару" else "Редагувати пару",
                 style = MaterialTheme.typography.headlineSmall,
             )
 
@@ -149,8 +158,8 @@ fun AddLessonSheet(
 
                     onSave(
                         ScheduleRule(
-                            id = UUID.randomUUID().toString(),
-                            courseId = null,
+                            id = initialRule?.id ?: UUID.randomUUID().toString(),
+                            courseId = initialRule?.courseId,
                             title = title.trim(),
                             dayOfWeek = day,
                             startTime = start,
@@ -163,7 +172,7 @@ fun AddLessonSheet(
                 enabled = title.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Зберегти")
+                Text(if (initialRule == null) "Зберегти" else "Оновити")
             }
         }
     }

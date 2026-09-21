@@ -29,7 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.ScheduleRepository
+import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.ScheduleException
+import com.kpyruy.takt.core.model.ScheduleExceptionType
 import com.kpyruy.takt.core.model.ScheduleResolver
+import com.kpyruy.takt.core.model.ScheduleRule
 import com.kpyruy.takt.core.model.WeekParity
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -40,12 +44,14 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
 import java.util.Locale
+import java.util.UUID
 import kotlinx.coroutines.launch
 
 @Composable
 fun CalendarScreen(scheduleRepository: ScheduleRepository) {
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
+    val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val today = LocalDate.now()
     var selectedDate by remember { mutableStateOf(today) }
@@ -53,13 +59,16 @@ fun CalendarScreen(scheduleRepository: ScheduleRepository) {
         mutableStateOf(today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)))
     }
     var showAddSheet by remember { mutableStateOf(false) }
+    var editingRule by remember { mutableStateOf<ScheduleRule?>(null) }
+    var selectedEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
+    var movingEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
 
     val dates = (0L..6L).map { weekStart.plusDays(it) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = WeekParity.fromIsoWeek(week)
     val events = ScheduleResolver.eventsForDate(
         rules = rules,
-        exceptions = emptyList(),
+        exceptions = exceptions,
         oneOffEvents = oneOffEvents,
         date = selectedDate,
     )
@@ -127,8 +136,11 @@ fun CalendarScreen(scheduleRepository: ScheduleRepository) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.padding(bottom = 80.dp),
                 ) {
-                    items(events, key = { "${it.id}-${it.date}" }) {
-                        ScheduleEventCard(it)
+                    items(events, key = { "${it.id}-${it.date}-${it.status}" }) { event ->
+                        ScheduleEventCard(
+                            event = event,
+                            onClick = { selectedEvent = event },
+                        )
                     }
                 }
             }
@@ -142,14 +154,77 @@ fun CalendarScreen(scheduleRepository: ScheduleRepository) {
         }
     }
 
-    if (showAddSheet) {
+    if (showAddSheet || editingRule != null) {
         AddLessonSheet(
             initialDay = selectedDate.dayOfWeek,
-            onDismiss = { showAddSheet = false },
+            initialRule = editingRule,
+            onDismiss = {
+                showAddSheet = false
+                editingRule = null
+            },
             onSave = { rule ->
                 scope.launch {
                     scheduleRepository.upsertRule(rule)
                     showAddSheet = false
+                    editingRule = null
+                }
+            },
+        )
+    }
+
+    selectedEvent?.let { event ->
+        val recurringRule = rules.firstOrNull { it.id == event.id }
+        LessonActionsSheet(
+            event = event,
+            isRecurringRule = recurringRule != null,
+            onDismiss = { selectedEvent = null },
+            onCancelOccurrence = {
+                scope.launch {
+                    scheduleRepository.upsertException(
+                        ScheduleException(
+                            id = UUID.randomUUID().toString(),
+                            ruleId = event.id,
+                            date = event.date,
+                            type = ScheduleExceptionType.CANCELLED,
+                        )
+                    )
+                    selectedEvent = null
+                }
+            },
+            onMoveOccurrence = {
+                movingEvent = event
+                selectedEvent = null
+            },
+            onRestoreOccurrence = {
+                scope.launch {
+                    val exceptionId = event.exceptionId
+                    if (exceptionId != null) {
+                        scheduleRepository.deleteException(exceptionId)
+                    }
+                    selectedEvent = null
+                }
+            },
+            onEditRule = {
+                editingRule = recurringRule
+                selectedEvent = null
+            },
+            onDeleteRule = {
+                scope.launch {
+                    scheduleRepository.deleteRule(event.id)
+                    selectedEvent = null
+                }
+            },
+        )
+    }
+
+    movingEvent?.let { event ->
+        MoveLessonSheet(
+            event = event,
+            onDismiss = { movingEvent = null },
+            onSave = { exception ->
+                scope.launch {
+                    scheduleRepository.upsertException(exception)
+                    movingEvent = null
                 }
             },
         )
