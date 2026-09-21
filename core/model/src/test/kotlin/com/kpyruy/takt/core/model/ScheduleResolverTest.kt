@@ -38,6 +38,8 @@ class ScheduleResolverTest {
 
         assertEquals(1, result.size)
         assertEquals(ScheduleEventStatus.CANCELLED, result.single().status)
+        assertEquals("cancel-physics", result.single().exceptionId)
+        assertEquals(date, result.single().sourceDate)
         assertEquals(LocalTime.of(8, 0), result.single().startTime)
     }
 
@@ -97,6 +99,8 @@ class ScheduleResolverTest {
         assertEquals(0, originalDay.size)
         assertEquals(1, movedDay.size)
         assertEquals(ScheduleEventStatus.MOVED, movedDay.single().status)
+        assertEquals("move-physics-next-day", movedDay.single().exceptionId)
+        assertEquals(date, movedDay.single().sourceDate)
         assertEquals(movedDate, movedDay.single().date)
         assertEquals(LocalTime.of(12, 0), movedDay.single().startTime)
     }
