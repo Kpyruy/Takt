@@ -31,6 +31,8 @@ jobs:
         run: gradle :core:model:test --stacktrace
       - name: Android unit tests
         run: gradle :core:data:testDebugUnitTest :app:testDebugUnitTest --stacktrace
+      - name: Lint debug
+        run: gradle :app:lintDebug --stacktrace
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
