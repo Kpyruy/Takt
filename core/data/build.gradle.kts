@@ -19,4 +19,5 @@ dependencies {
     implementation(project(":core:database"))
     implementation(libs.room.ktx)
     implementation(libs.coroutines.core)
+    testImplementation(libs.junit)
 }
