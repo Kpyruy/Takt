@@ -13,10 +13,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ScheduleExceptionEntity::class,
         GradeItemEntity::class,
         GradeScaleEntity::class,
+        GradeOverrideEntity::class,
         StudyTaskEntity::class,
         CourseNoteEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -139,6 +140,19 @@ abstract class TaktDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE grade_items ADD COLUMN recordedAtEpochMillis INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS grade_overrides (
+                        courseId TEXT NOT NULL PRIMARY KEY,
+                        grade TEXT NOT NULL
+                    )
+                    """.trimIndent()
                 )
             }
         }

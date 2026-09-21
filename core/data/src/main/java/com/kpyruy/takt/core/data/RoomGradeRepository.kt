@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.database.GradeDao
 import com.kpyruy.takt.core.database.GradeItemEntity
+import com.kpyruy.takt.core.database.GradeOverrideEntity
 import com.kpyruy.takt.core.database.GradeScaleEntity
 import com.kpyruy.takt.core.model.GradeBand
 import com.kpyruy.takt.core.model.GradeItem
@@ -21,6 +22,11 @@ class RoomGradeRepository(
 
     override fun observeScale(courseId: String) =
         dao.observeScale(courseId).map { it?.toDomain() ?: GradeScale.default() }
+
+    override fun observeManualGrade(courseId: String) =
+        dao.observeOverride(courseId).map { entity ->
+            entity?.grade?.let { stored -> runCatching { GradeLetter.valueOf(stored) }.getOrNull() }
+        }
 
     override suspend fun upsertItem(item: GradeItem) {
         dao.upsertItem(item.toEntity())
@@ -42,6 +48,14 @@ class RoomGradeRepository(
                 eMin = minimums.getValue(GradeLetter.E),
             )
         )
+    }
+
+    override suspend fun setManualGrade(courseId: String, grade: GradeLetter?) {
+        if (grade == null) {
+            dao.deleteOverride(courseId)
+        } else {
+            dao.upsertOverride(GradeOverrideEntity(courseId = courseId, grade = grade.name))
+        }
     }
 }
 
