@@ -24,6 +24,8 @@ class TaktDataContainer(context: Context) {
     val gradeRepository: GradeRepository = RoomGradeRepository(database.gradeDao())
     val studyContentRepository: StudyContentRepository =
         RoomStudyContentRepository(database.studyContentDao())
+    val settingsRepository: AppSettingsRepository =
+        SharedPreferencesAppSettingsRepository(context)
 
     suspend fun seedIfNeeded() {
         database.withTransaction {
