@@ -9,6 +9,7 @@ data class StudyTask(
     val description: String?,
     val dueDate: LocalDate?,
     val completed: Boolean,
+    val requiredForExam: Boolean = false,
 )
 
 data class CourseNote(
@@ -29,7 +30,7 @@ object StudyTaskPlanner {
         return tasks
             .asSequence()
             .filter { !it.completed }
-            .filter { it.dueDate != null && !it.dueDate.isBefore(fromDate) }
+            .filter { task -> task.dueDate?.let { !it.isBefore(fromDate) } == true }
             .sortedWith(compareBy<StudyTask> { it.dueDate }.thenBy { it.title })
             .take(limit)
             .toList()

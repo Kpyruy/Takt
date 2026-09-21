@@ -16,6 +16,17 @@ enum class CourseRequirementType { COMPULSORY, SEMI_COMPULSORY, ELECTIVE }
 
 enum class SemesterSeason { WINTER, SUMMER }
 
+enum class CourseGradingType {
+    EXAM_LETTER,
+    CONTINUOUS_LETTER,
+    PASS_FAIL,
+}
+
+enum class PassFailResult {
+    PASSED,
+    FAILED,
+}
+
 data class Course(
     val id: String,
     val code: String,
@@ -25,6 +36,8 @@ data class Course(
     val status: CourseStatus,
     val requirementType: CourseRequirementType = CourseRequirementType.COMPULSORY,
     val syllabusUrl: String? = null,
+    val gradingType: CourseGradingType = CourseGradingType.CONTINUOUS_LETTER,
+    val passFailResult: PassFailResult? = null,
 )
 
 enum class WeekParity {
