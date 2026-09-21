@@ -137,6 +137,9 @@ object BackupPayloadCodec {
         require(payload.version == BackupPayload.CURRENT_VERSION) {
             "Unsupported Takt backup version: ${payload.version}"
         }
+        require(payload.courses.isNotEmpty()) {
+            "Backup does not contain a study plan"
+        }
         return payload
     }
 }
