@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -115,6 +118,45 @@ fun SubjectDetailScreen(
                         CourseStatus.NOT_NEEDED -> "Не потрібно"
                     }
                 )
+            }
+
+            Text(
+                "Статус предмета",
+                modifier = Modifier.padding(top = 12.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            LazyRow(
+                modifier = Modifier.padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(
+                    listOf(
+                        CourseStatus.ENROLLED,
+                        CourseStatus.FULFILLED,
+                        CourseStatus.PLANNED,
+                        CourseStatus.NOT_ENROLLED,
+                        CourseStatus.NOT_NEEDED,
+                    )
+                ) { status ->
+                    FilterChip(
+                        selected = item.status == status,
+                        onClick = {
+                            scope.launch { repository.updateStatus(item.id, status) }
+                        },
+                        label = {
+                            Text(
+                                when (status) {
+                                    CourseStatus.ENROLLED -> "Активний"
+                                    CourseStatus.FULFILLED -> "Закрито"
+                                    CourseStatus.PLANNED -> "План"
+                                    CourseStatus.NOT_ENROLLED -> "Не записаний"
+                                    CourseStatus.NOT_NEEDED -> "Не потрібно"
+                                }
+                            )
+                        },
+                    )
+                }
             }
         }
 
