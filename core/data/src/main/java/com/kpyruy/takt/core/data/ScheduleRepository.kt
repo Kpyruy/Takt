@@ -14,6 +14,7 @@ interface ScheduleRepository {
     suspend fun upsertRules(rules: List<ScheduleRule>)
     suspend fun upsertOneOffEvent(event: OneOffScheduleEvent)
     suspend fun upsertOneOffEvents(events: List<OneOffScheduleEvent>)
+    suspend fun deleteOneOffEvent(id: String)
     suspend fun upsertException(exception: ScheduleException)
     suspend fun deleteRule(id: String)
     suspend fun deleteException(id: String)

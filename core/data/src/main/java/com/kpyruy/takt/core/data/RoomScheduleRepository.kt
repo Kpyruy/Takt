@@ -42,6 +42,10 @@ class RoomScheduleRepository(
         dao.upsertOneOffEvents(events.map { it.toEntity() })
     }
 
+    override suspend fun deleteOneOffEvent(id: String) {
+        dao.deleteOneOffEvent(id)
+    }
+
     override suspend fun upsertException(exception: ScheduleException) {
         dao.upsertException(exception.toEntity())
     }

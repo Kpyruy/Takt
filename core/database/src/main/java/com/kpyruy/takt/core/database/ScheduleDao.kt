@@ -47,6 +47,9 @@ interface ScheduleDao {
     @Query("DELETE FROM schedule_rules WHERE id = :id")
     suspend fun deleteRule(id: String)
 
+    @Query("DELETE FROM schedule_one_off WHERE id = :id")
+    suspend fun deleteOneOffEvent(id: String)
+
     @Query("DELETE FROM schedule_exceptions WHERE id = :id")
     suspend fun deleteException(id: String)
 
