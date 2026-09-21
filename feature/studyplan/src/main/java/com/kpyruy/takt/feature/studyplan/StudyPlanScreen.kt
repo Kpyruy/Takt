@@ -1,9 +1,12 @@
 package com.kpyruy.takt.feature.studyplan
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 
 @Composable
@@ -22,31 +26,31 @@ fun StudyPlanScreen(repository: StudyPlanRepository) {
     val earned = courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
     val semesters = courses.groupBy { it.semester }.toSortedMap()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp),
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        item {
-            Text("Навчальний план", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        }
-        item {
-            SectionCard(Modifier.padding(vertical = 12.dp)) {
-                Text("Прогрес кредитів")
-                Text("$earned / 180", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            }
-        }
-        semesters.forEach { (semester, semesterCourses) ->
+        ScreenHeader(
+            title = "Навчальний план",
+            subtitle = "Повна програма · 6 семестрів",
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             item {
-                Text(
-                    "Семестр $semester",
-                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
+                SectionCard {
+                    Text("Загальний прогрес", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("$earned / 180", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    LinearProgressIndicator(
+                        progress = { (earned / 180f).coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    )
+                }
             }
-            items(semesterCourses, key = { it.id }) { course ->
-                SectionCard(Modifier.padding(bottom = 10.dp)) {
-                    Text(course.title, fontWeight = FontWeight.SemiBold)
-                    Text("${course.credits} кредитів · ${course.status.name.replace('_', ' ')}")
+
+            semesters.forEach { (semester, semesterCourses) ->
+                item(key = "semester-$semester") {
+                    SemesterSection(semester, semesterCourses)
                 }
             }
         }
