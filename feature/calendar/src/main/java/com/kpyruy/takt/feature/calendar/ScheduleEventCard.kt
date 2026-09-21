@@ -27,14 +27,15 @@ fun ScheduleEventCard(event: ResolvedScheduleEvent) {
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                val room = event.room
                 Text(
                     "${event.startTime.format(timeFormatter)} – ${event.endTime.format(timeFormatter)}",
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                if (!event.room.isNullOrBlank()) {
-                    Text(event.room, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!room.isNullOrBlank()) {
+                    Text(room, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             when (event.status) {
