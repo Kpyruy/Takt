@@ -50,6 +50,7 @@ data class ScheduleException(
     val ruleId: String,
     val date: LocalDate,
     val type: ScheduleExceptionType,
+    val replacementDate: LocalDate? = null,
     val replacementStartTime: LocalTime? = null,
     val replacementEndTime: LocalTime? = null,
     val replacementRoom: String? = null,
@@ -103,7 +104,7 @@ object ScheduleResolver {
     ): List<ResolvedScheduleEvent> {
         val recurring = rules
             .filter { it.occursOn(date, parityOverride) }
-            .map { rule ->
+            .mapNotNull { rule ->
                 val exception = exceptions.firstOrNull {
                     it.ruleId == rule.id && it.date == date
                 }
@@ -114,22 +115,49 @@ object ScheduleResolver {
                         status = ScheduleEventStatus.CANCELLED,
                     )
 
-                    ScheduleExceptionType.MOVED -> ResolvedScheduleEvent(
-                        id = rule.id,
-                        courseId = rule.courseId,
-                        title = rule.title,
-                        date = date,
-                        startTime = exception.replacementStartTime ?: rule.startTime,
-                        endTime = exception.replacementEndTime ?: rule.endTime,
-                        room = exception.replacementRoom ?: rule.room,
-                        status = ScheduleEventStatus.MOVED,
-                    )
+                    ScheduleExceptionType.MOVED -> {
+                        val targetDate = exception.replacementDate ?: date
+                        if (targetDate != date) {
+                            null
+                        } else {
+                            ResolvedScheduleEvent(
+                                id = rule.id,
+                                courseId = rule.courseId,
+                                title = rule.title,
+                                date = date,
+                                startTime = exception.replacementStartTime ?: rule.startTime,
+                                endTime = exception.replacementEndTime ?: rule.endTime,
+                                room = exception.replacementRoom ?: rule.room,
+                                status = ScheduleEventStatus.MOVED,
+                            )
+                        }
+                    }
 
                     null -> rule.toResolved(
                         date = date,
                         status = ScheduleEventStatus.NORMAL,
                     )
                 }
+            }
+
+        val movedIntoDate = exceptions
+            .filter {
+                it.type == ScheduleExceptionType.MOVED &&
+                    it.replacementDate == date &&
+                    it.date != date
+            }
+            .mapNotNull { exception ->
+                val rule = rules.firstOrNull { it.id == exception.ruleId } ?: return@mapNotNull null
+                ResolvedScheduleEvent(
+                    id = rule.id,
+                    courseId = rule.courseId,
+                    title = rule.title,
+                    date = date,
+                    startTime = exception.replacementStartTime ?: rule.startTime,
+                    endTime = exception.replacementEndTime ?: rule.endTime,
+                    room = exception.replacementRoom ?: rule.room,
+                    status = ScheduleEventStatus.MOVED,
+                )
             }
 
         val oneOff = oneOffEvents
@@ -147,7 +175,7 @@ object ScheduleResolver {
                 )
             }
 
-        return (recurring + oneOff).sortedWith(
+        return (recurring + movedIntoDate + oneOff).sortedWith(
             compareBy<ResolvedScheduleEvent> { it.startTime }.thenBy { it.title }
         )
     }
