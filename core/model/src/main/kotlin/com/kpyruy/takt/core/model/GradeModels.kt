@@ -33,6 +33,7 @@ data class GradeSummary(
         fun calculate(
             items: List<GradeItem>,
             scale: GradeScale,
+            manualLetter: GradeLetter? = null,
         ): GradeSummary {
             val earned = items.sumOf { it.earnedPoints }
             val max = items.sumOf { it.maxPoints }
@@ -41,7 +42,7 @@ data class GradeSummary(
                     earnedPoints = 0.0,
                     maxPoints = 0.0,
                     percentage = 0.0,
-                    letter = null,
+                    letter = manualLetter,
                 )
             }
 
@@ -50,7 +51,7 @@ data class GradeSummary(
                 earnedPoints = earned,
                 maxPoints = max,
                 percentage = percentage,
-                letter = scale.gradeFor(percentage),
+                letter = manualLetter ?: scale.gradeFor(percentage),
             )
         }
     }
