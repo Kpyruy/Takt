@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.feature.calendar.CalendarScreen
@@ -44,6 +45,7 @@ private const val SUBJECT_ROUTE = "subject/{courseId}"
 fun TaktApp(
     repository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
+    gradeRepository: GradeRepository,
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -119,6 +121,7 @@ fun TaktApp(
                 val courseId = entry.arguments?.getString("courseId").orEmpty()
                 SubjectDetailScreen(
                     repository = repository,
+                    gradeRepository = gradeRepository,
                     courseId = courseId,
                     onBack = { navController.popBackStack() },
                 )

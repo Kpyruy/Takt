@@ -14,6 +14,7 @@ class MainActivity : ComponentActivity() {
                 TaktApp(
                     repository = dataContainer.studyPlanRepository,
                     scheduleRepository = dataContainer.scheduleRepository,
+                    gradeRepository = dataContainer.gradeRepository,
                 )
             }
         }
