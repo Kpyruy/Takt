@@ -701,6 +701,7 @@ git commit -m "feat: replace raw date time entry with pickers"
 - Create: `app/src/main/java/com/kpyruy/takt/app/GlobalAddSheet.kt`
 - Create: `app/src/main/java/com/kpyruy/takt/app/QuickAddSheet.kt`
 - Create: `app/src/main/java/com/kpyruy/takt/app/CreateItemType.kt`
+- Create: `app/src/main/java/com/kpyruy/takt/app/SelectCourseSheet.kt`
 - Create: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeQuickAction.kt`
 - Modify: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeScreen.kt`
 - Modify: `app/src/main/java/com/kpyruy/takt/app/TaktApp.kt`
@@ -775,13 +776,16 @@ Create:
 ```kotlin
 package com.kpyruy.takt.app
 
-enum class CreateItemType(val label: String) {
-    CLASS("Пара"),
-    TASK("Завдання"),
-    EXAM("Екзамен"),
-    NOTE("Нотатка"),
-    EVENT("Подія"),
-    REMINDER("Нагадування"),
+enum class CreateItemType(
+    val label: String,
+    val requiresCourse: Boolean,
+) {
+    CLASS("Пара", false),
+    TASK("Завдання", true),
+    EXAM("Екзамен", true),
+    NOTE("Нотатка", true),
+    EVENT("Подія", false),
+    REMINDER("Нагадування", false),
 }
 ```
 
@@ -817,31 +821,48 @@ Show all six types in the approved order. A normal row click opens the complete 
 
 - [ ] **Step 4: Implement compact quick add**
 
-`QuickAddSheet` supports Task, Class, and Note. It keeps only essential fields and includes `Більше параметрів`, which opens the corresponding full form while retaining the entered draft values.
+`QuickAddSheet` supports Task, Class, and Note. It receives the current course list; Task and Note require a selected course, while Class may remain unlinked. It keeps only essential fields and includes `Більше параметрів`, which opens the corresponding full form while retaining the entered draft values.
 
-- [ ] **Step 5: Add creation routes**
+- [ ] **Step 5: Add course selection and creation routes**
 
-Add:
-
-```kotlin
-private const val CREATE_ROUTE = "create/{type}"
-```
-
-Navigate with:
+Create `SelectCourseSheet`:
 
 ```kotlin
-navController.navigate("create/${type.name}")
+@Composable
+fun SelectCourseSheet(
+    courses: List<Course>,
+    onDismiss: () -> Unit,
+    onSelected: (Course) -> Unit,
+)
 ```
+
+Show enrolled courses first, then planned/other courses. Each row shows title, code, and semester. Do not duplicate course editing here.
+
+Add a nullable course query argument:
+
+```kotlin
+private const val CREATE_ROUTE = "create/{type}?courseId={courseId}"
+```
+
+Define `courseId` as a nullable `StringType` nav argument with default `null`.
+
+When the user chooses a type:
+- if `requiresCourse == false`, navigate immediately;
+- if `requiresCourse == true`, open `SelectCourseSheet`, then navigate with the selected course id URL-encoded.
 
 The app-level route host delegates to feature-owned forms and repositories.
 
 Map the six types explicitly:
 - `CLASS` -> recurring lesson form;
 - `TASK` -> task form with course selection;
-- `EXAM` -> exam grade-item form with course selection; Phase 3 extends this with exam logistics/materials;
+- `EXAM` -> `AddGradeItemSheet` with `initialType = GradeItemType.EXAM`; Phase 3 extends this with exam logistics/materials;
 - `NOTE` -> note form with course selection;
 - `EVENT` -> one-off event form;
-- `REMINDER` -> one-off event form preselected to `REMINDER`, using a short time range and no room field.
+- `REMINDER` -> `OneOffEventSheet` with `initialType = REMINDER`, using a short default time range and no room field.
+
+Extend `AddGradeItemSheet` with `initialType: GradeItemType = GradeItemType.TEST`.
+
+Extend `OneOffEventSheet` with `initialType: OneOffScheduleEventType = OneOffScheduleEventType.EXTRA` and replace the old boolean `blockAction` state with an explicit event type.
 
 - [ ] **Step 6: Wire Home quick actions to the same creation flows**
 
