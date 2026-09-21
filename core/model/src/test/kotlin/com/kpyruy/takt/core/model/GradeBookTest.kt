@@ -44,6 +44,21 @@ class GradeBookTest {
     }
 
     @Test
+    fun manualFinalGrade_overridesCalculatedLetter() {
+        val items = listOf(
+            GradeItem("all", "course", "Разом", GradeItemType.OTHER, earnedPoints = 60.0, maxPoints = 100.0),
+        )
+
+        val summary = GradeSummary.calculate(
+            items = items,
+            scale = GradeScale.default(),
+            manualLetter = GradeLetter.B,
+        )
+
+        assertEquals(GradeLetter.B, summary.letter)
+    }
+
+    @Test
     fun emptyGradeBook_hasNoLetter() {
         val summary = GradeSummary.calculate(emptyList(), GradeScale.default())
 
