@@ -11,4 +11,5 @@ data class GradeItemEntity(
     val type: String,
     val earnedPoints: Double,
     val maxPoints: Double,
+    val recordedAtEpochMillis: Long,
 )

@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface GradeRepository {
     fun observeItems(courseId: String): Flow<List<GradeItem>>
+    fun observeRecentItems(limit: Int): Flow<List<GradeItem>>
     fun observeScale(courseId: String): Flow<GradeScale>
     suspend fun upsertItem(item: GradeItem)
     suspend fun deleteItem(id: String)

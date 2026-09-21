@@ -16,6 +16,7 @@ class TaktDataContainer(context: Context) {
             TaktDatabase.MIGRATION_2_3,
             TaktDatabase.MIGRATION_3_4,
             TaktDatabase.MIGRATION_4_5,
+            TaktDatabase.MIGRATION_5_6,
         )
         .build()
 

@@ -16,6 +16,9 @@ class RoomGradeRepository(
     override fun observeItems(courseId: String) =
         dao.observeItems(courseId).map { items -> items.map { it.toDomain() } }
 
+    override fun observeRecentItems(limit: Int) =
+        dao.observeRecentItems(limit).map { items -> items.map { it.toDomain() } }
+
     override fun observeScale(courseId: String) =
         dao.observeScale(courseId).map { it?.toDomain() ?: GradeScale.default() }
 
@@ -42,22 +45,24 @@ class RoomGradeRepository(
     }
 }
 
-private fun GradeItemEntity.toDomain() = GradeItem(
+internal fun GradeItemEntity.toDomain() = GradeItem(
     id = id,
     courseId = courseId,
     title = title,
     type = GradeItemType.valueOf(type),
     earnedPoints = earnedPoints,
     maxPoints = maxPoints,
+    recordedAtEpochMillis = recordedAtEpochMillis,
 )
 
-private fun GradeItem.toEntity() = GradeItemEntity(
+internal fun GradeItem.toEntity() = GradeItemEntity(
     id = id,
     courseId = courseId,
     title = title,
     type = type.name,
     earnedPoints = earnedPoints,
     maxPoints = maxPoints,
+    recordedAtEpochMillis = recordedAtEpochMillis,
 )
 
 private fun GradeScaleEntity.toDomain() = GradeScale(

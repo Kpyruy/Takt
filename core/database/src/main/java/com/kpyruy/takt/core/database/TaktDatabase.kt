@@ -16,7 +16,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         StudyTaskEntity::class,
         CourseNoteEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -131,6 +131,14 @@ abstract class TaktDatabase : RoomDatabase() {
                         updatedAtEpochMillis INTEGER NOT NULL
                     )
                     """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE grade_items ADD COLUMN recordedAtEpochMillis INTEGER NOT NULL DEFAULT 0"
                 )
             }
         }
