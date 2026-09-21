@@ -27,6 +27,7 @@ fun HomeScheduleCard(event: ResolvedScheduleEvent) {
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                val room = event.room
                 Text(
                     text = "${event.startTime.format(timeFormatter)} – ${event.endTime.format(timeFormatter)}",
                     color = MaterialTheme.colorScheme.primary,
@@ -37,9 +38,9 @@ fun HomeScheduleCard(event: ResolvedScheduleEvent) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
-                if (!event.room.isNullOrBlank()) {
+                if (!room.isNullOrBlank()) {
                     Text(
-                        text = event.room,
+                        text = room,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
