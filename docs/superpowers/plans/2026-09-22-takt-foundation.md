@@ -85,6 +85,10 @@ Expected: compilation fails because the new enums/fields and codec parameters do
 - Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/AppSettingsRepository.kt`
 - Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/StoredSettingsCodec.kt`
 - Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/SharedPreferencesAppSettingsRepository.kt`
+- Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/BackupPayload.kt`
+- Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/BackupMappings.kt`
+- Modify: `core/data/src/main/java/com/kpyruy/takt/core/data/RoomBackupRepository.kt`
+- Modify: `core/data/src/test/java/com/kpyruy/takt/core/data/BackupPayloadCodecTest.kt`
 
 - [ ] **Step 1: Add preference enums and fields**
 
@@ -220,7 +224,53 @@ const val KEY_THEME_MODE = "theme_mode"
 const val KEY_WEEK_LAYOUT = "week_layout"
 ```
 
-- [ ] **Step 5: Run model/data tests**
+- [ ] **Step 5: Preserve the visual preferences in the existing v1 backup format**
+
+Add defaulted fields to `BackupSettings` without changing `BackupPayload.CURRENT_VERSION`:
+
+```kotlin
+@Serializable
+data class BackupSettings(
+    val cancellationStyle: String = "STRIKETHROUGH",
+    val showHiddenLessons: Boolean = false,
+    val parityOverride: String = "AUTO",
+    val cardAppearance: String = "ELEVATED",
+    val themeFamily: String = "BLUE",
+    val themeMode: String = "SYSTEM",
+    val weekLayout: String = "TIMETABLE",
+)
+```
+
+Because these are additive fields with defaults, old v1 JSON remains valid and new v1 JSON can round-trip the settings without requiring a schema-version bump.
+
+Extend `AppSettings.toBackup()` and `BackupSettings.toModel()` with the four new values.
+
+After the existing three setters in `RoomBackupRepository.importJson`, restore:
+
+```kotlin
+settingsRepository.setCardAppearance(settings.cardAppearance)
+settingsRepository.setThemeFamily(settings.themeFamily)
+settingsRepository.setThemeMode(settings.themeMode)
+settingsRepository.setWeekLayout(settings.weekLayout)
+```
+
+Update the full backup round-trip fixture to use non-default visual values:
+
+```kotlin
+settings = BackupSettings(
+    cancellationStyle = "HIDDEN",
+    showHiddenLessons = true,
+    parityOverride = "ODD",
+    cardAppearance = "TONAL_FILLED",
+    themeFamily = "WARM",
+    themeMode = "DARK",
+    weekLayout = "COMPACT_LIST",
+),
+```
+
+Add a compatibility assertion that a v1 backup lacking these four fields decodes to the approved defaults.
+
+- [ ] **Step 6: Run model/data tests**
 
 Run:
 
@@ -230,7 +280,7 @@ gradle :core:model:test :core:data:testDebugUnitTest --stacktrace
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add core/model core/data
