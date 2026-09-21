@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,34 +13,92 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
+import com.kpyruy.takt.core.data.BackupRepository
+import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
+import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SettingsScreen(
     settingsRepository: AppSettingsRepository,
+    backupRepository: BackupRepository,
     onBack: () -> Unit,
 ) {
-    val settings by settingsRepository.settings.collectAsState(initial = com.kpyruy.takt.core.model.AppSettings())
+    val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var backupMessage by remember { mutableStateOf<String?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val result = runCatching {
+                    val json = backupRepository.exportJson()
+                    withContext(Dispatchers.IO) {
+                        val stream = context.contentResolver.openOutputStream(uri)
+                            ?: error("Не вдалося відкрити файл")
+                        stream.bufferedWriter().use { it.write(json) }
+                    }
+                }
+                backupMessage = if (result.isSuccess) {
+                    "Резервну копію збережено."
+                } else {
+                    "Помилка експорту: ${result.exceptionOrNull()?.message ?: "невідома помилка"}"
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val result = runCatching {
+                    val raw = withContext(Dispatchers.IO) {
+                        val stream = context.contentResolver.openInputStream(uri)
+                            ?: error("Не вдалося відкрити файл")
+                        stream.bufferedReader().use { it.readText() }
+                    }
+                    backupRepository.importJson(raw)
+                }
+                backupMessage = if (result.isSuccess) {
+                    "Резервну копію відновлено."
+                } else {
+                    "Помилка імпорту: ${result.exceptionOrNull()?.message ?: "невідома помилка"}"
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -148,6 +208,39 @@ fun SettingsScreen(
                 modifier = Modifier.padding(top = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+
+        SectionCard {
+            Text("Резервна копія", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                "Експорт містить розклад, оцінки, навчальний план, домашки, нотатки й налаштування.",
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = {
+                    exportLauncher.launch("takt-backup-${LocalDate.now()}.json")
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Експортувати JSON")
+            }
+            OutlinedButton(
+                onClick = {
+                    importLauncher.launch(arrayOf("application/json", "text/plain"))
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text("Відновити з JSON")
+            }
+            backupMessage?.let {
+                Text(
+                    it,
+                    modifier = Modifier.padding(top = 10.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
