@@ -333,6 +333,7 @@ git commit -m "feat: add timeline and summary primitives"
 - Modify: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeScheduleCard.kt`
 - Modify: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeTaskRow.kt`
 - Modify: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeGradeRow.kt`
+- Modify: `app/src/main/java/com/kpyruy/takt/app/TaktApp.kt`
 
 - [ ] **Step 1: Derive next event and compact counts**
 
@@ -425,7 +426,41 @@ TaktTimeline(
 
 Replace the fixed two-card row with `CompactSummaryStrip` or vertically stacked `MetricCard` items so font scaling cannot force horizontal overflow.
 
-- [ ] **Step 4: Keep settings action and factual motivational micro-copy**
+- [ ] **Step 4: Add the Courses overview entry**
+
+Extend `HomeScreen` with:
+
+```kotlin
+onOpenCourses: () -> Unit,
+```
+
+Add a compact tappable Courses card after the study-progress block:
+
+```kotlin
+SectionCard(
+    modifier = Modifier.clickable(onClick = onOpenCourses),
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("Курси", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "$enrolledCount активних · цей семестр",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(Icons.Default.ChevronRight, contentDescription = "Відкрити курси")
+    }
+}
+```
+
+In `TaktApp.kt`, pass `onOpenCourses = { navController.navigate(Destination.SUBJECTS.route) }`.
+
+- [ ] **Step 5: Keep settings action and factual motivational micro-copy**
 
 Add a short secondary message based only on real progress:
 
@@ -439,7 +474,7 @@ if (upcomingTasks.isEmpty() && todayEvents.isNotEmpty()) {
 }
 ```
 
-- [ ] **Step 5: Compile Home**
+- [ ] **Step 6: Compile Home**
 
 ```bash
 gradle :feature:home:assembleDebug --stacktrace
@@ -447,10 +482,10 @@ gradle :feature:home:assembleDebug --stacktrace
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add feature/home
+git add feature/home app
 git commit -m "feat: redesign home dashboard"
 ```
 
