@@ -14,6 +14,9 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE semester = :semester ORDER BY title")
     fun observeSemester(semester: Int): Flow<List<CourseEntity>>
 
+    @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
+    fun observeById(courseId: String): Flow<CourseEntity?>
+
     @Query("SELECT COUNT(*) FROM courses")
     suspend fun count(): Int
 
