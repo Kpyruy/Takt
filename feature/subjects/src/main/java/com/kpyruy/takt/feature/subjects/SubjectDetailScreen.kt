@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.GradeRepository
+import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
@@ -44,18 +45,23 @@ import kotlinx.coroutines.launch
 fun SubjectDetailScreen(
     repository: StudyPlanRepository,
     gradeRepository: GradeRepository,
+    studyContentRepository: StudyContentRepository,
     courseId: String,
     onBack: () -> Unit,
 ) {
     val course by repository.observeCourse(courseId).collectAsState(initial = null)
     val gradeItems by gradeRepository.observeItems(courseId).collectAsState(initial = emptyList())
     val gradeScale by gradeRepository.observeScale(courseId).collectAsState(initial = GradeScale.default())
+    val tasks by studyContentRepository.observeTasks(courseId).collectAsState(initial = emptyList())
+    val notes by studyContentRepository.observeNotes(courseId).collectAsState(initial = emptyList())
     val summary = remember(gradeItems, gradeScale) {
         GradeSummary.calculate(gradeItems, gradeScale)
     }
     val scope = rememberCoroutineScope()
     var showAddGrade by remember { mutableStateOf(false) }
     var showScaleEditor by remember { mutableStateOf(false) }
+    var showAddTask by remember { mutableStateOf(false) }
+    var showAddNote by remember { mutableStateOf(false) }
 
     val item = course
     if (item == null) {
@@ -174,12 +180,62 @@ fun SubjectDetailScreen(
         }
 
         SectionCard {
-            Text("Домашки та нотатки", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Немає активних завдань або нотаток.",
-                modifier = Modifier.padding(top = 8.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("Домашки та дедлайни", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (tasks.isEmpty()) {
+                Text(
+                    "Поки немає завдань.",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                tasks.forEachIndexed { index, task ->
+                    if (index > 0) HorizontalDivider()
+                    StudyTaskRow(
+                        task = task,
+                        onCompletedChange = { completed ->
+                            scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
+                        },
+                        onDelete = {
+                            scope.launch { studyContentRepository.deleteTask(task.id) }
+                        },
+                    )
+                }
+            }
+            OutlinedButton(
+                onClick = { showAddTask = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text("Додати завдання")
+            }
+        }
+
+        SectionCard {
+            Text("Нотатки", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (notes.isEmpty()) {
+                Text(
+                    "Поки немає нотаток.",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                notes.forEachIndexed { index, note ->
+                    if (index > 0) HorizontalDivider()
+                    CourseNoteCard(
+                        note = note,
+                        onDelete = {
+                            scope.launch { studyContentRepository.deleteNote(note.id) }
+                        },
+                    )
+                }
+            }
+            OutlinedButton(
+                onClick = { showAddNote = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text("Додати нотатку")
+            }
         }
 
         SectionCard {
@@ -222,6 +278,32 @@ fun SubjectDetailScreen(
                 scope.launch {
                     gradeRepository.setScale(courseId, scale)
                     showScaleEditor = false
+                }
+            },
+        )
+    }
+
+    if (showAddTask) {
+        AddTaskSheet(
+            courseId = courseId,
+            onDismiss = { showAddTask = false },
+            onSave = { task ->
+                scope.launch {
+                    studyContentRepository.upsertTask(task)
+                    showAddTask = false
+                }
+            },
+        )
+    }
+
+    if (showAddNote) {
+        AddNoteSheet(
+            courseId = courseId,
+            onDismiss = { showAddNote = false },
+            onSave = { note ->
+                scope.launch {
+                    studyContentRepository.upsertNote(note)
+                    showAddNote = false
                 }
             },
         )

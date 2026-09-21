@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
                     repository = dataContainer.studyPlanRepository,
                     scheduleRepository = dataContainer.scheduleRepository,
                     gradeRepository = dataContainer.gradeRepository,
+                    studyContentRepository = dataContainer.studyContentRepository,
                 )
             }
         }

@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
+import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.home.HomeScreen
@@ -46,6 +47,7 @@ fun TaktApp(
     repository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
     gradeRepository: GradeRepository,
+    studyContentRepository: StudyContentRepository,
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -93,11 +95,16 @@ fun TaktApp(
                 HomeScreen(
                     repository = repository,
                     scheduleRepository = scheduleRepository,
+                    studyContentRepository = studyContentRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
             }
             composable(Destination.CALENDAR.route) {
-                CalendarScreen(scheduleRepository = scheduleRepository)
+                CalendarScreen(
+                    scheduleRepository = scheduleRepository,
+                    studyContentRepository = studyContentRepository,
+                    studyPlanRepository = repository,
+                )
             }
             composable(Destination.SUBJECTS.route) {
                 SubjectsScreen(
@@ -122,6 +129,7 @@ fun TaktApp(
                 SubjectDetailScreen(
                     repository = repository,
                     gradeRepository = gradeRepository,
+                    studyContentRepository = studyContentRepository,
                     courseId = courseId,
                     onBack = { navController.popBackStack() },
                 )

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.ScheduleRepository
+import com.kpyruy.takt.core.data.StudyContentRepository
+import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.core.model.ScheduleException
 import com.kpyruy.takt.core.model.ScheduleExceptionType
@@ -48,10 +51,16 @@ import java.util.UUID
 import kotlinx.coroutines.launch
 
 @Composable
-fun CalendarScreen(scheduleRepository: ScheduleRepository) {
+fun CalendarScreen(
+    scheduleRepository: ScheduleRepository,
+    studyContentRepository: StudyContentRepository,
+    studyPlanRepository: StudyPlanRepository,
+) {
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
+    val tasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
+    val courses by studyPlanRepository.observeCourses().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val today = LocalDate.now()
     var selectedDate by remember { mutableStateOf(today) }
@@ -72,6 +81,8 @@ fun CalendarScreen(scheduleRepository: ScheduleRepository) {
         oneOffEvents = oneOffEvents,
         date = selectedDate,
     )
+    val deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate }
+    val courseTitles = courses.associate { it.id to it.title }
     val monthFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -123,19 +134,36 @@ fun CalendarScreen(scheduleRepository: ScheduleRepository) {
                 fontWeight = FontWeight.Bold,
             )
 
-            if (events.isEmpty()) {
-                SectionCard {
-                    Text("На цей день занять немає")
-                    Text(
-                        "Натисни +, щоб додати пару.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(bottom = 80.dp),
+            ) {
+                if (deadlines.isNotEmpty()) {
+                    item {
+                        SectionCard {
+                            Text("Дедлайни", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            deadlines.forEachIndexed { index, task ->
+                                if (index > 0) HorizontalDivider()
+                                CalendarDeadlineRow(
+                                    task = task,
+                                    courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                                )
+                            }
+                        }
+                    }
                 }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(bottom = 80.dp),
-                ) {
+
+                if (events.isEmpty()) {
+                    item {
+                        SectionCard {
+                            Text("На цей день занять немає")
+                            Text(
+                                "Натисни +, щоб додати пару.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                } else {
                     items(events, key = { "${it.id}-${it.date}-${it.status}" }) { event ->
                         ScheduleEventCard(
                             event = event,

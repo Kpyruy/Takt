@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -24,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.ScheduleRepository
+import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ScheduleResolver
+import com.kpyruy.takt.core.model.StudyTaskPlanner
 import com.kpyruy.takt.core.model.WeekParity
 import com.kpyruy.takt.core.ui.components.MetricCard
 import com.kpyruy.takt.core.ui.components.ScreenHeader
@@ -40,6 +43,7 @@ import java.util.Locale
 fun HomeScreen(
     repository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
+    studyContentRepository: StudyContentRepository,
     onOpenSettings: () -> Unit,
 ) {
     val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
@@ -47,6 +51,7 @@ fun HomeScreen(
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
+    val allTasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
     val today = LocalDate.now()
     val week = today.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = WeekParity.fromIsoWeek(week)
@@ -58,6 +63,8 @@ fun HomeScreen(
         oneOffEvents = oneOffEvents,
         date = today,
     )
+    val upcomingTasks = StudyTaskPlanner.upcoming(allTasks, today, 4)
+    val courseTitles = allCourses.associate { it.id to it.title }
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
 
     Column(
@@ -135,7 +142,17 @@ fun HomeScreen(
         SectionCard {
             Text("Найближчі дедлайни", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            Text("Поки немає активних завдань", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (upcomingTasks.isEmpty()) {
+                Text("Поки немає активних дедлайнів", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                upcomingTasks.forEachIndexed { index, task ->
+                    if (index > 0) HorizontalDivider()
+                    HomeTaskRow(
+                        task = task,
+                        courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                    )
+                }
+            }
         }
 
         SectionCard {
