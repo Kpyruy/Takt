@@ -17,8 +17,17 @@ interface StudyContentDao {
     @Query("SELECT * FROM course_notes WHERE courseId = :courseId ORDER BY updatedAtEpochMillis DESC")
     fun observeNotes(courseId: String): Flow<List<CourseNoteEntity>>
 
+    @Query("SELECT * FROM study_tasks ORDER BY completed, dueDateEpochDay, title")
+    suspend fun getTasksSnapshot(): List<StudyTaskEntity>
+
+    @Query("SELECT * FROM course_notes ORDER BY updatedAtEpochMillis DESC")
+    suspend fun getNotesSnapshot(): List<CourseNoteEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertTask(item: StudyTaskEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertTasks(items: List<StudyTaskEntity>)
 
     @Query("UPDATE study_tasks SET completed = :completed WHERE id = :id")
     suspend fun setTaskCompleted(id: String, completed: Boolean)
@@ -29,6 +38,15 @@ interface StudyContentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertNote(item: CourseNoteEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertNotes(items: List<CourseNoteEntity>)
+
     @Query("DELETE FROM course_notes WHERE id = :id")
     suspend fun deleteNote(id: String)
+
+    @Query("DELETE FROM study_tasks")
+    suspend fun deleteAllTasks()
+
+    @Query("DELETE FROM course_notes")
+    suspend fun deleteAllNotes()
 }

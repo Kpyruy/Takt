@@ -17,6 +17,9 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE id = :courseId LIMIT 1")
     fun observeById(courseId: String): Flow<CourseEntity?>
 
+    @Query("SELECT * FROM courses ORDER BY semester, title")
+    suspend fun getAllSnapshot(): List<CourseEntity>
+
     @Query("SELECT COUNT(*) FROM courses")
     suspend fun count(): Int
 
@@ -25,4 +28,7 @@ interface CourseDao {
 
     @Query("UPDATE courses SET status = :status WHERE id = :courseId")
     suspend fun updateStatus(courseId: String, status: String)
+
+    @Query("DELETE FROM courses")
+    suspend fun deleteAll()
 }

@@ -17,6 +17,15 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedule_exceptions ORDER BY dateEpochDay")
     fun observeExceptions(): Flow<List<ScheduleExceptionEntity>>
 
+    @Query("SELECT * FROM schedule_rules ORDER BY dayOfWeek, startMinute")
+    suspend fun getRulesSnapshot(): List<ScheduleRuleEntity>
+
+    @Query("SELECT * FROM schedule_one_off ORDER BY dateEpochDay, startMinute")
+    suspend fun getOneOffEventsSnapshot(): List<OneOffScheduleEventEntity>
+
+    @Query("SELECT * FROM schedule_exceptions ORDER BY dateEpochDay")
+    suspend fun getExceptionsSnapshot(): List<ScheduleExceptionEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertRule(item: ScheduleRuleEntity)
 
@@ -32,6 +41,9 @@ interface ScheduleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertException(item: ScheduleExceptionEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertExceptions(items: List<ScheduleExceptionEntity>)
+
     @Query("DELETE FROM schedule_rules WHERE id = :id")
     suspend fun deleteRule(id: String)
 
@@ -40,6 +52,15 @@ interface ScheduleDao {
 
     @Query("DELETE FROM schedule_exceptions WHERE ruleId = :ruleId AND dateEpochDay = :dateEpochDay")
     suspend fun deleteExceptionForOccurrence(ruleId: String, dateEpochDay: Long)
+
+    @Query("DELETE FROM schedule_rules")
+    suspend fun deleteAllRules()
+
+    @Query("DELETE FROM schedule_one_off")
+    suspend fun deleteAllOneOffEvents()
+
+    @Query("DELETE FROM schedule_exceptions")
+    suspend fun deleteAllExceptions()
 
     @Query("SELECT COUNT(*) FROM schedule_rules")
     suspend fun countRules(): Int
