@@ -686,7 +686,7 @@ gradle :core:ui:assembleDebug :feature:calendar:assembleDebug :feature:subjects:
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add core/ui feature/calendar feature/subjects
