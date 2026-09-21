@@ -626,7 +626,7 @@ gradle :core:data:testDebugUnitTest --stacktrace
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add core/data
@@ -895,7 +895,7 @@ gradle :feature:subjects:assembleDebug :app:assembleDebug --stacktrace
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add feature/subjects app
