@@ -11,11 +11,15 @@ class TaktDataContainer(context: Context) {
         TaktDatabase::class.java,
         "takt.db",
     )
-        .addMigrations(TaktDatabase.MIGRATION_1_2)
+        .addMigrations(
+            TaktDatabase.MIGRATION_1_2,
+            TaktDatabase.MIGRATION_2_3,
+        )
         .build()
 
     val studyPlanRepository: StudyPlanRepository = RoomStudyPlanRepository(database.courseDao())
     val scheduleRepository: ScheduleRepository = RoomScheduleRepository(database.scheduleDao())
+    val gradeRepository: GradeRepository = RoomGradeRepository(database.gradeDao())
 
     suspend fun seedIfNeeded() {
         database.withTransaction {

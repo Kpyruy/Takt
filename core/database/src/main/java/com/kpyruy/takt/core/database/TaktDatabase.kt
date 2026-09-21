@@ -10,13 +10,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CourseEntity::class,
         ScheduleRuleEntity::class,
         OneOffScheduleEventEntity::class,
+        GradeItemEntity::class,
+        GradeScaleEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
     abstract fun courseDao(): CourseDao
     abstract fun scheduleDao(): ScheduleDao
+    abstract fun gradeDao(): GradeDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -46,6 +49,35 @@ abstract class TaktDatabase : RoomDatabase() {
                         endMinute INTEGER NOT NULL,
                         room TEXT,
                         type TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS grade_items (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        courseId TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        earnedPoints REAL NOT NULL,
+                        maxPoints REAL NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS grade_scales (
+                        courseId TEXT NOT NULL PRIMARY KEY,
+                        aMin REAL NOT NULL,
+                        bMin REAL NOT NULL,
+                        cMin REAL NOT NULL,
+                        dMin REAL NOT NULL,
+                        eMin REAL NOT NULL
                     )
                     """.trimIndent()
                 )
