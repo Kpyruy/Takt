@@ -28,13 +28,14 @@ import java.util.UUID
 @Composable
 fun AddGradeItemSheet(
     courseId: String,
+    initialType: GradeItemType = GradeItemType.TEST,
     onDismiss: () -> Unit,
     onSave: (GradeItem) -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
     var earnedText by remember { mutableStateOf("") }
     var maxText by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf(GradeItemType.TEST) }
+    var type by remember(initialType) { mutableStateOf(initialType) }
     var error by remember { mutableStateOf<String?>(null) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -45,21 +46,22 @@ fun AddGradeItemSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Додати результат", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                if (initialType == GradeItemType.EXAM) "Додати екзамен" else "Додати результат",
+                style = MaterialTheme.typography.headlineSmall,
+            )
 
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Назва") },
-                placeholder = { Text("Тест 1") },
+                placeholder = { Text(if (initialType == GradeItemType.EXAM) "Екзамен" else "Тест 1") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
 
             Text("Тип", style = MaterialTheme.typography.titleSmall)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     GradeTypeChips(
                         selected = type,
@@ -79,7 +81,7 @@ fun AddGradeItemSheet(
                         error = null
                     },
                     label = { Text("Отримано") },
-                    placeholder = { Text("20") },
+                    placeholder = { Text("0") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = error != null,
@@ -98,9 +100,9 @@ fun AddGradeItemSheet(
                 )
             }
 
-            if (error != null) {
+            error?.let {
                 Text(
-                    text = error.orEmpty(),
+                    text = it,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -112,7 +114,7 @@ fun AddGradeItemSheet(
                     val max = maxText.replace(',', '.').toDoubleOrNull()
 
                     when {
-                        earned == null || max == null -> error = "Введи числові значення балів."
+                        earned == null || max == null -> error = "Введіть числові значення балів."
                         earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
                         max <= 0.0 -> error = "Максимум має бути більшим за 0."
                         else -> onSave(
@@ -136,7 +138,6 @@ fun AddGradeItemSheet(
         }
     }
 }
-
 
 @Composable
 private fun GradeTypeChips(
