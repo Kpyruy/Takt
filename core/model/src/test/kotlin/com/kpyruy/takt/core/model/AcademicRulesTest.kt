@@ -22,4 +22,19 @@ class AcademicRulesTest {
         assertEquals(WeekParity.ODD, WeekParity.fromIsoWeek(39))
         assertEquals(WeekParity.EVEN, WeekParity.fromIsoWeek(40))
     }
+    @Test
+    fun passFailCourseCanRepresentExplicitFailure() {
+        val course = Course(
+            id = "pf",
+            code = "PF",
+            title = "Practice",
+            credits = 1,
+            semester = 3,
+            status = CourseStatus.ENROLLED,
+            gradingType = CourseGradingType.PASS_FAIL,
+            passFailResult = PassFailResult.FAILED,
+        )
+
+        assertEquals(PassFailResult.FAILED, course.passFailResult)
+    }
 }
