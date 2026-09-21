@@ -92,7 +92,7 @@ fun HomeScreen(
     val upcomingTasks = StudyTaskPlanner.upcoming(allTasks, today, 4)
     val incompleteToday = allTasks.count { !it.completed && it.dueDate == today }
     val overdueCount = allTasks.count {
-        !it.completed && it.dueDate != null && it.dueDate.isBefore(today)
+        !it.completed && it.dueDate?.isBefore(today) == true
     }
     val courseTitles = allCourses.associate { it.id to it.title }
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
