@@ -19,10 +19,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.kpyruy.takt.core.model.OneOffEventDraft
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.OneOffScheduleEventType
+import com.kpyruy.takt.core.ui.components.TaktDatePickerField
+import com.kpyruy.takt.core.ui.components.TaktTimePickerField
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,22 +32,23 @@ import java.util.UUID
 fun OneOffEventSheet(
     initialDate: LocalDate,
     initialEvent: OneOffScheduleEvent? = null,
+    initialType: OneOffScheduleEventType = OneOffScheduleEventType.EXTRA,
     onDismiss: () -> Unit,
     onSave: (OneOffScheduleEvent) -> Unit,
 ) {
     var title by remember(initialEvent) { mutableStateOf(initialEvent?.title.orEmpty()) }
-    var dateText by remember(initialEvent, initialDate) {
-        mutableStateOf((initialEvent?.date ?: initialDate).toString())
+    var date by remember(initialEvent, initialDate) {
+        mutableStateOf(initialEvent?.date ?: initialDate)
     }
-    var startText by remember(initialEvent) {
-        mutableStateOf(initialEvent?.startTime?.toString() ?: "08:00")
+    var startTime by remember(initialEvent) {
+        mutableStateOf(initialEvent?.startTime ?: LocalTime.of(8, 0))
     }
-    var endText by remember(initialEvent) {
-        mutableStateOf(initialEvent?.endTime?.toString() ?: "09:50")
+    var endTime by remember(initialEvent) {
+        mutableStateOf(initialEvent?.endTime ?: LocalTime.of(9, 50))
     }
     var room by remember(initialEvent) { mutableStateOf(initialEvent?.room.orEmpty()) }
-    var blockAction by remember(initialEvent) {
-        mutableStateOf(initialEvent?.type == OneOffScheduleEventType.BLOCK_ACTION)
+    var type by remember(initialEvent, initialType) {
+        mutableStateOf(initialEvent?.type ?: initialType)
     }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -69,55 +72,48 @@ fun OneOffEventSheet(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
-                    selected = !blockAction,
-                    onClick = { blockAction = false },
+                    selected = type == OneOffScheduleEventType.EXTRA,
+                    onClick = { type = OneOffScheduleEventType.EXTRA },
                     label = { Text("Додаткова пара") },
                 )
                 FilterChip(
-                    selected = blockAction,
-                    onClick = { blockAction = true },
+                    selected = type == OneOffScheduleEventType.BLOCK_ACTION,
+                    onClick = { type = OneOffScheduleEventType.BLOCK_ACTION },
                     label = { Text("Блокова акція") },
                 )
             }
 
-            OutlinedTextField(
-                value = dateText,
+            TaktDatePickerField(
+                label = "Дата",
+                value = date,
                 onValueChange = {
-                    dateText = it
+                    date = it
                     error = null
                 },
-                label = { Text("Дата") },
-                placeholder = { Text("2026-09-25") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = error != null,
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedTextField(
-                    value = startText,
+                TaktTimePickerField(
+                    label = "Початок",
+                    value = startTime,
                     onValueChange = {
-                        startText = it
+                        startTime = it
                         error = null
                     },
-                    label = { Text("Початок") },
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
                 )
-                OutlinedTextField(
-                    value = endText,
+                TaktTimePickerField(
+                    label = "Кінець",
+                    value = endTime,
                     onValueChange = {
-                        endText = it
+                        endTime = it
                         error = null
                     },
-                    label = { Text("Кінець") },
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
                 )
             }
 
@@ -139,23 +135,21 @@ fun OneOffEventSheet(
 
             Button(
                 onClick = {
-                    val result = OneOffEventDraft(
-                        title = title,
-                        date = dateText,
-                        startTime = startText,
-                        endTime = endText,
-                        room = room,
-                        blockAction = blockAction,
-                    ).toEvent(
-                        id = initialEvent?.id ?: UUID.randomUUID().toString(),
-                        courseId = initialEvent?.courseId,
-                    )
-
-                    result.fold(
-                        onSuccess = onSave,
-                        onFailure = {
-                            error = "Перевір назву, дату YYYY-MM-DD і час HH:mm."
-                        },
+                    if (endTime <= startTime) {
+                        error = "Кінець має бути пізніше початку."
+                        return@Button
+                    }
+                    onSave(
+                        OneOffScheduleEvent(
+                            id = initialEvent?.id ?: UUID.randomUUID().toString(),
+                            courseId = initialEvent?.courseId,
+                            title = title.trim(),
+                            date = date,
+                            startTime = startTime,
+                            endTime = endTime,
+                            room = room.trim().ifBlank { null },
+                            type = type,
+                        )
                     )
                 },
                 enabled = title.isNotBlank(),

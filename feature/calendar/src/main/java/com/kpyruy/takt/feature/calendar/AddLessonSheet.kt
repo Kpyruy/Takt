@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ScheduleRecurrence
 import com.kpyruy.takt.core.model.ScheduleRule
+import com.kpyruy.takt.core.ui.components.TaktTimePickerField
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.util.UUID
@@ -37,11 +38,11 @@ fun AddLessonSheet(
 ) {
     var title by remember(initialRule) { mutableStateOf(initialRule?.title.orEmpty()) }
     var room by remember(initialRule) { mutableStateOf(initialRule?.room.orEmpty()) }
-    var startText by remember(initialRule) {
-        mutableStateOf(initialRule?.startTime?.toString() ?: "08:00")
+    var startTime by remember(initialRule) {
+        mutableStateOf(initialRule?.startTime ?: LocalTime.of(8, 0))
     }
-    var endText by remember(initialRule) {
-        mutableStateOf(initialRule?.endTime?.toString() ?: "09:50")
+    var endTime by remember(initialRule) {
+        mutableStateOf(initialRule?.endTime ?: LocalTime.of(9, 50))
     }
     var day by remember(initialRule, initialDay) {
         mutableStateOf(initialRule?.dayOfWeek ?: initialDay)
@@ -95,53 +96,48 @@ fun AddLessonSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedTextField(
-                    value = startText,
+                TaktTimePickerField(
+                    label = "Початок",
+                    value = startTime,
                     onValueChange = {
-                        startText = it
+                        startTime = it
                         showTimeError = false
                     },
-                    label = { Text("Початок") },
-                    placeholder = { Text("08:00") },
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = showTimeError,
                 )
-                OutlinedTextField(
-                    value = endText,
+                TaktTimePickerField(
+                    label = "Кінець",
+                    value = endTime,
                     onValueChange = {
-                        endText = it
+                        endTime = it
                         showTimeError = false
                     },
-                    label = { Text("Кінець") },
-                    placeholder = { Text("09:50") },
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = showTimeError,
                 )
             }
 
             Text("Повторення", style = MaterialTheme.typography.titleSmall)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                listOf(
-                    ScheduleRecurrence.WEEKLY to "Щотижня",
-                    ScheduleRecurrence.ODD_WEEKS to "Непарні",
-                    ScheduleRecurrence.EVEN_WEEKS to "Парні",
-                ).forEach { (option, label) ->
-                    FilterChip(
-                        selected = recurrence == option,
-                        onClick = { recurrence = option },
-                        label = { Text(label) },
-                    )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            ScheduleRecurrence.WEEKLY to "Щотижня",
+                            ScheduleRecurrence.ODD_WEEKS to "Непарні",
+                            ScheduleRecurrence.EVEN_WEEKS to "Парні",
+                        ).forEach { (option, label) ->
+                            FilterChip(
+                                selected = recurrence == option,
+                                onClick = { recurrence = option },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
                 }
             }
 
             if (showTimeError) {
                 Text(
-                    text = "Перевір формат часу та переконайся, що кінець пізніше початку.",
+                    text = "Кінець має бути пізніше початку.",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -149,9 +145,7 @@ fun AddLessonSheet(
 
             Button(
                 onClick = {
-                    val start = runCatching { LocalTime.parse(startText) }.getOrNull()
-                    val end = runCatching { LocalTime.parse(endText) }.getOrNull()
-                    if (start == null || end == null || end <= start) {
+                    if (endTime <= startTime) {
                         showTimeError = true
                         return@Button
                     }
@@ -162,8 +156,8 @@ fun AddLessonSheet(
                             courseId = initialRule?.courseId,
                             title = title.trim(),
                             dayOfWeek = day,
-                            startTime = start,
-                            endTime = end,
+                            startTime = startTime,
+                            endTime = endTime,
                             recurrence = recurrence,
                             room = room.trim().ifBlank { null },
                         )

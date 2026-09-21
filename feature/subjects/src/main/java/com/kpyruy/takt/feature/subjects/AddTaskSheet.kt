@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import java.time.LocalDate
 import java.util.UUID
 
@@ -30,8 +32,7 @@ fun AddTaskSheet(
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var dueDateText by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var dueDate by remember { mutableStateOf<LocalDate?>(null) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -54,32 +55,19 @@ fun AddTaskSheet(
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
             )
-            OutlinedTextField(
-                value = dueDateText,
-                onValueChange = {
-                    dueDateText = it
-                    error = null
-                },
-                label = { Text("Дедлайн") },
-                placeholder = { Text("2026-09-30 · необов'язково") },
+            TaktDatePickerField(
+                label = "Дедлайн",
+                value = dueDate,
+                onValueChange = { dueDate = it },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = error != null,
             )
-            error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            if (dueDate != null) {
+                TextButton(onClick = { dueDate = null }) {
+                    Text("Без дедлайну")
+                }
             }
             Button(
                 onClick = {
-                    val dueDate = if (dueDateText.isBlank()) {
-                        null
-                    } else {
-                        runCatching { LocalDate.parse(dueDateText.trim()) }.getOrNull()
-                    }
-                    if (dueDateText.isNotBlank() && dueDate == null) {
-                        error = "Дата має бути у форматі YYYY-MM-DD."
-                        return@Button
-                    }
                     onSave(
                         StudyTask(
                             id = UUID.randomUUID().toString(),
