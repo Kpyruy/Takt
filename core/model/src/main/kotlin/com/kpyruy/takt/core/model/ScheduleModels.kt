@@ -92,6 +92,8 @@ data class ResolvedScheduleEvent(
     val endTime: LocalTime,
     val room: String?,
     val status: ScheduleEventStatus,
+    val exceptionId: String? = null,
+    val sourceDate: LocalDate? = null,
 )
 
 object ScheduleResolver {
@@ -113,6 +115,8 @@ object ScheduleResolver {
                     ScheduleExceptionType.CANCELLED -> rule.toResolved(
                         date = date,
                         status = ScheduleEventStatus.CANCELLED,
+                        exceptionId = exception.id,
+                        sourceDate = exception.date,
                     )
 
                     ScheduleExceptionType.MOVED -> {
@@ -129,6 +133,8 @@ object ScheduleResolver {
                                 endTime = exception.replacementEndTime ?: rule.endTime,
                                 room = exception.replacementRoom ?: rule.room,
                                 status = ScheduleEventStatus.MOVED,
+                                exceptionId = exception.id,
+                                sourceDate = exception.date,
                             )
                         }
                     }
@@ -157,6 +163,8 @@ object ScheduleResolver {
                     endTime = exception.replacementEndTime ?: rule.endTime,
                     room = exception.replacementRoom ?: rule.room,
                     status = ScheduleEventStatus.MOVED,
+                    exceptionId = exception.id,
+                    sourceDate = exception.date,
                 )
             }
 
@@ -184,6 +192,8 @@ object ScheduleResolver {
 private fun ScheduleRule.toResolved(
     date: LocalDate,
     status: ScheduleEventStatus,
+    exceptionId: String? = null,
+    sourceDate: LocalDate? = null,
 ) = ResolvedScheduleEvent(
     id = id,
     courseId = courseId,
@@ -193,4 +203,6 @@ private fun ScheduleRule.toResolved(
     endTime = endTime,
     room = room,
     status = status,
+    exceptionId = exceptionId,
+    sourceDate = sourceDate,
 )
