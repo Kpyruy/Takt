@@ -46,7 +46,6 @@ class ScheduleTimelineTest {
         endTime = end,
         room = null,
         status = ScheduleEventStatus.NORMAL,
-        type = ResolvedScheduleEventType.ONE_OFF,
     )
 
     @Test
@@ -652,7 +651,7 @@ gradle :core:ui:assembleDebug :feature:calendar:assembleDebug :feature:subjects:
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add core/ui feature/calendar feature/subjects
@@ -668,6 +667,8 @@ git commit -m "feat: replace raw date time entry with pickers"
 - Create: `app/src/main/java/com/kpyruy/takt/app/QuickAddSheet.kt`
 - Create: `app/src/main/java/com/kpyruy/takt/app/CreateItemType.kt`
 - Modify: `app/src/main/java/com/kpyruy/takt/app/TaktApp.kt`
+- Modify: `core/model/src/main/kotlin/com/kpyruy/takt/core/model/ScheduleModels.kt`
+- Modify: `core/model/src/test/kotlin/com/kpyruy/takt/core/model/ScheduleResolverTest.kt`
 - Modify:
   - `feature/calendar/src/main/java/com/kpyruy/takt/feature/calendar/AddLessonSheet.kt`
   - `feature/calendar/src/main/java/com/kpyruy/takt/feature/calendar/OneOffEventSheet.kt`
@@ -675,7 +676,62 @@ git commit -m "feat: replace raw date time entry with pickers"
   - `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/AddNoteSheet.kt`
   - `feature/subjects/src/main/java/com/kpyruy/takt/feature/subjects/AddGradeItemSheet.kt`
 
-- [ ] **Step 1: Define add types**
+- [ ] **Step 1: Add the in-app reminder schedule type with a failing resolver test**
+
+Append to `ScheduleResolverTest.kt`:
+
+```kotlin
+@Test
+fun reminder_isResolvedAsAOneOffCalendarEntry() {
+    val reminder = OneOffScheduleEvent(
+        id = "reminder-1",
+        courseId = null,
+        title = "Взяти калькулятор",
+        date = date,
+        startTime = LocalTime.of(7, 45),
+        endTime = LocalTime.of(7, 50),
+        room = null,
+        type = OneOffScheduleEventType.REMINDER,
+    )
+
+    val result = ScheduleResolver.eventsForDate(
+        rules = emptyList(),
+        exceptions = emptyList(),
+        oneOffEvents = listOf(reminder),
+        date = date,
+    )
+
+    assertEquals(1, result.size)
+    assertEquals("Взяти калькулятор", result.single().title)
+    assertEquals(ScheduleEventStatus.ONE_OFF, result.single().status)
+}
+```
+
+Run:
+
+```bash
+gradle :core:model:test --tests "*ScheduleResolverTest" --stacktrace
+```
+
+Expected: compilation fails because `OneOffScheduleEventType.REMINDER` does not exist.
+
+Then add:
+
+```kotlin
+enum class OneOffScheduleEventType {
+    BLOCK_ACTION,
+    EXTRA,
+    REMINDER,
+}
+```
+
+Run the same test again.
+
+Expected: `BUILD SUCCESSFUL`.
+
+For this redesign, `REMINDER` is an **in-app calendar reminder entry**. Android notification scheduling is deliberately outside this redesign scope; do not imply that a notification will fire.
+
+- [ ] **Step 2: Define add types**
 
 Create:
 
@@ -692,7 +748,22 @@ enum class CreateItemType(val label: String) {
 }
 ```
 
-- [ ] **Step 2: Replace the foundation FAB sheet with real type selection**
+- [ ] **Step 3: Wire the approved center FAB to real type selection**
+
+In `TaktApp.kt`, pass the real center action into the navigation shell:
+
+```kotlin
+var showGlobalAdd by rememberSaveable { mutableStateOf(false) }
+
+TaktBottomNavigation(
+    items = navItems,
+    centerContent = {
+        TaktAddFab(onClick = { showGlobalAdd = true })
+    },
+)
+```
+
+Then render the sheet only while `showGlobalAdd` is true.
 
 `GlobalAddSheet` API:
 
@@ -707,11 +778,11 @@ fun GlobalAddSheet(
 
 Show all six types in the approved order. A normal row click opens the complete creation flow; the separate compact action opens `QuickAddSheet`.
 
-- [ ] **Step 3: Implement compact quick add**
+- [ ] **Step 4: Implement compact quick add**
 
 `QuickAddSheet` supports Task, Class, and Note. It keeps only essential fields and includes `Більше параметрів`, which opens the corresponding full form while retaining the entered draft values.
 
-- [ ] **Step 4: Add creation routes**
+- [ ] **Step 5: Add creation routes**
 
 Add:
 
@@ -727,11 +798,19 @@ navController.navigate("create/${type.name}")
 
 The app-level route host delegates to feature-owned forms and repositories.
 
-- [ ] **Step 5: Keep edit consistent**
+Map the six types explicitly:
+- `CLASS` -> recurring lesson form;
+- `TASK` -> task form with course selection;
+- `EXAM` -> exam grade-item form with course selection; Phase 3 extends this with exam logistics/materials;
+- `NOTE` -> note form with course selection;
+- `EVENT` -> one-off event form;
+- `REMINDER` -> one-off event form preselected to `REMINDER`, using a short time range and no room field.
+
+- [ ] **Step 6: Keep edit consistent**
 
 Calendar and Subject edit actions use the same field order, date/time pickers, labels, and validation as creation. Destructive actions stay in contextual sheets rather than permanently visible beside every row.
 
-- [ ] **Step 6: Compile app**
+- [ ] **Step 7: Compile app**
 
 ```bash
 gradle :app:assembleDebug --stacktrace
