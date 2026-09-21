@@ -115,6 +115,11 @@ class BackupPayloadCodecTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
+    fun emptyBackup_isRejectedBeforeItCanReplaceLocalData() {
+        BackupPayloadCodec.decode("""{"version":1}""")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
     fun unsupportedBackupVersion_isRejected() {
         BackupPayloadCodec.decode("""{"version":999}""")
     }
