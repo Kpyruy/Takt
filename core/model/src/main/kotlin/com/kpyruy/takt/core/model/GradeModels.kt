@@ -15,6 +15,7 @@ data class GradeItem(
     val type: GradeItemType,
     val earnedPoints: Double,
     val maxPoints: Double,
+    val recordedAtEpochMillis: Long = 0L,
 ) {
     init {
         require(maxPoints > 0.0) { "maxPoints must be positive" }
@@ -52,5 +53,21 @@ data class GradeSummary(
                 letter = scale.gradeFor(percentage),
             )
         }
+    }
+}
+
+
+object GradeBook {
+    fun recent(
+        items: List<GradeItem>,
+        limit: Int,
+    ): List<GradeItem> {
+        require(limit >= 0)
+        return items
+            .sortedWith(
+                compareByDescending<GradeItem> { it.recordedAtEpochMillis }
+                    .thenBy { it.title }
+            )
+            .take(limit)
     }
 }
