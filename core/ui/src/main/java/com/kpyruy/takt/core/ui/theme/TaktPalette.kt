@@ -1,0 +1,131 @@
+package com.kpyruy.takt.core.ui.theme
+
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
+import com.kpyruy.takt.core.model.ThemeFamily
+
+internal data class TaktPalette(
+    val light: ColorScheme,
+    val dark: ColorScheme,
+    val subjectColorsLight: List<Color>,
+    val subjectColorsDark: List<Color>,
+)
+
+private fun palette(
+    primary: Color,
+    secondary: Color,
+    tertiary: Color,
+    darkPrimary: Color,
+    darkSecondary: Color,
+    darkTertiary: Color,
+    subjectsLight: List<Color>,
+    subjectsDark: List<Color>,
+): TaktPalette = TaktPalette(
+    light = lightColorScheme(
+        primary = primary,
+        secondary = secondary,
+        tertiary = tertiary,
+        background = Color(0xFFF7F8FC),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0xFFF0F2F7),
+        onSurface = Color(0xFF111827),
+        onSurfaceVariant = Color(0xFF667085),
+    ),
+    dark = darkColorScheme(
+        primary = darkPrimary,
+        secondary = darkSecondary,
+        tertiary = darkTertiary,
+        background = Color(0xFF0B1220),
+        surface = Color(0xFF111A2B),
+        surfaceVariant = Color(0xFF182338),
+        onSurface = Color(0xFFF1F5F9),
+        onSurfaceVariant = Color(0xFFADB8CA),
+    ),
+    subjectColorsLight = subjectsLight,
+    subjectColorsDark = subjectsDark,
+)
+
+internal fun paletteFor(family: ThemeFamily): TaktPalette = when (family) {
+    ThemeFamily.BLUE -> palette(
+        primary = Color(0xFF3659C9),
+        secondary = Color(0xFF27695D),
+        tertiary = Color(0xFF7454B8),
+        darkPrimary = Color(0xFF8DA2FF),
+        darkSecondary = Color(0xFF94D3C5),
+        darkTertiary = Color(0xFFC7A9FF),
+        subjectsLight = listOf(
+            Color(0xFF3B82F6), Color(0xFF14B8A6), Color(0xFF8B5CF6),
+            Color(0xFFF59E0B), Color(0xFFEF5DA8), Color(0xFF22A06B),
+        ),
+        subjectsDark = listOf(
+            Color(0xFF7AB6FF), Color(0xFF61D6C6), Color(0xFFB69CFF),
+            Color(0xFFFFC761), Color(0xFFFF92C5), Color(0xFF69D5A3),
+        ),
+    )
+    ThemeFamily.GREEN -> palette(
+        primary = Color(0xFF147D64),
+        secondary = Color(0xFF356B9A),
+        tertiary = Color(0xFF9A6717),
+        darkPrimary = Color(0xFF70D6B6),
+        darkSecondary = Color(0xFF8DC7F5),
+        darkTertiary = Color(0xFFE7B85B),
+        subjectsLight = listOf(
+            Color(0xFF16A085), Color(0xFF3B82F6), Color(0xFF84A937),
+            Color(0xFFF59E0B), Color(0xFF9B6BD3), Color(0xFFE05D6F),
+        ),
+        subjectsDark = listOf(
+            Color(0xFF67D5BE), Color(0xFF7AB6FF), Color(0xFFB7D66E),
+            Color(0xFFFFC761), Color(0xFFC5A0EC), Color(0xFFF194A1),
+        ),
+    )
+    ThemeFamily.PURPLE -> palette(
+        primary = Color(0xFF7048C8),
+        secondary = Color(0xFF3A7198),
+        tertiary = Color(0xFF9D5F7A),
+        darkPrimary = Color(0xFFB49AF2),
+        darkSecondary = Color(0xFF8CC5EC),
+        darkTertiary = Color(0xFFE0A2BF),
+        subjectsLight = listOf(
+            Color(0xFF7C5CE0), Color(0xFF3B82F6), Color(0xFF00A68A),
+            Color(0xFFE08035), Color(0xFFD9568A), Color(0xFF9A70B8),
+        ),
+        subjectsDark = listOf(
+            Color(0xFFB69CFF), Color(0xFF7AB6FF), Color(0xFF65D4BD),
+            Color(0xFFFFB66F), Color(0xFFF08CB2), Color(0xFFC8A0DF),
+        ),
+    )
+    ThemeFamily.WARM -> palette(
+        primary = Color(0xFFC65A2E),
+        secondary = Color(0xFF9B6A19),
+        tertiary = Color(0xFF8B4D72),
+        darkPrimary = Color(0xFFF4A17E),
+        darkSecondary = Color(0xFFE7C06B),
+        darkTertiary = Color(0xFFDCA0C5),
+        subjectsLight = listOf(
+            Color(0xFFE36D3D), Color(0xFFD99A20), Color(0xFFB65D86),
+            Color(0xFF6E8F3D), Color(0xFF4A7FB1), Color(0xFF9A6BC0),
+        ),
+        subjectsDark = listOf(
+            Color(0xFFFFA17B), Color(0xFFFFC965), Color(0xFFE49BBD),
+            Color(0xFFA9C97A), Color(0xFF86B7E5), Color(0xFFC7A1E2),
+        ),
+    )
+    ThemeFamily.MONOCHROME -> palette(
+        primary = Color(0xFF303846),
+        secondary = Color(0xFF5C6573),
+        tertiary = Color(0xFF7B8491),
+        darkPrimary = Color(0xFFD5DBE5),
+        darkSecondary = Color(0xFFADB7C5),
+        darkTertiary = Color(0xFF8F9AAA),
+        subjectsLight = listOf(
+            Color(0xFF2F6B8A), Color(0xFF547A62), Color(0xFF7B6B9B),
+            Color(0xFF9A734A), Color(0xFF855E72), Color(0xFF586B80),
+        ),
+        subjectsDark = listOf(
+            Color(0xFF75A9C2), Color(0xFF83AB8E), Color(0xFFA79BC1),
+            Color(0xFFC2A078), Color(0xFFB88FA4), Color(0xFF8EA1B4),
+        ),
+    )
+}

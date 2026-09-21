@@ -2,32 +2,38 @@ package com.kpyruy.takt.core.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppThemeMode
+import com.kpyruy.takt.core.model.CardAppearance
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFF8DA2FF),
-    secondary = Color(0xFF94D3C5),
-    background = Color(0xFF0B1220),
-    surface = Color(0xFF111A2B),
-    surfaceVariant = Color(0xFF182338),
-    onBackground = Color(0xFFF1F5F9),
-    onSurface = Color(0xFFF1F5F9),
-)
-
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF3659C9),
-    secondary = Color(0xFF27695D),
-    background = Color(0xFFF7F8FC),
-    surface = Color(0xFFFFFFFF),
-)
+val LocalTaktCardAppearance = staticCompositionLocalOf { CardAppearance.ELEVATED }
+val LocalTaktSubjectColors = staticCompositionLocalOf<List<Color>> { emptyList() }
 
 @Composable
-fun TaktTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        content = content,
-    )
+fun TaktTheme(
+    settings: AppSettings = AppSettings(),
+    content: @Composable () -> Unit,
+) {
+    val darkTheme = when (settings.themeMode) {
+        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+    }
+    val palette = paletteFor(settings.themeFamily)
+
+    CompositionLocalProvider(
+        LocalTaktCardAppearance provides settings.cardAppearance,
+        LocalTaktSubjectColors provides if (darkTheme) palette.subjectColorsDark else palette.subjectColorsLight,
+    ) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) palette.dark else palette.light,
+            typography = TaktTypography,
+            shapes = TaktShapes,
+            content = content,
+        )
+    }
 }
