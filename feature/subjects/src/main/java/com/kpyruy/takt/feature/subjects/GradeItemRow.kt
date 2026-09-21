@@ -45,8 +45,12 @@ fun GradeItemRow(
 
 private fun GradeItemType.label(): String = when (this) {
     GradeItemType.TEST -> "Тест"
+    GradeItemType.MIDTERM -> "Модуль / проміжний тест"
     GradeItemType.LAB -> "Лабораторна"
+    GradeItemType.SEMINAR -> "Семінар"
     GradeItemType.HOMEWORK -> "Домашня робота"
+    GradeItemType.PROJECT -> "Проєкт"
+    GradeItemType.ORAL -> "Усна відповідь"
     GradeItemType.EXAM -> "Екзамен"
     GradeItemType.OTHER -> "Інше"
 }

@@ -37,6 +37,7 @@ import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.ui.components.ScreenHeader
@@ -55,10 +56,15 @@ fun SubjectDetailScreen(
     val course by repository.observeCourse(courseId).collectAsState(initial = null)
     val gradeItems by gradeRepository.observeItems(courseId).collectAsState(initial = emptyList())
     val gradeScale by gradeRepository.observeScale(courseId).collectAsState(initial = GradeScale.default())
+    val manualGrade by gradeRepository.observeManualGrade(courseId).collectAsState(initial = null)
     val tasks by studyContentRepository.observeTasks(courseId).collectAsState(initial = emptyList())
     val notes by studyContentRepository.observeNotes(courseId).collectAsState(initial = emptyList())
-    val summary = remember(gradeItems, gradeScale) {
-        GradeSummary.calculate(gradeItems, gradeScale)
+    val summary = remember(gradeItems, gradeScale, manualGrade) {
+        GradeSummary.calculate(
+            items = gradeItems,
+            scale = gradeScale,
+            manualLetter = manualGrade,
+        )
     }
     val scope = rememberCoroutineScope()
     var showAddGrade by remember { mutableStateOf(false) }
@@ -218,6 +224,43 @@ fun SubjectDetailScreen(
                 ) {
                     Text("Шкала")
                 }
+            }
+
+            Text(
+                "Підсумкова оцінка",
+                modifier = Modifier.padding(top = 12.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            LazyRow(
+                modifier = Modifier.padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item {
+                    FilterChip(
+                        selected = manualGrade == null,
+                        onClick = {
+                            scope.launch { gradeRepository.setManualGrade(courseId, null) }
+                        },
+                        label = { Text("Авто") },
+                    )
+                }
+                items(GradeLetter.entries) { grade ->
+                    FilterChip(
+                        selected = manualGrade == grade,
+                        onClick = {
+                            scope.launch { gradeRepository.setManualGrade(courseId, grade) }
+                        },
+                        label = { Text(grade.name) },
+                    )
+                }
+            }
+            if (manualGrade != null) {
+                Text(
+                    "Підсумкову оцінку встановлено вручну.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 

@@ -2,8 +2,12 @@ package com.kpyruy.takt.core.model
 
 enum class GradeItemType {
     TEST,
+    MIDTERM,
     LAB,
+    SEMINAR,
     HOMEWORK,
+    PROJECT,
+    ORAL,
     EXAM,
     OTHER,
 }

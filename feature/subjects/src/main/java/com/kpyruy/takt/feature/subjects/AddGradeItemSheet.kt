@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -56,20 +57,13 @@ fun AddGradeItemSheet(
             )
 
             Text("Тип", style = MaterialTheme.typography.titleSmall)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
+            LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                listOf(
-                    GradeItemType.TEST to "Тест",
-                    GradeItemType.LAB to "Лаба",
-                    GradeItemType.HOMEWORK to "ДЗ",
-                    GradeItemType.EXAM to "Екзамен",
-                ).forEach { (option, label) ->
-                    FilterChip(
-                        selected = type == option,
-                        onClick = { type = option },
-                        label = { Text(label) },
+                item {
+                    GradeTypeChips(
+                        selected = type,
+                        onSelected = { type = it },
                     )
                 }
             }
@@ -139,6 +133,33 @@ fun AddGradeItemSheet(
             ) {
                 Text("Зберегти")
             }
+        }
+    }
+}
+
+
+@Composable
+private fun GradeTypeChips(
+    selected: GradeItemType,
+    onSelected: (GradeItemType) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(
+            GradeItemType.TEST to "Тест",
+            GradeItemType.MIDTERM to "Модуль",
+            GradeItemType.LAB to "Лаба",
+            GradeItemType.SEMINAR to "Семінар",
+            GradeItemType.HOMEWORK to "ДЗ",
+            GradeItemType.PROJECT to "Проєкт",
+            GradeItemType.ORAL to "Усне",
+            GradeItemType.EXAM to "Екзамен",
+            GradeItemType.OTHER to "Інше",
+        ).forEach { (option, label) ->
+            FilterChip(
+                selected = selected == option,
+                onClick = { onSelected(option) },
+                label = { Text(label) },
+            )
         }
     }
 }
