@@ -10,13 +10,27 @@ class TaktDataContainer(context: Context) {
         context.applicationContext,
         TaktDatabase::class.java,
         "takt.db",
-    ).build()
+    )
+        .addMigrations(TaktDatabase.MIGRATION_1_2)
+        .build()
 
     val studyPlanRepository: StudyPlanRepository = RoomStudyPlanRepository(database.courseDao())
+    val scheduleRepository: ScheduleRepository = RoomScheduleRepository(database.scheduleDao())
 
     suspend fun seedIfNeeded() {
-        val dao = database.courseDao()
-        if (dao.count() > 0) return
-        database.withTransaction { dao.insertAll(StudyPlanSeed.courses) }
+        database.withTransaction {
+            val courseDao = database.courseDao()
+            if (courseDao.count() == 0) {
+                courseDao.insertAll(StudyPlanSeed.courses)
+            }
+        }
+
+        val scheduleDao = database.scheduleDao()
+        if (scheduleDao.countRules() == 0) {
+            scheduleRepository.upsertRules(DefaultTimetable.rules)
+        }
+        if (scheduleDao.countOneOffEvents() == 0) {
+            scheduleRepository.upsertOneOffEvents(DefaultTimetable.oneOffEvents)
+        }
     }
 }
