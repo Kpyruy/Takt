@@ -61,5 +61,9 @@ class RoomBackupRepository(
         settingsRepository.setCancellationStyle(settings.cancellationStyle)
         settingsRepository.setShowHiddenLessons(settings.showHiddenLessons)
         settingsRepository.setParityOverride(settings.parityOverride)
+        settingsRepository.setCardAppearance(settings.cardAppearance)
+        settingsRepository.setThemeFamily(settings.themeFamily)
+        settingsRepository.setThemeMode(settings.themeMode)
+        settingsRepository.setWeekLayout(settings.weekLayout)
     }
 }

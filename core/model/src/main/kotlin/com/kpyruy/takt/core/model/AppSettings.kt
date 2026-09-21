@@ -15,10 +15,38 @@ enum class ParityOverride {
     ODD,
 }
 
+enum class CardAppearance {
+    ELEVATED,
+    TONAL_FILLED,
+}
+
+enum class ThemeFamily {
+    BLUE,
+    GREEN,
+    PURPLE,
+    WARM,
+    MONOCHROME,
+}
+
+enum class AppThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK,
+}
+
+enum class WeekLayout {
+    TIMETABLE,
+    COMPACT_LIST,
+}
+
 data class AppSettings(
     val cancellationStyle: CancellationDisplayStyle = CancellationDisplayStyle.STRIKETHROUGH,
     val showHiddenLessons: Boolean = false,
     val parityOverride: ParityOverride = ParityOverride.AUTO,
+    val cardAppearance: CardAppearance = CardAppearance.ELEVATED,
+    val themeFamily: ThemeFamily = ThemeFamily.BLUE,
+    val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    val weekLayout: WeekLayout = WeekLayout.TIMETABLE,
 ) {
     fun effectiveParity(date: LocalDate): WeekParity = when (parityOverride) {
         ParityOverride.AUTO -> WeekParity.fromIsoWeek(

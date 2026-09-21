@@ -121,6 +121,10 @@ data class BackupSettings(
     val cancellationStyle: String = "STRIKETHROUGH",
     val showHiddenLessons: Boolean = false,
     val parityOverride: String = "AUTO",
+    val cardAppearance: String = "ELEVATED",
+    val themeFamily: String = "BLUE",
+    val themeMode: String = "SYSTEM",
+    val weekLayout: String = "TIMETABLE",
 )
 
 object BackupPayloadCodec {
