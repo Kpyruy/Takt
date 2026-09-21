@@ -7,5 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface StudyPlanRepository {
     fun observeCourses(): Flow<List<Course>>
     fun observeSemester(semester: Int): Flow<List<Course>>
+    fun observeCourse(courseId: String): Flow<Course?>
     suspend fun updateStatus(courseId: String, status: CourseStatus)
 }
