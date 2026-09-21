@@ -34,6 +34,7 @@ import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.core.model.ScheduleException
@@ -68,12 +69,16 @@ fun CalendarScreen(
     val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
     val scope = rememberCoroutineScope()
     val today = LocalDate.now()
+
     var selectedDate by remember { mutableStateOf(today) }
     var weekStart by remember {
         mutableStateOf(today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)))
     }
-    var showAddSheet by remember { mutableStateOf(false) }
+    var showAddChoice by remember { mutableStateOf(false) }
+    var showAddRecurring by remember { mutableStateOf(false) }
+    var showAddOneOff by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<ScheduleRule?>(null) }
+    var editingOneOff by remember { mutableStateOf<OneOffScheduleEvent?>(null) }
     var selectedEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
     var movingEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
 
@@ -170,7 +175,7 @@ fun CalendarScreen(
                         SectionCard {
                             Text("На цей день занять немає")
                             Text(
-                                "Натисни +, щоб додати пару.",
+                                "Натисни +, щоб додати пару або разову подію.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -188,26 +193,60 @@ fun CalendarScreen(
         }
 
         FloatingActionButton(
-            onClick = { showAddSheet = true },
+            onClick = { showAddChoice = true },
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Додати пару")
+            Icon(Icons.Default.Add, contentDescription = "Додати в календар")
         }
     }
 
-    if (showAddSheet || editingRule != null) {
+    if (showAddChoice) {
+        AddCalendarItemSheet(
+            onDismiss = { showAddChoice = false },
+            onAddRecurring = {
+                showAddChoice = false
+                showAddRecurring = true
+            },
+            onAddOneOff = {
+                showAddChoice = false
+                showAddOneOff = true
+            },
+        )
+    }
+
+    if (showAddRecurring || editingRule != null) {
         AddLessonSheet(
             initialDay = selectedDate.dayOfWeek,
             initialRule = editingRule,
             onDismiss = {
-                showAddSheet = false
+                showAddRecurring = false
                 editingRule = null
             },
             onSave = { rule ->
                 scope.launch {
                     scheduleRepository.upsertRule(rule)
-                    showAddSheet = false
+                    showAddRecurring = false
                     editingRule = null
+                }
+            },
+        )
+    }
+
+    if (showAddOneOff || editingOneOff != null) {
+        OneOffEventSheet(
+            initialDate = selectedDate,
+            initialEvent = editingOneOff,
+            onDismiss = {
+                showAddOneOff = false
+                editingOneOff = null
+            },
+            onSave = { event ->
+                scope.launch {
+                    scheduleRepository.upsertOneOffEvent(event)
+                    showAddOneOff = false
+                    editingOneOff = null
+                    selectedDate = event.date
+                    weekStart = event.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 }
             },
         )
@@ -215,6 +254,8 @@ fun CalendarScreen(
 
     selectedEvent?.let { event ->
         val recurringRule = rules.firstOrNull { it.id == event.id }
+        val oneOff = oneOffEvents.firstOrNull { it.id == event.id }
+
         LessonActionsSheet(
             event = event,
             isRecurringRule = recurringRule != null,
@@ -249,6 +290,16 @@ fun CalendarScreen(
             onDeleteRule = {
                 scope.launch {
                     scheduleRepository.deleteRule(event.id)
+                    selectedEvent = null
+                }
+            },
+            onEditOneOff = {
+                editingOneOff = oneOff
+                selectedEvent = null
+            },
+            onDeleteOneOff = {
+                scope.launch {
+                    scheduleRepository.deleteOneOffEvent(event.id)
                     selectedEvent = null
                 }
             },

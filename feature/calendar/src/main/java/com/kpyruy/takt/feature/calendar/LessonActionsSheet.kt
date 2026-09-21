@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
-import com.kpyruy.takt.core.model.ScheduleEventStatus
+import com.kpyruy.takt.core.model.ScheduleEventActions
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,8 +28,12 @@ fun LessonActionsSheet(
     onRestoreOccurrence: () -> Unit,
     onEditRule: () -> Unit,
     onDeleteRule: () -> Unit,
+    onEditOneOff: () -> Unit,
+    onDeleteOneOff: () -> Unit,
 ) {
     val time = DateTimeFormatter.ofPattern("HH:mm")
+    val actions = ScheduleEventActions.forEvent(event, isRecurringRule)
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
@@ -42,38 +46,39 @@ fun LessonActionsSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            when (event.status) {
-                ScheduleEventStatus.NORMAL -> {
-                    if (isRecurringRule) {
-                        Button(onClick = onCancelOccurrence, modifier = Modifier.fillMaxWidth()) {
-                            Text("Скасувати тільки цю пару")
-                        }
-                        OutlinedButton(onClick = onMoveOccurrence, modifier = Modifier.fillMaxWidth()) {
-                            Text("Перенести цю пару")
-                        }
-                        OutlinedButton(onClick = onEditRule, modifier = Modifier.fillMaxWidth()) {
-                            Text("Редагувати повторення")
-                        }
-                        OutlinedButton(onClick = onDeleteRule, modifier = Modifier.fillMaxWidth()) {
-                            Text("Видалити з розкладу")
-                        }
-                    }
+            if (actions.canCancelOccurrence) {
+                Button(onClick = onCancelOccurrence, modifier = Modifier.fillMaxWidth()) {
+                    Text("Скасувати тільки цю пару")
                 }
-
-                ScheduleEventStatus.CANCELLED,
-                ScheduleEventStatus.MOVED -> {
-                    Button(onClick = onRestoreOccurrence, modifier = Modifier.fillMaxWidth()) {
-                        Text("Повернути початкову пару")
-                    }
-                    if (event.status == ScheduleEventStatus.MOVED) {
-                        OutlinedButton(onClick = onMoveOccurrence, modifier = Modifier.fillMaxWidth()) {
-                            Text("Змінити перенесення")
-                        }
-                    }
+            }
+            if (actions.canMoveOccurrence) {
+                OutlinedButton(onClick = onMoveOccurrence, modifier = Modifier.fillMaxWidth()) {
+                    Text("Перенести цю пару")
                 }
-
-                ScheduleEventStatus.ONE_OFF -> {
-                    Text("Разова або блокова подія. Редагування таких подій буде окремо.")
+            }
+            if (actions.canRestoreOccurrence) {
+                Button(onClick = onRestoreOccurrence, modifier = Modifier.fillMaxWidth()) {
+                    Text("Повернути початкову пару")
+                }
+            }
+            if (actions.canEditRecurringRule) {
+                OutlinedButton(onClick = onEditRule, modifier = Modifier.fillMaxWidth()) {
+                    Text("Редагувати повторення")
+                }
+            }
+            if (actions.canDeleteRecurringRule) {
+                OutlinedButton(onClick = onDeleteRule, modifier = Modifier.fillMaxWidth()) {
+                    Text("Видалити з розкладу")
+                }
+            }
+            if (actions.canEditOneOff) {
+                Button(onClick = onEditOneOff, modifier = Modifier.fillMaxWidth()) {
+                    Text("Редагувати разову подію")
+                }
+            }
+            if (actions.canDeleteOneOff) {
+                OutlinedButton(onClick = onDeleteOneOff, modifier = Modifier.fillMaxWidth()) {
+                    Text("Видалити разову подію")
                 }
             }
         }
