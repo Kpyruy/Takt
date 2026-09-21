@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -34,6 +35,7 @@ import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.CalendarMonthGrid
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
@@ -47,12 +49,19 @@ import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.StatusPill
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.launch
+
+private enum class CalendarViewMode {
+    DAY,
+    WEEK,
+    MONTH,
+}
 
 @Composable
 fun CalendarScreen(
@@ -74,6 +83,8 @@ fun CalendarScreen(
     var weekStart by remember {
         mutableStateOf(today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)))
     }
+    var visibleMonth by remember { mutableStateOf(YearMonth.from(today)) }
+    var viewMode by remember { mutableStateOf(CalendarViewMode.WEEK) }
     var showAddChoice by remember { mutableStateOf(false) }
     var showAddRecurring by remember { mutableStateOf(false) }
     var showAddOneOff by remember { mutableStateOf(false) }
@@ -95,29 +106,108 @@ fun CalendarScreen(
     val events = settings.filterScheduleEvents(resolvedEvents)
     val deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate }
     val courseTitles = courses.associate { it.id to it.title }
-    val monthFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))
+
+    val shortDateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))
+    val monthTitleFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk"))
+    val selectedDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
+
+    fun selectDate(date: LocalDate) {
+        selectedDate = date
+        weekStart = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        visibleMonth = YearMonth.from(date)
+    }
+
+    fun navigatePrevious() {
+        when (viewMode) {
+            CalendarViewMode.DAY -> selectDate(selectedDate.minusDays(1))
+            CalendarViewMode.WEEK -> {
+                val newStart = weekStart.minusWeeks(1)
+                weekStart = newStart
+                selectedDate = newStart
+                visibleMonth = YearMonth.from(newStart)
+            }
+            CalendarViewMode.MONTH -> {
+                visibleMonth = visibleMonth.minusMonths(1)
+                selectDate(visibleMonth.atDay(1))
+            }
+        }
+    }
+
+    fun navigateNext() {
+        when (viewMode) {
+            CalendarViewMode.DAY -> selectDate(selectedDate.plusDays(1))
+            CalendarViewMode.WEEK -> {
+                val newStart = weekStart.plusWeeks(1)
+                weekStart = newStart
+                selectedDate = newStart
+                visibleMonth = YearMonth.from(newStart)
+            }
+            CalendarViewMode.MONTH -> {
+                visibleMonth = visibleMonth.plusMonths(1)
+                selectDate(visibleMonth.atDay(1))
+            }
+        }
+    }
+
+    fun hasCalendarContent(date: LocalDate): Boolean {
+        if (tasks.any { !it.completed && it.dueDate == date }) return true
+        val dateParity = settings.effectiveParity(date)
+        val dateEvents = ScheduleResolver.eventsForDate(
+            rules = rules,
+            exceptions = exceptions,
+            oneOffEvents = oneOffEvents,
+            date = date,
+            parityOverride = dateParity,
+        )
+        return settings.filterScheduleEvents(dateEvents).isNotEmpty()
+    }
+
+    val headerSubtitle = when (viewMode) {
+        CalendarViewMode.DAY -> selectedDate.format(selectedDateFormatter).replaceFirstChar { it.uppercase() }
+        CalendarViewMode.WEEK -> "${weekStart.format(shortDateFormatter)} – ${weekStart.plusDays(6).format(shortDateFormatter)}"
+        CalendarViewMode.MONTH -> visibleMonth.atDay(1).format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             ScreenHeader(
                 title = "Календар",
-                subtitle = "${weekStart.format(monthFormatter)} – ${weekStart.plusDays(6).format(monthFormatter)}",
+                subtitle = headerSubtitle,
             )
+
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(
+                    CalendarViewMode.DAY to "День",
+                    CalendarViewMode.WEEK to "Тиждень",
+                    CalendarViewMode.MONTH to "Місяць",
+                ).forEach { (mode, label) ->
+                    FilterChip(
+                        selected = viewMode == mode,
+                        onClick = { viewMode = mode },
+                        label = { Text(label) },
+                    )
+                }
+
+                FilterChip(
+                    selected = selectedDate == today,
+                    onClick = { selectDate(today) },
+                    label = { Text("Сьогодні") },
+                )
+            }
 
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(
-                    onClick = {
-                        weekStart = weekStart.minusWeeks(1)
-                        selectedDate = weekStart
-                    }
-                ) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Попередній тиждень")
+                IconButton(onClick = ::navigatePrevious) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Назад")
                 }
                 StatusPill(
                     text = buildString {
@@ -127,26 +217,35 @@ fun CalendarScreen(
                         if (settings.parityOverride != ParityOverride.AUTO) append(" · вручну")
                     },
                 )
-                IconButton(
-                    onClick = {
-                        weekStart = weekStart.plusWeeks(1)
-                        selectedDate = weekStart
-                    }
-                ) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Наступний тиждень")
+                IconButton(onClick = ::navigateNext) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Вперед")
                 }
             }
 
-            WeekDaySelector(
-                dates = dates,
-                selectedDate = selectedDate,
-                onSelect = { selectedDate = it },
-            )
+            when (viewMode) {
+                CalendarViewMode.DAY -> Unit
+                CalendarViewMode.WEEK -> {
+                    WeekDaySelector(
+                        dates = dates,
+                        selectedDate = selectedDate,
+                        onSelect = ::selectDate,
+                    )
+                }
+                CalendarViewMode.MONTH -> {
+                    MonthCalendar(
+                        month = visibleMonth,
+                        days = CalendarMonthGrid.days(visibleMonth),
+                        selectedDate = selectedDate,
+                        today = today,
+                        hasContent = ::hasCalendarContent,
+                        onSelect = ::selectDate,
+                    )
+                }
+            }
 
             Text(
-                text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk")))
-                    .replaceFirstChar { it.uppercase() },
-                modifier = Modifier.padding(top = 20.dp, bottom = 10.dp),
+                text = selectedDate.format(selectedDateFormatter).replaceFirstChar { it.uppercase() },
+                modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -245,8 +344,7 @@ fun CalendarScreen(
                     scheduleRepository.upsertOneOffEvent(event)
                     showAddOneOff = false
                     editingOneOff = null
-                    selectedDate = event.date
-                    weekStart = event.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    selectDate(event.date)
                 }
             },
         )
