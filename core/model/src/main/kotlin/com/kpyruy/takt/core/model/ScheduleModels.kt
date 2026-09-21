@@ -39,3 +39,130 @@ data class ScheduleRule(
         }
     }
 }
+
+enum class ScheduleExceptionType {
+    CANCELLED,
+    MOVED,
+}
+
+data class ScheduleException(
+    val id: String,
+    val ruleId: String,
+    val date: LocalDate,
+    val type: ScheduleExceptionType,
+    val replacementStartTime: LocalTime? = null,
+    val replacementEndTime: LocalTime? = null,
+    val replacementRoom: String? = null,
+)
+
+enum class OneOffScheduleEventType {
+    BLOCK_ACTION,
+    EXTRA,
+}
+
+data class OneOffScheduleEvent(
+    val id: String,
+    val courseId: String?,
+    val title: String,
+    val date: LocalDate,
+    val startTime: LocalTime,
+    val endTime: LocalTime,
+    val room: String? = null,
+    val type: OneOffScheduleEventType,
+) {
+    init {
+        require(endTime > startTime) { "endTime must be after startTime" }
+    }
+}
+
+enum class ScheduleEventStatus {
+    NORMAL,
+    CANCELLED,
+    MOVED,
+    ONE_OFF,
+}
+
+data class ResolvedScheduleEvent(
+    val id: String,
+    val courseId: String?,
+    val title: String,
+    val date: LocalDate,
+    val startTime: LocalTime,
+    val endTime: LocalTime,
+    val room: String?,
+    val status: ScheduleEventStatus,
+)
+
+object ScheduleResolver {
+    fun eventsForDate(
+        rules: List<ScheduleRule>,
+        exceptions: List<ScheduleException>,
+        oneOffEvents: List<OneOffScheduleEvent>,
+        date: LocalDate,
+        parityOverride: WeekParity? = null,
+    ): List<ResolvedScheduleEvent> {
+        val recurring = rules
+            .filter { it.occursOn(date, parityOverride) }
+            .map { rule ->
+                val exception = exceptions.firstOrNull {
+                    it.ruleId == rule.id && it.date == date
+                }
+
+                when (exception?.type) {
+                    ScheduleExceptionType.CANCELLED -> rule.toResolved(
+                        date = date,
+                        status = ScheduleEventStatus.CANCELLED,
+                    )
+
+                    ScheduleExceptionType.MOVED -> ResolvedScheduleEvent(
+                        id = rule.id,
+                        courseId = rule.courseId,
+                        title = rule.title,
+                        date = date,
+                        startTime = exception.replacementStartTime ?: rule.startTime,
+                        endTime = exception.replacementEndTime ?: rule.endTime,
+                        room = exception.replacementRoom ?: rule.room,
+                        status = ScheduleEventStatus.MOVED,
+                    )
+
+                    null -> rule.toResolved(
+                        date = date,
+                        status = ScheduleEventStatus.NORMAL,
+                    )
+                }
+            }
+
+        val oneOff = oneOffEvents
+            .filter { it.date == date }
+            .map {
+                ResolvedScheduleEvent(
+                    id = it.id,
+                    courseId = it.courseId,
+                    title = it.title,
+                    date = it.date,
+                    startTime = it.startTime,
+                    endTime = it.endTime,
+                    room = it.room,
+                    status = ScheduleEventStatus.ONE_OFF,
+                )
+            }
+
+        return (recurring + oneOff).sortedWith(
+            compareBy<ResolvedScheduleEvent> { it.startTime }.thenBy { it.title }
+        )
+    }
+}
+
+private fun ScheduleRule.toResolved(
+    date: LocalDate,
+    status: ScheduleEventStatus,
+) = ResolvedScheduleEvent(
+    id = id,
+    courseId = courseId,
+    title = title,
+    date = date,
+    startTime = startTime,
+    endTime = endTime,
+    room = room,
+    status = status,
+)
