@@ -3,22 +3,21 @@ package com.kpyruy.takt.feature.calendar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,7 +27,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
@@ -43,10 +41,12 @@ import com.kpyruy.takt.core.model.ScheduleException
 import com.kpyruy.takt.core.model.ScheduleExceptionType
 import com.kpyruy.takt.core.model.ScheduleResolver
 import com.kpyruy.takt.core.model.ScheduleRule
+import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.model.WeekParity
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.StatusPill
+import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -85,9 +85,6 @@ fun CalendarScreen(
     }
     var visibleMonth by remember { mutableStateOf(YearMonth.from(today)) }
     var viewMode by remember { mutableStateOf(CalendarViewMode.WEEK) }
-    var showAddChoice by remember { mutableStateOf(false) }
-    var showAddRecurring by remember { mutableStateOf(false) }
-    var showAddOneOff by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<ScheduleRule?>(null) }
     var editingOneOff by remember { mutableStateOf<OneOffScheduleEvent?>(null) }
     var selectedEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
@@ -96,20 +93,22 @@ fun CalendarScreen(
     val dates = (0L..6L).map { weekStart.plusDays(it) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = settings.effectiveParity(selectedDate)
-    val resolvedEvents = ScheduleResolver.eventsForDate(
-        rules = rules,
-        exceptions = exceptions,
-        oneOffEvents = oneOffEvents,
-        date = selectedDate,
-        parityOverride = parity,
-    )
-    val events = settings.filterScheduleEvents(resolvedEvents)
-    val deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate }
     val courseTitles = courses.associate { it.id to it.title }
 
-    val shortDateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))
+    val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale("uk"))
     val monthTitleFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk"))
     val selectedDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
+
+    fun eventsForDate(date: LocalDate): List<ResolvedScheduleEvent> {
+        val resolved = ScheduleResolver.eventsForDate(
+            rules = rules,
+            exceptions = exceptions,
+            oneOffEvents = oneOffEvents,
+            date = date,
+            parityOverride = settings.effectiveParity(date),
+        )
+        return settings.filterScheduleEvents(resolved)
+    }
 
     fun selectDate(date: LocalDate) {
         selectedDate = date
@@ -127,8 +126,9 @@ fun CalendarScreen(
                 visibleMonth = YearMonth.from(newStart)
             }
             CalendarViewMode.MONTH -> {
-                visibleMonth = visibleMonth.minusMonths(1)
-                selectDate(visibleMonth.atDay(1))
+                val newMonth = visibleMonth.minusMonths(1)
+                visibleMonth = newMonth
+                selectDate(newMonth.atDay(1))
             }
         }
     }
@@ -143,24 +143,15 @@ fun CalendarScreen(
                 visibleMonth = YearMonth.from(newStart)
             }
             CalendarViewMode.MONTH -> {
-                visibleMonth = visibleMonth.plusMonths(1)
-                selectDate(visibleMonth.atDay(1))
+                val newMonth = visibleMonth.plusMonths(1)
+                visibleMonth = newMonth
+                selectDate(newMonth.atDay(1))
             }
         }
     }
 
-    fun hasCalendarContent(date: LocalDate): Boolean {
-        if (tasks.any { !it.completed && it.dueDate == date }) return true
-        val dateParity = settings.effectiveParity(date)
-        val dateEvents = ScheduleResolver.eventsForDate(
-            rules = rules,
-            exceptions = exceptions,
-            oneOffEvents = oneOffEvents,
-            date = date,
-            parityOverride = dateParity,
-        )
-        return settings.filterScheduleEvents(dateEvents).isNotEmpty()
-    }
+    fun hasCalendarContent(date: LocalDate): Boolean =
+        tasks.any { !it.completed && it.dueDate == date } || eventsForDate(date).isNotEmpty()
 
     val headerSubtitle = when (viewMode) {
         CalendarViewMode.DAY -> selectedDate.format(selectedDateFormatter).replaceFirstChar { it.uppercase() }
@@ -168,186 +159,144 @@ fun CalendarScreen(
         CalendarViewMode.MONTH -> visibleMonth.atDay(1).format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        ScreenHeader(
+            title = "Календар",
+            subtitle = headerSubtitle,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            ScreenHeader(
-                title = "Календар",
-                subtitle = headerSubtitle,
+            TaktSegmentedTabs(
+                labels = listOf("День", "Тиждень", "Місяць"),
+                selectedIndex = viewMode.ordinal,
+                onSelected = { viewMode = CalendarViewMode.entries[it] },
+                modifier = Modifier.weight(1f),
             )
-
-            androidx.compose.foundation.layout.Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                listOf(
-                    CalendarViewMode.DAY to "День",
-                    CalendarViewMode.WEEK to "Тиждень",
-                    CalendarViewMode.MONTH to "Місяць",
-                ).forEach { (mode, label) ->
-                    FilterChip(
-                        selected = viewMode == mode,
-                        onClick = { viewMode = mode },
-                        label = { Text(label) },
-                    )
-                }
-
-                FilterChip(
-                    selected = selectedDate == today,
-                    onClick = { selectDate(today) },
-                    label = { Text("Сьогодні") },
-                )
+            TextButton(onClick = { selectDate(today) }) {
+                Text("Сьогодні")
             }
+        }
 
-            androidx.compose.foundation.layout.Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = ::navigatePrevious) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Назад")
-                }
-                StatusPill(
-                    text = buildString {
-                        append(week)
-                        append(" · ")
-                        append(if (parity == WeekParity.EVEN) "Парний" else "Непарний")
-                        if (settings.parityOverride != ParityOverride.AUTO) append(" · вручну")
-                    },
-                )
-                IconButton(onClick = ::navigateNext) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Вперед")
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = ::navigatePrevious) {
+                Icon(Icons.Default.ChevronLeft, contentDescription = "Попередній період")
             }
+            StatusPill(
+                text = buildString {
+                    append(week)
+                    append(" · ")
+                    append(if (parity == WeekParity.EVEN) "Парний" else "Непарний")
+                    if (settings.parityOverride != ParityOverride.AUTO) append(" · вручну")
+                },
+            )
+            IconButton(onClick = ::navigateNext) {
+                Icon(Icons.Default.ChevronRight, contentDescription = "Наступний період")
+            }
+        }
 
+        if (viewMode == CalendarViewMode.WEEK) {
+            TaktSegmentedTabs(
+                labels = listOf("Таймтейбл", "Список"),
+                selectedIndex = if (settings.weekLayout == WeekLayout.TIMETABLE) 0 else 1,
+                onSelected = { index ->
+                    scope.launch {
+                        settingsRepository.setWeekLayout(
+                            if (index == 0) WeekLayout.TIMETABLE else WeekLayout.COMPACT_LIST
+                        )
+                    }
+                },
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
             when (viewMode) {
-                CalendarViewMode.DAY -> Unit
-                CalendarViewMode.WEEK -> {
-                    WeekDaySelector(
-                        dates = dates,
-                        selectedDate = selectedDate,
-                        onSelect = ::selectDate,
-                    )
-                }
-                CalendarViewMode.MONTH -> {
-                    MonthCalendar(
-                        month = visibleMonth,
-                        days = CalendarMonthGrid.days(visibleMonth),
-                        selectedDate = selectedDate,
+                CalendarViewMode.DAY -> {
+                    SelectedDayAgenda(
+                        date = selectedDate,
+                        events = eventsForDate(selectedDate),
+                        deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate },
+                        courseTitles = courseTitles,
                         today = today,
-                        hasContent = ::hasCalendarContent,
-                        onSelect = ::selectDate,
+                        settings = settings,
+                        onEventClick = { selectedEvent = it },
                     )
                 }
-            }
 
-            Text(
-                text = selectedDate.format(selectedDateFormatter).replaceFirstChar { it.uppercase() },
-                modifier = Modifier.padding(top = 6.dp, bottom = 2.dp),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
+                CalendarViewMode.WEEK -> {
+                    when (settings.weekLayout) {
+                        WeekLayout.TIMETABLE -> WeekTimetable(
+                            dates = dates,
+                            eventsForDate = ::eventsForDate,
+                            onEventClick = { selectedEvent = it },
+                        )
+                        WeekLayout.COMPACT_LIST -> WeekCompactList(
+                            dates = dates,
+                            eventsForDate = ::eventsForDate,
+                            onSelectDate = {
+                                selectDate(it)
+                                viewMode = CalendarViewMode.DAY
+                            },
+                            onEventClick = { selectedEvent = it },
+                        )
+                    }
+                }
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.padding(bottom = 80.dp),
-            ) {
-                if (deadlines.isNotEmpty()) {
-                    item {
-                        SectionCard {
-                            Text("Дедлайни", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            deadlines.forEachIndexed { index, task ->
-                                if (index > 0) HorizontalDivider()
-                                CalendarDeadlineRow(
-                                    task = task,
-                                    courseTitle = courseTitles[task.courseId] ?: task.courseId,
-                                )
+                CalendarViewMode.MONTH -> {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        MonthCalendar(
+                            month = visibleMonth,
+                            days = CalendarMonthGrid.days(visibleMonth),
+                            selectedDate = selectedDate,
+                            today = today,
+                            hasContent = ::hasCalendarContent,
+                            onSelect = ::selectDate,
+                        )
+
+                        Text(
+                            selectedDate.format(selectedDateFormatter).replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+
+                        val deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate }
+                        if (deadlines.isNotEmpty()) {
+                            SectionCard {
+                                Text("Дедлайни", style = MaterialTheme.typography.titleMedium)
+                                deadlines.forEachIndexed { index, task ->
+                                    if (index > 0) HorizontalDivider()
+                                    CalendarDeadlineRow(
+                                        task = task,
+                                        courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                                    )
+                                }
                             }
                         }
-                    }
-                }
 
-                if (events.isEmpty()) {
-                    item {
-                        SectionCard {
-                            Text("На цей день занять немає")
-                            Text(
-                                "Натисни +, щоб додати пару або разову подію.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                } else {
-                    items(events, key = { "${it.id}-${it.date}-${it.status}" }) { event ->
-                        ScheduleEventCard(
-                            event = event,
+                        DayTimelineView(
+                            events = eventsForDate(selectedDate),
+                            selectedDate = selectedDate,
+                            today = today,
                             cancellationStyle = settings.cancellationStyle,
-                            onClick = { selectedEvent = event },
+                            onEventClick = { selectedEvent = it },
                         )
                     }
                 }
             }
         }
-
-        FloatingActionButton(
-            onClick = { showAddChoice = true },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Додати в календар")
-        }
-    }
-
-    if (showAddChoice) {
-        AddCalendarItemSheet(
-            onDismiss = { showAddChoice = false },
-            onAddRecurring = {
-                showAddChoice = false
-                showAddRecurring = true
-            },
-            onAddOneOff = {
-                showAddChoice = false
-                showAddOneOff = true
-            },
-        )
-    }
-
-    if (showAddRecurring || editingRule != null) {
-        AddLessonSheet(
-            initialDay = selectedDate.dayOfWeek,
-            initialRule = editingRule,
-            onDismiss = {
-                showAddRecurring = false
-                editingRule = null
-            },
-            onSave = { rule ->
-                scope.launch {
-                    scheduleRepository.upsertRule(rule)
-                    showAddRecurring = false
-                    editingRule = null
-                }
-            },
-        )
-    }
-
-    if (showAddOneOff || editingOneOff != null) {
-        OneOffEventSheet(
-            initialDate = selectedDate,
-            initialEvent = editingOneOff,
-            onDismiss = {
-                showAddOneOff = false
-                editingOneOff = null
-            },
-            onSave = { event ->
-                scope.launch {
-                    scheduleRepository.upsertOneOffEvent(event)
-                    showAddOneOff = false
-                    editingOneOff = null
-                    selectDate(event.date)
-                }
-            },
-        )
     }
 
     selectedEvent?.let { event ->
@@ -404,6 +353,35 @@ fun CalendarScreen(
         )
     }
 
+    editingRule?.let { rule ->
+        AddLessonSheet(
+            initialDay = rule.dayOfWeek,
+            initialRule = rule,
+            onDismiss = { editingRule = null },
+            onSave = {
+                scope.launch {
+                    scheduleRepository.upsertRule(it)
+                    editingRule = null
+                }
+            },
+        )
+    }
+
+    editingOneOff?.let { event ->
+        OneOffEventSheet(
+            initialDate = event.date,
+            initialEvent = event,
+            onDismiss = { editingOneOff = null },
+            onSave = {
+                scope.launch {
+                    scheduleRepository.upsertOneOffEvent(it)
+                    editingOneOff = null
+                    selectDate(it.date)
+                }
+            },
+        )
+    }
+
     movingEvent?.let { event ->
         MoveLessonSheet(
             event = event,
@@ -415,5 +393,52 @@ fun CalendarScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun SelectedDayAgenda(
+    date: LocalDate,
+    events: List<ResolvedScheduleEvent>,
+    deadlines: List<com.kpyruy.takt.core.model.StudyTask>,
+    courseTitles: Map<String, String>,
+    today: LocalDate,
+    settings: AppSettings,
+    onEventClick: (ResolvedScheduleEvent) -> Unit,
+) {
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (deadlines.isNotEmpty()) {
+            SectionCard {
+                Text("Дедлайни", style = MaterialTheme.typography.titleMedium)
+                deadlines.forEachIndexed { index, task ->
+                    if (index > 0) HorizontalDivider()
+                    CalendarDeadlineRow(
+                        task = task,
+                        courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                    )
+                }
+            }
+        }
+
+        if (events.isEmpty()) {
+            SectionCard {
+                Text("На цей день занять немає")
+                Text(
+                    "Додай пару або разову подію через центральну кнопку +.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            DayTimelineView(
+                events = events,
+                selectedDate = date,
+                today = today,
+                cancellationStyle = settings.cancellationStyle,
+                onEventClick = onEventClick,
+            )
+        }
     }
 }
