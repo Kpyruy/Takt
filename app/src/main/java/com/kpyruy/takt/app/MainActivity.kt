@@ -8,10 +8,13 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val repository = (application as TaktApplication).dataContainer.studyPlanRepository
+        val dataContainer = (application as TaktApplication).dataContainer
         setContent {
             TaktTheme {
-                TaktApp(repository)
+                TaktApp(
+                    repository = dataContainer.studyPlanRepository,
+                    scheduleRepository = dataContainer.scheduleRepository,
+                )
             }
         }
     }

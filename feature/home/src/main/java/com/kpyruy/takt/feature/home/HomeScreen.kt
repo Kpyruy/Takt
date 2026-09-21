@@ -23,7 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.kpyruy.takt.core.data.DefaultTimetable
+import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ScheduleResolver
@@ -39,19 +39,22 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     repository: StudyPlanRepository,
+    scheduleRepository: ScheduleRepository,
     onOpenSettings: () -> Unit,
 ) {
     val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
     val semesterCourses by repository.observeSemester(3).collectAsState(initial = emptyList())
+    val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
+    val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val today = LocalDate.now()
     val week = today.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = WeekParity.fromIsoWeek(week)
     val earnedCredits = allCourses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
     val enrolledCount = semesterCourses.count { it.status == CourseStatus.ENROLLED }
     val todayEvents = ScheduleResolver.eventsForDate(
-        rules = DefaultTimetable.rules,
+        rules = rules,
         exceptions = emptyList(),
-        oneOffEvents = DefaultTimetable.oneOffEvents,
+        oneOffEvents = oneOffEvents,
         date = today,
     )
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
