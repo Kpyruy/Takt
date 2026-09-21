@@ -29,9 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.core.model.ScheduleException
 import com.kpyruy.takt.core.model.ScheduleExceptionType
@@ -55,12 +58,14 @@ fun CalendarScreen(
     scheduleRepository: ScheduleRepository,
     studyContentRepository: StudyContentRepository,
     studyPlanRepository: StudyPlanRepository,
+    settingsRepository: AppSettingsRepository,
 ) {
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
     val tasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
     val courses by studyPlanRepository.observeCourses().collectAsState(initial = emptyList())
+    val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
     val scope = rememberCoroutineScope()
     val today = LocalDate.now()
     var selectedDate by remember { mutableStateOf(today) }
@@ -74,13 +79,15 @@ fun CalendarScreen(
 
     val dates = (0L..6L).map { weekStart.plusDays(it) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
-    val parity = WeekParity.fromIsoWeek(week)
-    val events = ScheduleResolver.eventsForDate(
+    val parity = settings.effectiveParity(selectedDate)
+    val resolvedEvents = ScheduleResolver.eventsForDate(
         rules = rules,
         exceptions = exceptions,
         oneOffEvents = oneOffEvents,
         date = selectedDate,
+        parityOverride = parity,
     )
+    val events = settings.filterScheduleEvents(resolvedEvents)
     val deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate }
     val courseTitles = courses.associate { it.id to it.title }
     val monthFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))
@@ -108,7 +115,12 @@ fun CalendarScreen(
                     Icon(Icons.Default.ChevronLeft, contentDescription = "Попередній тиждень")
                 }
                 StatusPill(
-                    text = "$week · ${if (parity == WeekParity.EVEN) "Парний" else "Непарний"}",
+                    text = buildString {
+                        append(week)
+                        append(" · ")
+                        append(if (parity == WeekParity.EVEN) "Парний" else "Непарний")
+                        if (settings.parityOverride != ParityOverride.AUTO) append(" · вручну")
+                    },
                 )
                 IconButton(
                     onClick = {
@@ -167,6 +179,7 @@ fun CalendarScreen(
                     items(events, key = { "${it.id}-${it.date}-${it.status}" }) { event ->
                         ScheduleEventCard(
                             event = event,
+                            cancellationStyle = settings.cancellationStyle,
                             onClick = { selectedEvent = event },
                         )
                     }
@@ -225,10 +238,7 @@ fun CalendarScreen(
             },
             onRestoreOccurrence = {
                 scope.launch {
-                    val exceptionId = event.exceptionId
-                    if (exceptionId != null) {
-                        scheduleRepository.deleteException(exceptionId)
-                    }
+                    event.exceptionId?.let { scheduleRepository.deleteException(it) }
                     selectedEvent = null
                 }
             },

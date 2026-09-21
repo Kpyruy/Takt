@@ -24,9 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ScheduleResolver
 import com.kpyruy.takt.core.model.StudyTaskPlanner
@@ -44,6 +46,7 @@ fun HomeScreen(
     repository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
     studyContentRepository: StudyContentRepository,
+    settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
 ) {
     val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
@@ -52,17 +55,22 @@ fun HomeScreen(
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
     val allTasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
+    val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
+
     val today = LocalDate.now()
     val week = today.get(WeekFields.ISO.weekOfWeekBasedYear())
-    val parity = WeekParity.fromIsoWeek(week)
+    val parity = settings.effectiveParity(today)
     val earnedCredits = allCourses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
     val enrolledCount = semesterCourses.count { it.status == CourseStatus.ENROLLED }
-    val todayEvents = ScheduleResolver.eventsForDate(
+
+    val resolvedTodayEvents = ScheduleResolver.eventsForDate(
         rules = rules,
         exceptions = exceptions,
         oneOffEvents = oneOffEvents,
         date = today,
+        parityOverride = parity,
     )
+    val todayEvents = settings.filterScheduleEvents(resolvedTodayEvents)
     val upcomingTasks = StudyTaskPlanner.upcoming(allTasks, today, 4)
     val courseTitles = allCourses.associate { it.id to it.title }
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
@@ -104,7 +112,12 @@ fun HomeScreen(
                 )
             }
         } else {
-            todayEvents.forEach { HomeScheduleCard(it) }
+            todayEvents.forEach {
+                HomeScheduleCard(
+                    event = it,
+                    cancellationStyle = settings.cancellationStyle,
+                )
+            }
         }
 
         Row(

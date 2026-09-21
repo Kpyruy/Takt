@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
@@ -48,6 +49,7 @@ fun TaktApp(
     scheduleRepository: ScheduleRepository,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
+    settingsRepository: AppSettingsRepository,
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -96,6 +98,7 @@ fun TaktApp(
                     repository = repository,
                     scheduleRepository = scheduleRepository,
                     studyContentRepository = studyContentRepository,
+                    settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
             }
@@ -104,6 +107,7 @@ fun TaktApp(
                     scheduleRepository = scheduleRepository,
                     studyContentRepository = studyContentRepository,
                     studyPlanRepository = repository,
+                    settingsRepository = settingsRepository,
                 )
             }
             composable(Destination.SUBJECTS.route) {
@@ -119,7 +123,10 @@ fun TaktApp(
                 )
             }
             composable(SETTINGS_ROUTE) {
-                SettingsScreen(onBack = { navController.popBackStack() })
+                SettingsScreen(
+                    settingsRepository = settingsRepository,
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(
                 route = SUBJECT_ROUTE,
