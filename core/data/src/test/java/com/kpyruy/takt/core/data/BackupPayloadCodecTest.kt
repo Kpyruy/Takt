@@ -5,7 +5,7 @@ import org.junit.Test
 
 class BackupPayloadCodecTest {
     @Test
-    fun backupPayload_roundTripsThroughJson() {
+    fun backupPayload_roundTripsAllV1SectionsThroughJson() {
         val payload = BackupPayload(
             version = 1,
             courses = listOf(
@@ -18,6 +18,88 @@ class BackupPayloadCodecTest {
                     status = "enrolled",
                     requirementType = "COMPULSORY",
                     syllabusUrl = null,
+                )
+            ),
+            scheduleRules = listOf(
+                BackupScheduleRule(
+                    id = "physics-friday",
+                    courseId = "FYZI_6B",
+                    title = "Fyzika",
+                    dayOfWeek = 5,
+                    startMinute = 480,
+                    endMinute = 590,
+                    recurrence = "WEEKLY",
+                    room = "T-aula",
+                )
+            ),
+            oneOffEvents = listOf(
+                BackupOneOffEvent(
+                    id = "block-1",
+                    courseId = null,
+                    title = "Bloková akcia",
+                    dateEpochDay = 20721L,
+                    startMinute = 480,
+                    endMinute = 770,
+                    room = "T-aula",
+                    type = "BLOCK_ACTION",
+                )
+            ),
+            scheduleExceptions = listOf(
+                BackupScheduleException(
+                    id = "move-1",
+                    ruleId = "physics-friday",
+                    dateEpochDay = 20721L,
+                    type = "MOVED",
+                    replacementDateEpochDay = 20722L,
+                    replacementStartMinute = 720,
+                    replacementEndMinute = 830,
+                    replacementRoom = "T-068",
+                )
+            ),
+            gradeItems = listOf(
+                BackupGradeItem(
+                    id = "grade-1",
+                    courseId = "FYZI_6B",
+                    title = "Test 1",
+                    type = "TEST",
+                    earnedPoints = 18.0,
+                    maxPoints = 20.0,
+                    recordedAtEpochMillis = 123456789L,
+                )
+            ),
+            gradeScales = listOf(
+                BackupGradeScale(
+                    courseId = "FYZI_6B",
+                    aMin = 92.0,
+                    bMin = 83.0,
+                    cMin = 74.0,
+                    dMin = 65.0,
+                    eMin = 56.0,
+                )
+            ),
+            gradeOverrides = listOf(
+                BackupGradeOverride(
+                    courseId = "FYZI_6B",
+                    grade = "B",
+                )
+            ),
+            studyTasks = listOf(
+                BackupStudyTask(
+                    id = "task-1",
+                    courseId = "FYZI_6B",
+                    title = "Lab report",
+                    description = "Finish graphs",
+                    dueDateEpochDay = 20726L,
+                    completed = false,
+                )
+            ),
+            courseNotes = listOf(
+                BackupCourseNote(
+                    id = "note-1",
+                    courseId = "FYZI_6B",
+                    title = "Formula",
+                    content = "Remember this.",
+                    updatedAtEpochMillis = 987654321L,
                 )
             ),
             settings = BackupSettings(
