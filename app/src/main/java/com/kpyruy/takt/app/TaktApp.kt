@@ -205,7 +205,7 @@ fun TaktApp(
     if (showGlobalAdd) {
         GlobalAddSheet(
             onDismiss = { showGlobalAdd = false },
-            onCreate = ::startCreate,
+            onCreate = { type -> startCreate(type) },
             onQuickAdd = {
                 showGlobalAdd = false
                 showQuickAdd = true
