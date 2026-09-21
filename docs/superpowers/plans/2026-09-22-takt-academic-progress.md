@@ -844,7 +844,14 @@ Show:
 - upcoming deadlines;
 - no giant final-letter claim before exam.
 
-For `PASS_FAIL`, show `Зараховано`, `Не зараховано`, or `Результату ще немає`.
+Expose course grading configuration in a compact course-settings area:
+- `Екзамен A–FX` -> `CourseGradingType.EXAM_LETTER`;
+- `Поточне оцінювання A–FX` -> `CONTINUOUS_LETTER`;
+- `Зараховано / не зараховано` -> `PASS_FAIL`.
+
+Changing the type calls `StudyPlanRepository.setGradingType`.
+
+For `PASS_FAIL`, show `Зараховано`, `Не зараховано`, or `Результату ще немає`, plus a three-state control that calls `setPassFailResult(courseId, null/PASSED/FAILED)`.
 
 - [ ] **Step 6: Build Assessments tab around pre-exam task importance**
 
