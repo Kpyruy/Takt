@@ -101,6 +101,7 @@ fun TaktApp(
                     studyContentRepository = studyContentRepository,
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
+                    onOpenCourses = { navController.navigate(Destination.SUBJECTS.route) },
                 )
             }
             composable(Destination.CALENDAR.route) {
