@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
+import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
@@ -45,6 +46,7 @@ import java.util.Locale
 fun HomeScreen(
     repository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
+    gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
@@ -55,6 +57,7 @@ fun HomeScreen(
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
     val allTasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
+    val recentGrades by gradeRepository.observeRecentItems(4).collectAsState(initial = emptyList())
     val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
 
     val today = LocalDate.now()
@@ -171,7 +174,17 @@ fun HomeScreen(
         SectionCard {
             Text("Останні оцінки", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            Text("Після додавання балів вони з'являться тут", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (recentGrades.isEmpty()) {
+                Text("Після додавання балів вони з'являться тут", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                recentGrades.forEachIndexed { index, item ->
+                    if (index > 0) HorizontalDivider()
+                    HomeGradeRow(
+                        item = item,
+                        courseTitle = courseTitles[item.courseId] ?: item.courseId,
+                    )
+                }
+            }
         }
     }
 }

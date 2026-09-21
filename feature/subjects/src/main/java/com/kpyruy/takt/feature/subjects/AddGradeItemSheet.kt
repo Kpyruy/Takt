@@ -129,6 +129,7 @@ fun AddGradeItemSheet(
                                 type = type,
                                 earnedPoints = earned,
                                 maxPoints = max,
+                                recordedAtEpochMillis = System.currentTimeMillis(),
                             )
                         )
                     }

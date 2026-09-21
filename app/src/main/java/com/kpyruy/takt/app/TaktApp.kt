@@ -97,6 +97,7 @@ fun TaktApp(
                 HomeScreen(
                     repository = repository,
                     scheduleRepository = scheduleRepository,
+                    gradeRepository = gradeRepository,
                     studyContentRepository = studyContentRepository,
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
