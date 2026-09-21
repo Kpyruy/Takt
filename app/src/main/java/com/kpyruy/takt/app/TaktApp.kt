@@ -6,11 +6,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,6 +23,8 @@ import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.ui.components.TaktBottomNavigation
+import com.kpyruy.takt.core.ui.components.TaktNavItem
 import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.home.HomeScreen
 import com.kpyruy.takt.feature.settings.SettingsScreen
@@ -56,37 +54,37 @@ fun TaktApp(
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val showBottomBar = currentRoute != SETTINGS_ROUTE && currentRoute != SUBJECT_ROUTE
+    val showRootNavigation = Destination.entries.any { it.route == currentRoute }
 
     fun openCourse(courseId: String) {
         navController.navigate("subject/$courseId")
     }
 
+    val navItems = Destination.entries.map { destination ->
+        val icon = when (destination) {
+            Destination.HOME -> Icons.Default.Home
+            Destination.CALENDAR -> Icons.Default.CalendarMonth
+            Destination.SUBJECTS -> Icons.Default.MenuBook
+            Destination.PLAN -> Icons.Default.School
+        }
+        TaktNavItem(
+            label = destination.label,
+            icon = icon,
+            selected = currentRoute == destination.route,
+            onClick = {
+                navController.navigate(destination.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+        )
+    }
+
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    Destination.entries.forEach { destination ->
-                        val icon = when (destination) {
-                            Destination.HOME -> Icons.Default.Home
-                            Destination.CALENDAR -> Icons.Default.CalendarMonth
-                            Destination.SUBJECTS -> Icons.Default.MenuBook
-                            Destination.PLAN -> Icons.Default.School
-                        }
-                        NavigationBarItem(
-                            selected = currentRoute == destination.route,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(icon, contentDescription = destination.label) },
-                            label = { Text(destination.label) },
-                        )
-                    }
-                }
+            if (showRootNavigation) {
+                TaktBottomNavigation(items = navItems)
             }
         },
     ) { padding ->

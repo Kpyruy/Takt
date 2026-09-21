@@ -106,12 +106,46 @@ class BackupPayloadCodecTest {
                 cancellationStyle = "HIDDEN",
                 showHiddenLessons = true,
                 parityOverride = "ODD",
+                cardAppearance = "TONAL_FILLED",
+                themeFamily = "WARM",
+                themeMode = "DARK",
+                weekLayout = "COMPACT_LIST",
             ),
         )
 
         val restored = BackupPayloadCodec.decode(BackupPayloadCodec.encode(payload))
 
         assertEquals(payload, restored)
+    }
+
+    @Test
+    fun v1BackupWithoutVisualPreferences_usesApprovedDefaults() {
+        val raw = """
+            {
+              "version": 1,
+              "courses": [{
+                "id":"c1",
+                "code":"C1",
+                "title":"Course",
+                "credits":5,
+                "semester":3,
+                "status":"enrolled",
+                "requirementType":"COMPULSORY"
+              }],
+              "settings": {
+                "cancellationStyle":"STRIKETHROUGH",
+                "showHiddenLessons":false,
+                "parityOverride":"AUTO"
+              }
+            }
+        """.trimIndent()
+
+        val restored = BackupPayloadCodec.decode(raw)
+
+        assertEquals("ELEVATED", restored.settings.cardAppearance)
+        assertEquals("BLUE", restored.settings.themeFamily)
+        assertEquals("SYSTEM", restored.settings.themeMode)
+        assertEquals("TIMETABLE", restored.settings.weekLayout)
     }
 
     @Test(expected = IllegalArgumentException::class)

@@ -31,13 +31,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppThemeMode
+import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
+import com.kpyruy.takt.core.model.ThemeFamily
+import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import java.time.LocalDate
@@ -109,7 +112,7 @@ fun SettingsScreen(
     ) {
         ScreenHeader(
             title = "Налаштування",
-            action = {
+            navigation = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                 }
@@ -117,28 +120,63 @@ fun SettingsScreen(
         )
 
         SectionCard {
-            Text("Скасовані пари", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Тема", style = MaterialTheme.typography.titleMedium)
+            listOf(
+                AppThemeMode.SYSTEM to "Як у системі",
+                AppThemeMode.LIGHT to "Світла",
+                AppThemeMode.DARK to "Темна",
+            ).forEach { (option, label) ->
+                PreferenceRadioRow(
+                    label = label,
+                    selected = settings.themeMode == option,
+                    onClick = { scope.launch { settingsRepository.setThemeMode(option) } },
+                )
+            }
+        }
+
+        SectionCard {
+            Text("Кольорова тема", style = MaterialTheme.typography.titleMedium)
+            listOf(
+                ThemeFamily.BLUE to "Синя",
+                ThemeFamily.GREEN to "Зелена",
+                ThemeFamily.PURPLE to "Фіолетова",
+                ThemeFamily.WARM to "Тепла",
+                ThemeFamily.MONOCHROME to "Монохром",
+            ).forEach { (option, label) ->
+                PreferenceRadioRow(
+                    label = label,
+                    selected = settings.themeFamily == option,
+                    onClick = { scope.launch { settingsRepository.setThemeFamily(option) } },
+                )
+            }
+        }
+
+        SectionCard {
+            Text("Картки", style = MaterialTheme.typography.titleMedium)
+            listOf(
+                CardAppearance.ELEVATED to "Підняті",
+                CardAppearance.TONAL_FILLED to "Заливка",
+            ).forEach { (option, label) ->
+                PreferenceRadioRow(
+                    label = label,
+                    selected = settings.cardAppearance == option,
+                    onClick = { scope.launch { settingsRepository.setCardAppearance(option) } },
+                )
+            }
+        }
+
+        SectionCard {
+            Text("Скасовані пари", style = MaterialTheme.typography.titleMedium)
             listOf(
                 CancellationDisplayStyle.STRIKETHROUGH to "Закреслити",
                 CancellationDisplayStyle.HIDDEN to "Сховати",
                 CancellationDisplayStyle.MARKED to "Позначити",
             ).forEach { (option, label) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            scope.launch { settingsRepository.setCancellationStyle(option) }
-                        },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(
-                        selected = settings.cancellationStyle == option,
-                        onClick = {
-                            scope.launch { settingsRepository.setCancellationStyle(option) }
-                        },
-                    )
-                    Text(label)
-                }
+                PreferenceRadioRow(
+                    label = label,
+                    selected = settings.cancellationStyle == option,
+                    onClick = { scope.launch { settingsRepository.setCancellationStyle(option) } },
+                )
             }
 
             Row(
@@ -164,39 +202,41 @@ fun SettingsScreen(
         }
 
         SectionCard {
-            Text("Парність тижня", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Парність тижня", style = MaterialTheme.typography.titleMedium)
             listOf(
                 ParityOverride.AUTO to "Автоматично",
                 ParityOverride.EVEN to "Примусово парний",
                 ParityOverride.ODD to "Примусово непарний",
             ).forEach { (option, label) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            scope.launch { settingsRepository.setParityOverride(option) }
-                        },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(
-                        selected = settings.parityOverride == option,
-                        onClick = {
-                            scope.launch { settingsRepository.setParityOverride(option) }
-                        },
-                    )
-                    Text(label)
-                }
+                PreferenceRadioRow(
+                    label = label,
+                    selected = settings.parityOverride == option,
+                    onClick = { scope.launch { settingsRepository.setParityOverride(option) } },
+                )
             }
             Text(
                 "В автоматичному режимі Takt використовує ISO-номер календарного тижня.",
-                modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         SectionCard {
-            Text("Шкала оцінювання", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Вигляд тижня", style = MaterialTheme.typography.titleMedium)
+            listOf(
+                WeekLayout.TIMETABLE to "Таймтейбл",
+                WeekLayout.COMPACT_LIST to "Компактний список",
+            ).forEach { (option, label) ->
+                PreferenceRadioRow(
+                    label = label,
+                    selected = settings.weekLayout == option,
+                    onClick = { scope.launch { settingsRepository.setWeekLayout(option) } },
+                )
+            }
+        }
+
+        SectionCard {
+            Text("Шкала оцінювання", style = MaterialTheme.typography.titleMedium)
             Text("A · 92–100%")
             Text("B · 83–91%")
             Text("C · 74–82%")
@@ -205,16 +245,14 @@ fun SettingsScreen(
             Text("FX · 0–55%")
             Text(
                 "Для кожного предмета шкалу можна змінити окремо.",
-                modifier = Modifier.padding(top = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         SectionCard {
-            Text("Резервна копія", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Резервна копія", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Експорт містить розклад, оцінки, навчальний план, домашки, нотатки й налаштування.",
-                modifier = Modifier.padding(vertical = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(
@@ -229,18 +267,37 @@ fun SettingsScreen(
                 onClick = {
                     importLauncher.launch(arrayOf("application/json", "text/plain"))
                 },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Відновити з JSON")
             }
             backupMessage?.let {
                 Text(
                     it,
-                    modifier = Modifier.padding(top = 10.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PreferenceRadioRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
+        )
+        Text(label)
     }
 }
