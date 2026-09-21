@@ -132,4 +132,29 @@ class ScheduleResolverTest {
         )
         assertEquals(ScheduleEventStatus.ONE_OFF, result.first().status)
     }
+    @Test
+    fun reminder_isResolvedAsAOneOffCalendarEntry() {
+        val reminder = OneOffScheduleEvent(
+            id = "reminder-1",
+            courseId = null,
+            title = "Взяти калькулятор",
+            date = date,
+            startTime = LocalTime.of(7, 45),
+            endTime = LocalTime.of(7, 50),
+            room = null,
+            type = OneOffScheduleEventType.REMINDER,
+        )
+
+        val result = ScheduleResolver.eventsForDate(
+            rules = emptyList(),
+            exceptions = emptyList(),
+            oneOffEvents = listOf(reminder),
+            date = date,
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("Взяти калькулятор", result.single().title)
+        assertEquals(ScheduleEventStatus.ONE_OFF, result.single().status)
+    }
+
 }

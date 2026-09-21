@@ -8,7 +8,12 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -23,14 +28,25 @@ import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.model.OneOffScheduleEventType
+import com.kpyruy.takt.core.ui.components.TaktAddFab
 import com.kpyruy.takt.core.ui.components.TaktBottomNavigation
 import com.kpyruy.takt.core.ui.components.TaktNavItem
+import com.kpyruy.takt.feature.calendar.AddLessonSheet
 import com.kpyruy.takt.feature.calendar.CalendarScreen
+import com.kpyruy.takt.feature.calendar.OneOffEventSheet
+import com.kpyruy.takt.feature.home.HomeQuickAction
 import com.kpyruy.takt.feature.home.HomeScreen
 import com.kpyruy.takt.feature.settings.SettingsScreen
 import com.kpyruy.takt.feature.studyplan.StudyPlanScreen
+import com.kpyruy.takt.feature.subjects.AddGradeItemSheet
+import com.kpyruy.takt.feature.subjects.AddNoteSheet
+import com.kpyruy.takt.feature.subjects.AddTaskSheet
 import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.SubjectsScreen
+import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 private enum class Destination(val route: String, val label: String) {
     HOME("home", "Головна"),
@@ -55,9 +71,33 @@ fun TaktApp(
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showRootNavigation = Destination.entries.any { it.route == currentRoute }
+    val courses by repository.observeCourses().collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
+
+    var showGlobalAdd by remember { mutableStateOf(false) }
+    var showQuickAdd by remember { mutableStateOf(false) }
+    var courseSelectionFor by remember { mutableStateOf<CreateItemType?>(null) }
+    var createType by remember { mutableStateOf<CreateItemType?>(null) }
+    var createCourseId by remember { mutableStateOf<String?>(null) }
 
     fun openCourse(courseId: String) {
         navController.navigate("subject/$courseId")
+    }
+
+    fun startCreate(type: CreateItemType, courseId: String? = null) {
+        showGlobalAdd = false
+        showQuickAdd = false
+        if (type.requiresCourse && courseId == null) {
+            courseSelectionFor = type
+        } else {
+            createCourseId = courseId
+            createType = type
+        }
+    }
+
+    fun clearCreate() {
+        createType = null
+        createCourseId = null
     }
 
     val navItems = Destination.entries.map { destination ->
@@ -84,7 +124,12 @@ fun TaktApp(
     Scaffold(
         bottomBar = {
             if (showRootNavigation) {
-                TaktBottomNavigation(items = navItems)
+                TaktBottomNavigation(
+                    items = navItems,
+                    centerContent = {
+                        TaktAddFab(onClick = { showGlobalAdd = true })
+                    },
+                )
             }
         },
     ) { padding ->
@@ -102,6 +147,16 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                     onOpenCourses = { navController.navigate(Destination.SUBJECTS.route) },
+                    onQuickAction = { action ->
+                        startCreate(
+                            when (action) {
+                                HomeQuickAction.LESSON -> CreateItemType.CLASS
+                                HomeQuickAction.TASK -> CreateItemType.TASK
+                                HomeQuickAction.EXAM -> CreateItemType.EXAM
+                                HomeQuickAction.NOTE -> CreateItemType.NOTE
+                            }
+                        )
+                    },
                 )
             }
             composable(Destination.CALENDAR.route) {
@@ -145,5 +200,130 @@ fun TaktApp(
                 )
             }
         }
+    }
+
+    if (showGlobalAdd) {
+        GlobalAddSheet(
+            onDismiss = { showGlobalAdd = false },
+            onCreate = ::startCreate,
+            onQuickAdd = {
+                showGlobalAdd = false
+                showQuickAdd = true
+            },
+        )
+    }
+
+    if (showQuickAdd) {
+        QuickAddSheet(
+            courses = courses,
+            onDismiss = { showQuickAdd = false },
+            onSaveTask = {
+                scope.launch {
+                    studyContentRepository.upsertTask(it)
+                    showQuickAdd = false
+                }
+            },
+            onSaveLesson = {
+                scope.launch {
+                    scheduleRepository.upsertRule(it)
+                    showQuickAdd = false
+                }
+            },
+            onSaveNote = {
+                scope.launch {
+                    studyContentRepository.upsertNote(it)
+                    showQuickAdd = false
+                }
+            },
+            onOpenFull = { type, courseId ->
+                startCreate(type, courseId)
+            },
+        )
+    }
+
+    courseSelectionFor?.let { type ->
+        SelectCourseSheet(
+            courses = courses,
+            onDismiss = { courseSelectionFor = null },
+            onSelected = { course ->
+                courseSelectionFor = null
+                startCreate(type, course.id)
+            },
+        )
+    }
+
+    when (createType) {
+        CreateItemType.CLASS -> AddLessonSheet(
+            initialDay = LocalDate.now().dayOfWeek,
+            onDismiss = ::clearCreate,
+            onSave = {
+                scope.launch {
+                    scheduleRepository.upsertRule(it)
+                    clearCreate()
+                }
+            },
+        )
+
+        CreateItemType.EVENT,
+        CreateItemType.REMINDER -> {
+            val type = if (createType == CreateItemType.REMINDER) {
+                OneOffScheduleEventType.REMINDER
+            } else {
+                OneOffScheduleEventType.EXTRA
+            }
+            OneOffEventSheet(
+                initialDate = LocalDate.now(),
+                initialType = type,
+                onDismiss = ::clearCreate,
+                onSave = {
+                    scope.launch {
+                        scheduleRepository.upsertOneOffEvent(it)
+                        clearCreate()
+                    }
+                },
+            )
+        }
+
+        CreateItemType.TASK -> createCourseId?.let { courseId ->
+            AddTaskSheet(
+                courseId = courseId,
+                onDismiss = ::clearCreate,
+                onSave = {
+                    scope.launch {
+                        studyContentRepository.upsertTask(it)
+                        clearCreate()
+                    }
+                },
+            )
+        }
+
+        CreateItemType.EXAM -> createCourseId?.let { courseId ->
+            AddGradeItemSheet(
+                courseId = courseId,
+                initialType = GradeItemType.EXAM,
+                onDismiss = ::clearCreate,
+                onSave = {
+                    scope.launch {
+                        gradeRepository.upsertItem(it)
+                        clearCreate()
+                    }
+                },
+            )
+        }
+
+        CreateItemType.NOTE -> createCourseId?.let { courseId ->
+            AddNoteSheet(
+                courseId = courseId,
+                onDismiss = ::clearCreate,
+                onSave = {
+                    scope.launch {
+                        studyContentRepository.upsertNote(it)
+                        clearCreate()
+                    }
+                },
+            )
+        }
+
+        null -> Unit
     }
 }

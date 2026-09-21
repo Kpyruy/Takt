@@ -18,6 +18,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +62,7 @@ fun HomeScreen(
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
     onOpenCourses: () -> Unit,
+    onQuickAction: (HomeQuickAction) -> Unit,
 ) {
     val allCourses by repository.observeCourses().collectAsState(initial = emptyList())
     val semesterCourses by repository.observeSemester(3).collectAsState(initial = emptyList())
@@ -262,6 +264,36 @@ fun HomeScreen(
                         courseTitle = courseTitles[item.courseId] ?: item.courseId,
                     )
                 }
+            }
+        }
+
+        Text("Швидкі дії", style = MaterialTheme.typography.titleMedium)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { onQuickAction(HomeQuickAction.LESSON) },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Пара") }
+                OutlinedButton(
+                    onClick = { onQuickAction(HomeQuickAction.TASK) },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Завдання") }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { onQuickAction(HomeQuickAction.EXAM) },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Екзамен") }
+                OutlinedButton(
+                    onClick = { onQuickAction(HomeQuickAction.NOTE) },
+                    modifier = Modifier.weight(1f),
+                ) { Text("Нотатка") }
             }
         }
 
