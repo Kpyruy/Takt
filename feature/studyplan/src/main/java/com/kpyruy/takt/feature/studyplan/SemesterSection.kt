@@ -1,15 +1,18 @@
 package com.kpyruy.takt.feature.studyplan
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -19,6 +22,7 @@ import com.kpyruy.takt.core.ui.components.StatusPill
 fun SemesterSection(
     semester: Int,
     courses: List<Course>,
+    onCourseClick: (String) -> Unit,
 ) {
     val totalCredits = courses.sumOf { it.credits }
     val earnedCredits = courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
@@ -47,7 +51,10 @@ fun SemesterSection(
         courses.forEachIndexed { index, course ->
             if (index > 0) HorizontalDivider()
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onCourseClick(course.id) }
+                    .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(modifier = Modifier.weight(1f)) {

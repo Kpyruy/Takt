@@ -16,7 +16,10 @@ import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 
 @Composable
-fun SubjectsScreen(repository: StudyPlanRepository) {
+fun SubjectsScreen(
+    repository: StudyPlanRepository,
+    onCourseClick: (String) -> Unit,
+) {
     val courses by repository.observeSemester(3).collectAsState(initial = emptyList())
     val active = courses.count { it.status == CourseStatus.ENROLLED }
 
@@ -31,7 +34,10 @@ fun SubjectsScreen(repository: StudyPlanRepository) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             items(courses, key = { it.id }) { course ->
-                SubjectCard(course)
+                SubjectCard(
+                    course = course,
+                    onClick = { onCourseClick(course.id) },
+                )
             }
         }
     }

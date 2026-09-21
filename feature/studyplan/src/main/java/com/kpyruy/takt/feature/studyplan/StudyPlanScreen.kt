@@ -21,7 +21,10 @@ import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 
 @Composable
-fun StudyPlanScreen(repository: StudyPlanRepository) {
+fun StudyPlanScreen(
+    repository: StudyPlanRepository,
+    onCourseClick: (String) -> Unit,
+) {
     val courses by repository.observeCourses().collectAsState(initial = emptyList())
     val earned = courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
     val semesters = courses.groupBy { it.semester }.toSortedMap()
@@ -50,7 +53,11 @@ fun StudyPlanScreen(repository: StudyPlanRepository) {
 
             semesters.forEach { (semester, semesterCourses) ->
                 item(key = "semester-$semester") {
-                    SemesterSection(semester, semesterCourses)
+                    SemesterSection(
+                        semester = semester,
+                        courses = semesterCourses,
+                        onCourseClick = onCourseClick,
+                    )
                 }
             }
         }

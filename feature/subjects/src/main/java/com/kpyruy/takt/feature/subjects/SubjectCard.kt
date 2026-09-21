@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +16,13 @@ import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.StatusPill
 
 @Composable
-fun SubjectCard(course: Course) {
-    SectionCard {
+fun SubjectCard(
+    course: Course,
+    onClick: () -> Unit,
+) {
+    SectionCard(
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

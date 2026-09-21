@@ -15,15 +15,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.home.HomeScreen
 import com.kpyruy.takt.feature.settings.SettingsScreen
 import com.kpyruy.takt.feature.studyplan.StudyPlanScreen
+import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.SubjectsScreen
 
 private enum class Destination(val route: String, val label: String) {
@@ -34,13 +37,18 @@ private enum class Destination(val route: String, val label: String) {
 }
 
 private const val SETTINGS_ROUTE = "settings"
+private const val SUBJECT_ROUTE = "subject/{courseId}"
 
 @Composable
 fun TaktApp(repository: StudyPlanRepository) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val showBottomBar = currentRoute != SETTINGS_ROUTE
+    val showBottomBar = currentRoute != SETTINGS_ROUTE && currentRoute != SUBJECT_ROUTE
+
+    fun openCourse(courseId: String) {
+        navController.navigate("subject/$courseId")
+    }
 
     Scaffold(
         bottomBar = {
@@ -82,10 +90,31 @@ fun TaktApp(repository: StudyPlanRepository) {
                 )
             }
             composable(Destination.CALENDAR.route) { CalendarScreen() }
-            composable(Destination.SUBJECTS.route) { SubjectsScreen(repository) }
-            composable(Destination.PLAN.route) { StudyPlanScreen(repository) }
+            composable(Destination.SUBJECTS.route) {
+                SubjectsScreen(
+                    repository = repository,
+                    onCourseClick = ::openCourse,
+                )
+            }
+            composable(Destination.PLAN.route) {
+                StudyPlanScreen(
+                    repository = repository,
+                    onCourseClick = ::openCourse,
+                )
+            }
             composable(SETTINGS_ROUTE) {
                 SettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = SUBJECT_ROUTE,
+                arguments = listOf(navArgument("courseId") { type = NavType.StringType }),
+            ) { entry ->
+                val courseId = entry.arguments?.getString("courseId").orEmpty()
+                SubjectDetailScreen(
+                    repository = repository,
+                    courseId = courseId,
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }
