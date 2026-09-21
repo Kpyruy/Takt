@@ -63,10 +63,13 @@ class GradeProjectionTest {
 
         assertEquals(70.0, projection.maximumPossiblePoints, 0.001)
         assertEquals(GradeLetter.FX, projection.minimumPossibleLetter)
-        assertEquals(GradeLetter.C, projection.maximumPossibleLetter)
+        // With Takt's default scale, 70% maps to D (C starts at 74%).
+        // The key behavior is that lost coursework points permanently lower the ceiling.
+        assertEquals(GradeLetter.D, projection.maximumPossibleLetter)
         assertNull(projection.examPointsNeeded[GradeLetter.A])
         assertNull(projection.examPointsNeeded[GradeLetter.B])
-        assertEquals(70.0, projection.examPointsNeeded[GradeLetter.C]!!, 0.001)
+        assertNull(projection.examPointsNeeded[GradeLetter.C])
+        assertEquals(65.0, projection.examPointsNeeded[GradeLetter.D]!!, 0.001)
     }
 
     @Test
@@ -208,7 +211,7 @@ data class ExamInfo(
 ) {
     init {
         require(attemptNumber >= 1)
-        require(maxAttempts >= 1)
+        require(maxAttempts in 1..3)
         require(attemptNumber <= maxAttempts)
         require(endTime == null || startTime == null || endTime > startTime)
     }
@@ -285,13 +288,21 @@ data class GradeProjection(
             fun letter(points: Double): GradeLetter =
                 scale.gradeFor((points / total * 100.0).coerceIn(0.0, 100.0))
 
+            val pendingNonExamMax = unfinished
+                .filterNot { it.type == GradeItemType.EXAM }
+                .sumOf { it.maxPoints }
+
+            // For pre-exam planning, assume all still-open non-exam work is completed
+            // at its maximum; during exam period that value is normally zero.
+            val pointsBeforeExamPotential = secured + pendingNonExamMax
+
             val examNeeded = GradeLetter.entries.associateWith { grade ->
                 if (grade == GradeLetter.FX || exam == null) {
-                    0.0
+                    null
                 } else {
                     val threshold = scale.bands.first { it.grade == grade }.minimumPercentage
                     val thresholdPoints = total * threshold / 100.0
-                    val needed = (thresholdPoints - secured).coerceAtLeast(0.0)
+                    val needed = (thresholdPoints - pointsBeforeExamPotential).coerceAtLeast(0.0)
                     needed.takeIf { it <= exam.maxPoints }
                 }
             }
@@ -898,7 +909,7 @@ Fields:
 - start/end time,
 - room,
 - attempt number,
-- maximum attempts fixed/defaulted to 3 but editable only when needed,
+- maximum attempts fixed at 3 for this release,
 - notes,
 - linked exam assessment.
 
