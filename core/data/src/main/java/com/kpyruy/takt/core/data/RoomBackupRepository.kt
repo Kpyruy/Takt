@@ -18,6 +18,7 @@ class RoomBackupRepository(
                 scheduleExceptions = database.scheduleDao().getExceptionsSnapshot().map { it.toBackup() },
                 gradeItems = database.gradeDao().getItemsSnapshot().map { it.toBackup() },
                 gradeScales = database.gradeDao().getScalesSnapshot().map { it.toBackup() },
+                gradeOverrides = database.gradeDao().getOverridesSnapshot().map { it.toBackup() },
                 studyTasks = database.studyContentDao().getTasksSnapshot().map { it.toBackup() },
                 courseNotes = database.studyContentDao().getNotesSnapshot().map { it.toBackup() },
                 settings = settings.toBackup(),
@@ -37,6 +38,7 @@ class RoomBackupRepository(
 
             studyDao.deleteAllNotes()
             studyDao.deleteAllTasks()
+            gradeDao.deleteAllOverrides()
             gradeDao.deleteAllScales()
             gradeDao.deleteAllItems()
             scheduleDao.deleteAllExceptions()
@@ -50,6 +52,7 @@ class RoomBackupRepository(
             scheduleDao.upsertExceptions(payload.scheduleExceptions.map { it.toEntity() })
             gradeDao.upsertItems(payload.gradeItems.map { it.toEntity() })
             gradeDao.upsertScales(payload.gradeScales.map { it.toEntity() })
+            gradeDao.upsertOverrides(payload.gradeOverrides.map { it.toEntity() })
             studyDao.upsertTasks(payload.studyTasks.map { it.toEntity() })
             studyDao.upsertNotes(payload.courseNotes.map { it.toEntity() })
         }

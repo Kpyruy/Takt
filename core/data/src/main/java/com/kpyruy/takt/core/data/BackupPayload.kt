@@ -12,6 +12,7 @@ data class BackupPayload(
     val scheduleExceptions: List<BackupScheduleException> = emptyList(),
     val gradeItems: List<BackupGradeItem> = emptyList(),
     val gradeScales: List<BackupGradeScale> = emptyList(),
+    val gradeOverrides: List<BackupGradeOverride> = emptyList(),
     val studyTasks: List<BackupStudyTask> = emptyList(),
     val courseNotes: List<BackupCourseNote> = emptyList(),
     val settings: BackupSettings = BackupSettings(),
@@ -88,6 +89,12 @@ data class BackupGradeScale(
     val cMin: Double,
     val dMin: Double,
     val eMin: Double,
+)
+
+@Serializable
+data class BackupGradeOverride(
+    val courseId: String,
+    val grade: String,
 )
 
 @Serializable

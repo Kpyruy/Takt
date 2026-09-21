@@ -3,6 +3,7 @@ package com.kpyruy.takt.core.data
 import com.kpyruy.takt.core.database.CourseEntity
 import com.kpyruy.takt.core.database.CourseNoteEntity
 import com.kpyruy.takt.core.database.GradeItemEntity
+import com.kpyruy.takt.core.database.GradeOverrideEntity
 import com.kpyruy.takt.core.database.GradeScaleEntity
 import com.kpyruy.takt.core.database.OneOffScheduleEventEntity
 import com.kpyruy.takt.core.database.ScheduleExceptionEntity
@@ -136,6 +137,16 @@ internal fun BackupGradeScale.toEntity() = GradeScaleEntity(
     cMin = cMin,
     dMin = dMin,
     eMin = eMin,
+)
+
+internal fun GradeOverrideEntity.toBackup() = BackupGradeOverride(
+    courseId = courseId,
+    grade = grade,
+)
+
+internal fun BackupGradeOverride.toEntity() = GradeOverrideEntity(
+    courseId = courseId,
+    grade = grade,
 )
 
 internal fun StudyTaskEntity.toBackup() = BackupStudyTask(
