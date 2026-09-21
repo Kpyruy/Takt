@@ -68,6 +68,40 @@ class ScheduleResolverTest {
     }
 
     @Test
+    fun movedOccurrence_toAnotherDate_disappearsFromOriginalAndAppearsOnReplacementDate() {
+        val movedDate = date.plusDays(1)
+        val exception = ScheduleException(
+            id = "move-physics-next-day",
+            ruleId = physics.id,
+            date = date,
+            type = ScheduleExceptionType.MOVED,
+            replacementDate = movedDate,
+            replacementStartTime = LocalTime.of(12, 0),
+            replacementEndTime = LocalTime.of(13, 50),
+            replacementRoom = "T-068",
+        )
+
+        val originalDay = ScheduleResolver.eventsForDate(
+            rules = listOf(physics),
+            exceptions = listOf(exception),
+            oneOffEvents = emptyList(),
+            date = date,
+        )
+        val movedDay = ScheduleResolver.eventsForDate(
+            rules = listOf(physics),
+            exceptions = listOf(exception),
+            oneOffEvents = emptyList(),
+            date = movedDate,
+        )
+
+        assertEquals(0, originalDay.size)
+        assertEquals(1, movedDay.size)
+        assertEquals(ScheduleEventStatus.MOVED, movedDay.single().status)
+        assertEquals(movedDate, movedDay.single().date)
+        assertEquals(LocalTime.of(12, 0), movedDay.single().startTime)
+    }
+
+    @Test
     fun blockAction_isAddedOnItsConcreteDate() {
         val block = OneOffScheduleEvent(
             id = "vr-block",
