@@ -661,10 +661,8 @@ Add to backup DTOs:
 - `BackupGradeItem.completed: Boolean = true`
 - `BackupGradeItem.requiredForExam: Boolean = false`
 - `BackupStudyTask.requiredForExam: Boolean = false`
-- `BackupSettings.cardAppearance: String = "ELEVATED"`
-- `BackupSettings.themeFamily: String = "BLUE"`
-- `BackupSettings.themeMode: String = "SYSTEM"`
-- `BackupSettings.weekLayout: String = "TIMETABLE"`
+
+Keep the visual-preference fields already added to `BackupSettings` in the foundation phase; do not redefine or remove them when bumping the payload version.
 
 Add:
 
@@ -725,7 +723,7 @@ then existing dependent data;
 
 then restore courses and existing data, followed by exam info/materials.
 
-Also restore the four visual settings via `AppSettingsRepository`.
+Keep the existing visual-settings restore path unchanged so a v2 academic backup still preserves appearance preferences.
 
 - [ ] **Step 6: Run backup tests**
 
