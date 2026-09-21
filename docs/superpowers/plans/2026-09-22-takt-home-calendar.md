@@ -701,6 +701,8 @@ git commit -m "feat: replace raw date time entry with pickers"
 - Create: `app/src/main/java/com/kpyruy/takt/app/GlobalAddSheet.kt`
 - Create: `app/src/main/java/com/kpyruy/takt/app/QuickAddSheet.kt`
 - Create: `app/src/main/java/com/kpyruy/takt/app/CreateItemType.kt`
+- Create: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeQuickAction.kt`
+- Modify: `feature/home/src/main/java/com/kpyruy/takt/feature/home/HomeScreen.kt`
 - Modify: `app/src/main/java/com/kpyruy/takt/app/TaktApp.kt`
 - Modify: `core/model/src/main/kotlin/com/kpyruy/takt/core/model/ScheduleModels.kt`
 - Modify: `core/model/src/test/kotlin/com/kpyruy/takt/core/model/ScheduleResolverTest.kt`
@@ -841,11 +843,34 @@ Map the six types explicitly:
 - `EVENT` -> one-off event form;
 - `REMINDER` -> one-off event form preselected to `REMINDER`, using a short time range and no room field.
 
-- [ ] **Step 6: Keep edit consistent**
+- [ ] **Step 6: Wire Home quick actions to the same creation flows**
+
+Create:
+
+```kotlin
+package com.kpyruy.takt.feature.home
+
+enum class HomeQuickAction {
+    LESSON,
+    TASK,
+    EXAM,
+    NOTE,
+}
+```
+
+Extend `HomeScreen` with `onQuickAction: (HomeQuickAction) -> Unit` and render a compact four-action row near the bottom of Home:
+- `Пара`
+- `Завдання`
+- `Екзамен`
+- `Нотатка`
+
+In `TaktApp`, map those four actions to the same full creation routes used by the central Add sheet. Do not create duplicate forms.
+
+- [ ] **Step 7: Keep edit consistent**
 
 Calendar and Subject edit actions use the same field order, date/time pickers, labels, and validation as creation. Destructive actions stay in contextual sheets rather than permanently visible beside every row.
 
-- [ ] **Step 7: Compile app**
+- [ ] **Step 8: Compile app**
 
 ```bash
 gradle :app:assembleDebug --stacktrace
@@ -853,10 +878,10 @@ gradle :app:assembleDebug --stacktrace
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add app feature/calendar feature/subjects
+git add app feature/home feature/calendar feature/subjects core/model
 git commit -m "feat: modernize add and edit flows"
 ```
 
