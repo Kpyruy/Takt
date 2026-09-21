@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -13,4 +14,7 @@ data class CourseEntity(
     val status: String,
     val requirementType: String,
     val syllabusUrl: String?,
+    @ColumnInfo(defaultValue = "'CONTINUOUS_LETTER'")
+    val gradingType: String = "CONTINUOUS_LETTER",
+    val passFailResult: String? = null,
 )

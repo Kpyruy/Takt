@@ -29,6 +29,12 @@ interface CourseDao {
     @Query("UPDATE courses SET status = :status WHERE id = :courseId")
     suspend fun updateStatus(courseId: String, status: String)
 
+    @Query("UPDATE courses SET gradingType = :gradingType WHERE id = :courseId")
+    suspend fun updateGradingType(courseId: String, gradingType: String)
+
+    @Query("UPDATE courses SET passFailResult = :result WHERE id = :courseId")
+    suspend fun updatePassFailResult(courseId: String, result: String?)
+
     @Query("DELETE FROM courses")
     suspend fun deleteAll()
 }

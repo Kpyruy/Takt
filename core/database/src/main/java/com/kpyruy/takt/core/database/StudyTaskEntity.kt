@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -11,4 +12,6 @@ data class StudyTaskEntity(
     val description: String?,
     val dueDateEpochDay: Long?,
     val completed: Boolean,
+    @ColumnInfo(defaultValue = "0")
+    val requiredForExam: Boolean = false,
 )

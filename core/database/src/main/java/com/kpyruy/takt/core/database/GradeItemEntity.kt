@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,4 +13,9 @@ data class GradeItemEntity(
     val earnedPoints: Double,
     val maxPoints: Double,
     val recordedAtEpochMillis: Long,
+    val dueDateEpochDay: Long? = null,
+    @ColumnInfo(defaultValue = "1")
+    val completed: Boolean = true,
+    @ColumnInfo(defaultValue = "0")
+    val requiredForExam: Boolean = false,
 )
