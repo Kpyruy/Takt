@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -73,6 +75,7 @@ fun HomeScreen(
     val allTasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
     val recentGrades by gradeRepository.observeRecentItems(4).collectAsState(initial = emptyList())
     val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
+    val scope = rememberCoroutineScope()
 
     val today = LocalDate.now()
     val now = LocalTime.now()
@@ -248,6 +251,11 @@ fun HomeScreen(
                     HomeTaskRow(
                         task = task,
                         courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                        onCompletedChange = { completed ->
+                            scope.launch {
+                                studyContentRepository.setTaskCompleted(task.id, completed)
+                            }
+                        },
                     )
                 }
             }

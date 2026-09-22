@@ -231,6 +231,11 @@ fun CalendarScreen(
                         today = today,
                         settings = settings,
                         onEventClick = { selectedEvent = it },
+                        onDeadlineCompleted = { task, completed ->
+                            scope.launch {
+                                studyContentRepository.setTaskCompleted(task.id, completed)
+                            }
+                        },
                     )
                 }
 
@@ -281,6 +286,11 @@ fun CalendarScreen(
                                     CalendarDeadlineRow(
                                         task = task,
                                         courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                                        onCompletedChange = { completed ->
+                                            scope.launch {
+                                                studyContentRepository.setTaskCompleted(task.id, completed)
+                                            }
+                                        },
                                     )
                                 }
                             }
@@ -405,6 +415,7 @@ private fun SelectedDayAgenda(
     today: LocalDate,
     settings: AppSettings,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
+    onDeadlineCompleted: (com.kpyruy.takt.core.model.StudyTask, Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -418,6 +429,9 @@ private fun SelectedDayAgenda(
                     CalendarDeadlineRow(
                         task = task,
                         courseTitle = courseTitles[task.courseId] ?: task.courseId,
+                        onCompletedChange = { completed ->
+                            onDeadlineCompleted(task, completed)
+                        },
                     )
                 }
             }
