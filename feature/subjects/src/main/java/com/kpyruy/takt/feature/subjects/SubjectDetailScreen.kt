@@ -1,5 +1,9 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +35,8 @@ import com.kpyruy.takt.core.model.ExamEligibilityCalculator
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
+import com.kpyruy.takt.core.ui.motion.TaktMotion
+import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,6 +61,7 @@ fun SubjectDetailScreen(
     }
 
     val scope = rememberCoroutineScope()
+    val haptics = rememberTaktHaptics()
     var selectedTab by rememberSaveable { mutableStateOf("Огляд") }
     var showAddGrade by remember { mutableStateOf(false) }
     var showScaleEditor by remember { mutableStateOf(false) }
@@ -107,8 +114,16 @@ fun SubjectDetailScreen(
             onSelected = { selectedTab = tabs[it] },
         )
 
-        Box(Modifier.weight(1f)) {
-            when (selectedTab) {
+        AnimatedContent(
+            targetState = selectedTab,
+            modifier = Modifier.weight(1f),
+            transitionSpec = {
+                fadeIn(animationSpec = TaktMotion.fast()) togetherWith
+                    fadeOut(animationSpec = TaktMotion.fast())
+            },
+            label = "course-tab",
+        ) { tab ->
+            when (tab) {
                 "Огляд" -> CourseOverviewTab(
                     course = item,
                     gradeItems = gradeItems,
@@ -158,10 +173,16 @@ fun SubjectDetailScreen(
                     materials = examMaterials,
                     manualGrade = manualGrade,
                     onSaveExamInfo = { info ->
-                        scope.launch { examRepository.upsertExamInfo(info) }
+                        scope.launch {
+                            examRepository.upsertExamInfo(info)
+                            haptics.confirm()
+                        }
                     },
                     onAddMaterial = { material ->
-                        scope.launch { examRepository.upsertMaterial(material) }
+                        scope.launch {
+                            examRepository.upsertMaterial(material)
+                            haptics.confirm()
+                        }
                     },
                     onDeleteMaterial = { material ->
                         scope.launch { examRepository.deleteMaterial(material.id) }
@@ -188,6 +209,7 @@ fun SubjectDetailScreen(
             onSave = { gradeItem ->
                 scope.launch {
                     gradeRepository.upsertItem(gradeItem)
+                    haptics.confirm()
                     showAddGrade = false
                 }
             },
@@ -201,6 +223,7 @@ fun SubjectDetailScreen(
             onSave = { scale ->
                 scope.launch {
                     gradeRepository.setScale(courseId, scale)
+                    haptics.confirm()
                     showScaleEditor = false
                 }
             },
@@ -214,6 +237,7 @@ fun SubjectDetailScreen(
             onSave = { task ->
                 scope.launch {
                     studyContentRepository.upsertTask(task)
+                    haptics.confirm()
                     showAddTask = false
                 }
             },
@@ -227,6 +251,7 @@ fun SubjectDetailScreen(
             onSave = { note ->
                 scope.launch {
                     studyContentRepository.upsertNote(note)
+                    haptics.confirm()
                     showAddNote = false
                 }
             },

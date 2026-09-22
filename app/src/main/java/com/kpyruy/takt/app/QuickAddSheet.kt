@@ -29,6 +29,7 @@ import com.kpyruy.takt.core.model.ScheduleRule
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import com.kpyruy.takt.core.ui.components.TaktTimePickerField
+import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
@@ -49,6 +50,7 @@ fun QuickAddSheet(
     onSaveNote: (CourseNote) -> Unit,
     onOpenFull: (CreateItemType, String?) -> Unit,
 ) {
+    val haptics = rememberTaktHaptics()
     var type by remember { mutableStateOf(QuickAddType.TASK) }
     var title by remember { mutableStateOf("") }
     var details by remember { mutableStateOf("") }
@@ -73,6 +75,7 @@ fun QuickAddSheet(
                         selected = type == option,
                         onClick = {
                             type = option
+                            haptics.tick()
                             error = null
                         },
                         label = { Text(option.label) },
@@ -86,7 +89,10 @@ fun QuickAddSheet(
                     items(courses, key = { it.id }) { course ->
                         FilterChip(
                             selected = courseId == course.id,
-                            onClick = { courseId = course.id },
+                            onClick = {
+                                courseId = course.id
+                                haptics.tick()
+                            },
                             label = { Text(course.title, maxLines = 1) },
                         )
                     }
@@ -159,7 +165,9 @@ fun QuickAddSheet(
                     }
 
                     when (type) {
-                        QuickAddType.TASK -> onSaveTask(
+                        QuickAddType.TASK -> {
+                            haptics.confirm()
+                            onSaveTask(
                             StudyTask(
                                 id = UUID.randomUUID().toString(),
                                 courseId = courseId!!,
@@ -169,11 +177,13 @@ fun QuickAddSheet(
                                 completed = false,
                             )
                         )
+                        }
                         QuickAddType.CLASS -> {
                             if (endTime <= startTime) {
                                 error = "Кінець має бути пізніше початку."
                                 return@Button
                             }
+                            haptics.confirm()
                             onSaveLesson(
                                 ScheduleRule(
                                     id = UUID.randomUUID().toString(),
@@ -192,6 +202,7 @@ fun QuickAddSheet(
                                 error = "Додайте текст нотатки."
                                 return@Button
                             }
+                            haptics.confirm()
                             onSaveNote(
                                 CourseNote(
                                     id = UUID.randomUUID().toString(),

@@ -14,6 +14,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +23,7 @@ fun GlobalAddSheet(
     onCreate: (CreateItemType) -> Unit,
     onQuickAdd: () -> Unit,
 ) {
+    val haptics = rememberTaktHaptics()
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
@@ -39,13 +41,19 @@ fun GlobalAddSheet(
                     text = type.label,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onCreate(type) }
+                        .clickable {
+                            haptics.tick()
+                            onCreate(type)
+                        }
                         .padding(vertical = 14.dp),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
             TextButton(
-                onClick = onQuickAdd,
+                onClick = {
+                    haptics.tick()
+                    onQuickAdd()
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Швидко")

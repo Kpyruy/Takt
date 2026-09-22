@@ -1,5 +1,8 @@
 package com.kpyruy.takt.feature.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -47,6 +50,7 @@ import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktTimeline
 import com.kpyruy.takt.core.ui.components.TaktTimelineItem
+import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.Duration
 import java.time.LocalDate
@@ -132,8 +136,13 @@ fun HomeScreen(
             style = MaterialTheme.typography.labelLarge,
         )
 
-        nextEvent?.let { event ->
-            SectionCard {
+        AnimatedVisibility(
+            visible = nextEvent != null,
+            enter = fadeIn(animationSpec = TaktMotion.fast()),
+            exit = fadeOut(animationSpec = TaktMotion.fast()),
+        ) {
+            nextEvent?.let { event ->
+                SectionCard {
                 Text("Наступна пара", style = MaterialTheme.typography.labelLarge)
                 Text(event.title, style = MaterialTheme.typography.titleLarge, maxLines = 2)
                 Text(
@@ -156,6 +165,7 @@ fun HomeScreen(
                         )
                     }
                 }
+            }
             }
         }
 

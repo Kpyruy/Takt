@@ -1,5 +1,9 @@
 package com.kpyruy.takt.feature.calendar
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +51,7 @@ import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.StatusPill
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
+import com.kpyruy.takt.core.ui.motion.TaktMotion
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -220,8 +225,16 @@ fun CalendarScreen(
             )
         }
 
-        Box(modifier = Modifier.weight(1f)) {
-            when (viewMode) {
+        AnimatedContent(
+            targetState = viewMode,
+            modifier = Modifier.weight(1f),
+            transitionSpec = {
+                fadeIn(animationSpec = TaktMotion.fast()) togetherWith
+                    fadeOut(animationSpec = TaktMotion.fast())
+            },
+            label = "calendar-view",
+        ) { mode ->
+            when (mode) {
                 CalendarViewMode.DAY -> {
                     SelectedDayAgenda(
                         date = selectedDate,

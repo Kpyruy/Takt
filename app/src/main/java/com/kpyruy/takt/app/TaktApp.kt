@@ -34,6 +34,7 @@ import com.kpyruy.takt.core.model.OneOffScheduleEventType
 import com.kpyruy.takt.core.ui.components.TaktAddFab
 import com.kpyruy.takt.core.ui.components.TaktBottomNavigation
 import com.kpyruy.takt.core.ui.components.TaktNavItem
+import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import com.kpyruy.takt.feature.calendar.AddLessonSheet
 import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.calendar.OneOffEventSheet
@@ -75,6 +76,7 @@ fun TaktApp(
     val showRootNavigation = Destination.entries.any { it.route == currentRoute }
     val courses by repository.observeCourses().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
+    val haptics = rememberTaktHaptics()
 
     var showGlobalAdd by remember { mutableStateOf(false) }
     var showQuickAdd by remember { mutableStateOf(false) }
@@ -225,18 +227,21 @@ fun TaktApp(
             onSaveTask = {
                 scope.launch {
                     studyContentRepository.upsertTask(it)
+                    haptics.confirm()
                     showQuickAdd = false
                 }
             },
             onSaveLesson = {
                 scope.launch {
                     scheduleRepository.upsertRule(it)
+                    haptics.confirm()
                     showQuickAdd = false
                 }
             },
             onSaveNote = {
                 scope.launch {
                     studyContentRepository.upsertNote(it)
+                    haptics.confirm()
                     showQuickAdd = false
                 }
             },
@@ -264,6 +269,7 @@ fun TaktApp(
             onSave = {
                 scope.launch {
                     scheduleRepository.upsertRule(it)
+                    haptics.confirm()
                     clearCreate()
                 }
             },
