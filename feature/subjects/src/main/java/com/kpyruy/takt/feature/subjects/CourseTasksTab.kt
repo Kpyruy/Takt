@@ -24,6 +24,7 @@ internal fun CourseTasksTab(
     tasks: List<StudyTask>,
     eligibility: ExamEligibility,
     onCompletedChange: (StudyTask, Boolean) -> Unit,
+    onEdit: (StudyTask) -> Unit,
     onDelete: (StudyTask) -> Unit,
     onAddTask: () -> Unit,
 ) {
@@ -58,6 +59,7 @@ internal fun CourseTasksTab(
                     StudyTaskRow(
                         task = task,
                         onCompletedChange = { completed -> onCompletedChange(task, completed) },
+                        onEdit = { onEdit(task) },
                         onDelete = { onDelete(task) },
                     )
                 }

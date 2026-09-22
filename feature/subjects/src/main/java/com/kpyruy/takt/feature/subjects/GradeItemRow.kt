@@ -25,6 +25,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun GradeItemRow(
     item: GradeItem,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -59,6 +60,13 @@ fun GradeItemRow(
             Icon(Icons.Default.MoreVert, contentDescription = "Дії оцінювання")
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text("Редагувати") },
+                onClick = {
+                    menuOpen = false
+                    onEdit()
+                },
+            )
             DropdownMenuItem(
                 text = { Text("Видалити") },
                 onClick = {

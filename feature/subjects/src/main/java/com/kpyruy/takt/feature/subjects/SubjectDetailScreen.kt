@@ -31,8 +31,11 @@ import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseGradingType
+import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.ExamEligibilityCalculator
+import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeScale
+import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import com.kpyruy.takt.core.ui.motion.TaktMotion
@@ -64,9 +67,12 @@ fun SubjectDetailScreen(
     val haptics = rememberTaktHaptics()
     var selectedTab by rememberSaveable { mutableStateOf("Огляд") }
     var showAddGrade by remember { mutableStateOf(false) }
+    var editingGrade by remember { mutableStateOf<GradeItem?>(null) }
     var showScaleEditor by remember { mutableStateOf(false) }
     var showAddTask by remember { mutableStateOf(false) }
+    var editingTask by remember { mutableStateOf<StudyTask?>(null) }
     var showAddNote by remember { mutableStateOf(false) }
+    var editingNote by remember { mutableStateOf<CourseNote?>(null) }
 
     val item = course
     if (item == null) {
@@ -147,6 +153,7 @@ fun SubjectDetailScreen(
                     eligibility = eligibility,
                     manualGrade = manualGrade,
                     onAddGrade = { showAddGrade = true },
+                    onEditGrade = { editingGrade = it },
                     onDeleteGrade = { id -> scope.launch { gradeRepository.deleteItem(id) } },
                     onEditScale = { showScaleEditor = true },
                     onManualGradeChange = { grade ->
@@ -159,6 +166,7 @@ fun SubjectDetailScreen(
                     onCompletedChange = { task, completed ->
                         scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
                     },
+                    onEdit = { editingTask = it },
                     onDelete = { task ->
                         scope.launch { studyContentRepository.deleteTask(task.id) }
                     },
@@ -194,6 +202,7 @@ fun SubjectDetailScreen(
                 )
                 "Нотатки" -> CourseNotesTab(
                     notes = notes,
+                    onEdit = { editingNote = it },
                     onDelete = { note ->
                         scope.launch { studyContentRepository.deleteNote(note.id) }
                     },
@@ -203,15 +212,20 @@ fun SubjectDetailScreen(
         }
     }
 
-    if (showAddGrade) {
+    if (showAddGrade || editingGrade != null) {
         AddGradeItemSheet(
             courseId = courseId,
-            onDismiss = { showAddGrade = false },
+            initialItem = editingGrade,
+            onDismiss = {
+                showAddGrade = false
+                editingGrade = null
+            },
             onSave = { gradeItem ->
                 scope.launch {
                     gradeRepository.upsertItem(gradeItem)
                     haptics.confirm()
                     showAddGrade = false
+                    editingGrade = null
                 }
             },
         )
@@ -231,29 +245,39 @@ fun SubjectDetailScreen(
         )
     }
 
-    if (showAddTask) {
+    if (showAddTask || editingTask != null) {
         AddTaskSheet(
             courseId = courseId,
-            onDismiss = { showAddTask = false },
+            initialTask = editingTask,
+            onDismiss = {
+                showAddTask = false
+                editingTask = null
+            },
             onSave = { task ->
                 scope.launch {
                     studyContentRepository.upsertTask(task)
                     haptics.confirm()
                     showAddTask = false
+                    editingTask = null
                 }
             },
         )
     }
 
-    if (showAddNote) {
+    if (showAddNote || editingNote != null) {
         AddNoteSheet(
             courseId = courseId,
-            onDismiss = { showAddNote = false },
+            initialNote = editingNote,
+            onDismiss = {
+                showAddNote = false
+                editingNote = null
+            },
             onSave = { note ->
                 scope.launch {
                     studyContentRepository.upsertNote(note)
                     haptics.confirm()
                     showAddNote = false
+                    editingNote = null
                 }
             },
         )

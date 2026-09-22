@@ -21,6 +21,7 @@ import com.kpyruy.takt.core.ui.components.SectionCard
 @Composable
 internal fun CourseNotesTab(
     notes: List<CourseNote>,
+    onEdit: (CourseNote) -> Unit,
     onDelete: (CourseNote) -> Unit,
     onAddNote: () -> Unit,
 ) {
@@ -35,7 +36,11 @@ internal fun CourseNotesTab(
             } else {
                 notes.forEachIndexed { index, note ->
                     if (index > 0) HorizontalDivider()
-                    CourseNoteCard(note = note, onDelete = { onDelete(note) })
+                    CourseNoteCard(
+                        note = note,
+                        onEdit = { onEdit(note) },
+                        onDelete = { onDelete(note) },
+                    )
                 }
             }
             OutlinedButton(onClick = onAddNote, modifier = Modifier.fillMaxWidth()) {

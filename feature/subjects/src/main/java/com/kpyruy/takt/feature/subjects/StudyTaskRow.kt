@@ -31,6 +31,7 @@ import java.time.format.DateTimeFormatter
 fun StudyTaskRow(
     task: StudyTask,
     onCompletedChange: (Boolean) -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -93,6 +94,13 @@ fun StudyTaskRow(
                     Icon(Icons.Default.MoreVert, contentDescription = "Дії завдання")
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Редагувати") },
+                        onClick = {
+                            menuOpen = false
+                            onEdit()
+                        },
+                    )
                     DropdownMenuItem(
                         text = { Text("Видалити") },
                         onClick = {

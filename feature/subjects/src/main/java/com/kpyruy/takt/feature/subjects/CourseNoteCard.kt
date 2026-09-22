@@ -23,6 +23,7 @@ import com.kpyruy.takt.core.model.CourseNote
 @Composable
 fun CourseNoteCard(
     note: CourseNote,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -38,6 +39,13 @@ fun CourseNoteCard(
             Icon(Icons.Default.MoreVert, contentDescription = "Дії нотатки")
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text("Редагувати") },
+                onClick = {
+                    menuOpen = false
+                    onEdit()
+                },
+            )
             DropdownMenuItem(
                 text = { Text("Видалити") },
                 onClick = {

@@ -48,6 +48,7 @@ internal fun CourseAssessmentsTab(
     eligibility: ExamEligibility,
     manualGrade: GradeLetter?,
     onAddGrade: () -> Unit,
+    onEditGrade: (GradeItem) -> Unit,
     onDeleteGrade: (String) -> Unit,
     onEditScale: () -> Unit,
     onManualGradeChange: (GradeLetter?) -> Unit,
@@ -164,7 +165,11 @@ internal fun CourseAssessmentsTab(
                         compareBy<GradeItem> { it.completed }.thenBy { it.dueDate }
                     ).forEachIndexed { index, item ->
                         if (index > 0) HorizontalDivider()
-                        GradeItemRow(item = item, onDelete = { onDeleteGrade(item.id) })
+                        GradeItemRow(
+                            item = item,
+                            onEdit = { onEditGrade(item) },
+                            onDelete = { onDeleteGrade(item.id) },
+                        )
                     }
                 }
                 Row(
