@@ -2,14 +2,19 @@ package com.kpyruy.takt.feature.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -43,6 +48,7 @@ import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -75,7 +81,8 @@ fun SettingsScreen(
                 backupMessage = if (result.isSuccess) {
                     "Резервну копію збережено."
                 } else {
-                    "Помилка експорту: ${result.exceptionOrNull()?.message ?: "невідома помилка"}"
+                    "Помилка експорту: " +
+                        (result.exceptionOrNull()?.message ?: "невідома помилка")
                 }
             }
         }
@@ -97,7 +104,8 @@ fun SettingsScreen(
                 backupMessage = if (result.isSuccess) {
                     "Резервну копію відновлено."
                 } else {
-                    "Помилка імпорту: ${result.exceptionOrNull()?.message ?: "невідома помилка"}"
+                    "Помилка імпорту: " +
+                        (result.exceptionOrNull()?.message ?: "невідома помилка")
                 }
             }
         }
@@ -108,7 +116,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ScreenHeader(
             title = "Налаштування",
@@ -119,8 +127,9 @@ fun SettingsScreen(
             },
         )
 
+        SettingsSectionTitle("Вигляд")
         SectionCard {
-            Text("Тема", style = MaterialTheme.typography.titleMedium)
+            Text("Режим теми", style = MaterialTheme.typography.titleMedium)
             listOf(
                 AppThemeMode.SYSTEM to "Як у системі",
                 AppThemeMode.LIGHT to "Світла",
@@ -132,9 +141,7 @@ fun SettingsScreen(
                     onClick = { scope.launch { settingsRepository.setThemeMode(option) } },
                 )
             }
-        }
 
-        SectionCard {
             Text("Кольорова тема", style = MaterialTheme.typography.titleMedium)
             listOf(
                 ThemeFamily.BLUE to "Синя",
@@ -143,15 +150,14 @@ fun SettingsScreen(
                 ThemeFamily.WARM to "Тепла",
                 ThemeFamily.MONOCHROME to "Монохром",
             ).forEach { (option, label) ->
-                PreferenceRadioRow(
+                ThemeRadioRow(
+                    family = option,
                     label = label,
                     selected = settings.themeFamily == option,
                     onClick = { scope.launch { settingsRepository.setThemeFamily(option) } },
                 )
             }
-        }
 
-        SectionCard {
             Text("Картки", style = MaterialTheme.typography.titleMedium)
             listOf(
                 CardAppearance.ELEVATED to "Підняті",
@@ -165,6 +171,7 @@ fun SettingsScreen(
             }
         }
 
+        SettingsSectionTitle("Календар")
         SectionCard {
             Text("Скасовані пари", style = MaterialTheme.typography.titleMedium)
             listOf(
@@ -180,7 +187,7 @@ fun SettingsScreen(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -199,9 +206,7 @@ fun SettingsScreen(
                     },
                 )
             }
-        }
 
-        SectionCard {
             Text("Парність тижня", style = MaterialTheme.typography.titleMedium)
             listOf(
                 ParityOverride.AUTO to "Автоматично",
@@ -215,13 +220,11 @@ fun SettingsScreen(
                 )
             }
             Text(
-                "В автоматичному режимі Takt використовує ISO-номер календарного тижня.",
+                "Автоматичний режим використовує ISO-номер календарного тижня.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
 
-        SectionCard {
             Text("Вигляд тижня", style = MaterialTheme.typography.titleMedium)
             listOf(
                 WeekLayout.TIMETABLE to "Таймтейбл",
@@ -235,8 +238,9 @@ fun SettingsScreen(
             }
         }
 
+        SettingsSectionTitle("Оцінювання")
         SectionCard {
-            Text("Шкала оцінювання", style = MaterialTheme.typography.titleMedium)
+            Text("Стандартна шкала", style = MaterialTheme.typography.titleMedium)
             Text("A · 92–100%")
             Text("B · 83–91%")
             Text("C · 74–82%")
@@ -245,19 +249,21 @@ fun SettingsScreen(
             Text("FX · 0–55%")
             Text(
                 "Для кожного предмета шкалу можна змінити окремо.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
+        SettingsSectionTitle("Дані")
         SectionCard {
             Text("Резервна копія", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Експорт містить розклад, оцінки, навчальний план, домашки, нотатки й налаштування.",
+                "Експорт містить розклад, оцінювання, екзамени, матеріали, навчальний план, завдання, нотатки й налаштування.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(
                 onClick = {
-                    exportLauncher.launch("takt-backup-${LocalDate.now()}.json")
+                    exportLauncher.launch("takt-backup-" + LocalDate.now() + ".json")
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -271,11 +277,15 @@ fun SettingsScreen(
             ) {
                 Text("Відновити з JSON")
             }
-            backupMessage?.let {
+            backupMessage?.let { message ->
                 Text(
-                    it,
+                    message,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (message.startsWith("Помилка")) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
                 )
             }
         }
@@ -291,13 +301,41 @@ private fun PreferenceRadioRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = onClick,
-        )
+        RadioButton(selected = selected, onClick = onClick)
         Text(label)
+    }
+}
+
+@Composable
+private fun ThemeRadioRow(
+    family: ThemeFamily,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Column(Modifier.weight(1f)) {
+            Text(label)
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                taktThemePreviewColors(family).forEach { color ->
+                    Box(
+                        Modifier
+                            .size(12.dp)
+                            .background(color, CircleShape)
+                    )
+                }
+            }
+        }
     }
 }
