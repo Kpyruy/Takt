@@ -65,4 +65,46 @@ class ExamEligibilityTest {
         assertTrue(result.eligible)
         assertEquals(0, result.requiredCount)
     }
+    @Test
+    fun allRequiredWorkCompleteMeansEligible() {
+        val tasks = listOf(
+            StudyTask(
+                id = "task-1",
+                courseId = "course",
+                title = "Protocol",
+                description = null,
+                dueDate = null,
+                completed = true,
+                requiredForExam = true,
+            ),
+            StudyTask(
+                id = "task-2",
+                courseId = "course",
+                title = "Presentation",
+                description = null,
+                dueDate = null,
+                completed = true,
+                requiredForExam = true,
+            ),
+        )
+        val assessments = listOf(
+            GradeItem(
+                id = "lab",
+                courseId = "course",
+                title = "Lab",
+                type = GradeItemType.LAB,
+                earnedPoints = 10.0,
+                maxPoints = 10.0,
+                completed = true,
+                requiredForExam = true,
+            )
+        )
+
+        val result = ExamEligibilityCalculator.calculate(tasks, assessments)
+
+        assertTrue(result.eligible)
+        assertEquals(3, result.requiredCount)
+        assertEquals(3, result.completedCount)
+    }
+
 }
