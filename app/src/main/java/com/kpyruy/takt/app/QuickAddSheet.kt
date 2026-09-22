@@ -48,7 +48,7 @@ fun QuickAddSheet(
     onSaveTask: (StudyTask) -> Unit,
     onSaveLesson: (ScheduleRule) -> Unit,
     onSaveNote: (CourseNote) -> Unit,
-    onOpenFull: (CreateItemType, String?) -> Unit,
+    onOpenFull: (CreateItemDraft) -> Unit,
 ) {
     val haptics = rememberTaktHaptics()
     var type by remember { mutableStateOf(QuickAddType.TASK) }
@@ -64,7 +64,10 @@ fun QuickAddSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Швидке додавання", style = MaterialTheme.typography.headlineSmall)
@@ -111,42 +114,38 @@ fun QuickAddSheet(
             )
 
             when (type) {
-                QuickAddType.TASK -> {
-                    TaktDatePickerField(
-                        label = "Дедлайн",
-                        value = dueDate,
-                        onValueChange = { dueDate = it },
-                        modifier = Modifier.fillMaxWidth(),
+                QuickAddType.TASK -> TaktDatePickerField(
+                    label = "Дедлайн",
+                    value = dueDate,
+                    onValueChange = { dueDate = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                QuickAddType.CLASS -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    TaktTimePickerField(
+                        label = "Початок",
+                        value = startTime,
+                        onValueChange = { startTime = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                    TaktTimePickerField(
+                        label = "Кінець",
+                        value = endTime,
+                        onValueChange = { endTime = it },
+                        modifier = Modifier.weight(1f),
                     )
                 }
-                QuickAddType.CLASS -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        TaktTimePickerField(
-                            label = "Початок",
-                            value = startTime,
-                            onValueChange = { startTime = it },
-                            modifier = Modifier.weight(1f),
-                        )
-                        TaktTimePickerField(
-                            label = "Кінець",
-                            value = endTime,
-                            onValueChange = { endTime = it },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-                QuickAddType.NOTE -> {
-                    OutlinedTextField(
-                        value = details,
-                        onValueChange = { details = it },
-                        label = { Text("Текст") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                    )
-                }
+
+                QuickAddType.NOTE -> OutlinedTextField(
+                    value = details,
+                    onValueChange = { details = it },
+                    label = { Text("Текст") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                )
             }
 
             error?.let {
@@ -165,9 +164,7 @@ fun QuickAddSheet(
                     }
 
                     when (type) {
-                        QuickAddType.TASK -> {
-                            haptics.confirm()
-                            onSaveTask(
+                        QuickAddType.TASK -> onSaveTask(
                             StudyTask(
                                 id = UUID.randomUUID().toString(),
                                 courseId = courseId!!,
@@ -177,13 +174,12 @@ fun QuickAddSheet(
                                 completed = false,
                             )
                         )
-                        }
+
                         QuickAddType.CLASS -> {
                             if (endTime <= startTime) {
                                 error = "Кінець має бути пізніше початку."
                                 return@Button
                             }
-                            haptics.confirm()
                             onSaveLesson(
                                 ScheduleRule(
                                     id = UUID.randomUUID().toString(),
@@ -197,12 +193,12 @@ fun QuickAddSheet(
                                 )
                             )
                         }
+
                         QuickAddType.NOTE -> {
                             if (details.isBlank()) {
                                 error = "Додайте текст нотатки."
                                 return@Button
                             }
-                            haptics.confirm()
                             onSaveNote(
                                 CourseNote(
                                     id = UUID.randomUUID().toString(),
@@ -227,7 +223,18 @@ fun QuickAddSheet(
                         QuickAddType.CLASS -> CreateItemType.CLASS
                         QuickAddType.NOTE -> CreateItemType.NOTE
                     }
-                    onOpenFull(fullType, courseId)
+                    haptics.tick()
+                    onOpenFull(
+                        CreateItemDraft(
+                            type = fullType,
+                            courseId = courseId,
+                            title = title,
+                            details = details,
+                            dueDate = dueDate,
+                            startTime = startTime,
+                            endTime = endTime,
+                        )
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
