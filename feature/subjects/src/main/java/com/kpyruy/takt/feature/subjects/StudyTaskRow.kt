@@ -4,16 +4,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import com.kpyruy.takt.core.model.StudyTask
 import java.time.format.DateTimeFormatter
@@ -24,33 +29,56 @@ fun StudyTaskRow(
     onCompletedChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(
-            checked = task.completed,
-            onCheckedChange = onCompletedChange,
-        )
+        Checkbox(checked = task.completed, onCheckedChange = onCompletedChange)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 task.title,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleMedium,
                 textDecoration = if (task.completed) TextDecoration.LineThrough else null,
+                maxLines = 2,
             )
-            task.dueDate?.let {
+            val supporting = buildList {
+                task.dueDate?.let {
+                    add("до " + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                }
+                if (task.requiredForExam) add("потрібно для допуску")
+            }.joinToString(" · ")
+            if (supporting.isNotBlank()) {
                 Text(
-                    "до ${it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}",
+                    supporting,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (task.requiredForExam && !task.completed) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             }
-            task.description?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            task.description?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                )
             }
         }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.DeleteOutline, contentDescription = "Видалити завдання")
+        IconButton(onClick = { menuOpen = true }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Дії завдання")
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text("Видалити") },
+                onClick = {
+                    menuOpen = false
+                    onDelete()
+                },
+            )
         }
     }
 }
