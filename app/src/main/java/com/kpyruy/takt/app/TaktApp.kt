@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
+import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
@@ -64,6 +65,7 @@ fun TaktApp(
     scheduleRepository: ScheduleRepository,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
+    examRepository: ExamRepository,
     settingsRepository: AppSettingsRepository,
     backupRepository: BackupRepository,
 ) {
@@ -170,6 +172,8 @@ fun TaktApp(
             composable(Destination.SUBJECTS.route) {
                 SubjectsScreen(
                     repository = repository,
+                    gradeRepository = gradeRepository,
+                    studyContentRepository = studyContentRepository,
                     onCourseClick = ::openCourse,
                 )
             }
@@ -195,6 +199,7 @@ fun TaktApp(
                     repository = repository,
                     gradeRepository = gradeRepository,
                     studyContentRepository = studyContentRepository,
+                    examRepository = examRepository,
                     courseId = courseId,
                     onBack = { navController.popBackStack() },
                 )

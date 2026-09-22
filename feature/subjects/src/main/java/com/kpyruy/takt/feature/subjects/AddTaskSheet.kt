@@ -2,6 +2,7 @@ package com.kpyruy.takt.feature.subjects
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -9,6 +10,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -16,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
@@ -33,6 +36,7 @@ fun AddTaskSheet(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
+    var requiredForExam by remember { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -44,7 +48,6 @@ fun AddTaskSheet(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Назва") },
-                placeholder = { Text("Домашня робота") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -62,10 +65,25 @@ fun AddTaskSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
             if (dueDate != null) {
-                TextButton(onClick = { dueDate = null }) {
-                    Text("Без дедлайну")
-                }
+                TextButton(onClick = { dueDate = null }) { Text("Без дедлайну") }
             }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Потрібно для допуску до екзамену")
+                    Text(
+                        "Позначай навіть роботи без балів.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = requiredForExam, onCheckedChange = { requiredForExam = it })
+            }
+
             Button(
                 onClick = {
                     onSave(
@@ -76,6 +94,7 @@ fun AddTaskSheet(
                             description = description.trim().ifBlank { null },
                             dueDate = dueDate,
                             completed = false,
+                            requiredForExam = requiredForExam,
                         )
                     )
                 },

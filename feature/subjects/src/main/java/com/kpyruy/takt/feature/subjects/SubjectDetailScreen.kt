@@ -1,48 +1,36 @@
 package com.kpyruy.takt.feature.subjects
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
-import com.kpyruy.takt.core.model.CourseRequirementType
-import com.kpyruy.takt.core.model.CourseStatus
-import com.kpyruy.takt.core.model.GradeLetter
+import com.kpyruy.takt.core.model.CourseGradingType
+import com.kpyruy.takt.core.model.ExamEligibilityCalculator
 import com.kpyruy.takt.core.model.GradeScale
-import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.ui.components.ScreenHeader
-import com.kpyruy.takt.core.ui.components.SectionCard
-import com.kpyruy.takt.core.ui.components.StatusPill
+import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,6 +38,7 @@ fun SubjectDetailScreen(
     repository: StudyPlanRepository,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
+    examRepository: ExamRepository,
     courseId: String,
     onBack: () -> Unit,
 ) {
@@ -59,14 +48,14 @@ fun SubjectDetailScreen(
     val manualGrade by gradeRepository.observeManualGrade(courseId).collectAsState(initial = null)
     val tasks by studyContentRepository.observeTasks(courseId).collectAsState(initial = emptyList())
     val notes by studyContentRepository.observeNotes(courseId).collectAsState(initial = emptyList())
-    val summary = remember(gradeItems, gradeScale, manualGrade) {
-        GradeSummary.calculate(
-            items = gradeItems,
-            scale = gradeScale,
-            manualLetter = manualGrade,
-        )
+    val examInfo by examRepository.observeExamInfo(courseId).collectAsState(initial = null)
+    val examMaterials by examRepository.observeMaterials(courseId).collectAsState(initial = emptyList())
+    val eligibility = remember(tasks, gradeItems) {
+        ExamEligibilityCalculator.calculate(tasks, gradeItems)
     }
+
     val scope = rememberCoroutineScope()
+    var selectedTab by rememberSaveable { mutableStateOf("Огляд") }
     var showAddGrade by remember { mutableStateOf(false) }
     var showScaleEditor by remember { mutableStateOf(false) }
     var showAddTask by remember { mutableStateOf(false) }
@@ -77,7 +66,7 @@ fun SubjectDetailScreen(
         Column(Modifier.fillMaxSize().padding(20.dp)) {
             ScreenHeader(
                 title = "Предмет",
-                action = {
+                navigation = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                     }
@@ -88,257 +77,107 @@ fun SubjectDetailScreen(
         return
     }
 
+    val tabs = if (item.gradingType == CourseGradingType.EXAM_LETTER) {
+        listOf("Огляд", "Оцінювання", "Завдання", "Екзамен", "Нотатки")
+    } else {
+        listOf("Огляд", "Оцінювання", "Завдання", "Нотатки")
+    }
+
+    LaunchedEffect(tabs) {
+        if (selectedTab !in tabs) selectedTab = "Огляд"
+    }
+
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ScreenHeader(
             title = item.title,
             subtitle = item.code,
-            action = {
+            navigation = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                 }
             },
         )
 
-        SectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("Семестр ${item.semester}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${item.credits} кредитів", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                }
-                StatusPill(
-                    text = when (item.status) {
-                        CourseStatus.FULFILLED -> "Закрито"
-                        CourseStatus.ENROLLED -> "Активний"
-                        CourseStatus.PLANNED -> "Заплановано"
-                        CourseStatus.NOT_ENROLLED -> "Не записаний"
-                        CourseStatus.NOT_NEEDED -> "Не потрібно"
-                    }
+        TaktSegmentedTabs(
+            labels = tabs,
+            selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0),
+            onSelected = { selectedTab = tabs[it] },
+        )
+
+        Box(Modifier.weight(1f)) {
+            when (selectedTab) {
+                "Огляд" -> CourseOverviewTab(
+                    course = item,
+                    gradeItems = gradeItems,
+                    gradeScale = gradeScale,
+                    tasks = tasks,
+                    eligibility = eligibility,
+                    onStatusChange = { status ->
+                        scope.launch { repository.updateStatus(item.id, status) }
+                    },
+                    onGradingTypeChange = { type ->
+                        scope.launch { repository.setGradingType(item.id, type) }
+                    },
+                    onPassFailResultChange = { result ->
+                        scope.launch { repository.setPassFailResult(item.id, result) }
+                    },
+                )
+                "Оцінювання" -> CourseAssessmentsTab(
+                    course = item,
+                    gradeItems = gradeItems,
+                    gradeScale = gradeScale,
+                    manualGrade = manualGrade,
+                    onAddGrade = { showAddGrade = true },
+                    onDeleteGrade = { id -> scope.launch { gradeRepository.deleteItem(id) } },
+                    onEditScale = { showScaleEditor = true },
+                    onManualGradeChange = { grade ->
+                        scope.launch { gradeRepository.setManualGrade(courseId, grade) }
+                    },
+                )
+                "Завдання" -> CourseTasksTab(
+                    tasks = tasks,
+                    eligibility = eligibility,
+                    onCompletedChange = { task, completed ->
+                        scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
+                    },
+                    onDelete = { task ->
+                        scope.launch { studyContentRepository.deleteTask(task.id) }
+                    },
+                    onAddTask = { showAddTask = true },
+                )
+                "Екзамен" -> CourseExamTab(
+                    courseId = courseId,
+                    gradeItems = gradeItems,
+                    gradeScale = gradeScale,
+                    tasks = tasks,
+                    eligibility = eligibility,
+                    examInfo = examInfo,
+                    materials = examMaterials,
+                    manualGrade = manualGrade,
+                    onSaveExamInfo = { info ->
+                        scope.launch { examRepository.upsertExamInfo(info) }
+                    },
+                    onAddMaterial = { material ->
+                        scope.launch { examRepository.upsertMaterial(material) }
+                    },
+                    onDeleteMaterial = { material ->
+                        scope.launch { examRepository.deleteMaterial(material.id) }
+                    },
+                    onManualGradeChange = { grade ->
+                        scope.launch { gradeRepository.setManualGrade(courseId, grade) }
+                    },
+                )
+                "Нотатки" -> CourseNotesTab(
+                    notes = notes,
+                    onDelete = { note ->
+                        scope.launch { studyContentRepository.deleteNote(note.id) }
+                    },
+                    onAddNote = { showAddNote = true },
                 )
             }
-
-            Text(
-                "Статус предмета",
-                modifier = Modifier.padding(top = 12.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            LazyRow(
-                modifier = Modifier.padding(top = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(
-                    listOf(
-                        CourseStatus.ENROLLED,
-                        CourseStatus.FULFILLED,
-                        CourseStatus.PLANNED,
-                        CourseStatus.NOT_ENROLLED,
-                        CourseStatus.NOT_NEEDED,
-                    )
-                ) { status ->
-                    FilterChip(
-                        selected = item.status == status,
-                        onClick = {
-                            scope.launch { repository.updateStatus(item.id, status) }
-                        },
-                        label = {
-                            Text(
-                                when (status) {
-                                    CourseStatus.ENROLLED -> "Активний"
-                                    CourseStatus.FULFILLED -> "Закрито"
-                                    CourseStatus.PLANNED -> "План"
-                                    CourseStatus.NOT_ENROLLED -> "Не записаний"
-                                    CourseStatus.NOT_NEEDED -> "Не потрібно"
-                                }
-                            )
-                        },
-                    )
-                }
-            }
-        }
-
-        SectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("Оцінювання", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    if (summary.maxPoints > 0.0) {
-                        Text(
-                            "${summary.earnedPoints.compact()} / ${summary.maxPoints.compact()} балів",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            "${summary.percentage.compact()}%",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        Text("Ще немає результатів", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                summary.letter?.let { StatusPill(it.name) }
-            }
-
-            if (gradeItems.isNotEmpty()) {
-                gradeItems.forEachIndexed { index, gradeItem ->
-                    if (index == 0) {
-                        HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
-                    } else {
-                        HorizontalDivider()
-                    }
-                    GradeItemRow(
-                        item = gradeItem,
-                        onDelete = {
-                            scope.launch { gradeRepository.deleteItem(gradeItem.id) }
-                        },
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Button(
-                    onClick = { showAddGrade = true },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Text("Додати")
-                }
-                OutlinedButton(
-                    onClick = { showScaleEditor = true },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Шкала")
-                }
-            }
-
-            Text(
-                "Підсумкова оцінка",
-                modifier = Modifier.padding(top = 12.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            LazyRow(
-                modifier = Modifier.padding(top = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                item {
-                    FilterChip(
-                        selected = manualGrade == null,
-                        onClick = {
-                            scope.launch { gradeRepository.setManualGrade(courseId, null) }
-                        },
-                        label = { Text("Авто") },
-                    )
-                }
-                items(GradeLetter.entries) { grade ->
-                    FilterChip(
-                        selected = manualGrade == grade,
-                        onClick = {
-                            scope.launch { gradeRepository.setManualGrade(courseId, grade) }
-                        },
-                        label = { Text(grade.name) },
-                    )
-                }
-            }
-            if (manualGrade != null) {
-                Text(
-                    "Підсумкову оцінку встановлено вручну.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        SectionCard {
-            Text("Домашки та дедлайни", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            if (tasks.isEmpty()) {
-                Text(
-                    "Поки немає завдань.",
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                tasks.forEachIndexed { index, task ->
-                    if (index > 0) HorizontalDivider()
-                    StudyTaskRow(
-                        task = task,
-                        onCompletedChange = { completed ->
-                            scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
-                        },
-                        onDelete = {
-                            scope.launch { studyContentRepository.deleteTask(task.id) }
-                        },
-                    )
-                }
-            }
-            OutlinedButton(
-                onClick = { showAddTask = true },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text("Додати завдання")
-            }
-        }
-
-        SectionCard {
-            Text("Нотатки", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            if (notes.isEmpty()) {
-                Text(
-                    "Поки немає нотаток.",
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                notes.forEachIndexed { index, note ->
-                    if (index > 0) HorizontalDivider()
-                    CourseNoteCard(
-                        note = note,
-                        onDelete = {
-                            scope.launch { studyContentRepository.deleteNote(note.id) }
-                        },
-                    )
-                }
-            }
-            OutlinedButton(
-                onClick = { showAddNote = true },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text("Додати нотатку")
-            }
-        }
-
-        SectionCard {
-            Text("Про предмет", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                text = when (item.requirementType) {
-                    CourseRequirementType.COMPULSORY -> "Обов'язковий предмет"
-                    CourseRequirementType.SEMI_COMPULSORY -> "Обов'язково-вибірковий предмет"
-                    CourseRequirementType.ELECTIVE -> "Вибірковий предмет"
-                },
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            Text(
-                gradeScale.bands.joinToString(" · ") { band ->
-                    "${band.grade} ≥ ${band.minimumPercentage.compact()}%"
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 
@@ -394,6 +233,3 @@ fun SubjectDetailScreen(
         )
     }
 }
-
-private fun Double.compact(): String =
-    if (this % 1.0 == 0.0) toInt().toString() else "%.1f".format(this)

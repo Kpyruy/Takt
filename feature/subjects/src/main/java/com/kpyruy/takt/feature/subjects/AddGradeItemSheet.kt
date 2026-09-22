@@ -12,16 +12,20 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.ui.components.TaktDatePickerField
+import java.time.LocalDate
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,22 +36,24 @@ fun AddGradeItemSheet(
     onDismiss: () -> Unit,
     onSave: (GradeItem) -> Unit,
 ) {
-    var title by remember { mutableStateOf("") }
-    var earnedText by remember { mutableStateOf("") }
+    var title by remember(initialType) {
+        mutableStateOf(if (initialType == GradeItemType.EXAM) "Екзамен" else "")
+    }
+    var earnedText by remember { mutableStateOf("0") }
     var maxText by remember { mutableStateOf("") }
     var type by remember(initialType) { mutableStateOf(initialType) }
+    var dueDate by remember { mutableStateOf<LocalDate?>(null) }
+    var completed by remember(initialType) { mutableStateOf(initialType != GradeItemType.EXAM) }
+    var requiredForExam by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 28.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                if (initialType == GradeItemType.EXAM) "Додати екзамен" else "Додати результат",
+                if (initialType == GradeItemType.EXAM) "Додати екзамен" else "Додати оцінювання",
                 style = MaterialTheme.typography.headlineSmall,
             )
 
@@ -55,7 +61,6 @@ fun AddGradeItemSheet(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Назва") },
-                placeholder = { Text(if (initialType == GradeItemType.EXAM) "Екзамен" else "Тест 1") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -65,8 +70,58 @@ fun AddGradeItemSheet(
                 item {
                     GradeTypeChips(
                         selected = type,
-                        onSelected = { type = it },
+                        onSelected = {
+                            type = it
+                            if (it == GradeItemType.EXAM) requiredForExam = false
+                        },
                     )
+                }
+            }
+
+            TaktDatePickerField(
+                label = "Дата / дедлайн",
+                value = dueDate,
+                onValueChange = { dueDate = it },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(if (type == GradeItemType.EXAM) "Екзамен складено" else "Результат уже відомий")
+                    Text(
+                        if (completed) "Бали зафіксовані" else "Ще можна заробити ці бали",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = completed,
+                    onCheckedChange = {
+                        completed = it
+                        if (!it) earnedText = "0"
+                    },
+                )
+            }
+
+            if (type != GradeItemType.EXAM) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Потрібно для допуску")
+                        Text(
+                            "Окремо від кількості балів.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = requiredForExam, onCheckedChange = { requiredForExam = it })
                 }
             }
 
@@ -80,8 +135,8 @@ fun AddGradeItemSheet(
                         earnedText = it
                         error = null
                     },
+                    enabled = completed,
                     label = { Text("Отримано") },
-                    placeholder = { Text("0") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = error != null,
@@ -93,7 +148,6 @@ fun AddGradeItemSheet(
                         error = null
                     },
                     label = { Text("Максимум") },
-                    placeholder = { Text("40") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = error != null,
@@ -101,22 +155,18 @@ fun AddGradeItemSheet(
             }
 
             error?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             Button(
                 onClick = {
-                    val earned = earnedText.replace(',', '.').toDoubleOrNull()
+                    val earned = if (completed) earnedText.replace(',', '.').toDoubleOrNull() else 0.0
                     val max = maxText.replace(',', '.').toDoubleOrNull()
-
                     when {
                         earned == null || max == null -> error = "Введіть числові значення балів."
                         earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
                         max <= 0.0 -> error = "Максимум має бути більшим за 0."
+                        earned > max -> error = "Отримані бали не можуть перевищувати максимум."
                         else -> onSave(
                             GradeItem(
                                 id = UUID.randomUUID().toString(),
@@ -126,6 +176,9 @@ fun AddGradeItemSheet(
                                 earnedPoints = earned,
                                 maxPoints = max,
                                 recordedAtEpochMillis = System.currentTimeMillis(),
+                                dueDate = dueDate,
+                                completed = completed,
+                                requiredForExam = requiredForExam,
                             )
                         )
                     }
