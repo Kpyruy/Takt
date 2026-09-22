@@ -8,6 +8,7 @@ import com.kpyruy.takt.core.model.ScheduleEventStatus
 import com.kpyruy.takt.core.model.ScheduleTimeline
 import com.kpyruy.takt.core.ui.components.TaktTimeline
 import com.kpyruy.takt.core.ui.components.TaktTimelineItem
+import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
@@ -52,7 +53,7 @@ fun DayTimelineView(
                 time = event.startTime.format(timelineTimeFormatter),
                 title = event.title,
                 supporting = supporting,
-                markerColor = MaterialTheme.colorScheme.primary,
+                markerColor = taktSubjectColor(event.courseId ?: event.title),
                 emphasized = event.id == next?.id,
                 dimmed = selectedDate == today && event.endTime < now,
                 strikethrough = cancelled &&

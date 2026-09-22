@@ -46,6 +46,7 @@ import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktTimeline
 import com.kpyruy.takt.core.ui.components.TaktTimelineItem
+import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
@@ -193,7 +194,7 @@ fun HomeScreen(
                         time = event.startTime.format(timeFormatter),
                         title = event.title,
                         supporting = supporting,
-                        markerColor = MaterialTheme.colorScheme.primary,
+                        markerColor = taktSubjectColor(event.courseId ?: event.title),
                         emphasized = event.id == nextEvent?.id,
                         dimmed = event.endTime < now,
                         strikethrough = cancelled &&

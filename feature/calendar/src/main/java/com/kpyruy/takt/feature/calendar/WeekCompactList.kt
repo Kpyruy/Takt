@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -71,7 +72,7 @@ fun WeekCompactList(
                                 Text(
                                     event.startTime.format(weekTimeFormatter),
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = taktSubjectColor(event.courseId ?: event.title),
                                 )
                                 Column(Modifier.weight(1f)) {
                                     Text(event.title, maxLines = 2)

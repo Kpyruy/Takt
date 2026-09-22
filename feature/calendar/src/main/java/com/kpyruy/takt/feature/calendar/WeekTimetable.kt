@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -133,6 +134,9 @@ fun WeekTimetable(
 
                     layoutIntoLanes(eventsForDate(date)).forEach { laneEvent ->
                         val width = timetableColumnWidth / laneEvent.laneCount.toFloat()
+                        val subjectColor = taktSubjectColor(
+                            laneEvent.event.courseId ?: laneEvent.event.title
+                        )
                         Surface(
                             modifier = Modifier
                                 .offset(
@@ -144,7 +148,7 @@ fun WeekTimetable(
                                 .padding(horizontal = 2.dp, vertical = 1.dp)
                                 .clickable { onEventClick(laneEvent.event) },
                             shape = MaterialTheme.shapes.extraSmall,
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = subjectColor.copy(alpha = 0.18f),
                         ) {
                             Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
