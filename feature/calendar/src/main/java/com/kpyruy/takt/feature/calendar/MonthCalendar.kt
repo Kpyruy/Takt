@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +48,7 @@ fun MonthCalendar(
         days.chunked(7).forEach { week ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
             ) {
                 week.forEach { date ->
                     val selected = date == selectedDate
@@ -58,6 +59,7 @@ fun MonthCalendar(
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(min = 48.dp)
+                            .minimumInteractiveComponentSize()
                             .clickable { onSelect(date) },
                         shape = MaterialTheme.shapes.small,
                         color = if (selected) {
