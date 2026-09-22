@@ -6,13 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,9 +32,7 @@ fun MonthCalendar(
     hasContent: (LocalDate) -> Boolean,
     onSelect: (LocalDate) -> Unit,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth()) {
             listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд").forEach { label ->
                 Text(
@@ -50,7 +48,7 @@ fun MonthCalendar(
         days.chunked(7).forEach { week ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
             ) {
                 week.forEach { date ->
                     val selected = date == selectedDate
@@ -60,9 +58,10 @@ fun MonthCalendar(
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
+                            .heightIn(min = 48.dp)
+                            .minimumInteractiveComponentSize()
                             .clickable { onSelect(date) },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         color = if (selected) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -89,7 +88,7 @@ fun MonthCalendar(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
-                                        .padding(6.dp)
+                                        .padding(5.dp)
                                         .size(5.dp)
                                         .background(
                                             color = MaterialTheme.colorScheme.primary,
@@ -102,7 +101,7 @@ fun MonthCalendar(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .padding(bottom = 6.dp)
+                                        .padding(bottom = 5.dp)
                                         .size(5.dp)
                                         .background(
                                             color = if (selected) {

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.model.CardAppearance
+import com.kpyruy.takt.core.ui.theme.LocalTaktCardAppearance
 
 @Composable
 fun SectionCard(
@@ -18,10 +21,29 @@ fun SectionCard(
     contentPadding: PaddingValues = PaddingValues(16.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val appearance = LocalTaktCardAppearance.current
+    val colors = when (appearance) {
+        CardAppearance.ELEVATED -> CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        )
+        CardAppearance.TONAL_FILLED -> CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+    }
+    val elevation = CardDefaults.cardElevation(
+        defaultElevation = if (appearance == CardAppearance.ELEVATED) 2.dp else 0.dp,
+    )
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = colors,
+        elevation = elevation,
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Column(Modifier.padding(contentPadding), content = content)
+        Column(
+            modifier = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = content,
+        )
     }
 }

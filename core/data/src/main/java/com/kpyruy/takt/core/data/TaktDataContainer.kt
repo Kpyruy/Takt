@@ -18,6 +18,7 @@ class TaktDataContainer(context: Context) {
             TaktDatabase.MIGRATION_4_5,
             TaktDatabase.MIGRATION_5_6,
             TaktDatabase.MIGRATION_6_7,
+            TaktDatabase.MIGRATION_7_8,
         )
         .build()
 
@@ -26,6 +27,8 @@ class TaktDataContainer(context: Context) {
     val gradeRepository: GradeRepository = RoomGradeRepository(database.gradeDao())
     val studyContentRepository: StudyContentRepository =
         RoomStudyContentRepository(database.studyContentDao())
+    val examRepository: ExamRepository =
+        RoomExamRepository(database.examDao())
     val settingsRepository: AppSettingsRepository =
         SharedPreferencesAppSettingsRepository(context)
     val backupRepository: BackupRepository =

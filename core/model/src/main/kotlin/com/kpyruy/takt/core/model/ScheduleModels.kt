@@ -59,6 +59,7 @@ data class ScheduleException(
 enum class OneOffScheduleEventType {
     BLOCK_ACTION,
     EXTRA,
+    REMINDER,
 }
 
 data class OneOffScheduleEvent(

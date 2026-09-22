@@ -2,8 +2,12 @@ package com.kpyruy.takt.core.data
 
 import android.content.Context
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppThemeMode
+import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
+import com.kpyruy.takt.core.model.ThemeFamily
+import com.kpyruy.takt.core.model.WeekLayout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -33,10 +37,34 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(parityOverride = override)
     }
 
+    override suspend fun setCardAppearance(appearance: CardAppearance) {
+        preferences.edit().putString(KEY_CARD_APPEARANCE, appearance.name).apply()
+        state.value = state.value.copy(cardAppearance = appearance)
+    }
+
+    override suspend fun setThemeFamily(themeFamily: ThemeFamily) {
+        preferences.edit().putString(KEY_THEME_FAMILY, themeFamily.name).apply()
+        state.value = state.value.copy(themeFamily = themeFamily)
+    }
+
+    override suspend fun setThemeMode(themeMode: AppThemeMode) {
+        preferences.edit().putString(KEY_THEME_MODE, themeMode.name).apply()
+        state.value = state.value.copy(themeMode = themeMode)
+    }
+
+    override suspend fun setWeekLayout(layout: WeekLayout) {
+        preferences.edit().putString(KEY_WEEK_LAYOUT, layout.name).apply()
+        state.value = state.value.copy(weekLayout = layout)
+    }
+
     private fun read(): AppSettings = StoredSettingsCodec.decode(
         cancellationStyle = preferences.getString(KEY_CANCELLATION_STYLE, null),
         showHiddenLessons = preferences.getBoolean(KEY_SHOW_HIDDEN, false),
         parityOverride = preferences.getString(KEY_PARITY_OVERRIDE, null),
+        cardAppearance = preferences.getString(KEY_CARD_APPEARANCE, null),
+        themeFamily = preferences.getString(KEY_THEME_FAMILY, null),
+        themeMode = preferences.getString(KEY_THEME_MODE, null),
+        weekLayout = preferences.getString(KEY_WEEK_LAYOUT, null),
     )
 
     private companion object {
@@ -44,5 +72,9 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_CANCELLATION_STYLE = "cancellation_style"
         const val KEY_SHOW_HIDDEN = "show_hidden_lessons"
         const val KEY_PARITY_OVERRIDE = "parity_override"
+        const val KEY_CARD_APPEARANCE = "card_appearance"
+        const val KEY_THEME_FAMILY = "theme_family"
+        const val KEY_THEME_MODE = "theme_mode"
+        const val KEY_WEEK_LAYOUT = "week_layout"
     }
 }

@@ -1,17 +1,27 @@
 package com.kpyruy.takt.feature.studyplan
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
@@ -22,6 +32,8 @@ import com.kpyruy.takt.core.ui.components.StatusPill
 fun SemesterSection(
     semester: Int,
     courses: List<Course>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     onCourseClick: (String) -> Unit,
 ) {
     val totalCredits = courses.sumOf { it.credits }
@@ -29,13 +41,17 @@ fun SemesterSection(
 
     SectionCard {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable { onExpandedChange(!expanded) },
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
-                Text("Семестр $semester", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Column(Modifier.weight(1f)) {
+                Text("Семестр " + semester, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "$earnedCredits / $totalCredits кредитів",
+                    earnedCredits.toString() + " / " + totalCredits + " кредитів",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -46,22 +62,44 @@ fun SemesterSection(
                     else -> "План"
                 }
             )
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) "Згорнути семестр" else "Розгорнути семестр",
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
 
-        courses.forEachIndexed { index, course ->
-            if (index > 0) HorizontalDivider()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onCourseClick(course.id) }
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(course.title, fontWeight = FontWeight.Medium)
-                    Text(course.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Column {
+                courses.forEachIndexed { index, course ->
+                    if (index > 0) HorizontalDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .clickable { onCourseClick(course.id) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(course.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+                            Text(
+                                course.code,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            course.credits.toString() + " кр.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                Text("${course.credits} кр.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

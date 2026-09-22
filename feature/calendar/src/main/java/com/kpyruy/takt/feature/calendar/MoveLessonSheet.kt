@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -21,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.core.model.ScheduleException
 import com.kpyruy.takt.core.model.ScheduleExceptionType
-import java.time.LocalDate
-import java.time.LocalTime
+import com.kpyruy.takt.core.ui.components.TaktDatePickerField
+import com.kpyruy.takt.core.ui.components.TaktTimePickerField
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,58 +34,53 @@ fun MoveLessonSheet(
     onDismiss: () -> Unit,
     onSave: (ScheduleException) -> Unit,
 ) {
-    var dateText by remember(event) { mutableStateOf(event.date.toString()) }
-    var startText by remember(event) { mutableStateOf(event.startTime.toString()) }
-    var endText by remember(event) { mutableStateOf(event.endTime.toString()) }
+    var targetDate by remember(event) { mutableStateOf(event.date) }
+    var startTime by remember(event) { mutableStateOf(event.startTime) }
+    var endTime by remember(event) { mutableStateOf(event.endTime) }
     var room by remember(event) { mutableStateOf(event.room.orEmpty()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text("Перенести пару", style = MaterialTheme.typography.headlineSmall)
             Text(event.title, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            OutlinedTextField(
-                value = dateText,
+            TaktDatePickerField(
+                label = "Нова дата",
+                value = targetDate,
                 onValueChange = {
-                    dateText = it
+                    targetDate = it
                     error = null
                 },
-                label = { Text("Нова дата") },
-                placeholder = { Text("2026-09-25") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = error != null,
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedTextField(
-                    value = startText,
+                TaktTimePickerField(
+                    label = "Початок",
+                    value = startTime,
                     onValueChange = {
-                        startText = it
+                        startTime = it
                         error = null
                     },
-                    label = { Text("Початок") },
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
                 )
-                OutlinedTextField(
-                    value = endText,
+                TaktTimePickerField(
+                    label = "Кінець",
+                    value = endTime,
                     onValueChange = {
-                        endText = it
+                        endTime = it
                         error = null
                     },
-                    label = { Text("Кінець") },
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
                 )
             }
 
@@ -101,11 +98,8 @@ fun MoveLessonSheet(
 
             Button(
                 onClick = {
-                    val targetDate = runCatching { LocalDate.parse(dateText) }.getOrNull()
-                    val start = runCatching { LocalTime.parse(startText) }.getOrNull()
-                    val end = runCatching { LocalTime.parse(endText) }.getOrNull()
-                    if (targetDate == null || start == null || end == null || end <= start) {
-                        error = "Перевір дату у форматі YYYY-MM-DD і час у форматі HH:mm."
+                    if (endTime <= startTime) {
+                        error = "Кінець має бути пізніше початку."
                         return@Button
                     }
                     onSave(
@@ -115,8 +109,8 @@ fun MoveLessonSheet(
                             date = event.sourceDate ?: event.date,
                             type = ScheduleExceptionType.MOVED,
                             replacementDate = targetDate,
-                            replacementStartTime = start,
-                            replacementEndTime = end,
+                            replacementStartTime = startTime,
+                            replacementEndTime = endTime,
                             replacementRoom = room.trim().ifBlank { null },
                         )
                     )

@@ -9,6 +9,7 @@ import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeScale
+import java.time.LocalDate
 import kotlinx.coroutines.flow.map
 
 class RoomGradeRepository(
@@ -67,6 +68,9 @@ internal fun GradeItemEntity.toDomain() = GradeItem(
     earnedPoints = earnedPoints,
     maxPoints = maxPoints,
     recordedAtEpochMillis = recordedAtEpochMillis,
+    dueDate = dueDateEpochDay?.let(LocalDate::ofEpochDay),
+    completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun GradeItem.toEntity() = GradeItemEntity(
@@ -77,6 +81,9 @@ internal fun GradeItem.toEntity() = GradeItemEntity(
     earnedPoints = earnedPoints,
     maxPoints = maxPoints,
     recordedAtEpochMillis = recordedAtEpochMillis,
+    dueDateEpochDay = dueDate?.toEpochDay(),
+    completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 private fun GradeScaleEntity.toDomain() = GradeScale(

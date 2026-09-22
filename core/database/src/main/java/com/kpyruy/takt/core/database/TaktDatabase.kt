@@ -16,8 +16,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GradeOverrideEntity::class,
         StudyTaskEntity::class,
         CourseNoteEntity::class,
+        ExamInfoEntity::class,
+        ExamMaterialEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -25,6 +27,7 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun scheduleDao(): ScheduleDao
     abstract fun gradeDao(): GradeDao
     abstract fun studyContentDao(): StudyContentDao
+    abstract fun examDao(): ExamDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -151,6 +154,50 @@ abstract class TaktDatabase : RoomDatabase() {
                     CREATE TABLE IF NOT EXISTS grade_overrides (
                         courseId TEXT NOT NULL PRIMARY KEY,
                         grade TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE courses ADD COLUMN gradingType TEXT NOT NULL DEFAULT 'CONTINUOUS_LETTER'"
+                )
+                db.execSQL("ALTER TABLE courses ADD COLUMN passFailResult TEXT")
+                db.execSQL("ALTER TABLE grade_items ADD COLUMN dueDateEpochDay INTEGER")
+                db.execSQL(
+                    "ALTER TABLE grade_items ADD COLUMN completed INTEGER NOT NULL DEFAULT 1"
+                )
+                db.execSQL(
+                    "ALTER TABLE grade_items ADD COLUMN requiredForExam INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE study_tasks ADD COLUMN requiredForExam INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS exam_info (
+                        courseId TEXT NOT NULL PRIMARY KEY,
+                        gradeItemId TEXT,
+                        dateEpochDay INTEGER,
+                        startMinute INTEGER,
+                        endMinute INTEGER,
+                        room TEXT,
+                        attemptNumber INTEGER NOT NULL,
+                        maxAttempts INTEGER NOT NULL,
+                        notes TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS exam_materials (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        courseId TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        uri TEXT NOT NULL
                     )
                     """.trimIndent()
                 )

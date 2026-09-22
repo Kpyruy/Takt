@@ -48,6 +48,7 @@ internal fun StudyTaskEntity.toDomain() = StudyTask(
     description = description,
     dueDate = dueDateEpochDay?.let(LocalDate::ofEpochDay),
     completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun StudyTask.toEntity() = StudyTaskEntity(
@@ -57,6 +58,7 @@ internal fun StudyTask.toEntity() = StudyTaskEntity(
     description = description,
     dueDateEpochDay = dueDate?.toEpochDay(),
     completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun CourseNoteEntity.toDomain() = CourseNote(

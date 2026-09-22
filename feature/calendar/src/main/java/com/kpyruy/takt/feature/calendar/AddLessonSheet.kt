@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ScheduleRecurrence
 import com.kpyruy.takt.core.model.ScheduleRule
+import com.kpyruy.takt.core.ui.components.TaktTimePickerField
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.util.UUID
@@ -35,145 +38,165 @@ fun AddLessonSheet(
     onDismiss: () -> Unit,
     onSave: (ScheduleRule) -> Unit,
 ) {
-    var title by remember(initialRule) { mutableStateOf(initialRule?.title.orEmpty()) }
-    var room by remember(initialRule) { mutableStateOf(initialRule?.room.orEmpty()) }
-    var startText by remember(initialRule) {
-        mutableStateOf(initialRule?.startTime?.toString() ?: "08:00")
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        AddLessonForm(
+            initialDay = initialDay,
+            initialRule = initialRule,
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            onSave = onSave,
+        )
     }
-    var endText by remember(initialRule) {
-        mutableStateOf(initialRule?.endTime?.toString() ?: "09:50")
+}
+
+@Composable
+fun AddLessonForm(
+    initialDay: DayOfWeek,
+    initialRule: ScheduleRule? = null,
+    initialTitle: String = "",
+    initialRoom: String = "",
+    initialStartTime: LocalTime? = null,
+    initialEndTime: LocalTime? = null,
+    modifier: Modifier = Modifier,
+    showHeading: Boolean = true,
+    onSave: (ScheduleRule) -> Unit,
+) {
+    var title by remember(initialRule?.id, initialTitle) {
+        mutableStateOf(initialRule?.title ?: initialTitle)
     }
-    var day by remember(initialRule, initialDay) {
+    var room by remember(initialRule?.id, initialRoom) {
+        mutableStateOf(initialRule?.room ?: initialRoom)
+    }
+    var startTime by remember(initialRule?.id, initialStartTime) {
+        mutableStateOf(initialRule?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
+    }
+    var endTime by remember(initialRule?.id, initialEndTime) {
+        mutableStateOf(initialRule?.endTime ?: initialEndTime ?: LocalTime.of(9, 50))
+    }
+    var day by remember(initialRule?.id, initialDay) {
         mutableStateOf(initialRule?.dayOfWeek ?: initialDay)
     }
-    var recurrence by remember(initialRule) {
+    var recurrence by remember(initialRule?.id) {
         mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
     }
     var showTimeError by remember { mutableStateOf(false) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        if (showHeading) {
             Text(
                 text = if (initialRule == null) "Додати пару" else "Редагувати пару",
                 style = MaterialTheme.typography.headlineSmall,
             )
+        }
 
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Назва предмета") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Назва предмета") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-            OutlinedTextField(
-                value = room,
-                onValueChange = { room = it },
-                label = { Text("Аудиторія") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+        OutlinedTextField(
+            value = room,
+            onValueChange = { room = it },
+            label = { Text("Аудиторія") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-            Text("День тижня", style = MaterialTheme.typography.titleSmall)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(DayOfWeek.entries) { option ->
-                    FilterChip(
-                        selected = day == option,
-                        onClick = { day = option },
-                        label = { Text(option.shortLabel()) },
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OutlinedTextField(
-                    value = startText,
-                    onValueChange = {
-                        startText = it
-                        showTimeError = false
-                    },
-                    label = { Text("Початок") },
-                    placeholder = { Text("08:00") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = showTimeError,
-                )
-                OutlinedTextField(
-                    value = endText,
-                    onValueChange = {
-                        endText = it
-                        showTimeError = false
-                    },
-                    label = { Text("Кінець") },
-                    placeholder = { Text("09:50") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = showTimeError,
+        Text("День тижня", style = MaterialTheme.typography.titleSmall)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(DayOfWeek.entries) { option ->
+                FilterChip(
+                    selected = day == option,
+                    onClick = { day = option },
+                    label = { Text(option.shortLabel()) },
                 )
             }
+        }
 
-            Text("Повторення", style = MaterialTheme.typography.titleSmall)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                listOf(
-                    ScheduleRecurrence.WEEKLY to "Щотижня",
-                    ScheduleRecurrence.ODD_WEEKS to "Непарні",
-                    ScheduleRecurrence.EVEN_WEEKS to "Парні",
-                ).forEach { (option, label) ->
-                    FilterChip(
-                        selected = recurrence == option,
-                        onClick = { recurrence = option },
-                        label = { Text(label) },
-                    )
-                }
-            }
-
-            if (showTimeError) {
-                Text(
-                    text = "Перевір формат часу та переконайся, що кінець пізніше початку.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            Button(
-                onClick = {
-                    val start = runCatching { LocalTime.parse(startText) }.getOrNull()
-                    val end = runCatching { LocalTime.parse(endText) }.getOrNull()
-                    if (start == null || end == null || end <= start) {
-                        showTimeError = true
-                        return@Button
-                    }
-
-                    onSave(
-                        ScheduleRule(
-                            id = initialRule?.id ?: UUID.randomUUID().toString(),
-                            courseId = initialRule?.courseId,
-                            title = title.trim(),
-                            dayOfWeek = day,
-                            startTime = start,
-                            endTime = end,
-                            recurrence = recurrence,
-                            room = room.trim().ifBlank { null },
-                        )
-                    )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TaktTimePickerField(
+                label = "Початок",
+                value = startTime,
+                onValueChange = {
+                    startTime = it
+                    showTimeError = false
                 },
-                enabled = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (initialRule == null) "Зберегти" else "Оновити")
+                modifier = Modifier.weight(1f),
+            )
+            TaktTimePickerField(
+                label = "Кінець",
+                value = endTime,
+                onValueChange = {
+                    endTime = it
+                    showTimeError = false
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Text("Повторення", style = MaterialTheme.typography.titleSmall)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        ScheduleRecurrence.WEEKLY to "Щотижня",
+                        ScheduleRecurrence.ODD_WEEKS to "Непарні",
+                        ScheduleRecurrence.EVEN_WEEKS to "Парні",
+                    ).forEach { (option, label) ->
+                        FilterChip(
+                            selected = recurrence == option,
+                            onClick = { recurrence = option },
+                            label = { Text(label) },
+                        )
+                    }
+                }
             }
+        }
+
+        if (showTimeError) {
+            Text(
+                text = "Кінець має бути пізніше початку.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        Button(
+            onClick = {
+                if (endTime <= startTime) {
+                    showTimeError = true
+                    return@Button
+                }
+
+                onSave(
+                    ScheduleRule(
+                        id = initialRule?.id ?: UUID.randomUUID().toString(),
+                        courseId = initialRule?.courseId,
+                        title = title.trim(),
+                        dayOfWeek = day,
+                        startTime = startTime,
+                        endTime = endTime,
+                        recurrence = recurrence,
+                        room = room.trim().ifBlank { null },
+                    )
+                )
+            },
+            enabled = title.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (initialRule == null) "Зберегти" else "Оновити")
         }
     }
 }

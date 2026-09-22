@@ -16,6 +16,7 @@ class StudyContentMappingTest {
             description = "Finish graphs",
             dueDate = LocalDate.of(2026, 9, 25),
             completed = false,
+            requiredForExam = true,
         )
 
         assertEquals(model, model.toEntity().toDomain())
@@ -30,6 +31,7 @@ class StudyContentMappingTest {
             description = null,
             dueDate = null,
             completed = true,
+            requiredForExam = false,
         )
 
         assertEquals(model, model.toEntity().toDomain())

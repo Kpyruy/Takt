@@ -2,6 +2,8 @@ package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.database.CourseEntity
 import com.kpyruy.takt.core.database.CourseNoteEntity
+import com.kpyruy.takt.core.database.ExamInfoEntity
+import com.kpyruy.takt.core.database.ExamMaterialEntity
 import com.kpyruy.takt.core.database.GradeItemEntity
 import com.kpyruy.takt.core.database.GradeOverrideEntity
 import com.kpyruy.takt.core.database.GradeScaleEntity
@@ -10,8 +12,12 @@ import com.kpyruy.takt.core.database.ScheduleExceptionEntity
 import com.kpyruy.takt.core.database.ScheduleRuleEntity
 import com.kpyruy.takt.core.database.StudyTaskEntity
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppThemeMode
+import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
+import com.kpyruy.takt.core.model.ThemeFamily
+import com.kpyruy.takt.core.model.WeekLayout
 
 internal fun CourseEntity.toBackup() = BackupCourse(
     id = id,
@@ -22,6 +28,8 @@ internal fun CourseEntity.toBackup() = BackupCourse(
     status = status,
     requirementType = requirementType,
     syllabusUrl = syllabusUrl,
+    gradingType = gradingType,
+    passFailResult = passFailResult,
 )
 
 internal fun BackupCourse.toEntity() = CourseEntity(
@@ -33,6 +41,8 @@ internal fun BackupCourse.toEntity() = CourseEntity(
     status = status,
     requirementType = requirementType,
     syllabusUrl = syllabusUrl,
+    gradingType = gradingType,
+    passFailResult = passFailResult,
 )
 
 internal fun ScheduleRuleEntity.toBackup() = BackupScheduleRule(
@@ -109,6 +119,9 @@ internal fun GradeItemEntity.toBackup() = BackupGradeItem(
     earnedPoints = earnedPoints,
     maxPoints = maxPoints,
     recordedAtEpochMillis = recordedAtEpochMillis,
+    dueDateEpochDay = dueDateEpochDay,
+    completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun BackupGradeItem.toEntity() = GradeItemEntity(
@@ -119,6 +132,9 @@ internal fun BackupGradeItem.toEntity() = GradeItemEntity(
     earnedPoints = earnedPoints,
     maxPoints = maxPoints,
     recordedAtEpochMillis = recordedAtEpochMillis,
+    dueDateEpochDay = dueDateEpochDay,
+    completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun GradeScaleEntity.toBackup() = BackupGradeScale(
@@ -156,6 +172,7 @@ internal fun StudyTaskEntity.toBackup() = BackupStudyTask(
     description = description,
     dueDateEpochDay = dueDateEpochDay,
     completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun BackupStudyTask.toEntity() = StudyTaskEntity(
@@ -165,6 +182,7 @@ internal fun BackupStudyTask.toEntity() = StudyTaskEntity(
     description = description,
     dueDateEpochDay = dueDateEpochDay,
     completed = completed,
+    requiredForExam = requiredForExam,
 )
 
 internal fun CourseNoteEntity.toBackup() = BackupCourseNote(
@@ -183,10 +201,52 @@ internal fun BackupCourseNote.toEntity() = CourseNoteEntity(
     updatedAtEpochMillis = updatedAtEpochMillis,
 )
 
+internal fun ExamInfoEntity.toBackup() = BackupExamInfo(
+    courseId = courseId,
+    gradeItemId = gradeItemId,
+    dateEpochDay = dateEpochDay,
+    startMinute = startMinute,
+    endMinute = endMinute,
+    room = room,
+    attemptNumber = attemptNumber,
+    maxAttempts = maxAttempts,
+    notes = notes,
+)
+
+internal fun BackupExamInfo.toEntity() = ExamInfoEntity(
+    courseId = courseId,
+    gradeItemId = gradeItemId,
+    dateEpochDay = dateEpochDay,
+    startMinute = startMinute,
+    endMinute = endMinute,
+    room = room,
+    attemptNumber = attemptNumber,
+    maxAttempts = maxAttempts,
+    notes = notes,
+)
+
+internal fun ExamMaterialEntity.toBackup() = BackupExamMaterial(
+    id = id,
+    courseId = courseId,
+    title = title,
+    uri = uri,
+)
+
+internal fun BackupExamMaterial.toEntity() = ExamMaterialEntity(
+    id = id,
+    courseId = courseId,
+    title = title,
+    uri = uri,
+)
+
 internal fun AppSettings.toBackup() = BackupSettings(
     cancellationStyle = cancellationStyle.name,
     showHiddenLessons = showHiddenLessons,
     parityOverride = parityOverride.name,
+    cardAppearance = cardAppearance.name,
+    themeFamily = themeFamily.name,
+    themeMode = themeMode.name,
+    weekLayout = weekLayout.name,
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -195,4 +255,12 @@ internal fun BackupSettings.toModel() = AppSettings(
     showHiddenLessons = showHiddenLessons,
     parityOverride = runCatching { ParityOverride.valueOf(parityOverride) }
         .getOrDefault(ParityOverride.AUTO),
+    cardAppearance = runCatching { CardAppearance.valueOf(cardAppearance) }
+        .getOrDefault(CardAppearance.ELEVATED),
+    themeFamily = runCatching { ThemeFamily.valueOf(themeFamily) }
+        .getOrDefault(ThemeFamily.BLUE),
+    themeMode = runCatching { AppThemeMode.valueOf(themeMode) }
+        .getOrDefault(AppThemeMode.SYSTEM),
+    weekLayout = runCatching { WeekLayout.valueOf(weekLayout) }
+        .getOrDefault(WeekLayout.TIMETABLE),
 )
