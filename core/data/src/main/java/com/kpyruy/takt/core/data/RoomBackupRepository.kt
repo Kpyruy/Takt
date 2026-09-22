@@ -21,6 +21,8 @@ class RoomBackupRepository(
                 gradeOverrides = database.gradeDao().getOverridesSnapshot().map { it.toBackup() },
                 studyTasks = database.studyContentDao().getTasksSnapshot().map { it.toBackup() },
                 courseNotes = database.studyContentDao().getNotesSnapshot().map { it.toBackup() },
+                examInfo = database.examDao().getExamInfoSnapshot().map { it.toBackup() },
+                examMaterials = database.examDao().getMaterialsSnapshot().map { it.toBackup() },
                 settings = settings.toBackup(),
             )
         }
@@ -35,7 +37,10 @@ class RoomBackupRepository(
             val scheduleDao = database.scheduleDao()
             val gradeDao = database.gradeDao()
             val studyDao = database.studyContentDao()
+            val examDao = database.examDao()
 
+            examDao.deleteAllMaterials()
+            examDao.deleteAllExamInfo()
             studyDao.deleteAllNotes()
             studyDao.deleteAllTasks()
             gradeDao.deleteAllOverrides()
@@ -55,6 +60,8 @@ class RoomBackupRepository(
             gradeDao.upsertOverrides(payload.gradeOverrides.map { it.toEntity() })
             studyDao.upsertTasks(payload.studyTasks.map { it.toEntity() })
             studyDao.upsertNotes(payload.courseNotes.map { it.toEntity() })
+            examDao.upsertExamInfo(payload.examInfo.map { it.toEntity() })
+            examDao.upsertMaterials(payload.examMaterials.map { it.toEntity() })
         }
 
         val settings = payload.settings.toModel()

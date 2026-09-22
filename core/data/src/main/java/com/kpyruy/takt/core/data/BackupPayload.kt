@@ -15,10 +15,12 @@ data class BackupPayload(
     val gradeOverrides: List<BackupGradeOverride> = emptyList(),
     val studyTasks: List<BackupStudyTask> = emptyList(),
     val courseNotes: List<BackupCourseNote> = emptyList(),
+    val examInfo: List<BackupExamInfo> = emptyList(),
+    val examMaterials: List<BackupExamMaterial> = emptyList(),
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 1
+        const val CURRENT_VERSION = 2
     }
 }
 
@@ -32,6 +34,8 @@ data class BackupCourse(
     val status: String,
     val requirementType: String,
     val syllabusUrl: String? = null,
+    val gradingType: String = "CONTINUOUS_LETTER",
+    val passFailResult: String? = null,
 )
 
 @Serializable
@@ -79,6 +83,9 @@ data class BackupGradeItem(
     val earnedPoints: Double,
     val maxPoints: Double,
     val recordedAtEpochMillis: Long,
+    val dueDateEpochDay: Long? = null,
+    val completed: Boolean = true,
+    val requiredForExam: Boolean = false,
 )
 
 @Serializable
@@ -105,6 +112,7 @@ data class BackupStudyTask(
     val description: String? = null,
     val dueDateEpochDay: Long? = null,
     val completed: Boolean,
+    val requiredForExam: Boolean = false,
 )
 
 @Serializable
@@ -114,6 +122,27 @@ data class BackupCourseNote(
     val title: String,
     val content: String,
     val updatedAtEpochMillis: Long,
+)
+
+@Serializable
+data class BackupExamInfo(
+    val courseId: String,
+    val gradeItemId: String? = null,
+    val dateEpochDay: Long? = null,
+    val startMinute: Int? = null,
+    val endMinute: Int? = null,
+    val room: String? = null,
+    val attemptNumber: Int = 1,
+    val maxAttempts: Int = 3,
+    val notes: String = "",
+)
+
+@Serializable
+data class BackupExamMaterial(
+    val id: String,
+    val courseId: String,
+    val title: String,
+    val uri: String,
 )
 
 @Serializable
@@ -138,7 +167,7 @@ object BackupPayloadCodec {
 
     fun decode(raw: String): BackupPayload {
         val payload = json.decodeFromString<BackupPayload>(raw)
-        require(payload.version == BackupPayload.CURRENT_VERSION) {
+        require(payload.version in 1..BackupPayload.CURRENT_VERSION) {
             "Unsupported Takt backup version: ${payload.version}"
         }
         require(payload.courses.isNotEmpty()) {
