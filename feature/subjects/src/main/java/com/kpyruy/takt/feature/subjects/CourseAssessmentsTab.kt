@@ -29,11 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseGradingType
+import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
+import com.kpyruy.takt.core.ui.components.CompactSummaryItem
+import com.kpyruy.takt.core.ui.components.CompactSummaryStrip
 import com.kpyruy.takt.core.ui.components.SectionCard
 
 @Composable
@@ -41,6 +44,7 @@ internal fun CourseAssessmentsTab(
     course: Course,
     gradeItems: List<GradeItem>,
     gradeScale: GradeScale,
+    eligibility: ExamEligibility,
     manualGrade: GradeLetter?,
     onAddGrade: () -> Unit,
     onDeleteGrade: (String) -> Unit,
@@ -56,7 +60,22 @@ internal fun CourseAssessmentsTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         when (course.gradingType) {
-            CourseGradingType.EXAM_LETTER -> SectionCard {
+            CourseGradingType.EXAM_LETTER -> {
+                CompactSummaryStrip(
+                    items = listOf(
+                        CompactSummaryItem(
+                            value = if (eligibility.requiredCount == 0) "—" else {
+                                eligibility.completedCount.toString() + "/" + eligibility.requiredCount
+                            },
+                            label = "робіт для допуску",
+                        ),
+                        CompactSummaryItem(
+                            value = projection.securedPoints.displayNumber(),
+                            label = "балів гарантовано",
+                        ),
+                    )
+                )
+                SectionCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -76,6 +95,22 @@ internal fun CourseAssessmentsTab(
                     }
                     IconButton(onClick = { showLegend = true }) {
                         Icon(Icons.Default.Info, contentDescription = "Шкала оцінювання")
+                    }
+                }
+
+                val upcoming = gradeItems
+                    .filter { !it.completed }
+                    .sortedBy { it.dueDate }
+                    .take(3)
+                if (upcoming.isNotEmpty()) {
+                    SectionCard {
+                        Text("Найближче", style = MaterialTheme.typography.titleMedium)
+                        upcoming.forEach { item ->
+                            Text(
+                                item.title + " · до " + item.maxPoints.displayNumber() + " б.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

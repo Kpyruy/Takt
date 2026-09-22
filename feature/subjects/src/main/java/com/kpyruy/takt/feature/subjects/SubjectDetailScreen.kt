@@ -144,6 +144,7 @@ fun SubjectDetailScreen(
                     course = item,
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
+                    eligibility = eligibility,
                     manualGrade = manualGrade,
                     onAddGrade = { showAddGrade = true },
                     onDeleteGrade = { id -> scope.launch { gradeRepository.deleteItem(id) } },

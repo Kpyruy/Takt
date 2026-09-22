@@ -1056,7 +1056,7 @@ Expected: `BUILD SUCCESSFUL`.
 - [ ] **Step 6: Verify academic scenarios manually**
 
 Use explicit fixtures/data:
-- exam course with 3 × 10-point tasks scored 0 and 70-point pending exam -> maximum possible C;
+- exam course with 3 × 10-point tasks scored 0 and 70-point pending exam -> maximum possible D with the default 65% D threshold;
 - exam course with 30 secured and 70 pending -> A requires 62 exam points with default 92% A threshold;
 - required unscored tasks 2/3 complete -> eligibility not met;
 - 3/3 complete -> eligibility met;

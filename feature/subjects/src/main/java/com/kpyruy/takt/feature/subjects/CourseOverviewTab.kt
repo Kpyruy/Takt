@@ -21,6 +21,7 @@ import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
+import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
@@ -73,8 +74,15 @@ internal fun CourseOverviewTab(
             Text(
                 when (course.gradingType) {
                     CourseGradingType.EXAM_LETTER -> {
-                        val ceiling = projection.maximumPossibleLetter?.name ?: "—"
-                        "Гарантовано " + projection.securedPoints.displayNumber() + " балів · максимум " + ceiling
+                        val examAdded = gradeItems.any { it.type == GradeItemType.EXAM }
+                        if (examAdded) {
+                            val ceiling = projection.maximumPossibleLetter?.name ?: "—"
+                            "Гарантовано " + projection.securedPoints.displayNumber() +
+                                " балів · максимум " + ceiling
+                        } else {
+                            "Гарантовано " + projection.securedPoints.displayNumber() +
+                                " балів · екзамен ще не додано"
+                        }
                     }
                     CourseGradingType.CONTINUOUS_LETTER -> {
                         if (summary.maxPoints == 0.0) "Ще немає результатів"

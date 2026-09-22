@@ -204,7 +204,8 @@ fun HomeScreen(
                     }.joinToString(" · ").ifBlank { null }
 
                     TaktTimelineItem(
-                        time = event.startTime.format(timeFormatter),
+                        time = event.startTime.format(timeFormatter) + "\n" +
+                            event.endTime.format(timeFormatter),
                         title = event.title,
                         supporting = supporting,
                         markerColor = taktSubjectColor(event.courseId ?: event.title),
@@ -316,10 +317,16 @@ fun HomeScreen(
             }
         }
 
-        if (upcomingTasks.isEmpty() && todayEvents.isNotEmpty()) {
+        SectionCard {
+            Text("Ритм", style = MaterialTheme.typography.labelLarge)
             Text(
-                "На найближчі дні немає активних дедлайнів.",
-                style = MaterialTheme.typography.bodySmall,
+                text = when {
+                    overdueCount > 0 -> "Є $overdueCount прострочених завдань. Почни з одного пункту."
+                    incompleteToday > 0 -> "На сьогодні залишилось $incompleteToday завдань."
+                    upcomingTasks.isEmpty() -> "Все під контролем — на найближчі дні активних дедлайнів немає."
+                    else -> "План на найближчі дні вже зібраний вище."
+                },
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -39,9 +39,15 @@ fun TaktTimeline(
     gapLabels: Map<Int, String> = emptyMap(),
     modifier: Modifier = Modifier,
     onItemClick: ((Int) -> Unit)? = null,
+    currentTimeBeforeIndex: Int? = null,
+    currentTimeLabel: String? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         items.forEachIndexed { index, item ->
+            if (currentTimeBeforeIndex == index && currentTimeLabel != null) {
+                CurrentTimeMarker(currentTimeLabel)
+            }
+
             val rowModifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
@@ -63,7 +69,7 @@ fun TaktTimeline(
                     text = item.time,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(50.dp).padding(top = 2.dp),
+                    modifier = Modifier.width(58.dp).padding(top = 2.dp),
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
@@ -106,11 +112,37 @@ fun TaktTimeline(
             gapLabels[index]?.let { label ->
                 Text(
                     text = label,
-                    modifier = Modifier.padding(start = 76.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(start = 84.dp, bottom = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+
+        if (currentTimeBeforeIndex == items.size && currentTimeLabel != null) {
+            CurrentTimeMarker(currentTimeLabel)
+        }
+    }
+}
+
+@Composable
+private fun CurrentTimeMarker(label: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.width(58.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.primary)
+        )
     }
 }

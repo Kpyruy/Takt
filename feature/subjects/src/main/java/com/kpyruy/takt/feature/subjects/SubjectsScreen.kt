@@ -21,6 +21,7 @@ import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ExamEligibilityCalculator
+import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary

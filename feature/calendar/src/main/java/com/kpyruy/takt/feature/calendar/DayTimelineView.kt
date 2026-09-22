@@ -34,6 +34,12 @@ fun DayTimelineView(
         }
     }
 
+    val currentMarkerIndex = if (selectedDate == today) {
+        ordered.indexOfFirst { it.endTime >= now }.let { if (it >= 0) it else ordered.size }
+    } else {
+        null
+    }
+
     TaktTimeline(
         items = ordered.map { event ->
             val cancelled = event.status == ScheduleEventStatus.CANCELLED
@@ -50,7 +56,8 @@ fun DayTimelineView(
             }.joinToString(" · ").ifBlank { null }
 
             TaktTimelineItem(
-                time = event.startTime.format(timelineTimeFormatter),
+                time = event.startTime.format(timelineTimeFormatter) + "\n" +
+                    event.endTime.format(timelineTimeFormatter),
                 title = event.title,
                 supporting = supporting,
                 markerColor = taktSubjectColor(event.courseId ?: event.title),
@@ -62,5 +69,11 @@ fun DayTimelineView(
         },
         gapLabels = gaps,
         onItemClick = { index -> onEventClick(ordered[index]) },
+        currentTimeBeforeIndex = currentMarkerIndex,
+        currentTimeLabel = if (selectedDate == today) {
+            "Зараз\n" + now.format(timelineTimeFormatter)
+        } else {
+            null
+        },
     )
 }
