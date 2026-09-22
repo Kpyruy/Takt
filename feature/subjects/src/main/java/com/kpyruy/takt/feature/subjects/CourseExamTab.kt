@@ -24,6 +24,7 @@ import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.ExamInfo
 import com.kpyruy.takt.core.model.ExamMaterial
 import com.kpyruy.takt.core.model.GradeItem
+import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
@@ -100,16 +101,18 @@ internal fun CourseExamTab(
         } else {
             ExamProgressCards(gradeItems = gradeItems, projection = projection)
 
-            SectionCard {
-                Text("Скільки треба на екзамені", style = MaterialTheme.typography.titleMedium)
-                listOf(GradeLetter.A, GradeLetter.B, GradeLetter.C, GradeLetter.D, GradeLetter.E)
-                    .forEach { grade ->
-                        val needed = projection.examPointsNeeded[grade]
-                        Text(
-                            grade.name + " · " +
-                                if (needed == null) "Недосяжно" else needed.displayNumber() + " б."
-                        )
-                    }
+            if (gradeItems.any { it.type == GradeItemType.EXAM }) {
+                SectionCard {
+                    Text("Скільки треба на екзамені", style = MaterialTheme.typography.titleMedium)
+                    listOf(GradeLetter.A, GradeLetter.B, GradeLetter.C, GradeLetter.D, GradeLetter.E)
+                        .forEach { grade ->
+                            val needed = projection.examPointsNeeded[grade]
+                            Text(
+                                grade.name + " · " +
+                                    if (needed == null) "Недосяжно" else needed.displayNumber() + " б."
+                            )
+                        }
+                }
             }
 
             SectionCard {
