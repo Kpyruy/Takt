@@ -31,6 +31,7 @@ import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
+import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
@@ -64,7 +65,9 @@ internal fun CourseAssessmentsTab(
                 CompactSummaryStrip(
                     items = listOf(
                         CompactSummaryItem(
-                            value = if (eligibility.requiredCount == 0) "—" else {
+                            value = if (eligibility.requiredCount == 0) {
+                                "—"
+                            } else {
                                 eligibility.completedCount.toString() + "/" + eligibility.requiredCount
                             },
                             label = "робіт для допуску",
@@ -75,26 +78,33 @@ internal fun CourseAssessmentsTab(
                         ),
                     )
                 )
+
                 SectionCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("До екзамену", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            projection.securedPoints.displayNumber() + " балів уже зафіксовано",
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text(
-                            "Максимально можлива оцінка зараз: " +
-                                (projection.maximumPossibleLetter?.name ?: "—"),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    IconButton(onClick = { showLegend = true }) {
-                        Icon(Icons.Default.Info, contentDescription = "Шкала оцінювання")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("До екзамену", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                projection.securedPoints.displayNumber() + " балів уже зафіксовано",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                            val examAdded = gradeItems.any { it.type == GradeItemType.EXAM }
+                            Text(
+                                text = if (examAdded) {
+                                    "Максимально можлива оцінка зараз: " +
+                                        (projection.maximumPossibleLetter?.name ?: "—")
+                                } else {
+                                    "Додай екзамен, щоб побачити максимальну можливу оцінку."
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(onClick = { showLegend = true }) {
+                            Icon(Icons.Default.Info, contentDescription = "Шкала оцінювання")
+                        }
                     }
                 }
 
@@ -114,6 +124,7 @@ internal fun CourseAssessmentsTab(
                     }
                 }
             }
+
             CourseGradingType.CONTINUOUS_LETTER -> SectionCard {
                 Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
                 if (summary.maxPoints > 0.0) {
@@ -130,6 +141,7 @@ internal fun CourseAssessmentsTab(
                     Text("Ще немає результатів", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+
             CourseGradingType.PASS_FAIL -> SectionCard {
                 Text("Без A–FX", style = MaterialTheme.typography.titleMedium)
                 Text(
