@@ -36,138 +36,164 @@ fun AddLessonSheet(
     onDismiss: () -> Unit,
     onSave: (ScheduleRule) -> Unit,
 ) {
-    var title by remember(initialRule) { mutableStateOf(initialRule?.title.orEmpty()) }
-    var room by remember(initialRule) { mutableStateOf(initialRule?.room.orEmpty()) }
-    var startTime by remember(initialRule) {
-        mutableStateOf(initialRule?.startTime ?: LocalTime.of(8, 0))
-    }
-    var endTime by remember(initialRule) {
-        mutableStateOf(initialRule?.endTime ?: LocalTime.of(9, 50))
-    }
-    var day by remember(initialRule, initialDay) {
-        mutableStateOf(initialRule?.dayOfWeek ?: initialDay)
-    }
-    var recurrence by remember(initialRule) {
-        mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
-    }
-    var showTimeError by remember { mutableStateOf(false) }
-
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
+        AddLessonForm(
+            initialDay = initialDay,
+            initialRule = initialRule,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+            onSave = onSave,
+        )
+    }
+}
+
+@Composable
+fun AddLessonForm(
+    initialDay: DayOfWeek,
+    initialRule: ScheduleRule? = null,
+    initialTitle: String = "",
+    initialRoom: String = "",
+    initialStartTime: LocalTime? = null,
+    initialEndTime: LocalTime? = null,
+    modifier: Modifier = Modifier,
+    showHeading: Boolean = true,
+    onSave: (ScheduleRule) -> Unit,
+) {
+    var title by remember(initialRule?.id, initialTitle) {
+        mutableStateOf(initialRule?.title ?: initialTitle)
+    }
+    var room by remember(initialRule?.id, initialRoom) {
+        mutableStateOf(initialRule?.room ?: initialRoom)
+    }
+    var startTime by remember(initialRule?.id, initialStartTime) {
+        mutableStateOf(initialRule?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
+    }
+    var endTime by remember(initialRule?.id, initialEndTime) {
+        mutableStateOf(initialRule?.endTime ?: initialEndTime ?: LocalTime.of(9, 50))
+    }
+    var day by remember(initialRule?.id, initialDay) {
+        mutableStateOf(initialRule?.dayOfWeek ?: initialDay)
+    }
+    var recurrence by remember(initialRule?.id) {
+        mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
+    }
+    var showTimeError by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        if (showHeading) {
             Text(
                 text = if (initialRule == null) "Додати пару" else "Редагувати пару",
                 style = MaterialTheme.typography.headlineSmall,
             )
+        }
 
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Назва предмета") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Назва предмета") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-            OutlinedTextField(
-                value = room,
-                onValueChange = { room = it },
-                label = { Text("Аудиторія") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+        OutlinedTextField(
+            value = room,
+            onValueChange = { room = it },
+            label = { Text("Аудиторія") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-            Text("День тижня", style = MaterialTheme.typography.titleSmall)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(DayOfWeek.entries) { option ->
-                    FilterChip(
-                        selected = day == option,
-                        onClick = { day = option },
-                        label = { Text(option.shortLabel()) },
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TaktTimePickerField(
-                    label = "Початок",
-                    value = startTime,
-                    onValueChange = {
-                        startTime = it
-                        showTimeError = false
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                TaktTimePickerField(
-                    label = "Кінець",
-                    value = endTime,
-                    onValueChange = {
-                        endTime = it
-                        showTimeError = false
-                    },
-                    modifier = Modifier.weight(1f),
+        Text("День тижня", style = MaterialTheme.typography.titleSmall)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(DayOfWeek.entries) { option ->
+                FilterChip(
+                    selected = day == option,
+                    onClick = { day = option },
+                    label = { Text(option.shortLabel()) },
                 )
             }
+        }
 
-            Text("Повторення", style = MaterialTheme.typography.titleSmall)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(
-                            ScheduleRecurrence.WEEKLY to "Щотижня",
-                            ScheduleRecurrence.ODD_WEEKS to "Непарні",
-                            ScheduleRecurrence.EVEN_WEEKS to "Парні",
-                        ).forEach { (option, label) ->
-                            FilterChip(
-                                selected = recurrence == option,
-                                onClick = { recurrence = option },
-                                label = { Text(label) },
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (showTimeError) {
-                Text(
-                    text = "Кінець має бути пізніше початку.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            Button(
-                onClick = {
-                    if (endTime <= startTime) {
-                        showTimeError = true
-                        return@Button
-                    }
-
-                    onSave(
-                        ScheduleRule(
-                            id = initialRule?.id ?: UUID.randomUUID().toString(),
-                            courseId = initialRule?.courseId,
-                            title = title.trim(),
-                            dayOfWeek = day,
-                            startTime = startTime,
-                            endTime = endTime,
-                            recurrence = recurrence,
-                            room = room.trim().ifBlank { null },
-                        )
-                    )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TaktTimePickerField(
+                label = "Початок",
+                value = startTime,
+                onValueChange = {
+                    startTime = it
+                    showTimeError = false
                 },
-                enabled = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (initialRule == null) "Зберегти" else "Оновити")
+                modifier = Modifier.weight(1f),
+            )
+            TaktTimePickerField(
+                label = "Кінець",
+                value = endTime,
+                onValueChange = {
+                    endTime = it
+                    showTimeError = false
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Text("Повторення", style = MaterialTheme.typography.titleSmall)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        ScheduleRecurrence.WEEKLY to "Щотижня",
+                        ScheduleRecurrence.ODD_WEEKS to "Непарні",
+                        ScheduleRecurrence.EVEN_WEEKS to "Парні",
+                    ).forEach { (option, label) ->
+                        FilterChip(
+                            selected = recurrence == option,
+                            onClick = { recurrence = option },
+                            label = { Text(label) },
+                        )
+                    }
+                }
             }
+        }
+
+        if (showTimeError) {
+            Text(
+                text = "Кінець має бути пізніше початку.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        Button(
+            onClick = {
+                if (endTime <= startTime) {
+                    showTimeError = true
+                    return@Button
+                }
+
+                onSave(
+                    ScheduleRule(
+                        id = initialRule?.id ?: UUID.randomUUID().toString(),
+                        courseId = initialRule?.courseId,
+                        title = title.trim(),
+                        dayOfWeek = day,
+                        startTime = startTime,
+                        endTime = endTime,
+                        recurrence = recurrence,
+                        room = room.trim().ifBlank { null },
+                    )
+                )
+            },
+            enabled = title.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (initialRule == null) "Зберегти" else "Оновити")
         }
     }
 }

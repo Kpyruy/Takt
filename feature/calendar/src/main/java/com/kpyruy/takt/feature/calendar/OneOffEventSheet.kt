@@ -36,32 +36,64 @@ fun OneOffEventSheet(
     onDismiss: () -> Unit,
     onSave: (OneOffScheduleEvent) -> Unit,
 ) {
-    var title by remember(initialEvent) { mutableStateOf(initialEvent?.title.orEmpty()) }
-    var date by remember(initialEvent, initialDate) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        OneOffEventForm(
+            initialDate = initialDate,
+            initialEvent = initialEvent,
+            initialType = initialType,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            onSave = onSave,
+        )
+    }
+}
+
+@Composable
+fun OneOffEventForm(
+    initialDate: LocalDate,
+    initialEvent: OneOffScheduleEvent? = null,
+    initialType: OneOffScheduleEventType = OneOffScheduleEventType.EXTRA,
+    initialTitle: String = "",
+    initialStartTime: LocalTime? = null,
+    initialEndTime: LocalTime? = null,
+    initialRoom: String = "",
+    modifier: Modifier = Modifier,
+    showHeading: Boolean = true,
+    onSave: (OneOffScheduleEvent) -> Unit,
+) {
+    var title by remember(initialEvent?.id, initialTitle) {
+        mutableStateOf(initialEvent?.title ?: initialTitle)
+    }
+    var date by remember(initialEvent?.id, initialDate) {
         mutableStateOf(initialEvent?.date ?: initialDate)
     }
-    var startTime by remember(initialEvent) {
-        mutableStateOf(initialEvent?.startTime ?: LocalTime.of(8, 0))
+    var startTime by remember(initialEvent?.id, initialStartTime) {
+        mutableStateOf(initialEvent?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
     }
-    var endTime by remember(initialEvent, initialType) {
+    var endTime by remember(initialEvent?.id, initialType, initialEndTime) {
         mutableStateOf(
             initialEvent?.endTime
+                ?: initialEndTime
                 ?: if (initialType == OneOffScheduleEventType.REMINDER) LocalTime.of(8, 5)
                 else LocalTime.of(9, 50)
         )
     }
-    var room by remember(initialEvent) { mutableStateOf(initialEvent?.room.orEmpty()) }
-    var type by remember(initialEvent, initialType) {
+    var room by remember(initialEvent?.id, initialRoom) {
+        mutableStateOf(initialEvent?.room ?: initialRoom)
+    }
+    var type by remember(initialEvent?.id, initialType) {
         mutableStateOf(initialEvent?.type ?: initialType)
     }
     var error by remember { mutableStateOf<String?>(null) }
     val isReminder = type == OneOffScheduleEventType.REMINDER
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        if (showHeading) {
             Text(
                 when {
                     initialEvent != null -> "Редагувати подію"
@@ -70,113 +102,113 @@ fun OneOffEventSheet(
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
+        }
 
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text(if (isReminder) "Що нагадати" else "Назва") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        if (!isReminder) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = type == OneOffScheduleEventType.EXTRA,
+                    onClick = { type = OneOffScheduleEventType.EXTRA },
+                    label = { Text("Додаткова пара") },
+                )
+                FilterChip(
+                    selected = type == OneOffScheduleEventType.BLOCK_ACTION,
+                    onClick = { type = OneOffScheduleEventType.BLOCK_ACTION },
+                    label = { Text("Блокова акція") },
+                )
+            }
+        } else {
+            Text(
+                "Це нагадування відображається всередині Takt; системне Android-сповіщення не створюється.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        TaktDatePickerField(
+            label = "Дата",
+            value = date,
+            onValueChange = {
+                date = it
+                error = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TaktTimePickerField(
+                label = "Початок",
+                value = startTime,
+                onValueChange = {
+                    startTime = it
+                    if (isReminder && endTime <= it) endTime = it.plusMinutes(5)
+                    error = null
+                },
+                modifier = Modifier.weight(1f),
+            )
+            TaktTimePickerField(
+                label = "Кінець",
+                value = endTime,
+                onValueChange = {
+                    endTime = it
+                    error = null
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        if (!isReminder) {
             OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text(if (isReminder) "Що нагадати" else "Назва") },
+                value = room,
+                onValueChange = { room = it },
+                label = { Text("Аудиторія") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
+        }
 
-            if (!isReminder) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = type == OneOffScheduleEventType.EXTRA,
-                        onClick = { type = OneOffScheduleEventType.EXTRA },
-                        label = { Text("Додаткова пара") },
-                    )
-                    FilterChip(
-                        selected = type == OneOffScheduleEventType.BLOCK_ACTION,
-                        onClick = { type = OneOffScheduleEventType.BLOCK_ACTION },
-                        label = { Text("Блокова акція") },
-                    )
-                }
-            } else {
-                Text(
-                    "Це нагадування відображається всередині Takt; системне Android-сповіщення не створюється.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            TaktDatePickerField(
-                label = "Дата",
-                value = date,
-                onValueChange = {
-                    date = it
-                    error = null
-                },
-                modifier = Modifier.fillMaxWidth(),
+        error?.let {
+            Text(
+                it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
             )
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TaktTimePickerField(
-                    label = "Початок",
-                    value = startTime,
-                    onValueChange = {
-                        startTime = it
-                        if (isReminder && endTime <= it) endTime = it.plusMinutes(5)
-                        error = null
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                TaktTimePickerField(
-                    label = "Кінець",
-                    value = endTime,
-                    onValueChange = {
-                        endTime = it
-                        error = null
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            if (!isReminder) {
-                OutlinedTextField(
-                    value = room,
-                    onValueChange = { room = it },
-                    label = { Text("Аудиторія") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-            }
-
-            error?.let {
-                Text(
-                    it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            Button(
-                onClick = {
-                    if (endTime <= startTime) {
-                        error = "Кінець має бути пізніше початку."
-                        return@Button
-                    }
-                    onSave(
-                        OneOffScheduleEvent(
-                            id = initialEvent?.id ?: UUID.randomUUID().toString(),
-                            courseId = initialEvent?.courseId,
-                            title = title.trim(),
-                            date = date,
-                            startTime = startTime,
-                            endTime = endTime,
-                            room = if (isReminder) null else room.trim().ifBlank { null },
-                            type = type,
-                        )
+        Button(
+            onClick = {
+                if (endTime <= startTime) {
+                    error = "Кінець має бути пізніше початку."
+                    return@Button
+                }
+                onSave(
+                    OneOffScheduleEvent(
+                        id = initialEvent?.id ?: UUID.randomUUID().toString(),
+                        courseId = initialEvent?.courseId,
+                        title = title.trim(),
+                        date = date,
+                        startTime = startTime,
+                        endTime = endTime,
+                        room = if (isReminder) null else room.trim().ifBlank { null },
+                        type = type,
                     )
-                },
-                enabled = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (initialEvent == null) "Додати" else "Оновити")
-            }
+                )
+            },
+            enabled = title.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (initialEvent == null) "Додати" else "Оновити")
         }
     }
 }

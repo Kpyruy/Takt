@@ -32,162 +32,204 @@ import java.util.UUID
 @Composable
 fun AddGradeItemSheet(
     courseId: String,
+    initialItem: GradeItem? = null,
     initialType: GradeItemType = GradeItemType.TEST,
     onDismiss: () -> Unit,
     onSave: (GradeItem) -> Unit,
 ) {
-    var title by remember(initialType) {
-        mutableStateOf(if (initialType == GradeItemType.EXAM) "Екзамен" else "")
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        AddGradeItemForm(
+            courseId = courseId,
+            initialItem = initialItem,
+            initialType = initialType,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            onSave = onSave,
+        )
     }
-    var earnedText by remember { mutableStateOf("0") }
-    var maxText by remember { mutableStateOf("") }
-    var type by remember(initialType) { mutableStateOf(initialType) }
-    var dueDate by remember { mutableStateOf<LocalDate?>(null) }
-    var completed by remember(initialType) { mutableStateOf(initialType != GradeItemType.EXAM) }
-    var requiredForExam by remember { mutableStateOf(false) }
+}
+
+@Composable
+fun AddGradeItemForm(
+    courseId: String,
+    initialItem: GradeItem? = null,
+    initialType: GradeItemType = GradeItemType.TEST,
+    initialTitle: String = "",
+    modifier: Modifier = Modifier,
+    showHeading: Boolean = true,
+    onSave: (GradeItem) -> Unit,
+) {
+    val effectiveType = initialItem?.type ?: initialType
+    var title by remember(initialItem?.id, initialTitle, effectiveType) {
+        mutableStateOf(
+            initialItem?.title
+                ?: initialTitle.ifBlank { if (effectiveType == GradeItemType.EXAM) "Екзамен" else "" }
+        )
+    }
+    var earnedText by remember(initialItem?.id) {
+        mutableStateOf(initialItem?.earnedPoints?.toEditableNumber() ?: "0")
+    }
+    var maxText by remember(initialItem?.id) {
+        mutableStateOf(initialItem?.maxPoints?.toEditableNumber().orEmpty())
+    }
+    var type by remember(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
+    var dueDate by remember(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
+    var completed by remember(initialItem?.id, effectiveType) {
+        mutableStateOf(initialItem?.completed ?: (effectiveType != GradeItemType.EXAM))
+    }
+    var requiredForExam by remember(initialItem?.id) {
+        mutableStateOf(initialItem?.requiredForExam ?: false)
+    }
     var error by remember { mutableStateOf<String?>(null) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        if (showHeading) {
             Text(
-                if (initialType == GradeItemType.EXAM) "Додати екзамен" else "Додати оцінювання",
+                when {
+                    initialItem != null -> "Редагувати оцінювання"
+                    initialType == GradeItemType.EXAM -> "Додати екзамен"
+                    else -> "Додати оцінювання"
+                },
                 style = MaterialTheme.typography.headlineSmall,
             )
+        }
 
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Назва") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Назва") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
 
-            Text("Тип", style = MaterialTheme.typography.titleSmall)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item {
-                    GradeTypeChips(
-                        selected = type,
-                        onSelected = {
-                            type = it
-                            if (it == GradeItemType.EXAM) requiredForExam = false
-                        },
-                    )
-                }
+        Text("Тип", style = MaterialTheme.typography.titleSmall)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                GradeTypeChips(
+                    selected = type,
+                    onSelected = {
+                        type = it
+                        if (it == GradeItemType.EXAM) requiredForExam = false
+                    },
+                )
             }
+        }
 
-            TaktDatePickerField(
-                label = "Дата / дедлайн",
-                value = dueDate,
-                onValueChange = { dueDate = it },
-                modifier = Modifier.fillMaxWidth(),
+        TaktDatePickerField(
+            label = "Дата / дедлайн",
+            value = dueDate,
+            onValueChange = { dueDate = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(if (type == GradeItemType.EXAM) "Екзамен складено" else "Результат уже відомий")
+                Text(
+                    if (completed) "Бали зафіксовані" else "Ще можна заробити ці бали",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = completed,
+                onCheckedChange = {
+                    completed = it
+                    if (!it) earnedText = "0"
+                },
             )
+        }
 
+        if (type != GradeItemType.EXAM) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text(if (type == GradeItemType.EXAM) "Екзамен складено" else "Результат уже відомий")
+                    Text("Потрібно для допуску")
                     Text(
-                        if (completed) "Бали зафіксовані" else "Ще можна заробити ці бали",
+                        "Окремо від кількості балів.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Switch(
-                    checked = completed,
-                    onCheckedChange = {
-                        completed = it
-                        if (!it) earnedText = "0"
-                    },
-                )
+                Switch(checked = requiredForExam, onCheckedChange = { requiredForExam = it })
             }
+        }
 
-            if (type != GradeItemType.EXAM) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Потрібно для допуску")
-                        Text(
-                            "Окремо від кількості балів.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = requiredForExam, onCheckedChange = { requiredForExam = it })
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OutlinedTextField(
-                    value = earnedText,
-                    onValueChange = {
-                        earnedText = it
-                        error = null
-                    },
-                    enabled = completed,
-                    label = { Text("Отримано") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
-                )
-                OutlinedTextField(
-                    value = maxText,
-                    onValueChange = {
-                        maxText = it
-                        error = null
-                    },
-                    label = { Text("Максимум") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
-                )
-            }
-
-            error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Button(
-                onClick = {
-                    val earned = if (completed) earnedText.replace(',', '.').toDoubleOrNull() else 0.0
-                    val max = maxText.replace(',', '.').toDoubleOrNull()
-                    when {
-                        earned == null || max == null -> error = "Введіть числові значення балів."
-                        earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
-                        max <= 0.0 -> error = "Максимум має бути більшим за 0."
-                        earned > max -> error = "Отримані бали не можуть перевищувати максимум."
-                        else -> onSave(
-                            GradeItem(
-                                id = UUID.randomUUID().toString(),
-                                courseId = courseId,
-                                title = title.trim(),
-                                type = type,
-                                earnedPoints = earned,
-                                maxPoints = max,
-                                recordedAtEpochMillis = System.currentTimeMillis(),
-                                dueDate = dueDate,
-                                completed = completed,
-                                requiredForExam = requiredForExam,
-                            )
-                        )
-                    }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                value = earnedText,
+                onValueChange = {
+                    earnedText = it
+                    error = null
                 },
-                enabled = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Зберегти")
-            }
+                enabled = completed,
+                label = { Text("Отримано") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                isError = error != null,
+            )
+            OutlinedTextField(
+                value = maxText,
+                onValueChange = {
+                    maxText = it
+                    error = null
+                },
+                label = { Text("Максимум") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                isError = error != null,
+            )
+        }
+
+        error?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+
+        Button(
+            onClick = {
+                val earned = if (completed) earnedText.replace(',', '.').toDoubleOrNull() else 0.0
+                val max = maxText.replace(',', '.').toDoubleOrNull()
+                when {
+                    earned == null || max == null -> error = "Введіть числові значення балів."
+                    earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
+                    max <= 0.0 -> error = "Максимум має бути більшим за 0."
+                    earned > max -> error = "Отримані бали не можуть перевищувати максимум."
+                    else -> onSave(
+                        GradeItem(
+                            id = initialItem?.id ?: UUID.randomUUID().toString(),
+                            courseId = courseId,
+                            title = title.trim(),
+                            type = type,
+                            earnedPoints = earned,
+                            maxPoints = max,
+                            recordedAtEpochMillis = initialItem?.recordedAtEpochMillis
+                                ?: System.currentTimeMillis(),
+                            dueDate = dueDate,
+                            completed = completed,
+                            requiredForExam = requiredForExam,
+                        )
+                    )
+                }
+            },
+            enabled = title.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (initialItem == null) "Зберегти" else "Оновити")
         }
     }
 }
@@ -217,3 +259,6 @@ private fun GradeTypeChips(
         }
     }
 }
+
+private fun Double.toEditableNumber(): String =
+    if (this % 1.0 == 0.0) toInt().toString() else toString()
