@@ -64,6 +64,7 @@ fun WeekCompactList(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
                                     .clickable { onEventClick(event) }
                                     .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.Top,

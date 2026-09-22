@@ -70,6 +70,9 @@ fun TaktBottomNavigation(
 @Composable
 fun TaktAddFab(onClick: () -> Unit) {
     FloatingActionButton(onClick = onClick) {
-        Text("+", style = androidx.compose.material3.MaterialTheme.typography.headlineSmall)
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Додати",
+        )
     }
 }

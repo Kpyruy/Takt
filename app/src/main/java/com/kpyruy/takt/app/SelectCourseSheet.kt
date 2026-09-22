@@ -10,6 +10,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ fun SelectCourseSheet(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .minimumInteractiveComponentSize()
                         .clickable { onSelected(course) }
                         .padding(vertical = 12.dp),
                 ) {
