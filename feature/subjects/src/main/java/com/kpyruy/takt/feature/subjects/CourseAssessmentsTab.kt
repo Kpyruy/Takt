@@ -65,7 +65,7 @@ internal fun CourseAssessmentsTab(
                     Column(Modifier.weight(1f)) {
                         Text("До екзамену", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            projection.securedPoints.compact() + " балів уже зафіксовано",
+                            projection.securedPoints.displayNumber() + " балів уже зафіксовано",
                             style = MaterialTheme.typography.titleLarge,
                         )
                         Text(
@@ -83,8 +83,8 @@ internal fun CourseAssessmentsTab(
                 Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
                 if (summary.maxPoints > 0.0) {
                     Text(
-                        summary.earnedPoints.compact() + " / " + summary.maxPoints.compact() +
-                            " · " + summary.percentage.compact() + "%",
+                        summary.earnedPoints.displayNumber() + " / " + summary.maxPoints.displayNumber() +
+                            " · " + summary.percentage.displayNumber() + "%",
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Text(
@@ -150,7 +150,7 @@ internal fun CourseAssessmentsTab(
             text = {
                 Text(
                     gradeScale.bands.joinToString("\n") { band ->
-                        band.grade.name + " · від " + band.minimumPercentage.compact() + "%"
+                        band.grade.name + " · від " + band.minimumPercentage.displayNumber() + "%"
                     }
                 )
             },

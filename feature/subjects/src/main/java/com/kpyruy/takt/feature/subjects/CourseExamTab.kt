@@ -76,7 +76,7 @@ internal fun CourseExamTab(
                     }
                 )
                 Text(
-                    "Гарантовано: " + projection.securedPoints.compact() + " б.",
+                    "Гарантовано: " + projection.securedPoints.displayNumber() + " б.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
@@ -107,7 +107,7 @@ internal fun CourseExamTab(
                         val needed = projection.examPointsNeeded[grade]
                         Text(
                             grade.name + " · " +
-                                if (needed == null) "Недосяжно" else needed.compact() + " б."
+                                if (needed == null) "Недосяжно" else needed.displayNumber() + " б."
                         )
                     }
             }

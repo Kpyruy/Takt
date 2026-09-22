@@ -49,9 +49,9 @@ fun GradeItemRow(
         }
         Text(
             if (item.completed) {
-                item.earnedPoints.compact() + " / " + item.maxPoints.compact()
+                item.earnedPoints.displayNumber() + " / " + item.maxPoints.displayNumber()
             } else {
-                "до " + item.maxPoints.compact()
+                "до " + item.maxPoints.displayNumber()
             },
             style = MaterialTheme.typography.labelLarge,
         )
@@ -82,5 +82,5 @@ internal fun GradeItemType.label(): String = when (this) {
     GradeItemType.OTHER -> "Інше"
 }
 
-internal fun Double.compact(): String =
+internal fun Double.displayNumber(): String =
     if (this % 1.0 == 0.0) toInt().toString() else "%.1f".format(this)

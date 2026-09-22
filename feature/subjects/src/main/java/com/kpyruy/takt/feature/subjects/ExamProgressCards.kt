@@ -21,12 +21,12 @@ internal fun ExamProgressCards(
     val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
     val courseworkEarned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
     val courseworkMax = coursework.sumOf { it.maxPoints }
+    val minimumLetter = projection.minimumPossibleLetter
+    val maximumLetter = projection.maximumPossibleLetter
     val rangeText = when {
-        projection.minimumPossibleLetter == null -> "—"
-        projection.minimumPossibleLetter == projection.maximumPossibleLetter ->
-            projection.minimumPossibleLetter.name
-        else -> projection.minimumPossibleLetter.name + " – " +
-            (projection.maximumPossibleLetter?.name ?: "—")
+        minimumLetter == null -> "—"
+        minimumLetter == maximumLetter -> minimumLetter.name
+        else -> minimumLetter.name + " – " + (maximumLetter?.name ?: "—")
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -38,14 +38,14 @@ internal fun ExamProgressCards(
                 label = "Фінальний екзамен",
                 value = when {
                     exam == null -> "Не додано"
-                    exam.completed -> exam.earnedPoints.compact() + " / " + exam.maxPoints.compact()
-                    else -> "до " + exam.maxPoints.compact() + " б."
+                    exam.completed -> exam.earnedPoints.displayNumber() + " / " + exam.maxPoints.displayNumber()
+                    else -> "до " + exam.maxPoints.displayNumber() + " б."
                 },
                 modifier = Modifier.weight(1f),
             )
             MetricCard(
                 label = "Бали за курс",
-                value = courseworkEarned.compact() + " / " + courseworkMax.compact(),
+                value = courseworkEarned.displayNumber() + " / " + courseworkMax.displayNumber(),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -55,7 +55,7 @@ internal fun ExamProgressCards(
         ) {
             MetricCard(
                 label = "Ще на екзамені",
-                value = projection.examRemainingPoints.compact() + " б.",
+                value = projection.examRemainingPoints.displayNumber() + " б.",
                 modifier = Modifier.weight(1f),
             )
             MetricCard(

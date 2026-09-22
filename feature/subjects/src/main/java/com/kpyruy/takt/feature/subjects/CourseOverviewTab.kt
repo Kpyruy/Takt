@@ -74,12 +74,12 @@ internal fun CourseOverviewTab(
                 when (course.gradingType) {
                     CourseGradingType.EXAM_LETTER -> {
                         val ceiling = projection.maximumPossibleLetter?.name ?: "—"
-                        "Гарантовано " + projection.securedPoints.compact() + " балів · максимум " + ceiling
+                        "Гарантовано " + projection.securedPoints.displayNumber() + " балів · максимум " + ceiling
                     }
                     CourseGradingType.CONTINUOUS_LETTER -> {
                         if (summary.maxPoints == 0.0) "Ще немає результатів"
-                        else summary.earnedPoints.compact() + " / " + summary.maxPoints.compact() +
-                            " · " + summary.percentage.compact() + "%"
+                        else summary.earnedPoints.displayNumber() + " / " + summary.maxPoints.displayNumber() +
+                            " · " + summary.percentage.displayNumber() + "%"
                     }
                     CourseGradingType.PASS_FAIL -> when (course.passFailResult) {
                         PassFailResult.PASSED -> "Зараховано"
@@ -166,7 +166,7 @@ internal fun CourseOverviewTab(
                 upcomingAssessments.forEach { item ->
                     Text(
                         (item.dueDate?.format(formatter) ?: "—") + " · " +
-                            item.title + " · до " + item.maxPoints.compact() + " б."
+                            item.title + " · до " + item.maxPoints.displayNumber() + " б."
                     )
                 }
                 upcomingTasks.forEach { task ->
