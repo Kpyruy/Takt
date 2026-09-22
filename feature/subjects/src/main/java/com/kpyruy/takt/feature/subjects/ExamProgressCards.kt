@@ -49,6 +49,16 @@ internal fun ExamProgressCards(
         )
     }
 
+    if (exam == null) {
+        SectionCard {
+            Text(
+                "Додай екзамен у вкладці «Оцінювання», щоб Takt міг порахувати діапазон оцінок і потрібні бали.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
