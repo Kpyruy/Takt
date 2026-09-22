@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +65,11 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
+    val darkPreview = when (settings.themeMode) {
+        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -153,6 +159,7 @@ fun SettingsScreen(
                 ThemeRadioRow(
                     family = option,
                     label = label,
+                    darkPreview = darkPreview,
                     selected = settings.themeFamily == option,
                     onClick = { scope.launch { settingsRepository.setThemeFamily(option) } },
                 )
@@ -314,6 +321,7 @@ private fun PreferenceRadioRow(
 private fun ThemeRadioRow(
     family: ThemeFamily,
     label: String,
+    darkPreview: Boolean,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
@@ -328,7 +336,7 @@ private fun ThemeRadioRow(
         Column(Modifier.weight(1f)) {
             Text(label)
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                taktThemePreviewColors(family).forEach { color ->
+                taktThemePreviewColors(family, dark = darkPreview).forEach { color ->
                     Box(
                         Modifier
                             .size(12.dp)
