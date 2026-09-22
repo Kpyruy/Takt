@@ -167,7 +167,10 @@ fun CalendarScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+            .padding(
+                horizontal = if (viewMode == CalendarViewMode.MONTH) 8.dp else 20.dp,
+                vertical = 18.dp,
+            ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ScreenHeader(
