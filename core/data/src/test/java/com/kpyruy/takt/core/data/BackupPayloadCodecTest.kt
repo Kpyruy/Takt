@@ -1,13 +1,15 @@
 package com.kpyruy.takt.core.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class BackupPayloadCodecTest {
     @Test
-    fun backupPayload_roundTripsAllV1SectionsThroughJson() {
+    fun backupPayload_roundTripsAllV2SectionsThroughJson() {
         val payload = BackupPayload(
-            version = 1,
+            version = 2,
             courses = listOf(
                 BackupCourse(
                     id = "FYZI_6B",
@@ -18,6 +20,8 @@ class BackupPayloadCodecTest {
                     status = "enrolled",
                     requirementType = "COMPULSORY",
                     syllabusUrl = null,
+                    gradingType = "EXAM_LETTER",
+                    passFailResult = null,
                 )
             ),
             scheduleRules = listOf(
@@ -65,6 +69,9 @@ class BackupPayloadCodecTest {
                     earnedPoints = 18.0,
                     maxPoints = 20.0,
                     recordedAtEpochMillis = 123456789L,
+                    dueDateEpochDay = 20726L,
+                    completed = true,
+                    requiredForExam = true,
                 )
             ),
             gradeScales = listOf(
@@ -91,6 +98,7 @@ class BackupPayloadCodecTest {
                     description = "Finish graphs",
                     dueDateEpochDay = 20726L,
                     completed = false,
+                    requiredForExam = true,
                 )
             ),
             courseNotes = listOf(
@@ -100,6 +108,27 @@ class BackupPayloadCodecTest {
                     title = "Formula",
                     content = "Remember this.",
                     updatedAtEpochMillis = 987654321L,
+                )
+            ),
+            examInfo = listOf(
+                BackupExamInfo(
+                    courseId = "FYZI_6B",
+                    gradeItemId = "exam-grade",
+                    dateEpochDay = 20838L,
+                    startMinute = 570,
+                    endMinute = 660,
+                    room = "T-068",
+                    attemptNumber = 2,
+                    maxAttempts = 3,
+                    notes = "Bring calculator",
+                )
+            ),
+            examMaterials = listOf(
+                BackupExamMaterial(
+                    id = "material-1",
+                    courseId = "FYZI_6B",
+                    title = "Vzorce",
+                    uri = "content://example/formulas",
                 )
             ),
             settings = BackupSettings(
@@ -119,7 +148,7 @@ class BackupPayloadCodecTest {
     }
 
     @Test
-    fun v1BackupWithoutVisualPreferences_usesApprovedDefaults() {
+    fun v1BackupStillDecodesWithSafeAcademicDefaults() {
         val raw = """
             {
               "version": 1,
@@ -132,6 +161,21 @@ class BackupPayloadCodecTest {
                 "status":"enrolled",
                 "requirementType":"COMPULSORY"
               }],
+              "gradeItems": [{
+                "id":"g1",
+                "courseId":"c1",
+                "title":"Old result",
+                "type":"TEST",
+                "earnedPoints":8.0,
+                "maxPoints":10.0,
+                "recordedAtEpochMillis":1
+              }],
+              "studyTasks": [{
+                "id":"t1",
+                "courseId":"c1",
+                "title":"Old task",
+                "completed":false
+              }],
               "settings": {
                 "cancellationStyle":"STRIKETHROUGH",
                 "showHiddenLessons":false,
@@ -142,6 +186,15 @@ class BackupPayloadCodecTest {
 
         val restored = BackupPayloadCodec.decode(raw)
 
+        assertEquals(1, restored.version)
+        assertEquals("CONTINUOUS_LETTER", restored.courses.single().gradingType)
+        assertNull(restored.courses.single().passFailResult)
+        assertNull(restored.gradeItems.single().dueDateEpochDay)
+        assertEquals(true, restored.gradeItems.single().completed)
+        assertFalse(restored.gradeItems.single().requiredForExam)
+        assertFalse(restored.studyTasks.single().requiredForExam)
+        assertEquals(emptyList<BackupExamInfo>(), restored.examInfo)
+        assertEquals(emptyList<BackupExamMaterial>(), restored.examMaterials)
         assertEquals("ELEVATED", restored.settings.cardAppearance)
         assertEquals("BLUE", restored.settings.themeFamily)
         assertEquals("SYSTEM", restored.settings.themeMode)
@@ -150,7 +203,7 @@ class BackupPayloadCodecTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun emptyBackup_isRejectedBeforeItCanReplaceLocalData() {
-        BackupPayloadCodec.decode("""{"version":1}""")
+        BackupPayloadCodec.decode("""{"version":2}""")
     }
 
     @Test(expected = IllegalArgumentException::class)
