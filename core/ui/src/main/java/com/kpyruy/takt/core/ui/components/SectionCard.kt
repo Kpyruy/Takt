@@ -31,7 +31,7 @@ fun SectionCard(
         )
     }
     val elevation = CardDefaults.cardElevation(
-        defaultElevation = if (appearance == CardAppearance.ELEVATED) 2.dp else 0.dp,
+        defaultElevation = if (appearance == CardAppearance.ELEVATED) 1.dp else 0.dp,
     )
 
     Card(

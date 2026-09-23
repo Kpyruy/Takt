@@ -1,9 +1,17 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,11 +33,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.ExamEligibilityCalculator
@@ -37,7 +49,7 @@ import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.ScreenHeader
-import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
+import com.kpyruy.takt.core.ui.components.TaktUnderlineTabs
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import kotlinx.coroutines.launch
@@ -50,6 +62,7 @@ fun SubjectDetailScreen(
     examRepository: ExamRepository,
     courseId: String,
     onBack: () -> Unit,
+    initialTab: String = "Огляд",
 ) {
     val course by repository.observeCourse(courseId).collectAsState(initial = null)
     val gradeItems by gradeRepository.observeItems(courseId).collectAsState(initial = emptyList())
@@ -65,7 +78,9 @@ fun SubjectDetailScreen(
 
     val scope = rememberCoroutineScope()
     val haptics = rememberTaktHaptics()
-    var selectedTab by rememberSaveable { mutableStateOf("Огляд") }
+    var showIconPicker by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
     var showAddGrade by remember { mutableStateOf(false) }
     var editingGrade by remember { mutableStateOf<GradeItem?>(null) }
     var showScaleEditor by remember { mutableStateOf(false) }
@@ -74,6 +89,7 @@ fun SubjectDetailScreen(
     var showAddNote by remember { mutableStateOf(false) }
     var editingNote by remember { mutableStateOf<CourseNote?>(null) }
 
+    BackHandler(enabled = selectedTab == "Екзамен") { selectedTab = "Огляд" }
     val item = course
     if (item == null) {
         Column(Modifier.fillMaxSize().padding(20.dp)) {
@@ -91,9 +107,9 @@ fun SubjectDetailScreen(
     }
 
     val tabs = if (item.gradingType == CourseGradingType.EXAM_LETTER) {
-        listOf("Огляд", "Оцінювання", "Завдання", "Екзамен", "Нотатки")
+        listOf("Огляд", "Бали", "Завдання", "Екзамен", "Нотатки")
     } else {
-        listOf("Огляд", "Оцінювання", "Завдання", "Нотатки")
+        listOf("Огляд", "Бали", "Завдання", "Нотатки")
     }
 
     LaunchedEffect(tabs) {
@@ -101,24 +117,25 @@ fun SubjectDetailScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize().background(subjectBackground(paper = selectedTab != "Екзамен")).padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ScreenHeader(
-            title = item.title,
-            subtitle = item.code,
-            navigation = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            IconButton(onClick = { if (selectedTab == "Екзамен") selectedTab = "Огляд" else onBack() }) { Icon(Icons.Default.ArrowBack, "Назад") }
+            Text(if (selectedTab == "Екзамен") item.title else "Предмет", Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.MoreHoriz, "Налаштування предмета") }
+        }
+        if (selectedTab == "Екзамен") {
+            ScreenHeader(title = "Екзамен")
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { ScreenHeader(title = item.title, subtitle = item.code + " · " + item.credits + " кредитів · " + item.semester + " семестр") }
+                IconButton(onClick = { showIconPicker = true }, modifier = Modifier.semantics { contentDescription = "Змінити іконку предмета" }) {
+                    SubjectMonogram(item)
                 }
-            },
-        )
-
-        TaktSegmentedTabs(
-            labels = tabs,
-            selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0),
-            onSelected = { selectedTab = tabs[it] },
-        )
+            }
+            TaktUnderlineTabs(labels = tabs, selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0), onSelected = { selectedTab = tabs[it] })
+        }
 
         AnimatedContent(
             targetState = selectedTab,
@@ -136,17 +153,13 @@ fun SubjectDetailScreen(
                     gradeScale = gradeScale,
                     tasks = tasks,
                     eligibility = eligibility,
-                    onStatusChange = { status ->
-                        scope.launch { repository.updateStatus(item.id, status) }
-                    },
-                    onGradingTypeChange = { type ->
-                        scope.launch { repository.setGradingType(item.id, type) }
-                    },
-                    onPassFailResultChange = { result ->
-                        scope.launch { repository.setPassFailResult(item.id, result) }
-                    },
+                    onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
+                    onEditTask = { editingTask = it },
+                    onEditGrade = { editingGrade = it },
+                    onNotes = { selectedTab = "Нотатки" },
+                    onExam = { selectedTab = "Екзамен" },
                 )
-                "Оцінювання" -> CourseAssessmentsTab(
+                "Бали" -> CourseAssessmentsTab(
                     course = item,
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
@@ -181,6 +194,8 @@ fun SubjectDetailScreen(
                     examInfo = examInfo,
                     materials = examMaterials,
                     manualGrade = manualGrade,
+                    onAdmission = { selectedTab = if (tasks.any { it.requiredForExam && !it.completed }) "Завдання"
+                        else if (gradeItems.any { it.requiredForExam && !it.completed }) "Бали" else "Завдання" },
                     onSaveExamInfo = { info ->
                         scope.launch {
                             examRepository.upsertExamInfo(info)
@@ -210,6 +225,24 @@ fun SubjectDetailScreen(
                 )
             }
         }
+    }
+
+    if (showIconPicker) {
+        com.kpyruy.takt.core.ui.components.CourseIconPicker(item.iconKey, onSelect = { key ->
+            scope.launch { repository.setIcon(item.id, key) }
+            showIconPicker = false
+        }, onDismiss = { showIconPicker = false })
+    }
+    if (showSettings) {
+        CourseSettingsSheet(
+            course = item,
+            onDismiss = { showSettings = false },
+            onIcon = { showSettings = false; showIconPicker = true },
+            onStatus = { status -> scope.launch { repository.updateStatus(item.id, status) } },
+            onGrading = { type -> scope.launch { repository.setGradingType(item.id, type) } },
+            onResult = { result -> scope.launch { repository.setPassFailResult(item.id, result) } },
+            onScale = { showSettings = false; showScaleEditor = true },
+        )
     }
 
     if (showAddGrade || editingGrade != null) {

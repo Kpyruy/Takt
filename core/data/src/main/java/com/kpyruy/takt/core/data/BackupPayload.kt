@@ -9,6 +9,7 @@ data class BackupPayload(
     val courses: List<BackupCourse> = emptyList(),
     val scheduleRules: List<BackupScheduleRule> = emptyList(),
     val oneOffEvents: List<BackupOneOffEvent> = emptyList(),
+    val lessonAbsences: List<BackupLessonAbsence> = emptyList(),
     val scheduleExceptions: List<BackupScheduleException> = emptyList(),
     val gradeItems: List<BackupGradeItem> = emptyList(),
     val gradeScales: List<BackupGradeScale> = emptyList(),
@@ -25,6 +26,9 @@ data class BackupPayload(
 }
 
 @Serializable
+data class BackupLessonAbsence(val eventId: String, val dateEpochDay: Long, val isOneOff: Boolean)
+
+@Serializable
 data class BackupCourse(
     val id: String,
     val code: String,
@@ -36,6 +40,7 @@ data class BackupCourse(
     val syllabusUrl: String? = null,
     val gradingType: String = "CONTINUOUS_LETTER",
     val passFailResult: String? = null,
+    val iconKey: String? = null,
 )
 
 @Serializable
@@ -47,6 +52,7 @@ data class BackupScheduleRule(
     val startMinute: Int,
     val endMinute: Int,
     val recurrence: String,
+    val lessonType: String = "UNSPECIFIED",
     val room: String? = null,
 )
 
@@ -56,6 +62,7 @@ data class BackupOneOffEvent(
     val courseId: String? = null,
     val title: String,
     val dateEpochDay: Long,
+    val lessonType: String = "UNSPECIFIED",
     val startMinute: Int,
     val endMinute: Int,
     val room: String? = null,

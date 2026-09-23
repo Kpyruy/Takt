@@ -1,0 +1,73 @@
+{
+  "from": 9,
+  "to": 10,
+  "tables": [
+    {
+      "name": "courses",
+      "originalRows": 53,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "schedule_rules",
+      "originalRows": 3,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "schedule_one_off",
+      "originalRows": 0,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 1
+    },
+    {
+      "name": "schedule_exceptions",
+      "originalRows": 0,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "grade_items",
+      "originalRows": 7,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "grade_scales",
+      "originalRows": 0,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "grade_overrides",
+      "originalRows": 0,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "study_tasks",
+      "originalRows": 7,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "course_notes",
+      "originalRows": 0,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "exam_info",
+      "originalRows": 1,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    },
+    {
+      "name": "exam_materials",
+      "originalRows": 0,
+      "allOriginalRowsIdentical": true,
+      "addedRows": 0
+    }
+  ],
+  "note": "Startup seeder inserted its existing default DIVR one-off into a previously empty table. Migration only creates lesson_absences."
+}

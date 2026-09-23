@@ -37,6 +37,7 @@ fun CreateItemScreen(
     type: CreateItemType,
     courseId: String?,
     draft: CreateItemDraft?,
+    courses: List<com.kpyruy.takt.core.model.Course> = emptyList(),
     scheduleRepository: ScheduleRepository,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
@@ -72,6 +73,9 @@ fun CreateItemScreen(
 
         when (type) {
             CreateItemType.CLASS -> AddLessonForm(
+                courses = courses,
+                initialCourseId = courseId ?: draft?.courseId,
+                initialLessonType = draft?.lessonType ?: com.kpyruy.takt.core.model.LessonType.UNSPECIFIED,
                 initialDay = LocalDate.now().dayOfWeek,
                 initialTitle = draft?.title.orEmpty(),
                 initialStartTime = draft?.startTime,
@@ -88,6 +92,7 @@ fun CreateItemScreen(
 
             CreateItemType.EVENT,
             CreateItemType.REMINDER -> OneOffEventForm(
+                courses = courses,
                 initialDate = LocalDate.now(),
                 initialType = if (type == CreateItemType.REMINDER) {
                     OneOffScheduleEventType.REMINDER

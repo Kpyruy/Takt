@@ -5,6 +5,7 @@ import java.time.LocalTime
 
 data class CreateItemDraft(
     val type: CreateItemType,
+    val lessonType: com.kpyruy.takt.core.model.LessonType = com.kpyruy.takt.core.model.LessonType.UNSPECIFIED,
     val courseId: String? = null,
     val title: String = "",
     val details: String = "",

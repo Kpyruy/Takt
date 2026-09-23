@@ -35,6 +35,7 @@ fun ScheduleEventCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top,
         ) {
+            com.kpyruy.takt.core.ui.components.CourseInlineIcon(event.courseId)
             Column(modifier = Modifier.weight(1f)) {
                 val room = event.room
                 Text(
@@ -49,6 +50,12 @@ fun ScheduleEventCard(
                     fontWeight = FontWeight.SemiBold,
                     textDecoration = if (strike) TextDecoration.LineThrough else null,
                 )
+                if (event.lessonType != com.kpyruy.takt.core.model.LessonType.UNSPECIFIED) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        com.kpyruy.takt.core.ui.components.LessonTypeIcon(event.lessonType)
+                        Text(" ${event.lessonType.label}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 if (!room.isNullOrBlank()) {
                     Text(room, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

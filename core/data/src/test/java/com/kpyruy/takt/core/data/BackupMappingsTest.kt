@@ -22,6 +22,7 @@ class BackupMappingsTest {
             syllabusUrl = null,
             gradingType = "PASS_FAIL",
             passFailResult = "PASSED",
+            iconKey = "Science",
         )
 
         assertEquals(entity, entity.toBackup().toEntity())

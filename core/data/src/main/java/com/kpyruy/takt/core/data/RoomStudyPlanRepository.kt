@@ -19,6 +19,10 @@ class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository 
     override fun observeCourse(courseId: String) =
         dao.observeById(courseId).map { it?.toDomain() }
 
+    override suspend fun setIcon(courseId: String, iconKey: String?) {
+        dao.updateIcon(courseId, iconKey)
+    }
+
     override suspend fun updateStatus(courseId: String, status: CourseStatus) {
         dao.updateStatus(courseId, status.storageValue)
     }
@@ -50,6 +54,7 @@ private fun CourseEntity.toDomain() = Course(
     status = CourseStatus.fromStorage(status),
     requirementType = CourseRequirementType.valueOf(requirementType),
     syllabusUrl = syllabusUrl,
+    iconKey = iconKey,
     gradingType = runCatching { CourseGradingType.valueOf(gradingType) }
         .getOrDefault(CourseGradingType.CONTINUOUS_LETTER),
     passFailResult = passFailResult?.let { stored ->

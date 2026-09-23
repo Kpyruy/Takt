@@ -19,6 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.model.LessonType
+import com.kpyruy.takt.core.ui.components.LessonTypeSelector
+import com.kpyruy.takt.core.ui.components.CourseLinkSelector
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
@@ -33,6 +37,7 @@ import java.util.UUID
 @Composable
 fun OneOffEventSheet(
     initialDate: LocalDate,
+    courses: List<Course> = emptyList(),
     initialEvent: OneOffScheduleEvent? = null,
     initialType: OneOffScheduleEventType = OneOffScheduleEventType.EXTRA,
     onDismiss: () -> Unit,
@@ -42,6 +47,7 @@ fun OneOffEventSheet(
         OneOffEventForm(
             initialDate = initialDate,
             initialEvent = initialEvent,
+            courses = courses,
             initialType = initialType,
             modifier = Modifier
                 .fillMaxWidth()
@@ -56,9 +62,12 @@ fun OneOffEventSheet(
 @Composable
 fun OneOffEventForm(
     initialDate: LocalDate,
+    courses: List<Course> = emptyList(),
     initialEvent: OneOffScheduleEvent? = null,
     initialType: OneOffScheduleEventType = OneOffScheduleEventType.EXTRA,
     initialTitle: String = "",
+    initialCourseId: String? = null,
+    initialLessonType: LessonType = LessonType.UNSPECIFIED,
     initialStartTime: LocalTime? = null,
     initialEndTime: LocalTime? = null,
     initialRoom: String = "",
@@ -66,6 +75,8 @@ fun OneOffEventForm(
     showHeading: Boolean = true,
     onSave: (OneOffScheduleEvent) -> Unit,
 ) {
+    var linkedCourseId by remember(initialEvent?.id, initialCourseId) { mutableStateOf(initialEvent?.courseId ?: initialCourseId) }
+    var lessonType by remember(initialEvent?.id, initialLessonType) { mutableStateOf(initialEvent?.lessonType ?: initialLessonType) }
     var title by remember(initialEvent?.id, initialTitle) {
         mutableStateOf(initialEvent?.title ?: initialTitle)
     }
@@ -107,6 +118,14 @@ fun OneOffEventForm(
             )
         }
 
+        if (!isReminder) {
+        CourseLinkSelector(courses, linkedCourseId) { course ->
+            if (title.isBlank() || title == courses.firstOrNull { it.id == linkedCourseId }?.title) title = course?.title.orEmpty()
+            linkedCourseId = course?.id
+        }
+        LessonTypeSelector(lessonType) { lessonType = it }
+
+        }
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -198,7 +217,8 @@ fun OneOffEventForm(
                 onSave(
                     OneOffScheduleEvent(
                         id = initialEvent?.id ?: UUID.randomUUID().toString(),
-                        courseId = initialEvent?.courseId,
+                        courseId = linkedCourseId,
+                        lessonType = if (isReminder) LessonType.UNSPECIFIED else lessonType,
                         title = title.trim(),
                         date = date,
                         startTime = startTime,

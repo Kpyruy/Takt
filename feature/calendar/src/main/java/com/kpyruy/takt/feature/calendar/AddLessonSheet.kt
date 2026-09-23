@@ -21,6 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.model.LessonType
+import com.kpyruy.takt.core.ui.components.LessonTypeSelector
+import com.kpyruy.takt.core.ui.components.CourseLinkSelector
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ScheduleRecurrence
@@ -34,6 +38,7 @@ import java.util.UUID
 @Composable
 fun AddLessonSheet(
     initialDay: DayOfWeek,
+    courses: List<Course> = emptyList(),
     initialRule: ScheduleRule? = null,
     onDismiss: () -> Unit,
     onSave: (ScheduleRule) -> Unit,
@@ -42,6 +47,7 @@ fun AddLessonSheet(
         AddLessonForm(
             initialDay = initialDay,
             initialRule = initialRule,
+            courses = courses,
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
@@ -55,8 +61,11 @@ fun AddLessonSheet(
 @Composable
 fun AddLessonForm(
     initialDay: DayOfWeek,
+    courses: List<Course> = emptyList(),
     initialRule: ScheduleRule? = null,
     initialTitle: String = "",
+    initialCourseId: String? = null,
+    initialLessonType: LessonType = LessonType.UNSPECIFIED,
     initialRoom: String = "",
     initialStartTime: LocalTime? = null,
     initialEndTime: LocalTime? = null,
@@ -64,6 +73,8 @@ fun AddLessonForm(
     showHeading: Boolean = true,
     onSave: (ScheduleRule) -> Unit,
 ) {
+    var linkedCourseId by remember(initialRule?.id, initialCourseId) { mutableStateOf(initialRule?.courseId ?: initialCourseId) }
+    var lessonType by remember(initialRule?.id, initialLessonType) { mutableStateOf(initialRule?.lessonType ?: initialLessonType) }
     var title by remember(initialRule?.id, initialTitle) {
         mutableStateOf(initialRule?.title ?: initialTitle)
     }
@@ -94,6 +105,12 @@ fun AddLessonForm(
                 style = MaterialTheme.typography.headlineSmall,
             )
         }
+
+        CourseLinkSelector(courses, linkedCourseId) { course ->
+            if (title.isBlank() || title == courses.firstOrNull { it.id == linkedCourseId }?.title) title = course?.title.orEmpty()
+            linkedCourseId = course?.id
+        }
+        LessonTypeSelector(lessonType) { lessonType = it }
 
         OutlinedTextField(
             value = title,
@@ -183,7 +200,8 @@ fun AddLessonForm(
                 onSave(
                     ScheduleRule(
                         id = initialRule?.id ?: UUID.randomUUID().toString(),
-                        courseId = initialRule?.courseId,
+                        courseId = linkedCourseId,
+                        lessonType = lessonType,
                         title = title.trim(),
                         dayOfWeek = day,
                         startTime = startTime,

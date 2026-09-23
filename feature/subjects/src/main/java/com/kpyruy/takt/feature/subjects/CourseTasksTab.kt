@@ -32,20 +32,7 @@ internal fun CourseTasksTab(
         modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SectionCard {
-            Text("Завдання", style = MaterialTheme.typography.titleMedium)
-            Text(
-                when {
-                    eligibility.requiredCount == 0 -> "Немає окремих вимог для допуску."
-                    eligibility.eligible -> "Допуск: готово · " +
-                        eligibility.completedCount + " / " + eligibility.requiredCount
-                    else -> "Для допуску: " +
-                        eligibility.completedCount + " / " + eligibility.requiredCount
-                },
-                color = if (eligibility.eligible) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        AdmissionProgressCard(eligibility)
         SectionCard {
             if (tasks.isEmpty()) {
                 Text("Поки немає завдань.", color = MaterialTheme.colorScheme.onSurfaceVariant)

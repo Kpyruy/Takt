@@ -7,6 +7,9 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
 interface ScheduleRepository {
+    fun observeAbsences(): Flow<List<com.kpyruy.takt.core.model.LessonAbsence>>
+    suspend fun setAbsent(event: com.kpyruy.takt.core.model.ResolvedScheduleEvent, absent: Boolean)
+
     fun observeRules(): Flow<List<ScheduleRule>>
     fun observeOneOffEvents(): Flow<List<OneOffScheduleEvent>>
     fun observeExceptions(): Flow<List<ScheduleException>>

@@ -17,4 +17,5 @@ data class CourseEntity(
     @ColumnInfo(defaultValue = "'CONTINUOUS_LETTER'")
     val gradingType: String = "CONTINUOUS_LETTER",
     val passFailResult: String? = null,
+    val iconKey: String? = null,
 )

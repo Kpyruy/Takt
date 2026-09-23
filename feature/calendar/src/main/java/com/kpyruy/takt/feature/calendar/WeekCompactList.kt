@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.components.lessonInteraction
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ fun WeekCompactList(
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
     onSelectDate: (LocalDate) -> Unit,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
+    onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -65,9 +67,9 @@ fun WeekCompactList(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
-                                    .clickable { onEventClick(event) }
+                                    .lessonInteraction({ onEventClick(event) }, { onEventLongClick(event) })
                                     .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.Top,
+                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 Text(
@@ -76,7 +78,11 @@ fun WeekCompactList(
                                     color = taktSubjectColor(event.courseId ?: event.title),
                                 )
                                 Column(Modifier.weight(1f)) {
-                                    Text(event.title, maxLines = 2)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        com.kpyruy.takt.core.ui.components.CourseInlineIcon(event.courseId)
+                                        Text(listOf(event.lessonType.shortLabel, event.title).filter { it.isNotBlank() }.joinToString(" · "), maxLines = 2)
+                                    }
+                                    if (event.isAbsent) Text("Пропущено", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                                     event.room?.let {
                                         Text(
                                             it,

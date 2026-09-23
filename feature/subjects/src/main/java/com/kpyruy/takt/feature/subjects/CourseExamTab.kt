@@ -1,7 +1,17 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +20,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.ExamInfo
@@ -47,113 +62,67 @@ internal fun CourseExamTab(
     onAddMaterial: (ExamMaterial) -> Unit,
     onDeleteMaterial: (ExamMaterial) -> Unit,
     onManualGradeChange: (GradeLetter?) -> Unit,
+    onAdmission: () -> Unit,
 ) {
-    var mode by rememberSaveable { mutableIntStateOf(0) }
     var showEditor by remember { mutableStateOf(false) }
-    val projection = remember(gradeItems, gradeScale) {
-        GradeProjection.calculate(gradeItems, gradeScale)
-    }
-
-    Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        TaktSegmentedTabs(
-            labels = listOf("Підготовка", "Екзамен"),
-            selectedIndex = mode,
-            onSelected = { mode = it },
-        )
-
-        if (mode == 0) {
-            SectionCard {
-                Text("Готовність", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    when {
-                        eligibility.requiredCount == 0 -> "Окремих вимог для допуску не позначено."
-                        eligibility.eligible -> "Допуск: готово · " +
-                            eligibility.completedCount + " / " + eligibility.requiredCount
-                        else -> "Для допуску: " +
-                            eligibility.completedCount + " / " + eligibility.requiredCount
-                    }
-                )
-                Text(
-                    "Гарантовано: " + projection.securedPoints.displayNumber() + " б.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    "Максимально можлива оцінка: " +
-                        (projection.maximumPossibleLetter?.name ?: "—"),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            val requiredTasks = tasks.filter { it.requiredForExam }
-            val requiredGrades = gradeItems.filter { it.requiredForExam }
-            SectionCard {
-                Text("Що треба закрити", style = MaterialTheme.typography.titleMedium)
-                if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) {
-                    Text("Обов'язкових робіт не позначено.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    requiredTasks.forEach { Text((if (it.completed) "✓ " else "○ ") + it.title) }
-                    requiredGrades.forEach { Text((if (it.completed) "✓ " else "○ ") + it.title) }
+    var target by rememberSaveable { mutableStateOf(GradeLetter.A) }
+    val projection = remember(gradeItems, gradeScale) { GradeProjection.calculate(gradeItems, gradeScale) }
+    val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
+    val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
+    val maximum = coursework.sumOf { it.maxPoints }
+    val needed = projection.examPointsNeeded[target]
+    val threshold = gradeScale.bands.first { it.grade == target }.minimumPercentage
+    val pendingOther = coursework.filterNot { it.completed }.sumOf { it.maxPoints }
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Surface(Modifier.fillMaxWidth().clickable { showEditor = true }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onSurface) {
+            Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text(examInfo?.date?.dayOfMonth?.toString() ?: "—", fontSize = 27.sp, lineHeight = 35.sp, fontWeight = FontWeight.SemiBold)
+                    SmallText(examInfo?.date?.format(DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale.forLanguageTag("uk"))) ?: "ДАТА")
                 }
-            }
-        } else {
-            ExamProgressCards(gradeItems = gradeItems, projection = projection)
-
-            if (gradeItems.any { it.type == GradeItemType.EXAM }) {
-                SectionCard {
-                    Text("Скільки треба на екзамені", style = MaterialTheme.typography.titleMedium)
-                    listOf(GradeLetter.A, GradeLetter.B, GradeLetter.C, GradeLetter.D, GradeLetter.E)
-                        .forEach { grade ->
-                            val needed = projection.examPointsNeeded[grade]
-                            Text(
-                                grade.name + " · " +
-                                    if (needed == null) "Недосяжно" else needed.displayNumber() + " б."
-                            )
-                        }
+                VerticalDivider(Modifier.height(42.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(listOfNotNull(examInfo?.startTime?.toString(), examInfo?.room).joinToString(" · ").ifBlank { "Додати дату й аудиторію" }, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+                    SmallText("Підсумковий екзамен · спроба ${examInfo?.attemptNumber ?: 1}/${examInfo?.maxAttempts ?: 3}")
                 }
+                Icon(Icons.Default.CalendarMonth, "Редагувати дані екзамену", Modifier.size(20.dp))
             }
-
-            SectionCard {
-                Text("Дані екзамену", style = MaterialTheme.typography.titleMedium)
-                if (examInfo == null) {
-                    Text(
-                        "Дата, аудиторія та спроба ще не вказані.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Text(
-                        examInfo.date?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-                            ?: "Дата ще не відома"
-                    )
-                    examInfo.startTime?.let { start ->
-                        Text(start.toString() + (examInfo.endTime?.let { end -> "–" + end } ?: ""))
-                    }
-                    examInfo.room?.let { Text("Аудиторія · " + it) }
-                    Text("Спроба · " + examInfo.attemptNumber + "/" + examInfo.maxAttempts)
-                    if (examInfo.notes.isNotBlank()) {
-                        Text(examInfo.notes, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Button(onClick = { showEditor = true }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Edit, contentDescription = null)
-                    Text(if (examInfo == null) "Додати дані" else "Редагувати")
-                }
-            }
-
-            ExamMaterialsSection(
-                courseId = courseId,
-                materials = materials,
-                onAdd = onAddMaterial,
-                onDelete = onDeleteMaterial,
-            )
-
-            ManualGradeSection(
-                manualGrade = manualGrade,
-                onManualGradeChange = onManualGradeChange,
-            )
         }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ExamMetric("За семестр", earned.displayNumber(), "/ ${maximum.displayNumber()}", Modifier.weight(1f))
+            ExamMetric("Доступно на екзамені", if (gradeItems.any { it.type == GradeItemType.EXAM }) projection.examRemainingPoints.displayNumber() else "—", "балів", Modifier.weight(1f))
+        }
+        SubjectPanel {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Цільова оцінка", style = MaterialTheme.typography.titleMedium)
+                Surface(shape = RoundedCornerShape(7.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                    Text("${target.name} · від ${threshold.displayNumber()}%", Modifier.padding(horizontal = 8.dp, vertical = 5.dp), fontSize = 11.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(needed?.displayNumber() ?: "—", fontSize = 37.sp, lineHeight = 48.sp, fontWeight = FontWeight.SemiBold)
+                SmallText(if (needed != null) "із ${projection.examRemainingPoints.displayNumber()} балів на екзамені" else if (projection.examRemainingPoints > 0) "Ціль недосяжна" else "Немає незавершеного екзамену", Modifier.padding(bottom = 7.dp).weight(1f))
+            }
+            SmallText(if (needed == null) "Розрахунок за поточною шкалою оцінювання."
+                else "${projection.securedPoints.displayNumber()} набрано" + (if (pendingOther > 0) " + до ${pendingOther.displayNumber()} за інші роботи" else " за семестр") + " + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                listOf(GradeLetter.A, GradeLetter.B, GradeLetter.C, GradeLetter.D, GradeLetter.E).forEach { grade ->
+                    Surface(onClick = { target = grade }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = target == grade; role = Role.RadioButton }, shape = RoundedCornerShape(9.dp),
+                        color = if (target == grade) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                        contentColor = if (target == grade) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        border = BorderStroke(1.dp, if (target == grade) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
+                        Box(contentAlignment = Alignment.Center) { Text(grade.name, fontSize = 12.sp, lineHeight = 16.sp) }
+                    }
+                }
+            }
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            PotentialSummary(projection, gradeItems.any { !it.completed })
+        }
+        CompactAdmission(eligibility, tasks.firstOrNull { it.requiredForExam && !it.completed }?.title, onAdmission)
+        if (!examInfo?.notes.isNullOrBlank()) SmallText(examInfo!!.notes)
+        ExamMaterialsSection(courseId, materials, onAddMaterial, onDeleteMaterial)
+        ManualGradeSection(manualGrade, onManualGradeChange)
+        Spacer(Modifier.height(12.dp))
     }
 
     if (showEditor) {
@@ -167,5 +136,15 @@ internal fun CourseExamTab(
                 showEditor = false
             },
         )
+    }
+}
+
+@Composable private fun ExamMetric(label: String, value: String, suffix: String, modifier: Modifier) {
+    SubjectPanel(modifier) {
+        SmallText(label)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(value, fontSize = 27.sp, lineHeight = 35.sp, fontWeight = FontWeight.SemiBold)
+            SmallText(suffix, Modifier.padding(bottom = 4.dp))
+        }
     }
 }

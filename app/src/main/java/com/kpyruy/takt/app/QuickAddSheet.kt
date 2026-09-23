@@ -53,6 +53,7 @@ fun QuickAddSheet(
     onOpenFull: (CreateItemDraft) -> Unit,
 ) {
     val haptics = rememberTaktHaptics()
+    var lessonType by remember { mutableStateOf(com.kpyruy.takt.core.model.LessonType.UNSPECIFIED) }
     var type by remember { mutableStateOf(QuickAddType.TASK) }
     var title by remember { mutableStateOf("") }
     var details by remember { mutableStateOf("") }
@@ -105,6 +106,13 @@ fun QuickAddSheet(
                 }
             }
 
+            if (type == QuickAddType.CLASS) {
+                com.kpyruy.takt.core.ui.components.CourseLinkSelector(courses, courseId) { course ->
+                    if (title.isBlank() || title == courses.firstOrNull { it.id == courseId }?.title) title = course?.title.orEmpty()
+                    courseId = course?.id
+                }
+                com.kpyruy.takt.core.ui.components.LessonTypeSelector(lessonType) { lessonType = it }
+            }
             OutlinedTextField(
                 value = title,
                 onValueChange = {
@@ -186,7 +194,8 @@ fun QuickAddSheet(
                             onSaveLesson(
                                 ScheduleRule(
                                     id = UUID.randomUUID().toString(),
-                                    courseId = null,
+                                    courseId = courseId,
+                                    lessonType = lessonType,
                                     title = title.trim(),
                                     dayOfWeek = LocalDate.now().dayOfWeek,
                                     startTime = startTime,
@@ -230,6 +239,7 @@ fun QuickAddSheet(
                     onOpenFull(
                         CreateItemDraft(
                             type = fullType,
+                            lessonType = lessonType,
                             courseId = courseId,
                             title = title,
                             details = details,

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
+import com.kpyruy.takt.core.ui.theme.LocalTaktCardAppearance
+import com.kpyruy.takt.core.model.CardAppearance
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +52,7 @@ fun SwipeCompletionBox(
         enableDismissFromStartToEnd = true,
         enableDismissFromEndToStart = false,
         backgroundContent = {
-            Box(
+            if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.primaryContainer)
@@ -62,6 +65,10 @@ fun SwipeCompletionBox(
                 }
             }
         },
-        content = { content() },
+        content = {
+            val background = if (LocalTaktCardAppearance.current == CardAppearance.TONAL_FILLED)
+                MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
+            Box(Modifier.fillMaxWidth().background(background)) { content() }
+        },
     )
 }

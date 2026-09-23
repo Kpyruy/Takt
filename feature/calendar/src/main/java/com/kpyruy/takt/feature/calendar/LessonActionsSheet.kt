@@ -1,23 +1,20 @@
 package com.kpyruy.takt.feature.calendar
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.kpyruy.takt.core.model.ResolvedScheduleEvent
-import com.kpyruy.takt.core.model.ScheduleEventActions
+import com.kpyruy.takt.core.model.*
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +22,7 @@ fun LessonActionsSheet(
     event: ResolvedScheduleEvent,
     isRecurringRule: Boolean,
     onDismiss: () -> Unit,
+    onToggleAbsence: () -> Unit,
     onCancelOccurrence: () -> Unit,
     onMoveOccurrence: () -> Unit,
     onRestoreOccurrence: () -> Unit,
@@ -33,58 +31,43 @@ fun LessonActionsSheet(
     onEditOneOff: () -> Unit,
     onDeleteOneOff: () -> Unit,
 ) {
-    val time = DateTimeFormatter.ofPattern("HH:mm")
     val actions = ScheduleEventActions.forEvent(event, isRecurringRule)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label ?: "Пара", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, "Закрити дії пари") }
+            }
+            Text(listOfNotNull(event.date.format(DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))),
+                "${event.startTime}–${event.endTime}", event.room).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(10.dp))
+            if (event.status != ScheduleEventStatus.CANCELLED || event.isAbsent) {
+                Surface(shape = RoundedCornerShape(14.dp), color = if (event.isAbsent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerLow) {
+                    ActionRow(if (event.isAbsent) "Зняти позначку пропуску" else "Позначити пропуск", Icons.Outlined.PersonOff, onToggleAbsence)
+                }
+                Text("Позначка лише для цього заняття", Modifier.padding(start = 14.dp, bottom = 10.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (actions.canMoveOccurrence) ActionRow("Перенести цю пару", Icons.Outlined.EventRepeat, onMoveOccurrence)
+            if (actions.canCancelOccurrence) ActionRow("Скасувати тільки цю пару", Icons.Outlined.EventBusy, onCancelOccurrence)
+            if (actions.canRestoreOccurrence) ActionRow("Повернути початкову пару", Icons.Outlined.Restore, onRestoreOccurrence)
+            if (actions.canEditRecurringRule || actions.canEditOneOff) HorizontalDivider(Modifier.padding(vertical = 6.dp))
+            if (actions.canEditRecurringRule) ActionRow("Редагувати повторення", Icons.Outlined.Edit, onEditRule)
+            if (actions.canEditOneOff) ActionRow("Редагувати разову подію", Icons.Outlined.Edit, onEditOneOff)
+            if (actions.canDeleteRecurringRule) ActionRow("Видалити з розкладу", Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
+            if (actions.canDeleteOneOff) ActionRow("Видалити разову подію", Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
+        }
+    }
+}
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(event.title, style = MaterialTheme.typography.headlineSmall)
-            Text(
-                "${event.date} · ${event.startTime.format(time)}–${event.endTime.format(time)}" +
-                    if (event.room.isNullOrBlank()) "" else " · ${event.room}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            if (actions.canCancelOccurrence) {
-                Button(onClick = onCancelOccurrence, modifier = Modifier.fillMaxWidth()) {
-                    Text("Скасувати тільки цю пару")
-                }
-            }
-            if (actions.canMoveOccurrence) {
-                OutlinedButton(onClick = onMoveOccurrence, modifier = Modifier.fillMaxWidth()) {
-                    Text("Перенести цю пару")
-                }
-            }
-            if (actions.canRestoreOccurrence) {
-                Button(onClick = onRestoreOccurrence, modifier = Modifier.fillMaxWidth()) {
-                    Text("Повернути початкову пару")
-                }
-            }
-            if (actions.canEditRecurringRule) {
-                OutlinedButton(onClick = onEditRule, modifier = Modifier.fillMaxWidth()) {
-                    Text("Редагувати повторення")
-                }
-            }
-            if (actions.canDeleteRecurringRule) {
-                OutlinedButton(onClick = onDeleteRule, modifier = Modifier.fillMaxWidth()) {
-                    Text("Видалити з розкладу")
-                }
-            }
-            if (actions.canEditOneOff) {
-                Button(onClick = onEditOneOff, modifier = Modifier.fillMaxWidth()) {
-                    Text("Редагувати разову подію")
-                }
-            }
-            if (actions.canDeleteOneOff) {
-                OutlinedButton(onClick = onDeleteOneOff, modifier = Modifier.fillMaxWidth()) {
-                    Text("Видалити разову подію")
-                }
-            }
+@Composable private fun ActionRow(label: String, icon: ImageVector, onClick: () -> Unit, destructive: Boolean = false) {
+    Surface(onClick = onClick, shape = RoundedCornerShape(12.dp), color = androidx.compose.ui.graphics.Color.Transparent) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            val tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            Icon(icon, null, Modifier.size(21.dp), tint = tint)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = if (destructive) tint else MaterialTheme.colorScheme.onSurface)
         }
     }
 }

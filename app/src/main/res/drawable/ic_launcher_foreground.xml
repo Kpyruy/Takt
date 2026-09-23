@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original Orbit concept (04), reconstructed as clean geometry.
+     The central 1024 of this 1536 viewport maps to the visible 72dp icon.
+     The mark occupies 42dp, inside the 66dp adaptive-icon safe circle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="1536" android:viewportHeight="1536">
+    <group android:translateX="256" android:translateY="256">
+        <path android:pathData="M 588.894,260.492 A 263,263 0,1 0 767.188,448.375"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFFFF" android:strokeWidth="74"
+            android:strokeLineCap="round" />
+        <path android:pathData="M 504,527 L 610,430"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFFFF" android:strokeWidth="74"
+            android:strokeLineCap="round" />
+        <path android:pathData="M 770,333 A 58,58 0,1 0 654,333 A 58,58 0,1 0 770,333 Z"
+            android:fillColor="#FFFFFF" />
+    </group>
+</vector>

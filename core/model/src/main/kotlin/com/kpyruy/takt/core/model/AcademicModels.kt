@@ -38,6 +38,7 @@ data class Course(
     val syllabusUrl: String? = null,
     val gradingType: CourseGradingType = CourseGradingType.CONTINUOUS_LETTER,
     val passFailResult: PassFailResult? = null,
+    val iconKey: String? = null,
 )
 
 enum class WeekParity {

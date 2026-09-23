@@ -14,6 +14,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.background
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.produceState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.HorizontalDivider
@@ -22,6 +31,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,6 +69,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -74,7 +86,11 @@ fun CalendarScreen(
     studyContentRepository: StudyContentRepository,
     studyPlanRepository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
+    onAdd: () -> Unit,
+    onOpenCourse: (String) -> Unit,
+    onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
+    val absences by scheduleRepository.observeAbsences().collectAsState(initial = emptyList())
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
     val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
@@ -82,18 +98,19 @@ fun CalendarScreen(
     val courses by studyPlanRepository.observeCourses().collectAsState(initial = emptyList())
     val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
     val scope = rememberCoroutineScope()
-    val today = LocalDate.now()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val today by produceState(LocalDate.now(), lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) { value = LocalDate.now(); delay(30_000L) }
+        }
+    }
 
-    var selectedDate by remember { mutableStateOf(today) }
-    var weekStart by remember {
+    var selectedDate by rememberSaveable(stateSaver = Saver<LocalDate, Long>({ it.toEpochDay() }, { LocalDate.ofEpochDay(it) })) { mutableStateOf(today) }
+    var weekStart by rememberSaveable(stateSaver = Saver<LocalDate, Long>({ it.toEpochDay() }, { LocalDate.ofEpochDay(it) })) {
         mutableStateOf(today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)))
     }
-    var visibleMonth by remember { mutableStateOf(YearMonth.from(today)) }
-    var viewMode by remember { mutableStateOf(CalendarViewMode.WEEK) }
-    var editingRule by remember { mutableStateOf<ScheduleRule?>(null) }
-    var editingOneOff by remember { mutableStateOf<OneOffScheduleEvent?>(null) }
-    var selectedEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
-    var movingEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
+    var visibleMonth by rememberSaveable(stateSaver = Saver<YearMonth, String>({ it.toString() }, { YearMonth.parse(it) })) { mutableStateOf(YearMonth.from(today)) }
+    var viewMode by rememberSaveable { mutableStateOf(CalendarViewMode.DAY) }
 
     val dates = (0L..6L).map { weekStart.plusDays(it) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
@@ -111,6 +128,7 @@ fun CalendarScreen(
             oneOffEvents = oneOffEvents,
             date = date,
             parityOverride = settings.effectiveParity(date),
+            absences = absences,
         )
         return settings.filterScheduleEvents(resolved)
     }
@@ -159,7 +177,7 @@ fun CalendarScreen(
         tasks.any { !it.completed && it.dueDate == date } || eventsForDate(date).isNotEmpty()
 
     val headerSubtitle = when (viewMode) {
-        CalendarViewMode.DAY -> selectedDate.format(selectedDateFormatter).replaceFirstChar { it.uppercase() }
+        CalendarViewMode.DAY -> selectedDate.format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
         CalendarViewMode.WEEK -> "${weekStart.format(shortDateFormatter)} – ${weekStart.plusDays(6).format(shortDateFormatter)}"
         CalendarViewMode.MONTH -> visibleMonth.atDay(1).format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
     }
@@ -167,51 +185,34 @@ fun CalendarScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(
-                horizontal = if (viewMode == CalendarViewMode.MONTH) 8.dp else 20.dp,
-                vertical = 18.dp,
-            ),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp).padding(top = 18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ScreenHeader(
             title = "Календар",
             subtitle = headerSubtitle,
+            action = { TaktIconButton(Icons.Default.Add, "Додати подію", onAdd) },
         )
 
-        Row(
+        TaktSegmentedTabs(
+            labels = listOf("День", "Тиждень", "Місяць"),
+            selectedIndex = viewMode.ordinal,
+            onSelected = { viewMode = CalendarViewMode.entries[it] },
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TaktSegmentedTabs(
-                labels = listOf("День", "Тиждень", "Місяць"),
-                selectedIndex = viewMode.ordinal,
-                onSelected = { viewMode = CalendarViewMode.entries[it] },
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = { selectDate(today) }) {
-                Text("Сьогодні")
-            }
-        }
+        )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = ::navigatePrevious) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Попередній період")
-            }
-            StatusPill(
-                text = buildString {
-                    append(week)
-                    append(" · ")
-                    append(if (parity == WeekParity.EVEN) "Парний" else "Непарний")
-                    if (settings.parityOverride != ParityOverride.AUTO) append(" · вручну")
+        if (viewMode != CalendarViewMode.MONTH) {
+            WeekDaySelector(
+                dates = dates,
+                selectedDate = selectedDate,
+                onPreviousWeek = { selectDate(selectedDate.minusWeeks(1)) },
+                onNextWeek = { selectDate(selectedDate.plusWeeks(1)) },
+                onSelect = {
+                    selectDate(it)
+                    if (viewMode == CalendarViewMode.WEEK) viewMode = CalendarViewMode.DAY
                 },
             )
-            IconButton(onClick = ::navigateNext) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Наступний період")
-            }
         }
 
         if (viewMode == CalendarViewMode.WEEK) {
@@ -226,6 +227,15 @@ fun CalendarScreen(
                     }
                 },
             )
+        }
+
+        if (viewMode == CalendarViewMode.MONTH || selectedDate != today) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = ::navigatePrevious) { Icon(Icons.Default.ChevronLeft, "Попередній період") }
+                TextButton(onClick = { selectDate(today) }) { Text("Сьогодні") }
+                IconButton(onClick = ::navigateNext) { Icon(Icons.Default.ChevronRight, "Наступний період") }
+            }
         }
 
         AnimatedContent(
@@ -246,7 +256,8 @@ fun CalendarScreen(
                         courseTitles = courseTitles,
                         today = today,
                         settings = settings,
-                        onEventClick = { selectedEvent = it },
+                        onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
+                        onEventLongClick = onEventLongClick,
                         onDeadlineCompleted = { task, completed ->
                             scope.launch {
                                 studyContentRepository.setTaskCompleted(task.id, completed)
@@ -260,7 +271,8 @@ fun CalendarScreen(
                         WeekLayout.TIMETABLE -> WeekTimetable(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
-                            onEventClick = { selectedEvent = it },
+                            onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
+                            onEventLongClick = onEventLongClick,
                         )
                         WeekLayout.COMPACT_LIST -> WeekCompactList(
                             dates = dates,
@@ -269,7 +281,8 @@ fun CalendarScreen(
                                 selectDate(it)
                                 viewMode = CalendarViewMode.DAY
                             },
-                            onEventClick = { selectedEvent = it },
+                            onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
+                            onEventLongClick = onEventLongClick,
                         )
                     }
                 }
@@ -317,7 +330,8 @@ fun CalendarScreen(
                             selectedDate = selectedDate,
                             today = today,
                             cancellationStyle = settings.cancellationStyle,
-                            onEventClick = { selectedEvent = it },
+                            onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
+                            onEventLongClick = onEventLongClick,
                         )
                     }
                 }
@@ -325,101 +339,6 @@ fun CalendarScreen(
         }
     }
 
-    selectedEvent?.let { event ->
-        val recurringRule = rules.firstOrNull { it.id == event.id }
-        val oneOff = oneOffEvents.firstOrNull { it.id == event.id }
-
-        LessonActionsSheet(
-            event = event,
-            isRecurringRule = recurringRule != null,
-            onDismiss = { selectedEvent = null },
-            onCancelOccurrence = {
-                scope.launch {
-                    scheduleRepository.upsertException(
-                        ScheduleException(
-                            id = UUID.randomUUID().toString(),
-                            ruleId = event.id,
-                            date = event.date,
-                            type = ScheduleExceptionType.CANCELLED,
-                        )
-                    )
-                    selectedEvent = null
-                }
-            },
-            onMoveOccurrence = {
-                movingEvent = event
-                selectedEvent = null
-            },
-            onRestoreOccurrence = {
-                scope.launch {
-                    event.exceptionId?.let { scheduleRepository.deleteException(it) }
-                    selectedEvent = null
-                }
-            },
-            onEditRule = {
-                editingRule = recurringRule
-                selectedEvent = null
-            },
-            onDeleteRule = {
-                scope.launch {
-                    scheduleRepository.deleteRule(event.id)
-                    selectedEvent = null
-                }
-            },
-            onEditOneOff = {
-                editingOneOff = oneOff
-                selectedEvent = null
-            },
-            onDeleteOneOff = {
-                scope.launch {
-                    scheduleRepository.deleteOneOffEvent(event.id)
-                    selectedEvent = null
-                }
-            },
-        )
-    }
-
-    editingRule?.let { rule ->
-        AddLessonSheet(
-            initialDay = rule.dayOfWeek,
-            initialRule = rule,
-            onDismiss = { editingRule = null },
-            onSave = {
-                scope.launch {
-                    scheduleRepository.upsertRule(it)
-                    editingRule = null
-                }
-            },
-        )
-    }
-
-    editingOneOff?.let { event ->
-        OneOffEventSheet(
-            initialDate = event.date,
-            initialEvent = event,
-            onDismiss = { editingOneOff = null },
-            onSave = {
-                scope.launch {
-                    scheduleRepository.upsertOneOffEvent(it)
-                    editingOneOff = null
-                    selectDate(it.date)
-                }
-            },
-        )
-    }
-
-    movingEvent?.let { event ->
-        MoveLessonSheet(
-            event = event,
-            onDismiss = { movingEvent = null },
-            onSave = { exception ->
-                scope.launch {
-                    scheduleRepository.upsertException(exception)
-                    movingEvent = null
-                }
-            },
-        )
-    }
 }
 
 @Composable
@@ -431,6 +350,7 @@ private fun SelectedDayAgenda(
     today: LocalDate,
     settings: AppSettings,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
+    onEventLongClick: (ResolvedScheduleEvent) -> Unit,
     onDeadlineCompleted: (com.kpyruy.takt.core.model.StudyTask, Boolean) -> Unit,
 ) {
     Column(
@@ -438,18 +358,8 @@ private fun SelectedDayAgenda(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (deadlines.isNotEmpty()) {
-            SectionCard {
-                Text("Дедлайни", style = MaterialTheme.typography.titleMedium)
-                deadlines.forEachIndexed { index, task ->
-                    if (index > 0) HorizontalDivider()
-                    CalendarDeadlineRow(
-                        task = task,
-                        courseTitle = courseTitles[task.courseId] ?: task.courseId,
-                        onCompletedChange = { completed ->
-                            onDeadlineCompleted(task, completed)
-                        },
-                    )
-                }
+            deadlines.forEach { task ->
+                CalendarDeadlineStrip(task = task, onCompletedChange = { onDeadlineCompleted(task, it) })
             }
         }
 
@@ -457,7 +367,7 @@ private fun SelectedDayAgenda(
             SectionCard {
                 Text("На цей день занять немає")
                 Text(
-                    "Додай пару або разову подію через центральну кнопку +.",
+                    "Додай пару або разову подію кнопкою + вгорі.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -468,6 +378,7 @@ private fun SelectedDayAgenda(
                 today = today,
                 cancellationStyle = settings.cancellationStyle,
                 onEventClick = onEventClick,
+                onEventLongClick = onEventLongClick,
             )
         }
     }

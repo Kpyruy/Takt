@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -86,10 +87,15 @@ fun TaktTimeline(
                         )
                     }
                 }
-                Column(Modifier.weight(1f)) {
+                Column(
+                    Modifier.weight(1f)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(if (item.emphasized) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
+                        .padding(horizontal = if (item.emphasized) 12.dp else 0.dp, vertical = if (item.emphasized) 10.dp else 0.dp)
+                ) {
                     Text(
                         text = item.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = if (item.dimmed) {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         } else {

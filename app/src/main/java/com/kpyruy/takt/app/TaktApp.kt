@@ -1,13 +1,23 @@
 package com.kpyruy.takt.app
 
 import android.net.Uri
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import com.kpyruy.takt.core.ui.motion.TaktMotion
+import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.feature.calendar.ScheduleEventEditor
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.CompositionLocalProvider
+import com.kpyruy.takt.core.ui.components.LocalCourseIconKeys
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -33,6 +44,7 @@ import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.ui.components.TaktAddFab
 import com.kpyruy.takt.core.ui.components.TaktBottomNavigation
 import com.kpyruy.takt.core.ui.components.TaktNavItem
+import com.kpyruy.takt.core.ui.components.TaktIcons
 import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.home.HomeQuickAction
@@ -44,14 +56,14 @@ import com.kpyruy.takt.feature.subjects.SubjectsScreen
 import kotlinx.coroutines.launch
 
 private enum class Destination(val route: String, val label: String) {
-    HOME("home", "Головна"),
+    HOME("home", "Сьогодні"),
     CALENDAR("calendar", "Календар"),
     SUBJECTS("subjects", "Предмети"),
-    PLAN("plan", "План"),
+    PLAN("plan", "Прогрес"),
 }
 
 private const val SETTINGS_ROUTE = "settings"
-private const val SUBJECT_ROUTE = "subject/{courseId}"
+private const val SUBJECT_ROUTE = "subject/{courseId}?tab={tab}"
 private const val CREATE_ROUTE = "create/{type}?courseId={courseId}"
 
 @Composable
@@ -107,35 +119,45 @@ fun TaktApp(
         navController.navigate(route)
     }
 
+    var actionEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
+
+    fun navigateRoot(destination: Destination) {
+        if (destination.route == currentRoute) return
+        navController.navigate(destination.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     val navItems = Destination.entries.map { destination ->
         val icon = when (destination) {
-            Destination.HOME -> Icons.Default.Home
-            Destination.CALENDAR -> Icons.Default.CalendarMonth
-            Destination.SUBJECTS -> Icons.Default.MenuBook
-            Destination.PLAN -> Icons.Default.School
+            Destination.HOME -> TaktIcons.Home
+            Destination.CALENDAR -> TaktIcons.Calendar
+            Destination.SUBJECTS -> TaktIcons.Book
+            Destination.PLAN -> TaktIcons.Progress
         }
         TaktNavItem(
             label = destination.label,
             icon = icon,
             selected = currentRoute == destination.route,
             onClick = {
-                navController.navigate(destination.route) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
+                navigateRoot(destination)
             },
         )
     }
 
+    CompositionLocalProvider(LocalCourseIconKeys provides courses.associate { it.id to it.iconKey }) {
+    actionEvent?.let { event ->
+        ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
+    }
     Scaffold(
+        containerColor = if (currentRoute == Destination.HOME.route || currentRoute == Destination.PLAN.route)
+            MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showRootNavigation) {
                 TaktBottomNavigation(
                     items = navItems,
-                    centerContent = {
-                        TaktAddFab(onClick = { showGlobalAdd = true })
-                    },
                 )
             }
         },
@@ -143,7 +165,22 @@ fun TaktApp(
         NavHost(
             navController = navController,
             startDestination = Destination.HOME.route,
-            modifier = Modifier.padding(padding),
+            enterTransition = {
+                val from = Destination.entries.indexOfFirst { it.route == initialState.destination.route }
+                val to = Destination.entries.indexOfFirst { it.route == targetState.destination.route }
+                if (from >= 0 && to >= 0) slideInHorizontally(TaktMotion.emphasized()) { if (to > from) it else -it }
+                else fadeIn(TaktMotion.fast())
+            },
+            exitTransition = {
+                val from = Destination.entries.indexOfFirst { it.route == initialState.destination.route }
+                val to = Destination.entries.indexOfFirst { it.route == targetState.destination.route }
+                if (from >= 0 && to >= 0) slideOutHorizontally(TaktMotion.emphasized()) { if (to > from) -it else it }
+                else fadeOut(TaktMotion.fast())
+            },
+            modifier = Modifier.padding(padding).testTag("root-content").rootMenuSwipe(currentRoute, showRootNavigation && actionEvent == null && !showGlobalAdd && !showQuickAdd && courseSelectionFor == null) { step ->
+                val index = Destination.entries.indexOfFirst { it.route == currentRoute }
+                Destination.entries.getOrNull(index + step)?.let(::navigateRoot)
+            },
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(
@@ -154,6 +191,10 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                     onOpenCourses = { navController.navigate(Destination.SUBJECTS.route) },
+                    onOpenCalendar = { navController.navigate(Destination.CALENDAR.route) },
+                    onOpenCourse = ::openCourse,
+                    onEventLongClick = { actionEvent = it },
+                    onAdd = { showGlobalAdd = true },
                     onQuickAction = { action ->
                         startCreate(
                             when (action) {
@@ -171,7 +212,10 @@ fun TaktApp(
                     scheduleRepository = scheduleRepository,
                     studyContentRepository = studyContentRepository,
                     studyPlanRepository = repository,
+                    onOpenCourse = ::openCourse,
+                    onEventLongClick = { actionEvent = it },
                     settingsRepository = settingsRepository,
+                    onAdd = { showGlobalAdd = true },
                 )
             }
             composable(Destination.SUBJECTS.route) {
@@ -180,12 +224,17 @@ fun TaktApp(
                     gradeRepository = gradeRepository,
                     studyContentRepository = studyContentRepository,
                     onCourseClick = ::openCourse,
+                    onAdd = { showGlobalAdd = true },
                 )
             }
             composable(Destination.PLAN.route) {
                 StudyPlanScreen(
                     repository = repository,
+                    gradeRepository = gradeRepository,
+                    studyContentRepository = studyContentRepository,
                     onCourseClick = ::openCourse,
+                    onTaskClick = { navController.navigate("subject/$it?tab=tasks") },
+                    onAssessmentClick = { navController.navigate("subject/$it?tab=grades") },
                 )
             }
             composable(SETTINGS_ROUTE) {
@@ -197,7 +246,7 @@ fun TaktApp(
             }
             composable(
                 route = SUBJECT_ROUTE,
-                arguments = listOf(navArgument("courseId") { type = NavType.StringType }),
+                arguments = listOf(navArgument("courseId") { type = NavType.StringType }, navArgument("tab") { type = NavType.StringType; defaultValue = "overview" }),
             ) { entry ->
                 val courseId = entry.arguments?.getString("courseId").orEmpty()
                 SubjectDetailScreen(
@@ -206,6 +255,7 @@ fun TaktApp(
                     studyContentRepository = studyContentRepository,
                     examRepository = examRepository,
                     courseId = courseId,
+                    initialTab = when (entry.arguments?.getString("tab")) { "tasks" -> "Завдання"; "grades" -> "Бали"; else -> "Огляд" },
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -227,7 +277,7 @@ fun TaktApp(
 
                 if (type != null) {
                     CreateItemScreen(
-                        type = type,
+                        courses = courses,                        type = type,
                         courseId = courseId,
                         draft = pendingCreateDraft?.takeIf { draft ->
                             draft.type == type &&
@@ -248,6 +298,8 @@ fun TaktApp(
                 }
             }
         }
+    }
+
     }
 
     if (showGlobalAdd) {

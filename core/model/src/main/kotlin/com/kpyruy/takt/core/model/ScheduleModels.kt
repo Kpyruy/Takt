@@ -5,6 +5,18 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.WeekFields
 
+enum class LessonType(val label: String, val shortLabel: String) {
+    UNSPECIFIED("Не вказано", ""),
+    LECTURE("Лекція", "Лек."),
+    SEMINAR("Семінар", "Сем."),
+    PRACTICE("Практика", "Практ."),
+    LAB("Лабораторна", "Лаб.");
+
+    companion object {
+        fun fromStorage(value: String): LessonType = entries.firstOrNull { it.name == value } ?: UNSPECIFIED
+    }
+}
+
 enum class ScheduleRecurrence {
     WEEKLY,
     EVEN_WEEKS,
@@ -20,6 +32,7 @@ data class ScheduleRule(
     val endTime: LocalTime,
     val recurrence: ScheduleRecurrence,
     val room: String? = null,
+    val lessonType: LessonType = LessonType.UNSPECIFIED,
 ) {
     init {
         require(endTime > startTime) { "endTime must be after startTime" }
@@ -71,6 +84,7 @@ data class OneOffScheduleEvent(
     val endTime: LocalTime,
     val room: String? = null,
     val type: OneOffScheduleEventType,
+    val lessonType: LessonType = LessonType.UNSPECIFIED,
 ) {
     init {
         require(endTime > startTime) { "endTime must be after startTime" }
@@ -84,6 +98,11 @@ enum class ScheduleEventStatus {
     ONE_OFF,
 }
 
+/** Original occurrence date keeps attendance stable when a recurring lesson is moved. */
+data class LessonAbsence(val eventId: String, val date: LocalDate, val isOneOff: Boolean)
+
+fun ResolvedScheduleEvent.absenceKey() = LessonAbsence(id, sourceDate ?: date, status == ScheduleEventStatus.ONE_OFF)
+
 data class ResolvedScheduleEvent(
     val id: String,
     val courseId: String?,
@@ -93,8 +112,10 @@ data class ResolvedScheduleEvent(
     val endTime: LocalTime,
     val room: String?,
     val status: ScheduleEventStatus,
+    val isAbsent: Boolean = false,
     val exceptionId: String? = null,
     val sourceDate: LocalDate? = null,
+    val lessonType: LessonType = LessonType.UNSPECIFIED,
 )
 
 object ScheduleResolver {
@@ -104,6 +125,7 @@ object ScheduleResolver {
         oneOffEvents: List<OneOffScheduleEvent>,
         date: LocalDate,
         parityOverride: WeekParity? = null,
+        absences: List<LessonAbsence> = emptyList(),
     ): List<ResolvedScheduleEvent> {
         val recurring = rules
             .filter { it.occursOn(date, parityOverride) }
@@ -129,6 +151,7 @@ object ScheduleResolver {
                                 id = rule.id,
                                 courseId = rule.courseId,
                                 title = rule.title,
+                                lessonType = rule.lessonType,
                                 date = date,
                                 startTime = exception.replacementStartTime ?: rule.startTime,
                                 endTime = exception.replacementEndTime ?: rule.endTime,
@@ -159,6 +182,7 @@ object ScheduleResolver {
                     id = rule.id,
                     courseId = rule.courseId,
                     title = rule.title,
+                    lessonType = rule.lessonType,
                     date = date,
                     startTime = exception.replacementStartTime ?: rule.startTime,
                     endTime = exception.replacementEndTime ?: rule.endTime,
@@ -176,6 +200,7 @@ object ScheduleResolver {
                     id = it.id,
                     courseId = it.courseId,
                     title = it.title,
+                    lessonType = it.lessonType,
                     date = it.date,
                     startTime = it.startTime,
                     endTime = it.endTime,
@@ -184,7 +209,8 @@ object ScheduleResolver {
                 )
             }
 
-        return (recurring + movedIntoDate + oneOff).sortedWith(
+        val missed = absences.toHashSet()
+        return (recurring + movedIntoDate + oneOff).map { it.copy(isAbsent = it.absenceKey() in missed) }.sortedWith(
             compareBy<ResolvedScheduleEvent> { it.startTime }.thenBy { it.title }
         )
     }
@@ -206,4 +232,5 @@ private fun ScheduleRule.toResolved(
     status = status,
     exceptionId = exceptionId,
     sourceDate = sourceDate,
+    lessonType = lessonType,
 )

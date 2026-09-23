@@ -3,6 +3,10 @@ package com.kpyruy.takt.feature.subjects
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +43,7 @@ internal fun ExamMaterialsSection(
     onDelete: (ExamMaterial) -> Unit,
 ) {
     val context = LocalContext.current
+    var adding by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var uriText by remember { mutableStateOf("") }
 
@@ -68,8 +73,11 @@ internal fun ExamMaterialsSection(
         }
     }
 
-    SectionCard {
-        Text("Матеріали", style = MaterialTheme.typography.titleMedium)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Підготовка", style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = { adding = !adding }) { Text(if (adding) "Скасувати" else "Додати матеріал") }
+        }
 
         if (materials.isEmpty()) {
             Text(
@@ -83,7 +91,10 @@ internal fun ExamMaterialsSection(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(Modifier.weight(1f)) {
+                    Icon(Icons.Default.AttachFile, null, Modifier.padding(end = 12.dp).size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    Column(Modifier.weight(1f).clickable {
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(material.uri)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
+                    }) {
                         Text(material.title, style = MaterialTheme.typography.titleMedium)
                         Text(
                             material.uri,
@@ -99,6 +110,7 @@ internal fun ExamMaterialsSection(
             }
         }
 
+        if (adding) {
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -147,6 +159,7 @@ internal fun ExamMaterialsSection(
             ) {
                 Text("Додати")
             }
+        }
         }
     }
 }

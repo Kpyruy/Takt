@@ -12,6 +12,7 @@ class RoomBackupRepository(
         val settings = settingsRepository.settings.first()
         val payload = database.withTransaction {
             BackupPayload(
+                lessonAbsences = database.scheduleDao().getAbsencesSnapshot().map { it.toBackup() },
                 courses = database.courseDao().getAllSnapshot().map { it.toBackup() },
                 scheduleRules = database.scheduleDao().getRulesSnapshot().map { it.toBackup() },
                 oneOffEvents = database.scheduleDao().getOneOffEventsSnapshot().map { it.toBackup() },
@@ -46,12 +47,14 @@ class RoomBackupRepository(
             gradeDao.deleteAllOverrides()
             gradeDao.deleteAllScales()
             gradeDao.deleteAllItems()
+            scheduleDao.deleteAllAbsences()
             scheduleDao.deleteAllExceptions()
             scheduleDao.deleteAllOneOffEvents()
             scheduleDao.deleteAllRules()
             courseDao.deleteAll()
 
             courseDao.insertAll(payload.courses.map { it.toEntity() })
+            scheduleDao.upsertAbsences(payload.lessonAbsences.map { it.toEntity() })
             scheduleDao.upsertRules(payload.scheduleRules.map { it.toEntity() })
             scheduleDao.upsertOneOffEvents(payload.oneOffEvents.map { it.toEntity() })
             scheduleDao.upsertExceptions(payload.scheduleExceptions.map { it.toEntity() })

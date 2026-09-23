@@ -1,0 +1,30 @@
+
+com.kpyruy.takt.app.RootMenuMotionTest:.
+com.kpyruy.takt.app.SchedulePolishTest:
+Error in tapHoldAbsenceSettingsAndIconScroll(com.kpyruy.takt.app.SchedulePolishTest):
+java.lang.AssertionError: Failed to inject touch input.
+Reason: Expected exactly '1' node but could not find any node that satisfies: ((Text + InputText + EditableText contains 'Fyzika · prednáška' (ignoreCase: false) as substring) && (OnClick is defined))
+
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchSemanticsNode(SemanticsNodeInteraction.kt:84)
+	at androidx.compose.ui.test.ActionsKt.performTouchInput(Actions.kt:389)
+	at com.kpyruy.takt.app.SchedulePolishTest.tapHoldAbsenceSettingsAndIconScroll(SchedulePolishTest.kt:62)
+
+
+Time: 25.931
+There was 1 failure:
+1) tapHoldAbsenceSettingsAndIconScroll(com.kpyruy.takt.app.SchedulePolishTest)
+java.lang.AssertionError: Failed to inject touch input.
+Reason: Expected exactly '1' node but could not find any node that satisfies: ((Text + InputText + EditableText contains 'Fyzika · prednáška' (ignoreCase: false) as substring) && (OnClick is defined))
+
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow(SemanticsNodeInteraction.kt:178)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchOneOrThrow$default(SemanticsNodeInteraction.kt:150)
+	at androidx.compose.ui.test.SemanticsNodeInteraction.fetchSemanticsNode(SemanticsNodeInteraction.kt:84)
+	at androidx.compose.ui.test.ActionsKt.performTouchInput(Actions.kt:389)
+	at com.kpyruy.takt.app.SchedulePolishTest.tapHoldAbsenceSettingsAndIconScroll(SchedulePolishTest.kt:62)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+

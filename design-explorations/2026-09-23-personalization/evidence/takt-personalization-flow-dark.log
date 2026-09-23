@@ -1,0 +1,41 @@
+INSTRUMENTATION_STATUS: class=com.kpyruy.takt.app.PersonalizationFlowTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.kpyruy.takt.app.PersonalizationFlowTest:
+INSTRUMENTATION_STATUS: test=lessonTypesIconsCrossSemesterStatusesAndGesturesPersist
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.kpyruy.takt.app.PersonalizationFlowTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 5000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:504)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:339)
+	at com.kpyruy.takt.app.PersonalizationFlowTest.lessonTypesIconsCrossSemesterStatusesAndGesturesPersist(PersonalizationFlowTest.kt:107)
+
+INSTRUMENTATION_STATUS: stream=
+Error in lessonTypesIconsCrossSemesterStatusesAndGesturesPersist(com.kpyruy.takt.app.PersonalizationFlowTest):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 5000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:504)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:339)
+	at com.kpyruy.takt.app.PersonalizationFlowTest.lessonTypesIconsCrossSemesterStatusesAndGesturesPersist(PersonalizationFlowTest.kt:107)
+
+INSTRUMENTATION_STATUS: test=lessonTypesIconsCrossSemesterStatusesAndGesturesPersist
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 33.407
+There was 1 failure:
+1) lessonTypesIconsCrossSemesterStatusesAndGesturesPersist(com.kpyruy.takt.app.PersonalizationFlowTest)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 5000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:504)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:339)
+	at com.kpyruy.takt.app.PersonalizationFlowTest.lessonTypesIconsCrossSemesterStatusesAndGesturesPersist(PersonalizationFlowTest.kt:107)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

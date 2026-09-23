@@ -19,6 +19,9 @@ import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
 
+internal fun com.kpyruy.takt.core.database.LessonAbsenceEntity.toBackup() = BackupLessonAbsence(eventId, dateEpochDay, isOneOff)
+internal fun BackupLessonAbsence.toEntity() = com.kpyruy.takt.core.database.LessonAbsenceEntity(eventId, dateEpochDay, isOneOff)
+
 internal fun CourseEntity.toBackup() = BackupCourse(
     id = id,
     code = code,
@@ -30,6 +33,7 @@ internal fun CourseEntity.toBackup() = BackupCourse(
     syllabusUrl = syllabusUrl,
     gradingType = gradingType,
     passFailResult = passFailResult,
+    iconKey = iconKey,
 )
 
 internal fun BackupCourse.toEntity() = CourseEntity(
@@ -43,6 +47,7 @@ internal fun BackupCourse.toEntity() = CourseEntity(
     syllabusUrl = syllabusUrl,
     gradingType = gradingType,
     passFailResult = passFailResult,
+    iconKey = iconKey,
 )
 
 internal fun ScheduleRuleEntity.toBackup() = BackupScheduleRule(
@@ -53,6 +58,7 @@ internal fun ScheduleRuleEntity.toBackup() = BackupScheduleRule(
     startMinute = startMinute,
     endMinute = endMinute,
     recurrence = recurrence,
+    lessonType = lessonType,
     room = room,
 )
 
@@ -64,6 +70,7 @@ internal fun BackupScheduleRule.toEntity() = ScheduleRuleEntity(
     startMinute = startMinute,
     endMinute = endMinute,
     recurrence = recurrence,
+    lessonType = lessonType,
     room = room,
 )
 
@@ -72,6 +79,7 @@ internal fun OneOffScheduleEventEntity.toBackup() = BackupOneOffEvent(
     courseId = courseId,
     title = title,
     dateEpochDay = dateEpochDay,
+    lessonType = lessonType,
     startMinute = startMinute,
     endMinute = endMinute,
     room = room,
@@ -83,6 +91,7 @@ internal fun BackupOneOffEvent.toEntity() = OneOffScheduleEventEntity(
     courseId = courseId,
     title = title,
     dateEpochDay = dateEpochDay,
+    lessonType = lessonType,
     startMinute = startMinute,
     endMinute = endMinute,
     room = room,

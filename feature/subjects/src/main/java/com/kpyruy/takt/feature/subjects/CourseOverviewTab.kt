@@ -1,9 +1,17 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -12,7 +20,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
@@ -21,14 +28,12 @@ import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
-import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SectionCard
-import com.kpyruy.takt.core.ui.components.StatusPill
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -39,166 +44,60 @@ internal fun CourseOverviewTab(
     gradeScale: GradeScale,
     tasks: List<StudyTask>,
     eligibility: ExamEligibility,
-    onStatusChange: (CourseStatus) -> Unit,
-    onGradingTypeChange: (CourseGradingType) -> Unit,
-    onPassFailResultChange: (PassFailResult?) -> Unit,
+    onTaskCompleted: (StudyTask, Boolean) -> Unit,
+    onEditTask: (StudyTask) -> Unit,
+    onEditGrade: (GradeItem) -> Unit,
+    onNotes: () -> Unit,
+    onExam: () -> Unit,
 ) {
     val projection = GradeProjection.calculate(gradeItems, gradeScale)
-    val summary = GradeSummary.calculate(gradeItems, gradeScale)
-    val today = LocalDate.now()
-    val upcomingTasks = tasks
-        .filter { !it.completed && it.dueDate?.let { date -> !date.isBefore(today) } == true }
-        .sortedBy { it.dueDate }
-        .take(3)
-    val upcomingAssessments = gradeItems
-        .filter { !it.completed && it.dueDate?.let { date -> !date.isBefore(today) } == true }
-        .sortedBy { it.dueDate }
-        .take(3)
-
-    Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        SectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Семестр " + course.semester, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(course.credits.toString() + " кредитів", style = MaterialTheme.typography.titleLarge)
-                }
-                StatusPill(text = course.status.label())
-            }
-            Text(
-                when (course.gradingType) {
-                    CourseGradingType.EXAM_LETTER -> {
-                        val examAdded = gradeItems.any { it.type == GradeItemType.EXAM }
-                        if (examAdded) {
-                            val ceiling = projection.maximumPossibleLetter?.name ?: "—"
-                            "Гарантовано " + projection.securedPoints.displayNumber() +
-                                " балів · максимум " + ceiling
-                        } else {
-                            "Гарантовано " + projection.securedPoints.displayNumber() +
-                                " балів · екзамен ще не додано"
-                        }
-                    }
-                    CourseGradingType.CONTINUOUS_LETTER -> {
-                        if (summary.maxPoints == 0.0) "Ще немає результатів"
-                        else summary.earnedPoints.displayNumber() + " / " + summary.maxPoints.displayNumber() +
-                            " · " + summary.percentage.displayNumber() + "%"
-                    }
-                    CourseGradingType.PASS_FAIL -> when (course.passFailResult) {
-                        PassFailResult.PASSED -> "Зараховано"
-                        PassFailResult.FAILED -> "Не зараховано"
-                        null -> "Результату ще немає"
-                    }
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (course.gradingType == CourseGradingType.EXAM_LETTER && eligibility.requiredCount > 0) {
-                Text(
-                    if (eligibility.eligible) "Допуск до екзамену: готово"
-                    else "Для допуску: " + eligibility.completedCount + " / " + eligibility.requiredCount,
-                    color = if (eligibility.eligible) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+    val requiredTasks = tasks.filter { it.requiredForExam }.sortedBy { it.completed }
+    val requiredGrades = gradeItems.filter { it.requiredForExam }.sortedBy { it.completed }
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (course.gradingType == CourseGradingType.EXAM_LETTER) AdmissionProgressCard(eligibility)
+        if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(gradeItems, projection)
+        else SubjectPanel {
+            Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
+            Text(when(course.passFailResult) { PassFailResult.PASSED -> "Зараховано"; PassFailResult.FAILED -> "Не зараховано"; null -> "Результату ще немає" })
         }
-
-        SectionCard {
-            Text("Статус предмета", style = MaterialTheme.typography.titleMedium)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(CourseStatus.entries) { status ->
-                    FilterChip(
-                        selected = course.status == status,
-                        onClick = { onStatusChange(status) },
-                        label = { Text(status.label()) },
-                    )
-                }
-            }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Обов’язкові роботи", style = MaterialTheme.typography.titleMedium)
+            Text("${eligibility.completedCount} / ${eligibility.requiredCount}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
         }
-
-        SectionCard {
-            Text("Тип оцінювання", style = MaterialTheme.typography.titleMedium)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(
-                    listOf(
-                        CourseGradingType.EXAM_LETTER,
-                        CourseGradingType.CONTINUOUS_LETTER,
-                        CourseGradingType.PASS_FAIL,
-                    )
-                ) { type ->
-                    FilterChip(
-                        selected = course.gradingType == type,
-                        onClick = { onGradingTypeChange(type) },
-                        label = { Text(type.label()) },
-                    )
+        Column {
+            HorizontalDivider()
+            requiredTasks.forEach { task ->
+                Row(Modifier.fillMaxWidth().clickable { onEditTask(task) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(task.completed, onCheckedChange = { onTaskCompleted(task, it) })
+                    Column(Modifier.weight(1f)) { Text(task.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (task.completed) "Зараховано" else task.description?.takeIf { it.isNotBlank() } ?: "Для допуску") }
+                    task.dueDate?.let { SmallText(it.format(DateTimeFormatter.ofPattern("dd.MM"))) }
                 }
+                HorizontalDivider()
             }
-            if (course.gradingType == CourseGradingType.PASS_FAIL) {
-                Text("Результат", style = MaterialTheme.typography.labelLarge)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        FilterChip(
-                            selected = course.passFailResult == null,
-                            onClick = { onPassFailResultChange(null) },
-                            label = { Text("Немає") },
-                        )
-                    }
-                    item {
-                        FilterChip(
-                            selected = course.passFailResult == PassFailResult.PASSED,
-                            onClick = { onPassFailResultChange(PassFailResult.PASSED) },
-                            label = { Text("Зараховано") },
-                        )
-                    }
-                    item {
-                        FilterChip(
-                            selected = course.passFailResult == PassFailResult.FAILED,
-                            onClick = { onPassFailResultChange(PassFailResult.FAILED) },
-                            label = { Text("Не зараховано") },
-                        )
-                    }
+            requiredGrades.forEach { grade ->
+                Row(Modifier.fillMaxWidth().clickable { onEditGrade(grade) }.padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(if (grade.completed) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if(grade.completed) "Зараховано" else "Додати результат") }
                 }
+                HorizontalDivider()
             }
+            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText("Обов’язкових робіт не позначено", Modifier.padding(vertical = 16.dp))
         }
-
-        SectionCard {
-            Text("Найближче", style = MaterialTheme.typography.titleMedium)
-            if (upcomingTasks.isEmpty() && upcomingAssessments.isEmpty()) {
-                Text("Немає найближчих дедлайнів.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                val formatter = DateTimeFormatter.ofPattern("dd.MM")
-                upcomingAssessments.forEach { item ->
-                    Text(
-                        (item.dueDate?.format(formatter) ?: "—") + " · " +
-                            item.title + " · до " + item.maxPoints.displayNumber() + " б."
-                    )
-                }
-                upcomingTasks.forEach { task ->
-                    Text(
-                        (task.dueDate?.format(formatter) ?: "—") + " · " + task.title +
-                            if (task.requiredForExam) " · для допуску" else ""
-                    )
-                }
-            }
-        }
-
-        SectionCard {
-            Text("Про предмет", style = MaterialTheme.typography.titleMedium)
-            Text(
-                when (course.requirementType) {
-                    CourseRequirementType.COMPULSORY -> "Обов'язковий предмет"
-                    CourseRequirementType.SEMI_COMPULSORY -> "Обов'язково-вибірковий предмет"
-                    CourseRequirementType.ELECTIVE -> "Вибірковий предмет"
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            course.syllabusUrl?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        }
+        Text("Під рукою", style = MaterialTheme.typography.titleMedium)
+        ResourceRow("Формули й конспекти", "Нотатки та матеріали предмета", onNotes)
+        if (course.gradingType == CourseGradingType.EXAM_LETTER) ResourceRow("Підготовка до екзамену", "Дата, цільова оцінка й матеріали", onExam)
+        course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; ResourceRow("Програма предмета", course.code) { runCatching { uriHandler.openUri(url) } } }
+        Spacer(Modifier.height(12.dp))
     }
+}
+
+@Composable private fun ResourceRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.primaryContainer) { Icon(Icons.Default.Description, null, Modifier.padding(10.dp).size(20.dp), tint = MaterialTheme.colorScheme.primary) }
+        Column(Modifier.weight(1f)) { Text(title, fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold); SmallText(subtitle) }
+        Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
+    }
+    HorizontalDivider()
 }
 
 internal fun CourseStatus.label(): String = when (this) {

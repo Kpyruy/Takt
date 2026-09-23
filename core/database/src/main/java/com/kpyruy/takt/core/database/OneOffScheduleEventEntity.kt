@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -13,4 +14,6 @@ data class OneOffScheduleEventEntity(
     val endMinute: Int,
     val room: String?,
     val type: String,
+    @ColumnInfo(defaultValue = "'UNSPECIFIED'")
+    val lessonType: String = "UNSPECIFIED",
 )

@@ -1,5 +1,9 @@
 package com.kpyruy.takt.core.data
 
+import com.kpyruy.takt.core.database.LessonAbsenceEntity
+import com.kpyruy.takt.core.model.LessonAbsence
+import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.absenceKey
 import com.kpyruy.takt.core.database.OneOffScheduleEventEntity
 import com.kpyruy.takt.core.database.ScheduleDao
 import com.kpyruy.takt.core.database.ScheduleExceptionEntity
@@ -9,6 +13,7 @@ import com.kpyruy.takt.core.model.OneOffScheduleEventType
 import com.kpyruy.takt.core.model.ScheduleException
 import com.kpyruy.takt.core.model.ScheduleExceptionType
 import com.kpyruy.takt.core.model.ScheduleRecurrence
+import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.model.ScheduleRule
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -18,6 +23,14 @@ import kotlinx.coroutines.flow.map
 class RoomScheduleRepository(
     private val dao: ScheduleDao,
 ) : ScheduleRepository {
+    override fun observeAbsences() = dao.observeAbsences().map { items -> items.map { LessonAbsence(it.eventId, LocalDate.ofEpochDay(it.dateEpochDay), it.isOneOff) } }
+
+    override suspend fun setAbsent(event: ResolvedScheduleEvent, absent: Boolean) {
+        val key = event.absenceKey()
+        if (absent) dao.upsertAbsences(listOf(LessonAbsenceEntity(key.eventId, key.date.toEpochDay(), key.isOneOff)))
+        else dao.deleteAbsence(key.eventId, key.date.toEpochDay(), key.isOneOff)
+    }
+
     override fun observeRules() = dao.observeRules().map { items -> items.map { it.toDomain() } }
 
     override fun observeOneOffEvents() =
@@ -44,6 +57,7 @@ class RoomScheduleRepository(
 
     override suspend fun deleteOneOffEvent(id: String) {
         dao.deleteOneOffEvent(id)
+        dao.deleteEventAbsences(id, true)
     }
 
     override suspend fun upsertException(exception: ScheduleException) {
@@ -52,6 +66,7 @@ class RoomScheduleRepository(
 
     override suspend fun deleteRule(id: String) {
         dao.deleteRule(id)
+        dao.deleteEventAbsences(id, false)
     }
 
     override suspend fun deleteException(id: String) {
@@ -71,6 +86,7 @@ internal fun ScheduleRuleEntity.toDomain() = ScheduleRule(
     startTime = startMinute.toLocalTime(),
     endTime = endMinute.toLocalTime(),
     recurrence = ScheduleRecurrence.valueOf(recurrence),
+    lessonType = LessonType.fromStorage(lessonType),
     room = room,
 )
 
@@ -82,6 +98,7 @@ internal fun ScheduleRule.toEntity() = ScheduleRuleEntity(
     startMinute = startTime.toMinuteOfDay(),
     endMinute = endTime.toMinuteOfDay(),
     recurrence = recurrence.name,
+    lessonType = lessonType.name,
     room = room,
 )
 
@@ -94,6 +111,7 @@ internal fun OneOffScheduleEventEntity.toDomain() = OneOffScheduleEvent(
     endTime = endMinute.toLocalTime(),
     room = room,
     type = OneOffScheduleEventType.valueOf(type),
+    lessonType = LessonType.fromStorage(lessonType),
 )
 
 internal fun OneOffScheduleEvent.toEntity() = OneOffScheduleEventEntity(
@@ -105,6 +123,7 @@ internal fun OneOffScheduleEvent.toEntity() = OneOffScheduleEventEntity(
     endMinute = endTime.toMinuteOfDay(),
     room = room,
     type = type.name,
+    lessonType = lessonType.name,
 )
 
 internal fun ScheduleExceptionEntity.toDomain() = ScheduleException(

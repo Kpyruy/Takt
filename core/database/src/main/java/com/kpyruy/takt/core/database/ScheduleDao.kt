@@ -8,6 +8,24 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ScheduleDao {
+    @Query("SELECT * FROM lesson_absences ORDER BY dateEpochDay")
+    fun observeAbsences(): Flow<List<LessonAbsenceEntity>>
+
+    @Query("SELECT * FROM lesson_absences ORDER BY dateEpochDay")
+    suspend fun getAbsencesSnapshot(): List<LessonAbsenceEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAbsences(items: List<LessonAbsenceEntity>)
+
+    @Query("DELETE FROM lesson_absences WHERE eventId = :eventId AND dateEpochDay = :date AND isOneOff = :isOneOff")
+    suspend fun deleteAbsence(eventId: String, date: Long, isOneOff: Boolean)
+
+    @Query("DELETE FROM lesson_absences WHERE eventId = :eventId AND isOneOff = :isOneOff")
+    suspend fun deleteEventAbsences(eventId: String, isOneOff: Boolean)
+
+    @Query("DELETE FROM lesson_absences")
+    suspend fun deleteAllAbsences()
+
     @Query("SELECT * FROM schedule_rules ORDER BY dayOfWeek, startMinute")
     fun observeRules(): Flow<List<ScheduleRuleEntity>>
 

@@ -1,0 +1,38 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :core:model:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:model:compileKotlin UP-TO-DATE
+> Task :core:model:compileJava NO-SOURCE
+> Task :core:model:processResources NO-SOURCE
+> Task :core:model:classes UP-TO-DATE
+> Task :core:model:jar UP-TO-DATE
+> Task :core:model:processTestResources NO-SOURCE
+
+> Task :core:model:compileTestKotlin FAILED
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:11:27 Unresolved reference 'LessonAbsence'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:13:43 Unresolved reference 'isAbsent'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:14:57 Unresolved reference 'isAbsent'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:19:26 Unresolved reference 'isAbsent'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:21:37 Unresolved reference 'absenceKey'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:25:102 No parameter with name 'absences' found.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:25:113 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:26:35 Unresolved reference 'isAbsent'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:27:35 Unresolved reference 'isAbsent'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:30:107 Unresolved reference 'isAbsent'.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:33:84 No parameter with name 'absences' found.
+e: file:///home/kpyr/Projects/Takt/core/model/src/test/kotlin/com/kpyruy/takt/core/model/LessonAbsenceTest.kt:33:95 Cannot infer type for this parameter. Specify it explicitly.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:model:compileTestKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 32s
+3 actionable tasks: 1 executed, 2 up-to-date

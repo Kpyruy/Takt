@@ -1,5 +1,8 @@
 package com.kpyruy.takt.feature.calendar
 
+import androidx.compose.ui.Alignment
+
+import com.kpyruy.takt.core.ui.components.lessonInteraction
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -81,6 +84,7 @@ fun WeekTimetable(
     dates: List<LocalDate>,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
+    onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     val horizontal = rememberScrollState()
     val vertical = rememberScrollState()
@@ -146,21 +150,22 @@ fun WeekTimetable(
                                 .width(width)
                                 .height(eventHeight(laneEvent.event))
                                 .padding(horizontal = 2.dp, vertical = 1.dp)
-                                .clickable { onEventClick(laneEvent.event) },
+                                .lessonInteraction({ onEventClick(laneEvent.event) }, { onEventLongClick(laneEvent.event) }),
                             shape = MaterialTheme.shapes.extraSmall,
                             color = subjectColor.copy(alpha = 0.18f),
                         ) {
                             Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
-                                    laneEvent.event.title,
+                                    listOf(if (laneEvent.event.isAbsent) "Пропущено" else "", laneEvent.event.lessonType.shortLabel, laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                                Text(
-                                    laneEvent.event.startTime.format(timetableTimeFormatter),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    com.kpyruy.takt.core.ui.components.CourseInlineIcon(laneEvent.event.courseId)
+                                    Text(laneEvent.event.startTime.format(timetableTimeFormatter),
+                                        style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
                                 laneEvent.event.room?.let {
                                     Text(
                                         it,
