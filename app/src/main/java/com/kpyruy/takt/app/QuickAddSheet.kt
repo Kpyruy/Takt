@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.model.activeCourseChoices
 import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.ScheduleRecurrence
 import com.kpyruy.takt.core.model.ScheduleRule
@@ -64,6 +65,7 @@ fun QuickAddSheet(
     var error by remember { mutableStateOf<String?>(null) }
 
     val needsCourse = type == QuickAddType.TASK || type == QuickAddType.NOTE
+    val activeCourses = courses.activeCourseChoices()
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -93,7 +95,7 @@ fun QuickAddSheet(
             if (needsCourse) {
                 Text("Предмет", style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(courses, key = { it.id }) { course ->
+                    items(activeCourses, key = { it.id }) { course ->
                         FilterChip(
                             selected = courseId == course.id,
                             onClick = {
@@ -103,6 +105,9 @@ fun QuickAddSheet(
                             label = { Text(course.title, maxLines = 1) },
                         )
                     }
+                }
+                if (activeCourses.isEmpty()) {
+                    Text("Немає активних предметів. Познач предмет активним у «Прогресі».", style = MaterialTheme.typography.bodySmall)
                 }
             }
 
@@ -173,6 +178,10 @@ fun QuickAddSheet(
                         error = "Оберіть предмет."
                         return@Button
                     }
+                    if (courseId != null && activeCourses.none { it.id == courseId }) {
+                        error = "Цей предмет уже не активний. Оберіть активний предмет."
+                        return@Button
+                    }
 
                     when (type) {
                         QuickAddType.TASK -> onSaveTask(
@@ -240,7 +249,7 @@ fun QuickAddSheet(
                         CreateItemDraft(
                             type = fullType,
                             lessonType = lessonType,
-                            courseId = courseId,
+                            courseId = courseId?.takeIf { id -> activeCourses.any { it.id == id } },
                             title = title,
                             details = details,
                             dueDate = dueDate,

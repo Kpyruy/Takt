@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
-import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.model.activeCourseChoices
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,9 +25,8 @@ fun SelectCourseSheet(
     onDismiss: () -> Unit,
     onSelected: (Course) -> Unit,
 ) {
-    val ordered = courses.sortedWith(
-        compareBy<Course> { it.status != CourseStatus.ENROLLED }
-            .thenBy { it.semester }
+    val ordered = courses.activeCourseChoices().sortedWith(
+        compareBy<Course> { it.semester }
             .thenBy { it.title }
     )
 
@@ -40,6 +39,14 @@ fun SelectCourseSheet(
                 .padding(bottom = 28.dp),
         ) {
             Text("Оберіть предмет", style = MaterialTheme.typography.headlineSmall)
+            if (ordered.isEmpty()) {
+                Text(
+                    "Немає активних предметів. Познач предмет активним у «Прогресі».",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
             ordered.forEachIndexed { index, course ->
                 if (index > 0) HorizontalDivider()
                 Column(

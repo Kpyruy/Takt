@@ -41,6 +41,8 @@ data class Course(
     val iconKey: String? = null,
 )
 
+fun List<Course>.activeCourseChoices(): List<Course> = filter { it.status == CourseStatus.ENROLLED }
+
 enum class WeekParity {
     EVEN,
     ODD;
