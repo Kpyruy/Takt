@@ -34,6 +34,8 @@ class TaktDocumentStore(
     private val mutex = Mutex()
     private val _status = MutableStateFlow(DocumentSyncStatus.DISCONNECTED)
     val status: StateFlow<DocumentSyncStatus> = _status
+    private val _unmigratedMaterials = MutableStateFlow(0)
+    val unmigratedMaterials: StateFlow<Int> = _unmigratedMaterials
     private val resolver get() = context.contentResolver
 
     val isConnected: Boolean
@@ -79,6 +81,7 @@ class TaktDocumentStore(
                     return@withContext DocumentSyncStatus.CONFLICT
                 }
             }
+            if (migrateLegacyMaterials()) writeBackup(root, backupRepository.exportJson())
             _status.value = DocumentSyncStatus.READY
             DocumentSyncStatus.READY
         }
@@ -102,6 +105,9 @@ class TaktDocumentStore(
             } else {
                 _status.value = DocumentSyncStatus.READY
             }
+            if (_status.value == DocumentSyncStatus.READY && migrateLegacyMaterials()) {
+                writeBackup(root, backupRepository.exportJson())
+            }
         }
     }
 
@@ -110,12 +116,14 @@ class TaktDocumentStore(
             val remote = readBestBackup(requireRoot()) ?: error("У Documents/Takt немає даних")
             backupRepository.importJson(remote)
             rememberHash(remote)
+            if (migrateLegacyMaterials()) writeBackup(requireRoot(), backupRepository.exportJson())
             _status.value = DocumentSyncStatus.READY
         }
     }
 
     suspend fun saveCurrentToDocuments() = mutex.withLock {
         withContext(Dispatchers.IO) {
+            migrateLegacyMaterials()
             writeBackup(requireRoot(), backupRepository.exportJson())
             _status.value = DocumentSyncStatus.READY
         }
@@ -146,7 +154,7 @@ class TaktDocumentStore(
                 _status.value = DocumentSyncStatus.DISCONNECTED
                 return@withContext
             }
-            val local = backupRepository.exportJson()
+            val localBeforeMigration = backupRepository.exportJson()
             val remote = readBestBackup(root)
             val known = preferences.getString("last_hash", null)
             if (remote == null && hasBackupFile(root)) {
@@ -154,12 +162,13 @@ class TaktDocumentStore(
                 return@withContext
             }
             if (remote != null && hash(remote) != known) {
-                if (sameData(remote, local)) {
-                    if (mainIsValid(root)) rememberHash(remote) else writeBackup(root, local)
+                if (sameData(remote, localBeforeMigration)) rememberHash(remote)
+                else {
+                    _status.value = DocumentSyncStatus.CONFLICT
+                    return@withContext
                 }
-                else _status.value = DocumentSyncStatus.CONFLICT
-                return@withContext
             }
+            val local = if (migrateLegacyMaterials()) backupRepository.exportJson() else localBeforeMigration
             if (remote == null || !sameData(remote, local) || !mainIsValid(root)) writeBackup(root, local)
         }
     }
@@ -269,6 +278,26 @@ class TaktDocumentStore(
             data.lessonAbsences.isEmpty() && data.scheduleExceptions.isEmpty() && data.gradeItems.isEmpty() &&
             data.gradeScales.isEmpty() && data.gradeOverrides.isEmpty() && data.studyTasks.isEmpty() &&
             data.courseNotes.isEmpty() && data.examInfo.isEmpty() && data.examMaterials.isEmpty()
+    }
+
+    /** Convert older persisted document URIs while their original grant still exists. */
+    private suspend fun migrateLegacyMaterials(): Boolean {
+        val courses = database.courseDao().getAllSnapshot().associate { it.id to it.code }
+        var changed = false
+        var unavailable = 0
+        for (material in database.examDao().getMaterialsSnapshot()) {
+            val original = Uri.parse(material.uri)
+            if (original.scheme != "content" && original.scheme != "file") continue
+            val code = courses[material.courseId]
+            val copied = code?.let { runCatching { copyMaterial(it, original) }.getOrNull() }
+            if (copied == null) unavailable++
+            else {
+                database.examDao().upsertMaterial(material.copy(uri = copied))
+                changed = true
+            }
+        }
+        _unmigratedMaterials.value = unavailable
+        return changed
     }
 
     private fun sourceName(uri: Uri): String {

@@ -98,6 +98,7 @@ fun TaktApp(
     val haptics = rememberTaktHaptics()
     val snackbarHostState = remember { SnackbarHostState() }
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
+    val unmigratedMaterials by documentStore.unmigratedMaterials.collectAsStateWithLifecycle()
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) scope.launch {
             runCatching { documentStore.connect(uri) }
@@ -128,6 +129,16 @@ fun TaktApp(
                     "Копія в Documents/Takt відрізняється від даних на телефоні"
                 } else "Не вдалося синхронізувати Documents/Takt",
                 actionLabel = "Перевірити",
+                duration = SnackbarDuration.Indefinite,
+            )
+            if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
+        }
+    }
+    LaunchedEffect(unmigratedMaterials) {
+        if (unmigratedMaterials > 0) {
+            val result = snackbarHostState.showSnackbar(
+                message = "Не вдалося скопіювати $unmigratedMaterials старих матеріалів",
+                actionLabel = "Деталі",
                 duration = SnackbarDuration.Indefinite,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)

@@ -69,6 +69,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
+    val unmigratedMaterials by documentStore.unmigratedMaterials.collectAsStateWithLifecycle()
     val darkPreview = when (settings.themeMode) {
         AppThemeMode.SYSTEM -> isSystemInDarkTheme()
         AppThemeMode.LIGHT -> false
@@ -288,6 +289,12 @@ fun SettingsScreen(
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (unmigratedMaterials > 0) {
+                Text(
+                    "Не вдалося скопіювати $unmigratedMaterials старих матеріалів. Додайте їх заново, поки оригінали доступні.",
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             OutlinedButton(onClick = { folderLauncher.launch(null) }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) "Підключити Documents" else "Змінити папку")
             }
