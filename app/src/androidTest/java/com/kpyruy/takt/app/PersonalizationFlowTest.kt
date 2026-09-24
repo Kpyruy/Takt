@@ -100,7 +100,7 @@ class PersonalizationFlowTest {
         compose.onNodeWithTag("choose-status-ENROLLED").performClick()
         root("Календар")
         compose.onNode(hasText("Тестова лекція") and hasClickAction()).performScrollTo().performTouchInput { longClick() }
-        compose.onNodeWithText("Редагувати повторення").performClick()
+        compose.onNodeWithText("Редагувати").performClick()
         compose.onNode(hasText("Семінар") and hasClickAction()).performScrollTo().performClick().assertIsSelected()
         compose.onNode(hasText("Тестова лекція") and hasSetTextAction()).performTextReplacement("Fyzika")
         compose.onNodeWithText("Оновити").performScrollTo().performClick()

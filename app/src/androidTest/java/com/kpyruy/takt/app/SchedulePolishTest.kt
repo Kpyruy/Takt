@@ -61,6 +61,9 @@ class SchedulePolishTest {
         back()
         lesson().performTouchInput { longClick(durationMillis = 1000) }
         compose.onNodeWithText("Позначити пропуск").assertIsDisplayed()
+        compose.onNodeWithText("Позначка лише для цього заняття").assertDoesNotExist()
+        compose.onNodeWithText("Редагувати").assertIsDisplayed()
+        compose.onNodeWithText("Редагувати повторення").assertDoesNotExist()
         capture("lesson-actions")
         compose.onNodeWithText("Позначити пропуск").performClick()
         compose.waitUntil(5_000) { runBlocking { repo.observeAbsences().first().size == 1 } }

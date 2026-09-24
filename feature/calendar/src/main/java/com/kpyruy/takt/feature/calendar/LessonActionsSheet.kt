@@ -48,13 +48,12 @@ fun LessonActionsSheet(
                 Surface(shape = RoundedCornerShape(14.dp), color = if (event.isAbsent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerLow) {
                     ActionRow(if (event.isAbsent) "Зняти позначку пропуску" else "Позначити пропуск", Icons.Outlined.PersonOff, onToggleAbsence)
                 }
-                Text("Позначка лише для цього заняття", Modifier.padding(start = 14.dp, bottom = 10.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (actions.canMoveOccurrence) ActionRow("Перенести цю пару", Icons.Outlined.EventRepeat, onMoveOccurrence)
             if (actions.canCancelOccurrence) ActionRow("Скасувати тільки цю пару", Icons.Outlined.EventBusy, onCancelOccurrence)
             if (actions.canRestoreOccurrence) ActionRow("Повернути початкову пару", Icons.Outlined.Restore, onRestoreOccurrence)
             if (actions.canEditRecurringRule || actions.canEditOneOff) HorizontalDivider(Modifier.padding(vertical = 6.dp))
-            if (actions.canEditRecurringRule) ActionRow("Редагувати повторення", Icons.Outlined.Edit, onEditRule)
+            if (actions.canEditRecurringRule) ActionRow("Редагувати", Icons.Outlined.Edit, onEditRule)
             if (actions.canEditOneOff) ActionRow("Редагувати разову подію", Icons.Outlined.Edit, onEditOneOff)
             if (actions.canDeleteRecurringRule) ActionRow("Видалити з розкладу", Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
             if (actions.canDeleteOneOff) ActionRow("Видалити разову подію", Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)

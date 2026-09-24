@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.kpyruy.takt.core.model.Course
@@ -34,6 +35,24 @@ class ActiveCourseChoicesTest {
         compose.onNodeWithText("Completed course").assertDoesNotExist()
         compose.onNodeWithText("Planned course").assertDoesNotExist()
         compose.runOnIdle { assertEquals("active", selected) }
+    }
+
+    @Test fun fullFormChoiceShowsAssignedIconOrCourseInitials() {
+        compose.setContent {
+            MaterialTheme {
+                SelectCourseSheet(
+                    listOf(
+                        courses[1].copy(iconKey = "Science"),
+                        courses[1].copy(id = "other", code = "MATH_6B", title = "Other course"),
+                    ),
+                    onDismiss = {},
+                    onSelected = {},
+                )
+            }
+        }
+
+        compose.onNodeWithContentDescription("Хімія колба").assertExists()
+        compose.onNodeWithText("MA").assertExists()
     }
 
     @Test fun lessonLinkChoiceShowsOnlyActiveCoursesAndKeepsExistingLabel() {
