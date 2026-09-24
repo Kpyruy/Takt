@@ -46,6 +46,13 @@ data class CourseNote(
     val title: String,
     val content: String,
     val updatedAtEpochMillis: Long,
+    val attachments: List<NoteAttachment> = emptyList(),
+)
+
+data class NoteAttachment(
+    val name: String,
+    val uri: String,
+    val mimeType: String,
 )
 
 object StudyTaskPlanner {

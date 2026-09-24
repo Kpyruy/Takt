@@ -29,6 +29,7 @@ import com.kpyruy.takt.feature.calendar.AddLessonForm
 import com.kpyruy.takt.feature.calendar.OneOffEventForm
 import com.kpyruy.takt.feature.subjects.AddGradeItemForm
 import com.kpyruy.takt.feature.subjects.AddNoteForm
+import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.feature.subjects.AddTaskForm
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -43,6 +44,7 @@ fun CreateItemScreen(
     settingsRepository: AppSettingsRepository,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
+    documentStore: TaktDocumentStore,
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
@@ -149,6 +151,8 @@ fun CreateItemScreen(
 
             CreateItemType.NOTE -> AddNoteForm(
                 courseId = courseId.orEmpty(),
+                courseCode = courses.firstOrNull { it.id == courseId }?.code ?: courseId.orEmpty(),
+                documentStore = documentStore,
                 initialTitle = draft?.title.orEmpty(),
                 initialContent = draft?.details.orEmpty(),
                 showHeading = false,

@@ -10,4 +10,5 @@ data class CourseNoteEntity(
     val title: String,
     val content: String,
     val updatedAtEpochMillis: Long,
+    val attachmentsJson: String = "[]",
 )

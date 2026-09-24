@@ -10,6 +10,18 @@ import org.junit.Test
 
 class BackupMappingsTest {
     @Test
+    fun noteAttachments_surviveBackupMapping() {
+        val entity = com.kpyruy.takt.core.database.CourseNoteEntity(
+            id = "note", courseId = "DIVR_6B", title = "Materials", content = "",
+            updatedAtEpochMillis = 42,
+            attachmentsJson = NoteAttachmentCodec.encode(
+                listOf(com.kpyruy.takt.core.model.NoteAttachment("diagram.png", "takt:///DIVR_6B/file.png", "image/png"))
+            ),
+        )
+        assertEquals(entity, entity.toBackup().toEntity())
+    }
+
+    @Test
     fun course_roundTripsAcademicFieldsThroughBackupDto() {
         val entity = CourseEntity(
             id = "c1",

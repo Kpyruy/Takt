@@ -73,6 +73,7 @@ internal fun CourseNoteEntity.toDomain() = CourseNote(
     title = title,
     content = content,
     updatedAtEpochMillis = updatedAtEpochMillis,
+    attachments = NoteAttachmentCodec.decode(attachmentsJson),
 )
 
 internal fun CourseNote.toEntity() = CourseNoteEntity(
@@ -81,4 +82,5 @@ internal fun CourseNote.toEntity() = CourseNoteEntity(
     title = title,
     content = content,
     updatedAtEpochMillis = updatedAtEpochMillis,
+    attachmentsJson = NoteAttachmentCodec.encode(attachments),
 )

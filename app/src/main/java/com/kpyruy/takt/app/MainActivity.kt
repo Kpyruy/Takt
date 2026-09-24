@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
                     examRepository = dataContainer.examRepository,
                     settingsRepository = dataContainer.settingsRepository,
                     backupRepository = dataContainer.backupRepository,
+                    documentStore = dataContainer.documentStore,
                 )
             }
         }

@@ -20,7 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExamInfoEntity::class,
         ExamMaterialEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -31,6 +31,12 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE course_notes ADD COLUMN attachmentsJson TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
+
         val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE grade_items ADD COLUMN lessonId TEXT")

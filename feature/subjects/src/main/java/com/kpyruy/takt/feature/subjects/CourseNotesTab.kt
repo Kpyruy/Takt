@@ -16,11 +16,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.CourseNote
+import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.ui.components.SectionCard
 
 @Composable
 internal fun CourseNotesTab(
     notes: List<CourseNote>,
+    documentStore: TaktDocumentStore,
     onEdit: (CourseNote) -> Unit,
     onDelete: (CourseNote) -> Unit,
     onAddNote: () -> Unit,
@@ -38,6 +40,7 @@ internal fun CourseNotesTab(
                     if (index > 0) HorizontalDivider()
                     CourseNoteCard(
                         note = note,
+                        documentStore = documentStore,
                         onEdit = { onEdit(note) },
                         onDelete = { onDelete(note) },
                     )

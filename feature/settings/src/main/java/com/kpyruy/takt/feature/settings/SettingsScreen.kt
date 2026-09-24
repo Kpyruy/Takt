@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
+import com.kpyruy.takt.core.data.TaktDocumentStore
+import com.kpyruy.takt.core.data.DocumentSyncStatus
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
@@ -59,12 +61,14 @@ import kotlinx.coroutines.withContext
 fun SettingsScreen(
     settingsRepository: AppSettingsRepository,
     backupRepository: BackupRepository,
+    documentStore: TaktDocumentStore,
     onBack: () -> Unit,
 ) {
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
+    val documentStatus by documentStore.status.collectAsStateWithLifecycle()
     val darkPreview = when (settings.themeMode) {
         AppThemeMode.SYSTEM -> isSystemInDarkTheme()
         AppThemeMode.LIGHT -> false
@@ -113,6 +117,17 @@ fun SettingsScreen(
                     "Помилка імпорту: " +
                         (result.exceptionOrNull()?.message ?: "невідома помилка")
                 }
+            }
+        }
+    }
+
+    val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) scope.launch {
+            val result = runCatching { documentStore.connect(uri) }
+            backupMessage = when (result.getOrNull()) {
+                DocumentSyncStatus.READY -> "Documents/Takt підключено. Дані синхронізуються автоматично."
+                DocumentSyncStatus.CONFLICT -> "Знайдено різні дані. Виберіть, яку версію залишити."
+                else -> "Помилка підключення: ${result.exceptionOrNull()?.message ?: "невідома помилка"}"
             }
         }
     }
@@ -263,6 +278,33 @@ fun SettingsScreen(
 
         SettingsSectionTitle("Дані")
         SectionCard {
+            Text("Documents/Takt", style = MaterialTheme.typography.titleMedium)
+            Text(
+                when (documentStatus) {
+                    DocumentSyncStatus.READY -> "Підключено · зміни зберігаються автоматично в data.json"
+                    DocumentSyncStatus.CONFLICT -> "Локальні дані й копія в Documents/Takt відрізняються"
+                    DocumentSyncStatus.ERROR -> "Помилка синхронізації. Перевірте доступ до папки."
+                    DocumentSyncStatus.DISCONNECTED -> "Підключіть папку Documents. Takt створить у ній Takt і збереже дані та матеріали."
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = { folderLauncher.launch(null) }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) "Підключити Documents" else "Змінити папку")
+            }
+            if (documentStatus == DocumentSyncStatus.CONFLICT) {
+                Button(onClick = {
+                    scope.launch {
+                        backupMessage = runCatching { documentStore.restoreFromDocuments() }
+                            .fold({ "Дані відновлено з Documents/Takt." }, { "Помилка відновлення: ${it.message}" })
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Відновити з Documents/Takt") }
+                OutlinedButton(onClick = {
+                    scope.launch {
+                        backupMessage = runCatching { documentStore.saveCurrentToDocuments() }
+                            .fold({ "Поточні дані записано в Documents/Takt." }, { "Помилка збереження: ${it.message}" })
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Залишити дані на телефоні") }
+            }
             Text("Резервна копія", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Експорт містить розклад, оцінювання, екзамени, матеріали, навчальний план, завдання, нотатки й налаштування.",

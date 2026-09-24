@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.model.CourseNote
+import com.kpyruy.takt.core.model.NoteAttachment
 import com.kpyruy.takt.core.model.StudyTask
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -48,6 +49,7 @@ class StudyContentMappingTest {
             title = "PLC notes",
             content = "Remember signal types.",
             updatedAtEpochMillis = 123456789L,
+            attachments = listOf(NoteAttachment("Лекція.pdf", "takt:///TPAR_6B/abc-Lekcia.pdf", "application/pdf")),
         )
 
         assertEquals(model, model.toEntity().toDomain())

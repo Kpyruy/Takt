@@ -44,6 +44,7 @@ import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.asScoredGradeItem
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
@@ -52,6 +53,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 internal fun CourseExamTab(
     courseId: String,
+    courseCode: String,
+    documentStore: TaktDocumentStore,
     gradeItems: List<GradeItem>,
     gradeScale: GradeScale,
     tasks: List<StudyTask>,
@@ -122,7 +125,7 @@ internal fun CourseExamTab(
         }
         CompactAdmission(eligibility, tasks.firstOrNull { it.requiredForExam && !it.meetsAdmissionRequirement }?.title, onAdmission)
         if (!examInfo?.notes.isNullOrBlank()) SmallText(examInfo!!.notes)
-        ExamMaterialsSection(courseId, materials, onAddMaterial, onDeleteMaterial)
+        ExamMaterialsSection(courseId, courseCode, documentStore, materials, onAddMaterial, onDeleteMaterial)
         ManualGradeSection(manualGrade, onManualGradeChange)
         Spacer(Modifier.height(12.dp))
     }

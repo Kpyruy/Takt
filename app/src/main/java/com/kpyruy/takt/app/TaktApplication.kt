@@ -16,6 +16,7 @@ class TaktApplication : Application() {
         dataContainer = TaktDataContainer(this)
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             dataContainer.seedIfNeeded()
+            dataContainer.documentStore.startAutoSync(this)
         }
     }
 }

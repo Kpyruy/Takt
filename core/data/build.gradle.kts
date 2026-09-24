@@ -21,5 +21,6 @@ dependencies {
     implementation(libs.room.ktx)
     implementation(libs.coroutines.core)
     implementation(libs.serialization.json)
+    implementation("androidx.documentfile:documentfile:1.0.1")
     testImplementation(libs.junit)
 }

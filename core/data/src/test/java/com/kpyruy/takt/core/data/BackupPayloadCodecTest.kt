@@ -7,9 +7,9 @@ import org.junit.Test
 
 class BackupPayloadCodecTest {
     @Test
-    fun backupPayload_roundTripsAllV2SectionsThroughJson() {
+    fun backupPayload_roundTripsAllSectionsAndAttachmentsThroughJson() {
         val payload = BackupPayload(
-            version = 2,
+            version = BackupPayload.CURRENT_VERSION,
             courses = listOf(
                 BackupCourse(
                     id = "FYZI_6B",
@@ -113,6 +113,7 @@ class BackupPayloadCodecTest {
                     title = "Formula",
                     content = "Remember this.",
                     updatedAtEpochMillis = 987654321L,
+                    attachments = listOf(BackupNoteAttachment("formula.pdf", "takt:///FYZI_6B/file.pdf", "application/pdf")),
                 )
             ),
             examInfo = listOf(
@@ -150,6 +151,13 @@ class BackupPayloadCodecTest {
         val restored = BackupPayloadCodec.decode(BackupPayloadCodec.encode(payload))
 
         assertEquals(payload, restored)
+    }
+
+    @Test
+    fun v2BackupWithoutAttachmentsStillDecodes() {
+        val raw = """{"version":2,"courses":[{"id":"c","code":"C","title":"Course","credits":5,"semester":1,"status":"enrolled","requirementType":"COMPULSORY"}],"courseNotes":[{"id":"n","courseId":"c","title":"Old","content":"Text","updatedAtEpochMillis":1}]}"""
+        val restored = BackupPayloadCodec.decode(raw)
+        assertEquals(emptyList<BackupNoteAttachment>(), restored.courseNotes.single().attachments)
     }
 
     @Test

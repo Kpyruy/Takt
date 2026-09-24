@@ -6,6 +6,9 @@ import androidx.room.withTransaction
 import com.kpyruy.takt.core.database.TaktDatabase
 
 class TaktDataContainer(context: Context) {
+    private val bootstrapPreferences = context.applicationContext.getSharedPreferences(
+        "takt_bootstrap", Context.MODE_PRIVATE,
+    )
     val database: TaktDatabase = Room.databaseBuilder(
         context.applicationContext,
         TaktDatabase::class.java,
@@ -23,6 +26,7 @@ class TaktDataContainer(context: Context) {
             TaktDatabase.MIGRATION_9_10,
             TaktDatabase.MIGRATION_10_11,
             TaktDatabase.MIGRATION_11_12,
+            TaktDatabase.MIGRATION_12_13,
         )
         .build()
 
@@ -37,21 +41,19 @@ class TaktDataContainer(context: Context) {
         SharedPreferencesAppSettingsRepository(context)
     val backupRepository: BackupRepository =
         RoomBackupRepository(database, settingsRepository)
+    val documentStore = TaktDocumentStore(context.applicationContext, database, backupRepository, settingsRepository)
 
     suspend fun seedIfNeeded() {
+        if (bootstrapPreferences.getBoolean("initial_seed_complete", false)) return
         database.withTransaction {
             val courseDao = database.courseDao()
-            if (courseDao.count() == 0) {
+            val scheduleDao = database.scheduleDao()
+            if (courseDao.count() == 0 && scheduleDao.countRules() == 0 && scheduleDao.countOneOffEvents() == 0) {
                 courseDao.insertAll(StudyPlanSeed.courses)
+                scheduleDao.upsertRules(DefaultTimetable.rules.map { it.toEntity() })
+                scheduleDao.upsertOneOffEvents(DefaultTimetable.oneOffEvents.map { it.toEntity() })
             }
         }
-
-        val scheduleDao = database.scheduleDao()
-        if (scheduleDao.countRules() == 0) {
-            scheduleRepository.upsertRules(DefaultTimetable.rules)
-        }
-        if (scheduleDao.countOneOffEvents() == 0) {
-            scheduleRepository.upsertOneOffEvents(DefaultTimetable.oneOffEvents)
-        }
+        bootstrapPreferences.edit().putBoolean("initial_seed_complete", true).commit()
     }
 }

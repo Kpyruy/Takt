@@ -210,6 +210,7 @@ internal fun CourseNoteEntity.toBackup() = BackupCourseNote(
     title = title,
     content = content,
     updatedAtEpochMillis = updatedAtEpochMillis,
+    attachments = NoteAttachmentCodec.decode(attachmentsJson).map { it.toBackup() },
 )
 
 internal fun BackupCourseNote.toEntity() = CourseNoteEntity(
@@ -218,6 +219,7 @@ internal fun BackupCourseNote.toEntity() = CourseNoteEntity(
     title = title,
     content = content,
     updatedAtEpochMillis = updatedAtEpochMillis,
+    attachmentsJson = NoteAttachmentCodec.encode(attachments.map { it.toModel() }),
 )
 
 internal fun ExamInfoEntity.toBackup() = BackupExamInfo(

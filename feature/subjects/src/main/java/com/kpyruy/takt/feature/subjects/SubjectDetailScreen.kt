@@ -42,6 +42,7 @@ import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.CourseGradingType
@@ -64,6 +65,7 @@ fun SubjectDetailScreen(
     settingsRepository: AppSettingsRepository,
     studyContentRepository: StudyContentRepository,
     examRepository: ExamRepository,
+    documentStore: TaktDocumentStore,
     courseId: String,
     onBack: () -> Unit,
     initialTab: String = "Огляд",
@@ -197,6 +199,8 @@ fun SubjectDetailScreen(
                 )
                 "Екзамен" -> CourseExamTab(
                     courseId = courseId,
+                    courseCode = item.code,
+                    documentStore = documentStore,
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
                     tasks = tasks,
@@ -226,6 +230,7 @@ fun SubjectDetailScreen(
                 )
                 "Нотатки" -> CourseNotesTab(
                     notes = notes,
+                    documentStore = documentStore,
                     onEdit = { editingNote = it },
                     onDelete = { note ->
                         scope.launch { studyContentRepository.deleteNote(note.id) }
@@ -311,6 +316,8 @@ fun SubjectDetailScreen(
     if (showAddNote || editingNote != null) {
         AddNoteSheet(
             courseId = courseId,
+            courseCode = item.code,
+            documentStore = documentStore,
             initialNote = editingNote,
             onDismiss = {
                 showAddNote = false

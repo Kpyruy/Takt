@@ -21,7 +21,7 @@ data class BackupPayload(
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 2
+        const val CURRENT_VERSION = 3
     }
 }
 
@@ -134,7 +134,11 @@ data class BackupCourseNote(
     val title: String,
     val content: String,
     val updatedAtEpochMillis: Long,
+    val attachments: List<BackupNoteAttachment> = emptyList(),
 )
+
+@Serializable
+data class BackupNoteAttachment(val name: String, val uri: String, val mimeType: String)
 
 @Serializable
 data class BackupExamInfo(

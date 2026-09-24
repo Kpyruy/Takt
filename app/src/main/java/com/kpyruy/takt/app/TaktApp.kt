@@ -1,6 +1,8 @@
 package com.kpyruy.takt.app
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -19,9 +21,14 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.CompositionLocalProvider
 import com.kpyruy.takt.core.ui.components.LocalCourseIconKeys
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +45,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
+import com.kpyruy.takt.core.data.TaktDocumentStore
+import com.kpyruy.takt.core.data.DocumentSyncStatus
 import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
@@ -55,6 +64,7 @@ import com.kpyruy.takt.feature.studyplan.StudyPlanScreen
 import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.SubjectsScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 private enum class Destination(val route: String, val label: String) {
     HOME("home", "Сьогодні"),
@@ -76,6 +86,7 @@ fun TaktApp(
     examRepository: ExamRepository,
     settingsRepository: AppSettingsRepository,
     backupRepository: BackupRepository,
+    documentStore: TaktDocumentStore,
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -85,6 +96,43 @@ fun TaktApp(
     val courseIconKeys = remember(courses) { courses.associate { it.id to it.iconKey } }
     val scope = rememberCoroutineScope()
     val haptics = rememberTaktHaptics()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val documentStatus by documentStore.status.collectAsStateWithLifecycle()
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) scope.launch {
+            runCatching { documentStore.connect(uri) }
+                .onSuccess { status ->
+                    if (status == DocumentSyncStatus.CONFLICT) navController.navigate(SETTINGS_ROUTE)
+                }
+                .onFailure { error ->
+                    snackbarHostState.showSnackbar("Не вдалося підключити Documents: ${error.message}")
+                }
+        }
+    }
+
+    LaunchedEffect(documentStore) {
+        delay(1500)
+        if (!documentStore.isConnected) {
+            val result = snackbarHostState.showSnackbar(
+                message = "Підключіть Documents/Takt для автозбереження й відновлення даних",
+                actionLabel = "Підключити",
+                duration = SnackbarDuration.Indefinite,
+            )
+            if (result == SnackbarResult.ActionPerformed) folderPicker.launch(null)
+        }
+    }
+    LaunchedEffect(documentStatus) {
+        if (documentStatus == DocumentSyncStatus.CONFLICT || documentStatus == DocumentSyncStatus.ERROR) {
+            val result = snackbarHostState.showSnackbar(
+                message = if (documentStatus == DocumentSyncStatus.CONFLICT) {
+                    "Копія в Documents/Takt відрізняється від даних на телефоні"
+                } else "Не вдалося синхронізувати Documents/Takt",
+                actionLabel = "Перевірити",
+                duration = SnackbarDuration.Indefinite,
+            )
+            if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
+        }
+    }
 
     var showGlobalAdd by remember { mutableStateOf(false) }
     var showQuickAdd by remember { mutableStateOf(false) }
@@ -154,6 +202,7 @@ fun TaktApp(
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
     }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = if (currentRoute == Destination.HOME.route || currentRoute == Destination.PLAN.route)
             MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -238,6 +287,7 @@ fun TaktApp(
                 SettingsScreen(
                     settingsRepository = settingsRepository,
                     backupRepository = backupRepository,
+                    documentStore = documentStore,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -253,6 +303,7 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     studyContentRepository = studyContentRepository,
                     examRepository = examRepository,
+                    documentStore = documentStore,
                     courseId = courseId,
                     initialTab = when (entry.arguments?.getString("tab")) { "tasks" -> "Задачі"; "grades" -> "Бали"; else -> "Огляд" },
                     onBack = { navController.popBackStack() },
@@ -286,6 +337,7 @@ fun TaktApp(
                         settingsRepository = settingsRepository,
                         gradeRepository = gradeRepository,
                         studyContentRepository = studyContentRepository,
+                        documentStore = documentStore,
                         onBack = {
                             pendingCreateDraft = null
                             navController.popBackStack()
