@@ -1,13 +1,12 @@
 name: Date and time picker UI tests
 
 on:
-  push:
-    branches: ['feature/fix-date-time-picker']
   pull_request:
     branches: [main]
     paths:
       - 'core/ui/**'
       - 'app/src/androidTest/**'
+      - 'gradle/libs.versions.toml'
       - '.github/workflows/picker-ui.yml'
 
 concurrency:

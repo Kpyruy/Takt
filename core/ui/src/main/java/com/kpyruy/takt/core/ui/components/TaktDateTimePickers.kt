@@ -1,6 +1,9 @@
 package com.kpyruy.takt.core.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
@@ -18,6 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
@@ -47,7 +52,16 @@ fun TaktDatePickerField(
         readOnly = true,
         label = { Text(label) },
         placeholder = { Text("Оберіть дату") },
-        modifier = modifier.clickable { showPicker = true },
+        modifier = modifier
+            .clickable { showPicker = true }
+            .pointerInput(Unit) {
+                // Text fields consume taps in Main; observe them before that pass.
+                awaitEachGesture {
+                    awaitFirstDown(pass = PointerEventPass.Initial)
+                    val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                    if (up != null) showPicker = true
+                }
+            },
     )
 
     if (showPicker) {
@@ -96,7 +110,16 @@ fun TaktTimePickerField(
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
-        modifier = modifier.clickable { showPicker = true },
+        modifier = modifier
+            .clickable { showPicker = true }
+            .pointerInput(Unit) {
+                // Keep clickable for keyboard/accessibility, and observe touch before the field.
+                awaitEachGesture {
+                    awaitFirstDown(pass = PointerEventPass.Initial)
+                    val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                    if (up != null) showPicker = true
+                }
+            },
     )
 
     if (showPicker) {
