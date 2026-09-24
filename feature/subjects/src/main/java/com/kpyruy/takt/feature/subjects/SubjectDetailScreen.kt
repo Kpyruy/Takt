@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -25,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,14 +64,14 @@ fun SubjectDetailScreen(
     onBack: () -> Unit,
     initialTab: String = "Огляд",
 ) {
-    val course by repository.observeCourse(courseId).collectAsState(initial = null)
-    val gradeItems by gradeRepository.observeItems(courseId).collectAsState(initial = emptyList())
-    val gradeScale by gradeRepository.observeScale(courseId).collectAsState(initial = GradeScale.default())
-    val manualGrade by gradeRepository.observeManualGrade(courseId).collectAsState(initial = null)
-    val tasks by studyContentRepository.observeTasks(courseId).collectAsState(initial = emptyList())
-    val notes by studyContentRepository.observeNotes(courseId).collectAsState(initial = emptyList())
-    val examInfo by examRepository.observeExamInfo(courseId).collectAsState(initial = null)
-    val examMaterials by examRepository.observeMaterials(courseId).collectAsState(initial = emptyList())
+    val course by remember(repository, courseId) { repository.observeCourse(courseId) }.collectAsStateWithLifecycle(initialValue = null)
+    val gradeItems by remember(gradeRepository, courseId) { gradeRepository.observeItems(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val gradeScale by remember(gradeRepository, courseId) { gradeRepository.observeScale(courseId) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
+    val manualGrade by remember(gradeRepository, courseId) { gradeRepository.observeManualGrade(courseId) }.collectAsStateWithLifecycle(initialValue = null)
+    val tasks by remember(studyContentRepository, courseId) { studyContentRepository.observeTasks(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val notes by remember(studyContentRepository, courseId) { studyContentRepository.observeNotes(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val examInfo by remember(examRepository, courseId) { examRepository.observeExamInfo(courseId) }.collectAsStateWithLifecycle(initialValue = null)
+    val examMaterials by remember(examRepository, courseId) { examRepository.observeMaterials(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val eligibility = remember(tasks, gradeItems) {
         ExamEligibilityCalculator.calculate(tasks, gradeItems)
     }

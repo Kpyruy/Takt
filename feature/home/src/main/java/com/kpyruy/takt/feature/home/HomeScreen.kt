@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.home
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.outlined.PersonOff
 import com.kpyruy.takt.core.ui.components.lessonInteraction
@@ -64,13 +65,13 @@ fun HomeScreen(
     onAdd: () -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
-    val courses by repository.observeCourses().collectAsState(initial = emptyList())
-    val absences by scheduleRepository.observeAbsences().collectAsState(initial = emptyList())
-    val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
-    val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
-    val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
-    val tasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
-    val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
+    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val absences by remember(scheduleRepository) { scheduleRepository.observeAbsences() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val rules by remember(scheduleRepository) { scheduleRepository.observeRules() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val oneOffEvents by remember(scheduleRepository) { scheduleRepository.observeOneOffEvents() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val exceptions by remember(scheduleRepository) { scheduleRepository.observeExceptions() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val clock by produceState(initialValue = LocalDateTime.now(), lifecycleOwner) {
@@ -83,20 +84,25 @@ fun HomeScreen(
     var showActions by remember { mutableStateOf(false) }
     val now = clock.toLocalTime()
     val timeWidth = 43.dp * maxOf(1f, LocalDensity.current.fontScale * .9f)
-    val dates = (0L..6L).map {
-        selectedDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).plusDays(it)
+    val dates = remember(selectedDate) {
+        val monday = selectedDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        (0L..6L).map(monday::plusDays)
     }
-    val events = settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
-        rules, exceptions, oneOffEvents, selectedDate, settings.effectiveParity(selectedDate), absences,
-    )).sortedBy { it.startTime }
+    val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences) {
+        settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
+            rules, exceptions, oneOffEvents, selectedDate, settings.effectiveParity(selectedDate), absences,
+        )).sortedBy { it.startTime }
+    }
     val next = if (selectedDate == today) ScheduleTimeline.nextEvent(
         events.filter { it.status != ScheduleEventStatus.CANCELLED }, now,
     ) else null
-    val deadlines = tasks.filter { it.dueDate == selectedDate && !it.completed }
-    val untimed = tasks.filter { it.dueDate == null && !it.completed }
-    val courseTitles = courses.associate { it.id to it.title }
-    val uk = Locale("uk")
-    val time = DateTimeFormatter.ofPattern("HH:mm")
+    val deadlines = remember(tasks, selectedDate) { tasks.filter { it.dueDate == selectedDate && !it.completed } }
+    val untimed = remember(tasks) { tasks.filter { it.dueDate == null && !it.completed } }
+    val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
+    val uk = remember { Locale("uk") }
+    val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val weekday = remember(uk) { DateTimeFormatter.ofPattern("EEEE", uk) }
+    val month = remember(uk) { DateTimeFormatter.ofPattern("LLLL", uk) }
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val accent = MaterialTheme.colorScheme.primary
     val amber = if (MaterialTheme.colorScheme.surface.luminance() > .5f) Color(0xFF986126) else Color(0xFFEFC78F)
@@ -110,9 +116,9 @@ fun HomeScreen(
                 letterSpacing = (-2).sp)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(selectedDate.format(DateTimeFormatter.ofPattern("EEEE", uk)).replaceFirstChar { it.uppercase() },
+                Text(selectedDate.format(weekday).replaceFirstChar { it.uppercase() },
                     fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.65).sp)
-                Text(selectedDate.format(DateTimeFormatter.ofPattern("LLLL", uk)).replaceFirstChar { it.uppercase() } +
+                Text(selectedDate.format(month).replaceFirstChar { it.uppercase() } +
                     " · ${selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())} тиждень",
                     style = MaterialTheme.typography.bodySmall, color = muted)
             }
@@ -235,17 +241,18 @@ fun HomeScreen(
 
 @Composable
 private fun HomeWeekStrip(dates: List<LocalDate>, selected: LocalDate, onSelect: (LocalDate) -> Unit) {
+    val weekday = remember { DateTimeFormatter.ofPattern("EE", Locale("uk")) }
     BoxWithConstraints(Modifier.fillMaxWidth().testTag("home-week-strip")) {
         val fontScale = LocalDensity.current.fontScale
         val width = maxOf(48.dp, if (fontScale > 1.15f) 48.dp * fontScale else (maxWidth - 6.dp) / 7)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-            items(dates) { date ->
+            items(dates, key = { it.toEpochDay() }) { date ->
                 val active = date == selected
                 Column(Modifier.width(width).clip(RoundedCornerShape(12.dp))
                     .background(if (active) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .selectable(active, role = Role.Tab) { onSelect(date) }.padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(date.format(DateTimeFormatter.ofPattern("EE", Locale("uk"))).uppercase(), fontSize = 10.sp, lineHeight = 13.sp,
+                    Text(date.format(weekday).uppercase(), fontSize = 10.sp, lineHeight = 13.sp,
                         color = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(date.dayOfMonth.toString(), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,

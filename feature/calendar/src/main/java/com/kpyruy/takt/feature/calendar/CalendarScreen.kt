@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,7 +35,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,13 +90,13 @@ fun CalendarScreen(
     onOpenCourse: (String) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
-    val absences by scheduleRepository.observeAbsences().collectAsState(initial = emptyList())
-    val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
-    val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
-    val exceptions by scheduleRepository.observeExceptions().collectAsState(initial = emptyList())
-    val tasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
-    val courses by studyPlanRepository.observeCourses().collectAsState(initial = emptyList())
-    val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
+    val absences by remember(scheduleRepository) { scheduleRepository.observeAbsences() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val rules by remember(scheduleRepository) { scheduleRepository.observeRules() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val oneOffEvents by remember(scheduleRepository) { scheduleRepository.observeOneOffEvents() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val exceptions by remember(scheduleRepository) { scheduleRepository.observeExceptions() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val courses by remember(studyPlanRepository) { studyPlanRepository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val today by produceState(LocalDate.now(), lifecycleOwner) {
@@ -112,26 +112,45 @@ fun CalendarScreen(
     var visibleMonth by rememberSaveable(stateSaver = Saver<YearMonth, String>({ it.toString() }, { YearMonth.parse(it) })) { mutableStateOf(YearMonth.from(today)) }
     var viewMode by rememberSaveable { mutableStateOf(CalendarViewMode.DAY) }
 
-    val dates = (0L..6L).map { weekStart.plusDays(it) }
+    val dates = remember(weekStart) { (0L..6L).map(weekStart::plusDays) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = settings.effectiveParity(selectedDate)
-    val courseTitles = courses.associate { it.id to it.title }
+    val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
 
-    val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale("uk"))
-    val monthTitleFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk"))
-    val selectedDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk"))
+    val shortDateFormatter = remember { DateTimeFormatter.ofPattern("d MMM", Locale("uk")) }
+    val monthTitleFormatter = remember { DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk")) }
+    val selectedDateFormatter = remember { DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk")) }
 
-    fun eventsForDate(date: LocalDate): List<ResolvedScheduleEvent> {
-        val resolved = ScheduleResolver.eventsForDate(
+    val monthDays = remember(visibleMonth) { CalendarMonthGrid.days(visibleMonth) }
+    val visibleDates = remember(
+        viewMode,
+        selectedDate.takeIf { viewMode == CalendarViewMode.DAY },
+        dates.takeIf { viewMode == CalendarViewMode.WEEK },
+        monthDays.takeIf { viewMode == CalendarViewMode.MONTH },
+    ) {
+        when (viewMode) {
+            CalendarViewMode.DAY -> listOf(selectedDate)
+            CalendarViewMode.WEEK -> dates
+            CalendarViewMode.MONTH -> monthDays
+        }
+    }
+    fun resolveEvents(date: LocalDate): List<ResolvedScheduleEvent> =
+        settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
             rules = rules,
             exceptions = exceptions,
             oneOffEvents = oneOffEvents,
             date = date,
             parityOverride = settings.effectiveParity(date),
             absences = absences,
-        )
-        return settings.filterScheduleEvents(resolved)
+        ))
+    val eventsByDate = remember(visibleDates, rules, exceptions, oneOffEvents, absences, settings) {
+        visibleDates.associateWith(::resolveEvents)
     }
+    val pendingTasksByDate = remember(tasks) {
+        tasks.filterNot { it.completed }.filter { it.dueDate != null }.groupBy { it.dueDate }
+    }
+
+    fun eventsForDate(date: LocalDate): List<ResolvedScheduleEvent> = eventsByDate[date] ?: resolveEvents(date)
 
     fun selectDate(date: LocalDate) {
         selectedDate = date
@@ -174,7 +193,7 @@ fun CalendarScreen(
     }
 
     fun hasCalendarContent(date: LocalDate): Boolean =
-        tasks.any { !it.completed && it.dueDate == date } || eventsForDate(date).isNotEmpty()
+        pendingTasksByDate[date].orEmpty().isNotEmpty() || eventsForDate(date).isNotEmpty()
 
     val headerSubtitle = when (viewMode) {
         CalendarViewMode.DAY -> selectedDate.format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
@@ -252,7 +271,7 @@ fun CalendarScreen(
                     SelectedDayAgenda(
                         date = selectedDate,
                         events = eventsForDate(selectedDate),
-                        deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate },
+                        deadlines = pendingTasksByDate[selectedDate].orEmpty(),
                         courseTitles = courseTitles,
                         today = today,
                         settings = settings,
@@ -294,7 +313,7 @@ fun CalendarScreen(
                     ) {
                         MonthCalendar(
                             month = visibleMonth,
-                            days = CalendarMonthGrid.days(visibleMonth),
+                            days = monthDays,
                             selectedDate = selectedDate,
                             today = today,
                             hasContent = ::hasCalendarContent,
@@ -306,7 +325,7 @@ fun CalendarScreen(
                             style = MaterialTheme.typography.titleMedium,
                         )
 
-                        val deadlines = tasks.filter { !it.completed && it.dueDate == selectedDate }
+                        val deadlines = pendingTasksByDate[selectedDate].orEmpty()
                         if (deadlines.isNotEmpty()) {
                             SectionCard {
                                 Text("Дедлайни", style = MaterialTheme.typography.titleMedium)

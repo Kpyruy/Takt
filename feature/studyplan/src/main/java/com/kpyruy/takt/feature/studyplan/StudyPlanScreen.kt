@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.studyplan
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -40,20 +41,20 @@ fun StudyPlanScreen(
     onTaskClick: (String) -> Unit = onCourseClick,
     onAssessmentClick: (String) -> Unit = onCourseClick,
 ) {
-    val courses by repository.observeCourses().collectAsState(initial = emptyList())
-    val tasks by studyContentRepository.observeAllTasks().collectAsState(initial = emptyList())
-    val grades by gradeRepository.observeRecentItems(Int.MAX_VALUE).collectAsState(initial = emptyList())
-    val earned = courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
-    val semesters = courses.groupBy { it.semester }.toSortedMap()
+    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val grades by remember(gradeRepository) { gradeRepository.observeRecentItems(Int.MAX_VALUE) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val earned = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits } }
+    val semesters = remember(courses) { courses.groupBy { it.semester }.toSortedMap() }
     val largeText = LocalDensity.current.fontScale > 1.2f
-    val completedSemesters = semesters.values.count { semesterState(it) == SemesterState.COMPLETED }
+    val completedSemesters = remember(semesters) { semesters.values.count { semesterState(it) == SemesterState.COMPLETED } }
     var expandedSemesters by rememberSaveable { mutableStateOf(emptySet<Int>()) }
     var filter by rememberSaveable { mutableIntStateOf(0) }
     var editingCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     var iconCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val activeCourses = courses.filter { it.status == CourseStatus.ENROLLED }
-    val completedCourses = courses.filter { it.status == CourseStatus.FULFILLED }
+    val activeCourses = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
+    val completedCourses = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED } }
     var menuExpanded by remember { mutableStateOf(false) }
 
     LazyColumn(

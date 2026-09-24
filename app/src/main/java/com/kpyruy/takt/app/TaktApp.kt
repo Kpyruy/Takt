@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.net.Uri
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -19,7 +20,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
 import com.kpyruy.takt.core.ui.components.LocalCourseIconKeys
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,7 +80,8 @@ fun TaktApp(
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showRootNavigation = Destination.entries.any { it.route == currentRoute }
-    val courses by repository.observeCourses().collectAsState(initial = emptyList())
+    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val courseIconKeys = remember(courses) { courses.associate { it.id to it.iconKey } }
     val scope = rememberCoroutineScope()
     val haptics = rememberTaktHaptics()
 
@@ -147,7 +148,7 @@ fun TaktApp(
         )
     }
 
-    CompositionLocalProvider(LocalCourseIconKeys provides courses.associate { it.id to it.iconKey }) {
+    CompositionLocalProvider(LocalCourseIconKeys provides courseIconKeys) {
     actionEvent?.let { event ->
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
     }

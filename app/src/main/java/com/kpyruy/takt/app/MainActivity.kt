@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.luminance
 import androidx.core.view.WindowCompat
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.ui.theme.TaktTheme
@@ -20,8 +20,8 @@ class MainActivity : ComponentActivity() {
 
         val dataContainer = (application as TaktApplication).dataContainer
         setContent {
-            val settings by dataContainer.settingsRepository.settings.collectAsState(
-                initial = AppSettings()
+            val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle(
+                initialValue = AppSettings()
             )
 
             TaktTheme(settings = settings) {

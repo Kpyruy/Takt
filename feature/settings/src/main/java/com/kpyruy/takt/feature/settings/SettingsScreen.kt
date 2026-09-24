@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -28,7 +29,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,7 +61,7 @@ fun SettingsScreen(
     backupRepository: BackupRepository,
     onBack: () -> Unit,
 ) {
-    val settings by settingsRepository.settings.collectAsState(initial = AppSettings())
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }

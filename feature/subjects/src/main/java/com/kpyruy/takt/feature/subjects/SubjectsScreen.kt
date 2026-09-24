@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -48,7 +48,7 @@ fun SubjectsScreen(
     onCourseClick: (String) -> Unit,
     onAdd: () -> Unit,
 ) {
-    val courses by repository.observeCourses().collectAsState(initial = emptyList())
+    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val current = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableIntStateOf(0) }
@@ -80,9 +80,9 @@ private fun SubjectProgressCard(
     studyContentRepository: StudyContentRepository,
     onClick: () -> Unit,
 ) {
-    val gradeItems by gradeRepository.observeItems(course.id).collectAsState(initial = emptyList())
-    val gradeScale by gradeRepository.observeScale(course.id).collectAsState(initial = GradeScale.default())
-    val tasks by studyContentRepository.observeTasks(course.id).collectAsState(initial = emptyList())
+    val gradeItems by remember(gradeRepository, course.id) { gradeRepository.observeItems(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val gradeScale by remember(gradeRepository, course.id) { gradeRepository.observeScale(course.id) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
+    val tasks by remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
     val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
