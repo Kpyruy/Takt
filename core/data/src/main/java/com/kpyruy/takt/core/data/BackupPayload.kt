@@ -94,6 +94,7 @@ data class BackupGradeItem(
     val completed: Boolean = true,
     val requiredForExam: Boolean = false,
     val minimumPointsForExam: Double? = null,
+    val lessonId: String? = null,
 )
 
 @Serializable

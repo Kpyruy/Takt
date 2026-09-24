@@ -36,6 +36,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import com.kpyruy.takt.core.ui.components.CourseInlineIcon
 import com.kpyruy.takt.core.ui.components.LessonTypeIcon
+import com.kpyruy.takt.core.ui.components.LessonTestBadge
 import com.kpyruy.takt.core.model.LessonType
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -65,6 +66,7 @@ fun DayTimelineView(
     selectedDate: LocalDate,
     today: LocalDate,
     cancellationStyle: CancellationDisplayStyle,
+    hasTest: (ResolvedScheduleEvent) -> Boolean = { false },
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
@@ -97,7 +99,7 @@ fun DayTimelineView(
             Text("Події за часом", style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             ordered.forEach { event ->
-                TimelineEventBlock(event, cancellationStyle, { onEventClick(event) },
+                TimelineEventBlock(event, cancellationStyle, hasTest(event), { onEventClick(event) },
                     onLongClick = { onEventLongClick(event) }, modifier = Modifier.fillMaxWidth(), dimmed = selectedDate == today && event.endTime < now, compact = false)
             }
         }
@@ -133,6 +135,7 @@ fun DayTimelineView(
             TimelineEventBlock(
                 event = event,
                 cancellationStyle = cancellationStyle,
+                hasTest = hasTest(event),
                 onClick = { onEventClick(event) },
                 onLongClick = { onEventLongClick(event) },
                 modifier = Modifier
@@ -192,6 +195,7 @@ fun DayTimelineView(
 private fun TimelineEventBlock(
     event: ResolvedScheduleEvent,
     cancellationStyle: CancellationDisplayStyle,
+    hasTest: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier,
@@ -212,7 +216,7 @@ private fun TimelineEventBlock(
     ) TextDecoration.LineThrough else null
 
     Surface(
-        modifier = modifier.alpha(if (dimmed || cancelled) 0.8f else 1f).semantics { contentDescription = "${event.title}, ${event.lessonType.label}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}" }.lessonInteraction(onClick, onLongClick),
+        modifier = modifier.alpha(if (dimmed || cancelled) 0.8f else 1f).semantics { contentDescription = "${event.title}, ${event.lessonType.label}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", тест" else ""}" }.lessonInteraction(onClick, onLongClick),
         shape = RoundedCornerShape(7.dp),
         color = lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),
     ) {
@@ -223,11 +227,13 @@ private fun TimelineEventBlock(
                     CourseInlineIcon(event.courseId)
                     Text(
                         if (short && status != null) "$status · ${event.title}" else event.title,
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall,
                         textDecoration = decoration,
                         maxLines = if (!compact) Int.MAX_VALUE else if (short) 1 else 2,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (hasTest) LessonTestBadge(compact = true)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     LessonTypeIcon(event.lessonType)

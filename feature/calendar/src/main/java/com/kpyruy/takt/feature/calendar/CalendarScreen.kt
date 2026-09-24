@@ -51,6 +51,7 @@ import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.GradeItem
+import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.model.CalendarMonthGrid
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ParityOverride
@@ -91,7 +92,7 @@ fun CalendarScreen(
     studyPlanRepository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
     onOpenCourse: (String) -> Unit,
-    onOpenAssessment: (String) -> Unit,
+    onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     val absences by remember(scheduleRepository) { scheduleRepository.observeAbsences() }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -158,8 +159,9 @@ fun CalendarScreen(
     val assessmentsByDate = remember(assessments) {
         assessments.filter { it.dueDate != null }.groupBy { it.dueDate }
     }
-
     fun eventsForDate(date: LocalDate): List<ResolvedScheduleEvent> = eventsByDate[date] ?: resolveEvents(date)
+    fun hasTest(event: ResolvedScheduleEvent): Boolean =
+        CourseWork.hasTestOnLesson(event, eventsForDate(event.date), assessmentsByDate[event.date].orEmpty())
 
     fun selectDate(date: LocalDate) {
         selectedDate = date
@@ -288,6 +290,7 @@ fun CalendarScreen(
                         onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                         onEventLongClick = onEventLongClick,
                         onOpenAssessment = onOpenAssessment,
+                        hasTest = ::hasTest,
                         onDeadlineCompleted = { task, completed ->
                             scope.launch {
                                 studyContentRepository.setTaskCompleted(task.id, completed)
@@ -302,6 +305,7 @@ fun CalendarScreen(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
                             assessmentCountForDate = { assessmentsByDate[it].orEmpty().size },
+                            hasTest = ::hasTest,
                             onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                             onEventLongClick = onEventLongClick,
                         )
@@ -309,6 +313,7 @@ fun CalendarScreen(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
                             assessmentCountForDate = { assessmentsByDate[it].orEmpty().size },
+                            hasTest = ::hasTest,
                             onSelectDate = {
                                 selectDate(it)
                                 viewMode = CalendarViewMode.DAY
@@ -360,7 +365,7 @@ fun CalendarScreen(
                                     CalendarAssessmentStrip(
                                         item = item,
                                         courseTitle = courseTitles[item.courseId] ?: item.courseId,
-                                        onClick = { onOpenAssessment(item.courseId) },
+                                        onClick = { onOpenAssessment(item) },
                                     )
                                 }
                             }
@@ -371,6 +376,7 @@ fun CalendarScreen(
                             selectedDate = selectedDate,
                             today = today,
                             cancellationStyle = settings.cancellationStyle,
+                            hasTest = ::hasTest,
                             onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                             onEventLongClick = onEventLongClick,
                         )
@@ -394,7 +400,8 @@ private fun SelectedDayAgenda(
     settings: AppSettings,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
-    onOpenAssessment: (String) -> Unit,
+    onOpenAssessment: (GradeItem) -> Unit,
+    hasTest: (ResolvedScheduleEvent) -> Boolean,
     onDeadlineCompleted: (com.kpyruy.takt.core.model.StudyTask, Boolean) -> Unit,
 ) {
     Column(
@@ -410,7 +417,7 @@ private fun SelectedDayAgenda(
             CalendarAssessmentStrip(
                 item = item,
                 courseTitle = courseTitles[item.courseId] ?: item.courseId,
-                onClick = { onOpenAssessment(item.courseId) },
+                onClick = { onOpenAssessment(item) },
             )
         }
 
@@ -428,6 +435,7 @@ private fun SelectedDayAgenda(
                 selectedDate = date,
                 today = today,
                 cancellationStyle = settings.cancellationStyle,
+                hasTest = hasTest,
                 onEventClick = onEventClick,
                 onEventLongClick = onEventLongClick,
             )

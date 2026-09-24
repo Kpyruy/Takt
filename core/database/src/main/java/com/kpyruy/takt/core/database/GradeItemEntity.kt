@@ -19,4 +19,5 @@ data class GradeItemEntity(
     @ColumnInfo(defaultValue = "0")
     val requiredForExam: Boolean = false,
     val minimumPointsForExam: Double? = null,
+    val lessonId: String? = null,
 )

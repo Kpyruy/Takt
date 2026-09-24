@@ -132,6 +132,7 @@ internal fun GradeItemEntity.toBackup() = BackupGradeItem(
     completed = completed,
     requiredForExam = requiredForExam,
     minimumPointsForExam = minimumPointsForExam,
+    lessonId = lessonId,
 )
 
 internal fun BackupGradeItem.toEntity() = GradeItemEntity(
@@ -146,6 +147,7 @@ internal fun BackupGradeItem.toEntity() = GradeItemEntity(
     completed = completed,
     requiredForExam = requiredForExam,
     minimumPointsForExam = minimumPointsForExam,
+    lessonId = lessonId,
 )
 
 internal fun GradeScaleEntity.toBackup() = BackupGradeScale(

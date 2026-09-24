@@ -84,6 +84,7 @@ fun WeekTimetable(
     dates: List<LocalDate>,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
     assessmentCountForDate: (LocalDate) -> Int = { 0 },
+    hasTest: (ResolvedScheduleEvent) -> Boolean = { false },
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
@@ -158,12 +159,18 @@ fun WeekTimetable(
                             color = subjectColor.copy(alpha = 0.18f),
                         ) {
                             Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(
-                                    listOf(if (laneEvent.event.isAbsent) "Пропущено" else "", laneEvent.event.lessonType.shortLabel, laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        listOf(if (laneEvent.event.isAbsent) "Пропущено" else "", laneEvent.event.lessonType.shortLabel, laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (hasTest(laneEvent.event)) {
+                                        com.kpyruy.takt.core.ui.components.LessonTestBadge(compact = true)
+                                    }
+                                }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     com.kpyruy.takt.core.ui.components.CourseInlineIcon(laneEvent.event.courseId)
                                     Text(laneEvent.event.startTime.format(timetableTimeFormatter),

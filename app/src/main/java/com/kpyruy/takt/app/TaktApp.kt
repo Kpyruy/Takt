@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.feature.calendar.ScheduleEventEditor
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -193,7 +194,10 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                     onOpenCourse = ::openCourse,
-                    onOpenAssessment = { courseId -> navController.navigate("subject/${Uri.encode(courseId)}?tab=grades") },
+                    onOpenAssessment = { item ->
+                        val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
+                        navController.navigate("subject/${Uri.encode(item.courseId)}?tab=$tab")
+                    },
                     onEventLongClick = { actionEvent = it },
                 )
             }
@@ -204,7 +208,10 @@ fun TaktApp(
                     gradeRepository = gradeRepository,
                     studyPlanRepository = repository,
                     onOpenCourse = ::openCourse,
-                    onOpenAssessment = { courseId -> navController.navigate("subject/${Uri.encode(courseId)}?tab=grades") },
+                    onOpenAssessment = { item ->
+                        val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
+                        navController.navigate("subject/${Uri.encode(item.courseId)}?tab=$tab")
+                    },
                     onEventLongClick = { actionEvent = it },
                     settingsRepository = settingsRepository,
                 )
@@ -242,10 +249,12 @@ fun TaktApp(
                 SubjectDetailScreen(
                     repository = repository,
                     gradeRepository = gradeRepository,
+                    scheduleRepository = scheduleRepository,
+                    settingsRepository = settingsRepository,
                     studyContentRepository = studyContentRepository,
                     examRepository = examRepository,
                     courseId = courseId,
-                    initialTab = when (entry.arguments?.getString("tab")) { "tasks" -> "Завдання"; "grades" -> "Бали"; else -> "Огляд" },
+                    initialTab = when (entry.arguments?.getString("tab")) { "tasks" -> "Задачі"; "grades" -> "Бали"; else -> "Огляд" },
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -274,6 +283,7 @@ fun TaktApp(
                                 (draft.courseId == null || draft.courseId == courseId)
                         },
                         scheduleRepository = scheduleRepository,
+                        settingsRepository = settingsRepository,
                         gradeRepository = gradeRepository,
                         studyContentRepository = studyContentRepository,
                         onBack = {

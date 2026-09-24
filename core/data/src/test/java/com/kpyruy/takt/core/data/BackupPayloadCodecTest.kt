@@ -73,6 +73,7 @@ class BackupPayloadCodecTest {
                     completed = true,
                     requiredForExam = true,
                     minimumPointsForExam = 12.0,
+                    lessonId = "physics-friday-rule",
                 )
             ),
             gradeScales = listOf(
@@ -197,6 +198,7 @@ class BackupPayloadCodecTest {
         assertEquals(true, restored.gradeItems.single().completed)
         assertFalse(restored.gradeItems.single().requiredForExam)
         assertNull(restored.gradeItems.single().minimumPointsForExam)
+        assertNull(restored.gradeItems.single().lessonId)
         assertFalse(restored.studyTasks.single().requiredForExam)
         assertNull(restored.studyTasks.single().maxPoints)
         assertNull(restored.studyTasks.single().minimumPointsForExam)

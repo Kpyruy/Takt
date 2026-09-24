@@ -38,6 +38,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
+import com.kpyruy.takt.core.data.ScheduleRepository
+import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseStatus
@@ -58,6 +60,8 @@ import kotlinx.coroutines.launch
 fun SubjectDetailScreen(
     repository: StudyPlanRepository,
     gradeRepository: GradeRepository,
+    scheduleRepository: ScheduleRepository,
+    settingsRepository: AppSettingsRepository,
     studyContentRepository: StudyContentRepository,
     examRepository: ExamRepository,
     courseId: String,
@@ -107,9 +111,9 @@ fun SubjectDetailScreen(
     }
 
     val tabs = if (item.gradingType == CourseGradingType.EXAM_LETTER) {
-        listOf("Огляд", "Бали", "Завдання", "Екзамен", "Нотатки")
+        listOf("Огляд", "Бали", "Задачі", "Екзамен", "Нотатки")
     } else {
-        listOf("Огляд", "Бали", "Завдання", "Нотатки")
+        listOf("Огляд", "Бали", "Задачі", "Нотатки")
     }
 
     LaunchedEffect(tabs) {
@@ -175,8 +179,9 @@ fun SubjectDetailScreen(
                         scope.launch { gradeRepository.setManualGrade(courseId, grade) }
                     },
                 )
-                "Завдання" -> CourseTasksTab(
+                "Задачі" -> CourseTasksTab(
                     tasks = tasks,
+                    gradeItems = gradeItems,
                     eligibility = eligibility,
                     onCompletedChange = { task, completed ->
                         scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
@@ -186,6 +191,9 @@ fun SubjectDetailScreen(
                         scope.launch { studyContentRepository.deleteTask(task.id) }
                     },
                     onAddTask = { showAddTask = true },
+                    onEditGrade = { editingGrade = it },
+                    onDeleteGrade = { grade -> scope.launch { gradeRepository.deleteItem(grade.id) } },
+                    onAddGrade = { showAddGrade = true },
                 )
                 "Екзамен" -> CourseExamTab(
                     courseId = courseId,
@@ -196,8 +204,7 @@ fun SubjectDetailScreen(
                     examInfo = examInfo,
                     materials = examMaterials,
                     manualGrade = manualGrade,
-                    onAdmission = { selectedTab = if (tasks.any { it.requiredForExam && !it.meetsAdmissionRequirement }) "Завдання"
-                        else if (gradeItems.any { it.requiredForExam && !it.meetsAdmissionRequirement }) "Бали" else "Завдання" },
+                    onAdmission = { selectedTab = "Задачі" },
                     onSaveExamInfo = { info ->
                         scope.launch {
                             examRepository.upsertExamInfo(info)
@@ -250,6 +257,8 @@ fun SubjectDetailScreen(
     if (showAddGrade || editingGrade != null) {
         AddGradeItemSheet(
             courseId = courseId,
+            scheduleRepository = scheduleRepository,
+            settingsRepository = settingsRepository,
             initialItem = editingGrade,
             onDismiss = {
                 showAddGrade = false

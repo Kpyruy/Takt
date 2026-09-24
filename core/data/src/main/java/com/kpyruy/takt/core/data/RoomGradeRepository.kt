@@ -75,6 +75,7 @@ internal fun GradeItemEntity.toDomain() = GradeItem(
     completed = completed,
     requiredForExam = requiredForExam,
     minimumPointsForExam = minimumPointsForExam,
+    lessonId = lessonId,
 )
 
 internal fun GradeItem.toEntity() = GradeItemEntity(
@@ -89,6 +90,7 @@ internal fun GradeItem.toEntity() = GradeItemEntity(
     completed = completed,
     requiredForExam = requiredForExam,
     minimumPointsForExam = minimumPointsForExam,
+    lessonId = lessonId,
 )
 
 private fun GradeScaleEntity.toDomain() = GradeScale(

@@ -21,6 +21,7 @@ class GradeItemMappingTest {
             completed = false,
             requiredForExam = true,
             minimumPointsForExam = 12.0,
+            lessonId = "physics-friday-rule",
         )
 
         assertEquals(model, model.toEntity().toDomain())

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
@@ -16,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +31,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.data.AppSettingsRepository
+import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import java.time.LocalDate
 import java.util.UUID
@@ -37,6 +41,8 @@ import java.util.UUID
 @Composable
 fun AddGradeItemSheet(
     courseId: String,
+    scheduleRepository: ScheduleRepository? = null,
+    settingsRepository: AppSettingsRepository? = null,
     initialItem: GradeItem? = null,
     initialType: GradeItemType = GradeItemType.TEST,
     onDismiss: () -> Unit,
@@ -45,6 +51,8 @@ fun AddGradeItemSheet(
     TaktFullSheet(onDismissRequest = onDismiss) {
         AddGradeItemForm(
             courseId = courseId,
+            scheduleRepository = scheduleRepository,
+            settingsRepository = settingsRepository,
             initialItem = initialItem,
             initialType = initialType,
             modifier = Modifier
@@ -60,6 +68,8 @@ fun AddGradeItemSheet(
 @Composable
 fun AddGradeItemForm(
     courseId: String,
+    scheduleRepository: ScheduleRepository? = null,
+    settingsRepository: AppSettingsRepository? = null,
     initialItem: GradeItem? = null,
     initialType: GradeItemType = GradeItemType.TEST,
     initialTitle: String = "",
@@ -85,6 +95,7 @@ fun AddGradeItemForm(
     }
     var type by remember(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
     var dueDate by remember(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
+    var lessonId by remember(initialItem?.id) { mutableStateOf(initialItem?.lessonId) }
     var completed by remember(initialItem?.id, effectiveType) {
         mutableStateOf(initialItem?.completed ?: false)
     }
@@ -92,6 +103,11 @@ fun AddGradeItemForm(
         mutableStateOf(initialItem?.requiredForExam ?: false)
     }
     var error by remember { mutableStateOf<String?>(null) }
+    val lessonOptions = rememberGradeLessonOptions(scheduleRepository, settingsRepository, courseId, dueDate)
+    val selectedLessonId = if (lessonOptions.isEmpty()) lessonId else {
+        lessonId?.takeIf { selected -> lessonOptions.any { it.id == selected } }
+            ?: lessonOptions.first().id
+    }
 
     Column(
         modifier = modifier,
@@ -132,9 +148,37 @@ fun AddGradeItemForm(
         TaktDatePickerField(
             label = "Дата / дедлайн",
             value = dueDate,
-            onValueChange = { dueDate = it },
+            onValueChange = {
+                if (dueDate != it) lessonId = null
+                dueDate = it
+            },
             modifier = Modifier.fillMaxWidth(),
         )
+
+        if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) {
+            if (lessonOptions.isNotEmpty()) {
+                Text("Пара з тестом", style = MaterialTheme.typography.titleSmall)
+                lessonOptions.forEach { lesson ->
+                    val selected = lesson.id == selectedLessonId
+                    Row(
+                        modifier = Modifier.fillMaxWidth().selectable(
+                            selected = selected,
+                            role = Role.RadioButton,
+                            onClick = { lessonId = lesson.id },
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        RadioButton(selected = selected, onClick = null)
+                        Text("${lesson.startTime}–${lesson.endTime} · ${lesson.title}" +
+                            lesson.room?.let { " · $it" }.orEmpty())
+                    }
+                }
+            } else if (dueDate != null && scheduleRepository != null) {
+                Text("На цю дату немає пари цього предмета", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -240,6 +284,7 @@ fun AddGradeItemForm(
                             completed = completed,
                             requiredForExam = requiredForExam,
                             minimumPointsForExam = minimum,
+                            lessonId = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) selectedLessonId else null,
                         )
                     )
                 }

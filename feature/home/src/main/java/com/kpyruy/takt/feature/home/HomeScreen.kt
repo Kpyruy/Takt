@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import com.kpyruy.takt.core.ui.components.CourseInlineIcon
 import com.kpyruy.takt.core.ui.components.LessonTypeIcon
+import com.kpyruy.takt.core.ui.components.LessonTestBadge
 import com.kpyruy.takt.core.model.LessonType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
@@ -60,7 +61,7 @@ fun HomeScreen(
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
     onOpenCourse: (String) -> Unit,
-    onOpenAssessment: (String) -> Unit,
+    onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -162,6 +163,9 @@ fun HomeScreen(
                             CourseInlineIcon(event.courseId)
                             Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                                 textDecoration = if (cancelled && settings.cancellationStyle == CancellationDisplayStyle.STRIKETHROUGH) TextDecoration.LineThrough else null)
+                            if (CourseWork.hasTestOnLesson(event, events, assessmentDeadlines)) {
+                                LessonTestBadge(compact = true)
+                            }
                             if (active) {
                                 val minutes = Duration.between(now, event.startTime).toMinutes()
                                 Text(if (minutes > 0) "$minutes хв" else "Зараз", style = MaterialTheme.typography.labelSmall, color = accent)
@@ -224,7 +228,7 @@ fun HomeScreen(
                     Column(Modifier.weight(1f).padding(start = 13.dp, top = 13.dp, bottom = 13.dp)) {
                         Text(item.type.label.uppercase(uk), style = MaterialTheme.typography.labelSmall, color = subjectColor)
                         HomeAssessmentRow(item, courseTitles[item.courseId] ?: item.courseId) {
-                            onOpenAssessment(item.courseId)
+                            onOpenAssessment(item)
                         }
                     }
                 }
@@ -235,7 +239,7 @@ fun HomeScreen(
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Без дати", style = MaterialTheme.typography.bodySmall, color = muted)
-            Text("Завдань: ${untimed.size}", style = MaterialTheme.typography.bodySmall, color = muted)
+            Text("Задач: ${untimed.size}", style = MaterialTheme.typography.bodySmall, color = muted)
         }
         untimed.forEach { task ->
             HomeTaskRow(task, courseTitles[task.courseId] ?: task.courseId) { completed ->

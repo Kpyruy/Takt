@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.GradeRepository
+import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.model.GradeItemType
@@ -39,6 +40,7 @@ fun CreateItemScreen(
     draft: CreateItemDraft?,
     courses: List<com.kpyruy.takt.core.model.Course> = emptyList(),
     scheduleRepository: ScheduleRepository,
+    settingsRepository: AppSettingsRepository,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
     onBack: () -> Unit,
@@ -131,6 +133,8 @@ fun CreateItemScreen(
             CreateItemType.TEST,
             CreateItemType.EXAM -> AddGradeItemForm(
                 courseId = courseId.orEmpty(),
+                scheduleRepository = scheduleRepository,
+                settingsRepository = settingsRepository,
                 initialType = if (type == CreateItemType.TEST) GradeItemType.TEST else GradeItemType.EXAM,
                 initialTitle = draft?.title.orEmpty(),
                 showHeading = false,

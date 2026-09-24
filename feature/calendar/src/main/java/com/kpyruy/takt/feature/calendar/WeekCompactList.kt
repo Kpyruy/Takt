@@ -34,6 +34,7 @@ fun WeekCompactList(
     dates: List<LocalDate>,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
     assessmentCountForDate: (LocalDate) -> Int = { 0 },
+    hasTest: (ResolvedScheduleEvent) -> Boolean = { false },
     onSelectDate: (LocalDate) -> Unit,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
@@ -88,7 +89,9 @@ fun WeekCompactList(
                                 Column(Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         com.kpyruy.takt.core.ui.components.CourseInlineIcon(event.courseId)
-                                        Text(listOf(event.lessonType.shortLabel, event.title).filter { it.isNotBlank() }.joinToString(" · "), maxLines = 2)
+                                        Text(listOf(event.lessonType.shortLabel, event.title).filter { it.isNotBlank() }.joinToString(" · "),
+                                            modifier = Modifier.weight(1f), maxLines = 2)
+                                        if (hasTest(event)) com.kpyruy.takt.core.ui.components.LessonTestBadge(compact = true)
                                     }
                                     if (event.isAbsent) Text("Пропущено", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                                     event.room?.let {

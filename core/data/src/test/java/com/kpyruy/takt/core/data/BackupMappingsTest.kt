@@ -42,6 +42,7 @@ class BackupMappingsTest {
             completed = false,
             requiredForExam = true,
             minimumPointsForExam = 12.0,
+            lessonId = "physics-friday-rule",
         )
 
         assertEquals(entity, entity.toBackup().toEntity())
