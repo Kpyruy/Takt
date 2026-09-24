@@ -37,6 +37,7 @@ import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
+import com.kpyruy.takt.core.model.asScoredGradeItem
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 
 @Composable
@@ -81,7 +82,8 @@ private fun SubjectProgressCard(
     val gradeScale by remember(gradeRepository, course.id) { gradeRepository.observeScale(course.id) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
     val tasks by remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
+    val coursework = (gradeItems + tasks.mapNotNull { it.asScoredGradeItem() })
+        .filterNot { it.type == GradeItemType.EXAM }
     val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
     val maximum = coursework.sumOf { it.maxPoints }
     val eligibility = ExamEligibilityCalculator.calculate(tasks, gradeItems)

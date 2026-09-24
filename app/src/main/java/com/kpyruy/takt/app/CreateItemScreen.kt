@@ -117,6 +117,7 @@ fun CreateItemScreen(
                 initialTitle = draft?.title.orEmpty(),
                 initialDescription = draft?.details.orEmpty(),
                 initialDueDate = draft?.dueDate,
+                initialRequiredForExam = draft?.requiredForExam ?: false,
                 showHeading = false,
                 onSave = { task ->
                     scope.launch {

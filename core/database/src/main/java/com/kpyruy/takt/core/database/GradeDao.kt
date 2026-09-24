@@ -11,6 +11,9 @@ interface GradeDao {
     @Query("SELECT * FROM grade_items WHERE courseId = :courseId ORDER BY recordedAtEpochMillis DESC, title")
     fun observeItems(courseId: String): Flow<List<GradeItemEntity>>
 
+    @Query("SELECT * FROM grade_items ORDER BY recordedAtEpochMillis DESC, title")
+    fun observeAllItems(): Flow<List<GradeItemEntity>>
+
     @Query("SELECT * FROM grade_items ORDER BY recordedAtEpochMillis DESC, title LIMIT :limit")
     fun observeRecentItems(limit: Int): Flow<List<GradeItemEntity>>
 

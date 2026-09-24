@@ -14,4 +14,7 @@ data class StudyTaskEntity(
     val completed: Boolean,
     @ColumnInfo(defaultValue = "0")
     val requiredForExam: Boolean = false,
+    val earnedPoints: Double? = null,
+    val maxPoints: Double? = null,
+    val minimumPointsForExam: Double? = null,
 )

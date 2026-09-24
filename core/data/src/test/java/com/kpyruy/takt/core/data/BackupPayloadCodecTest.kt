@@ -72,6 +72,7 @@ class BackupPayloadCodecTest {
                     dueDateEpochDay = 20726L,
                     completed = true,
                     requiredForExam = true,
+                    minimumPointsForExam = 12.0,
                 )
             ),
             gradeScales = listOf(
@@ -99,6 +100,9 @@ class BackupPayloadCodecTest {
                     dueDateEpochDay = 20726L,
                     completed = false,
                     requiredForExam = true,
+                    earnedPoints = 4.0,
+                    maxPoints = 10.0,
+                    minimumPointsForExam = 5.0,
                 )
             ),
             courseNotes = listOf(
@@ -192,7 +196,10 @@ class BackupPayloadCodecTest {
         assertNull(restored.gradeItems.single().dueDateEpochDay)
         assertEquals(true, restored.gradeItems.single().completed)
         assertFalse(restored.gradeItems.single().requiredForExam)
+        assertNull(restored.gradeItems.single().minimumPointsForExam)
         assertFalse(restored.studyTasks.single().requiredForExam)
+        assertNull(restored.studyTasks.single().maxPoints)
+        assertNull(restored.studyTasks.single().minimumPointsForExam)
         assertEquals(emptyList<BackupExamInfo>(), restored.examInfo)
         assertEquals(emptyList<BackupExamMaterial>(), restored.examMaterials)
         assertEquals("ELEVATED", restored.settings.cardAppearance)

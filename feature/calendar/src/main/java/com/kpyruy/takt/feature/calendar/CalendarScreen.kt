@@ -45,10 +45,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
+import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.CalendarMonthGrid
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ParityOverride
@@ -85,9 +87,11 @@ private enum class CalendarViewMode {
 fun CalendarScreen(
     scheduleRepository: ScheduleRepository,
     studyContentRepository: StudyContentRepository,
+    gradeRepository: GradeRepository,
     studyPlanRepository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
     onOpenCourse: (String) -> Unit,
+    onOpenAssessment: (String) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     val absences by remember(scheduleRepository) { scheduleRepository.observeAbsences() }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -95,6 +99,7 @@ fun CalendarScreen(
     val oneOffEvents by remember(scheduleRepository) { scheduleRepository.observeOneOffEvents() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val exceptions by remember(scheduleRepository) { scheduleRepository.observeExceptions() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val assessments by remember(gradeRepository) { gradeRepository.observeAllItems() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val courses by remember(studyPlanRepository) { studyPlanRepository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
@@ -147,7 +152,11 @@ fun CalendarScreen(
         visibleDates.associateWith(::resolveEvents)
     }
     val pendingTasksByDate = remember(tasks) {
-        tasks.filterNot { it.completed }.filter { it.dueDate != null }.groupBy { it.dueDate }
+        tasks.filter { !it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement) }
+            .filter { it.dueDate != null }.groupBy { it.dueDate }
+    }
+    val assessmentsByDate = remember(assessments) {
+        assessments.filter { it.dueDate != null }.groupBy { it.dueDate }
     }
 
     fun eventsForDate(date: LocalDate): List<ResolvedScheduleEvent> = eventsByDate[date] ?: resolveEvents(date)
@@ -193,7 +202,8 @@ fun CalendarScreen(
     }
 
     fun hasCalendarContent(date: LocalDate): Boolean =
-        pendingTasksByDate[date].orEmpty().isNotEmpty() || eventsForDate(date).isNotEmpty()
+        pendingTasksByDate[date].orEmpty().isNotEmpty() ||
+            assessmentsByDate[date].orEmpty().isNotEmpty() || eventsForDate(date).isNotEmpty()
 
     val headerSubtitle = when (viewMode) {
         CalendarViewMode.DAY -> selectedDate.format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
@@ -271,11 +281,13 @@ fun CalendarScreen(
                         date = selectedDate,
                         events = eventsForDate(selectedDate),
                         deadlines = pendingTasksByDate[selectedDate].orEmpty(),
+                        assessments = assessmentsByDate[selectedDate].orEmpty(),
                         courseTitles = courseTitles,
                         today = today,
                         settings = settings,
                         onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                         onEventLongClick = onEventLongClick,
+                        onOpenAssessment = onOpenAssessment,
                         onDeadlineCompleted = { task, completed ->
                             scope.launch {
                                 studyContentRepository.setTaskCompleted(task.id, completed)
@@ -289,12 +301,14 @@ fun CalendarScreen(
                         WeekLayout.TIMETABLE -> WeekTimetable(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
+                            assessmentCountForDate = { assessmentsByDate[it].orEmpty().size },
                             onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                             onEventLongClick = onEventLongClick,
                         )
                         WeekLayout.COMPACT_LIST -> WeekCompactList(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
+                            assessmentCountForDate = { assessmentsByDate[it].orEmpty().size },
                             onSelectDate = {
                                 selectDate(it)
                                 viewMode = CalendarViewMode.DAY
@@ -325,7 +339,8 @@ fun CalendarScreen(
                         )
 
                         val deadlines = pendingTasksByDate[selectedDate].orEmpty()
-                        if (deadlines.isNotEmpty()) {
+                        val datedAssessments = assessmentsByDate[selectedDate].orEmpty()
+                        if (deadlines.isNotEmpty() || datedAssessments.isNotEmpty()) {
                             SectionCard {
                                 Text("Дедлайни", style = MaterialTheme.typography.titleMedium)
                                 deadlines.forEachIndexed { index, task ->
@@ -338,6 +353,14 @@ fun CalendarScreen(
                                                 studyContentRepository.setTaskCompleted(task.id, completed)
                                             }
                                         },
+                                    )
+                                }
+                                datedAssessments.forEach { item ->
+                                    HorizontalDivider()
+                                    CalendarAssessmentStrip(
+                                        item = item,
+                                        courseTitle = courseTitles[item.courseId] ?: item.courseId,
+                                        onClick = { onOpenAssessment(item.courseId) },
                                     )
                                 }
                             }
@@ -365,11 +388,13 @@ private fun SelectedDayAgenda(
     date: LocalDate,
     events: List<ResolvedScheduleEvent>,
     deadlines: List<com.kpyruy.takt.core.model.StudyTask>,
+    assessments: List<GradeItem>,
     courseTitles: Map<String, String>,
     today: LocalDate,
     settings: AppSettings,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
+    onOpenAssessment: (String) -> Unit,
     onDeadlineCompleted: (com.kpyruy.takt.core.model.StudyTask, Boolean) -> Unit,
 ) {
     Column(
@@ -380,6 +405,13 @@ private fun SelectedDayAgenda(
             deadlines.forEach { task ->
                 CalendarDeadlineStrip(task = task, onCompletedChange = { onDeadlineCompleted(task, it) })
             }
+        }
+        assessments.forEach { item ->
+            CalendarAssessmentStrip(
+                item = item,
+                courseTitle = courseTitles[item.courseId] ?: item.courseId,
+                onClick = { onOpenAssessment(item.courseId) },
+            )
         }
 
         if (events.isEmpty()) {

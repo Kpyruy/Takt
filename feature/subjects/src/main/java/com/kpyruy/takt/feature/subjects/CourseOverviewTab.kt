@@ -33,6 +33,7 @@ import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.model.asScoredGradeItem
 import com.kpyruy.takt.core.ui.components.SectionCard
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -50,12 +51,13 @@ internal fun CourseOverviewTab(
     onNotes: () -> Unit,
     onExam: () -> Unit,
 ) {
-    val projection = GradeProjection.calculate(gradeItems, gradeScale)
+    val allGradedWork = gradeItems + tasks.mapNotNull { it.asScoredGradeItem() }
+    val projection = GradeProjection.calculate(allGradedWork, gradeScale)
     val requiredTasks = tasks.filter { it.requiredForExam }.sortedBy { it.completed }
     val requiredGrades = gradeItems.filter { it.requiredForExam }.sortedBy { it.completed }
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (course.gradingType == CourseGradingType.EXAM_LETTER) AdmissionProgressCard(eligibility)
-        if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(gradeItems, projection)
+        if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection)
         else SubjectPanel {
             Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
             Text(when(course.passFailResult) { PassFailResult.PASSED -> "Зараховано"; PassFailResult.FAILED -> "Не зараховано"; null -> "Результату ще немає" })
@@ -69,15 +71,15 @@ internal fun CourseOverviewTab(
             requiredTasks.forEach { task ->
                 Row(Modifier.fillMaxWidth().clickable { onEditTask(task) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(task.completed, onCheckedChange = { onTaskCompleted(task, it) })
-                    Column(Modifier.weight(1f)) { Text(task.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (task.completed) "Зараховано" else task.description?.takeIf { it.isNotBlank() } ?: "Для допуску") }
+                    Column(Modifier.weight(1f)) { Text(task.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (task.meetsAdmissionRequirement) "Зараховано" else if (task.completed) "Поріг балів не виконано" else task.description?.takeIf { it.isNotBlank() } ?: "Для допуску") }
                     task.dueDate?.let { SmallText(it.format(DateTimeFormatter.ofPattern("dd.MM"))) }
                 }
                 HorizontalDivider()
             }
             requiredGrades.forEach { grade ->
                 Row(Modifier.fillMaxWidth().clickable { onEditGrade(grade) }.padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(if (grade.completed) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if(grade.completed) "Зараховано" else "Додати результат") }
+                    Icon(if (grade.meetsAdmissionRequirement) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (grade.meetsAdmissionRequirement) "Зараховано" else if (grade.completed) "Поріг балів не виконано" else "Додати результат") }
                 }
                 HorizontalDivider()
             }

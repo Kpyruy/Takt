@@ -20,6 +20,7 @@ class GradeItemMappingTest {
             dueDate = LocalDate.of(2026, 10, 1),
             completed = false,
             requiredForExam = true,
+            minimumPointsForExam = 12.0,
         )
 
         assertEquals(model, model.toEntity().toDomain())

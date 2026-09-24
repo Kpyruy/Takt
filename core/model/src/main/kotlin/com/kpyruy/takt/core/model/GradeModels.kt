@@ -2,16 +2,16 @@ package com.kpyruy.takt.core.model
 
 import java.time.LocalDate
 
-enum class GradeItemType {
-    TEST,
-    MIDTERM,
-    LAB,
-    SEMINAR,
-    HOMEWORK,
-    PROJECT,
-    ORAL,
-    EXAM,
-    OTHER,
+enum class GradeItemType(val label: String) {
+    TEST("Тест"),
+    MIDTERM("Модуль / проміжний тест"),
+    LAB("Лабораторна"),
+    SEMINAR("Семінар"),
+    HOMEWORK("Домашня робота"),
+    PROJECT("Проєкт"),
+    ORAL("Усна відповідь"),
+    EXAM("Екзамен"),
+    OTHER("Інше"),
 }
 
 data class GradeItem(
@@ -25,11 +25,19 @@ data class GradeItem(
     val dueDate: LocalDate? = null,
     val completed: Boolean = true,
     val requiredForExam: Boolean = false,
+    val minimumPointsForExam: Double? = null,
 ) {
     init {
         require(maxPoints > 0.0) { "maxPoints must be positive" }
         require(earnedPoints >= 0.0) { "earnedPoints cannot be negative" }
+        require(minimumPointsForExam == null ||
+            (minimumPointsForExam.isFinite() && minimumPointsForExam >= 0.0 && minimumPointsForExam <= maxPoints)) {
+            "minimumPointsForExam must be between 0 and maxPoints"
+        }
     }
+
+    val meetsAdmissionRequirement: Boolean
+        get() = completed && (minimumPointsForExam == null || earnedPoints >= minimumPointsForExam)
 }
 
 data class GradeSummary(

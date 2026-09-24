@@ -193,6 +193,7 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                     onOpenCourse = ::openCourse,
+                    onOpenAssessment = { courseId -> navController.navigate("subject/${Uri.encode(courseId)}?tab=grades") },
                     onEventLongClick = { actionEvent = it },
                 )
             }
@@ -200,8 +201,10 @@ fun TaktApp(
                 CalendarScreen(
                     scheduleRepository = scheduleRepository,
                     studyContentRepository = studyContentRepository,
+                    gradeRepository = gradeRepository,
                     studyPlanRepository = repository,
                     onOpenCourse = ::openCourse,
+                    onOpenAssessment = { courseId -> navController.navigate("subject/${Uri.encode(courseId)}?tab=grades") },
                     onEventLongClick = { actionEvent = it },
                     settingsRepository = settingsRepository,
                 )

@@ -60,6 +60,7 @@ fun HomeScreen(
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
     onOpenCourse: (String) -> Unit,
+    onOpenAssessment: (String) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -68,6 +69,7 @@ fun HomeScreen(
     val oneOffEvents by remember(scheduleRepository) { scheduleRepository.observeOneOffEvents() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val exceptions by remember(scheduleRepository) { scheduleRepository.observeExceptions() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val assessments by remember(gradeRepository) { gradeRepository.observeAllItems() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -88,8 +90,13 @@ fun HomeScreen(
     val next = if (selectedDate == today) ScheduleTimeline.nextEvent(
         events.filter { it.status != ScheduleEventStatus.CANCELLED }, now,
     ) else null
-    val deadlines = remember(tasks, selectedDate) { tasks.filter { it.dueDate == selectedDate && !it.completed } }
-    val untimed = remember(tasks) { tasks.filter { it.dueDate == null && !it.completed } }
+    val deadlines = remember(tasks, selectedDate) {
+        tasks.filter { it.dueDate == selectedDate && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
+    }
+    val assessmentDeadlines = remember(assessments, selectedDate) { assessments.filter { it.dueDate == selectedDate } }
+    val untimed = remember(tasks) {
+        tasks.filter { it.dueDate == null && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
+    }
     val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
     val uk = remember { Locale("uk") }
     val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
@@ -123,10 +130,10 @@ fun HomeScreen(
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Твій день", style = MaterialTheme.typography.labelLarge)
-            Text("Пар: ${events.size} · Дедлайнів: ${deadlines.count { !it.completed }}", style = MaterialTheme.typography.bodySmall, color = muted)
+            Text("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.completed }}", style = MaterialTheme.typography.bodySmall, color = muted)
         }
         Spacer(Modifier.height(23.dp))
-        if (events.isEmpty() && deadlines.isEmpty()) {
+        if (events.isEmpty() && deadlines.isEmpty() && assessmentDeadlines.isEmpty()) {
             Text("На цей день подій немає", style = MaterialTheme.typography.bodyMedium, color = muted)
             Spacer(Modifier.height(20.dp))
         }
@@ -208,6 +215,22 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(13.dp))
         }
+        assessmentDeadlines.forEach { item ->
+            val subjectColor = taktSubjectColor(item.courseId)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Без\nчасу", Modifier.width(timeWidth).padding(top = 13.dp), style = MaterialTheme.typography.bodySmall, color = subjectColor)
+                Row(Modifier.weight(1f).height(IntrinsicSize.Min)) {
+                    Box(Modifier.width(2.dp).fillMaxHeight().background(subjectColor))
+                    Column(Modifier.weight(1f).padding(start = 13.dp, top = 13.dp, bottom = 13.dp)) {
+                        Text(item.type.label.uppercase(uk), style = MaterialTheme.typography.labelSmall, color = subjectColor)
+                        HomeAssessmentRow(item, courseTitles[item.courseId] ?: item.courseId) {
+                            onOpenAssessment(item.courseId)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(13.dp))
+        }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -247,7 +270,7 @@ private fun HomeWeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
             repeat(7) { day ->
                 val date = week.plusDays(day.toLong())
                 val active = date == selected
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                Column(Modifier.weight(1f).testTag("home-day-${date.toEpochDay()}").clip(RoundedCornerShape(12.dp))
                     .background(if (active) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .selectable(active, role = Role.Tab) { onSelect(date) }.padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {

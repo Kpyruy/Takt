@@ -33,6 +33,7 @@ private val weekTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 fun WeekCompactList(
     dates: List<LocalDate>,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
+    assessmentCountForDate: (LocalDate) -> Int = { 0 },
     onSelectDate: (LocalDate) -> Unit,
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
@@ -56,6 +57,11 @@ fun WeekCompactList(
                         date.format(weekDayTitleFormatter).replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    val assessmentCount = assessmentCountForDate(date)
+                    if (assessmentCount > 0) {
+                        Text("Робіт з датою: $assessmentCount", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
                     if (events.isEmpty()) {
                         Text(
                             "Немає занять",

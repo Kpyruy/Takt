@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface GradeRepository {
     fun observeItems(courseId: String): Flow<List<GradeItem>>
+    fun observeAllItems(): Flow<List<GradeItem>>
     fun observeRecentItems(limit: Int): Flow<List<GradeItem>>
     fun observeScale(courseId: String): Flow<GradeScale>
     fun observeManualGrade(courseId: String): Flow<GradeLetter?>

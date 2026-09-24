@@ -71,6 +71,8 @@ fun StudyTaskRow(
                             add("до " + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                         }
                         if (task.requiredForExam) add("потрібно для допуску")
+                        task.minimumPointsForExam?.let { add("мін. ${it.displayNumber()} б.") }
+                        if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) add("поріг не виконано")
                     }.joinToString(" · ")
                     if (supporting.isNotBlank()) {
                         Text(
@@ -82,6 +84,11 @@ fun StudyTaskRow(
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
                         )
+                    }
+                    task.maxPoints?.let { maximum ->
+                        Text("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} б.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     task.description?.takeIf { it.isNotBlank() }?.let {
                         Text(

@@ -20,7 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExamInfoEntity::class,
         ExamMaterialEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -31,6 +31,15 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE grade_items ADD COLUMN minimumPointsForExam REAL")
+                db.execSQL("ALTER TABLE study_tasks ADD COLUMN earnedPoints REAL")
+                db.execSQL("ALTER TABLE study_tasks ADD COLUMN maxPoints REAL")
+                db.execSQL("ALTER TABLE study_tasks ADD COLUMN minimumPointsForExam REAL")
+            }
+        }
+
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS lesson_absences (eventId TEXT NOT NULL, dateEpochDay INTEGER NOT NULL, isOneOff INTEGER NOT NULL, PRIMARY KEY(eventId, dateEpochDay, isOneOff))")

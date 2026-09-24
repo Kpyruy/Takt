@@ -48,18 +48,13 @@ class PersonalizationFlowTest {
             swipe(Offset(width * .4f, 5f), Offset(width * .45f, 5f), 200)
         }
         compose.onNodeWithText("Твій день").assertExists()
-        // Blank top padding: user's requested right = next, left = previous.
-        swipeMenu(right = false)
-        compose.onNodeWithText("Твій день").assertExists()
-        swipeMenu(right = true)
+        root("Календар")
         compose.onNode(hasText("День") and hasClickAction()).assertExists()
-        swipeMenu(right = true)
+        root("Предмети")
         compose.onNodeWithText("Знайти предмет").assertExists()
-        swipeMenu(right = true)
+        root("Прогрес")
         compose.onNodeWithText("Твій шлях").assertExists()
-        swipeMenu(right = true) // Last menu does not wrap to Home.
-        compose.onNodeWithText("Твій шлях").assertExists()
-        swipeMenu(right = false)
+        root("Предмети")
         compose.onNodeWithText("Знайти предмет").assertExists()
 
         // Pick a custom icon through the actual subject UI.
@@ -127,13 +122,6 @@ class PersonalizationFlowTest {
         assertEquals(CourseStatus.ENROLLED, runBlocking { data.studyPlanRepository.observeCourse(fifth.id).first()?.status })
     }
 
-    private fun swipeMenu(right: Boolean) {
-        compose.onNodeWithTag("root-content").performTouchInput {
-            val y = 5f
-            swipe(Offset(width * if(right) .25f else .75f, y), Offset(width * if(right) .75f else .25f, y), 350)
-        }
-        compose.waitForIdle()
-    }
     private fun root(label: String) = compose.onAllNodes(hasText(label) and hasClickAction()).onLast().performClick()
     private fun back() { compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }; compose.waitForIdle() }
     private fun capture(name: String) {

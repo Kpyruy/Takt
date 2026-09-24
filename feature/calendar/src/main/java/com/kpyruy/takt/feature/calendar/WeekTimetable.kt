@@ -83,6 +83,7 @@ private fun eventHeight(event: ResolvedScheduleEvent): Dp {
 fun WeekTimetable(
     dates: List<LocalDate>,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
+    assessmentCountForDate: (LocalDate) -> Int = { 0 },
     onEventClick: (ResolvedScheduleEvent) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
@@ -119,7 +120,8 @@ fun WeekTimetable(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     Text(
-                        text = date.format(timetableDayFormatter).replace(".", "").uppercase(),
+                        text = date.format(timetableDayFormatter).replace(".", "").uppercase() +
+                            assessmentCountForDate(date).takeIf { it > 0 }?.let { " · $it" }.orEmpty(),
                         modifier = Modifier.padding(10.dp),
                         style = MaterialTheme.typography.labelLarge,
                     )

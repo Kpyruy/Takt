@@ -162,11 +162,13 @@ fun SubjectDetailScreen(
                 "Бали" -> CourseAssessmentsTab(
                     course = item,
                     gradeItems = gradeItems,
+                    tasks = tasks,
                     gradeScale = gradeScale,
                     eligibility = eligibility,
                     manualGrade = manualGrade,
                     onAddGrade = { showAddGrade = true },
                     onEditGrade = { editingGrade = it },
+                    onEditTask = { editingTask = it },
                     onDeleteGrade = { id -> scope.launch { gradeRepository.deleteItem(id) } },
                     onEditScale = { showScaleEditor = true },
                     onManualGradeChange = { grade ->
@@ -194,8 +196,8 @@ fun SubjectDetailScreen(
                     examInfo = examInfo,
                     materials = examMaterials,
                     manualGrade = manualGrade,
-                    onAdmission = { selectedTab = if (tasks.any { it.requiredForExam && !it.completed }) "Завдання"
-                        else if (gradeItems.any { it.requiredForExam && !it.completed }) "Бали" else "Завдання" },
+                    onAdmission = { selectedTab = if (tasks.any { it.requiredForExam && !it.meetsAdmissionRequirement }) "Завдання"
+                        else if (gradeItems.any { it.requiredForExam && !it.meetsAdmissionRequirement }) "Бали" else "Завдання" },
                     onSaveExamInfo = { info ->
                         scope.launch {
                             examRepository.upsertExamInfo(info)

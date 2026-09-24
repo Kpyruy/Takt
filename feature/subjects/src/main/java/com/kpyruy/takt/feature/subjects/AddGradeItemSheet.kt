@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
@@ -77,10 +80,13 @@ fun AddGradeItemForm(
     var maxText by remember(initialItem?.id) {
         mutableStateOf(initialItem?.maxPoints?.toEditableNumber().orEmpty())
     }
+    var minimumText by remember(initialItem?.id) {
+        mutableStateOf(initialItem?.minimumPointsForExam?.toEditableNumber().orEmpty())
+    }
     var type by remember(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
     var dueDate by remember(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
     var completed by remember(initialItem?.id, effectiveType) {
-        mutableStateOf(initialItem?.completed ?: (effectiveType != GradeItemType.EXAM))
+        mutableStateOf(initialItem?.completed ?: false)
     }
     var requiredForExam by remember(initialItem?.id) {
         mutableStateOf(initialItem?.requiredForExam ?: false)
@@ -137,11 +143,6 @@ fun AddGradeItemForm(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(if (type == GradeItemType.EXAM) "Екзамен складено" else "Результат уже відомий")
-                Text(
-                    if (completed) "Бали зафіксовані" else "Ще можна заробити ці бали",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
             Switch(
                 checked = completed,
@@ -154,19 +155,16 @@ fun AddGradeItemForm(
 
         if (type != GradeItemType.EXAM) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().toggleable(
+                    value = requiredForExam,
+                    role = Role.Checkbox,
+                    onValueChange = { requiredForExam = it },
+                ),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Потрібно для допуску")
-                    Text(
-                        "Окремо від кількості балів.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(checked = requiredForExam, onCheckedChange = { requiredForExam = it })
+                Checkbox(checked = requiredForExam, onCheckedChange = null)
+                Text("Потрібно для допуску")
             }
         }
 
@@ -199,6 +197,17 @@ fun AddGradeItemForm(
             )
         }
 
+        if (requiredForExam && type != GradeItemType.EXAM) {
+            OutlinedTextField(
+                value = minimumText,
+                onValueChange = { minimumText = it; error = null },
+                label = { Text("Мінімум балів для допуску") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = error != null,
+            )
+        }
+
         error?.let {
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
@@ -207,11 +216,16 @@ fun AddGradeItemForm(
             onClick = {
                 val earned = if (completed) earnedText.replace(',', '.').toDoubleOrNull() else 0.0
                 val max = maxText.replace(',', '.').toDoubleOrNull()
+                val minimumInput = minimumText.takeIf { requiredForExam && type != GradeItemType.EXAM && it.isNotBlank() }
+                val minimum = minimumInput?.replace(',', '.')?.toDoubleOrNull()
                 when {
                     earned == null || max == null -> error = "Введіть числові значення балів."
-                    earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
-                    max <= 0.0 -> error = "Максимум має бути більшим за 0."
+                    !earned.isFinite() || earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
+                    !max.isFinite() || max <= 0.0 -> error = "Максимум має бути більшим за 0."
                     earned > max -> error = "Отримані бали не можуть перевищувати максимум."
+                    minimumInput != null && minimum == null -> error = "Введіть числовий мінімум балів."
+                    minimum != null && (!minimum.isFinite() || minimum < 0.0 || minimum > max) ->
+                        error = "Мінімум має бути від 0 до максимуму балів."
                     else -> onSave(
                         GradeItem(
                             id = initialItem?.id ?: UUID.randomUUID().toString(),
@@ -225,6 +239,7 @@ fun AddGradeItemForm(
                             dueDate = dueDate,
                             completed = completed,
                             requiredForExam = requiredForExam,
+                            minimumPointsForExam = minimum,
                         )
                     )
                 }

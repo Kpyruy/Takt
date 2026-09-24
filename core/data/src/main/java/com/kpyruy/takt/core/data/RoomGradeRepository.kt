@@ -18,6 +18,9 @@ class RoomGradeRepository(
     override fun observeItems(courseId: String) =
         dao.observeItems(courseId).map { items -> items.map { it.toDomain() } }
 
+    override fun observeAllItems() =
+        dao.observeAllItems().map { items -> items.map { it.toDomain() } }
+
     override fun observeRecentItems(limit: Int) =
         dao.observeRecentItems(limit).map { items -> items.map { it.toDomain() } }
 
@@ -71,6 +74,7 @@ internal fun GradeItemEntity.toDomain() = GradeItem(
     dueDate = dueDateEpochDay?.let(LocalDate::ofEpochDay),
     completed = completed,
     requiredForExam = requiredForExam,
+    minimumPointsForExam = minimumPointsForExam,
 )
 
 internal fun GradeItem.toEntity() = GradeItemEntity(
@@ -84,6 +88,7 @@ internal fun GradeItem.toEntity() = GradeItemEntity(
     dueDateEpochDay = dueDate?.toEpochDay(),
     completed = completed,
     requiredForExam = requiredForExam,
+    minimumPointsForExam = minimumPointsForExam,
 )
 
 private fun GradeScaleEntity.toDomain() = GradeScale(

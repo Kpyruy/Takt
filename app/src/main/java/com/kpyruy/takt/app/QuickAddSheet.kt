@@ -10,7 +10,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +25,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.activeCourseChoices
@@ -60,6 +64,7 @@ fun QuickAddSheet(
     var details by remember { mutableStateOf("") }
     var courseId by remember { mutableStateOf<String?>(null) }
     var dueDate by remember { mutableStateOf<LocalDate?>(null) }
+    var requiredForExam by remember { mutableStateOf(false) }
     var startTime by remember { mutableStateOf(LocalTime.of(8, 0)) }
     var endTime by remember { mutableStateOf(LocalTime.of(9, 50)) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -130,12 +135,26 @@ fun QuickAddSheet(
             )
 
             when (type) {
-                QuickAddType.TASK -> TaktDatePickerField(
-                    label = "Дедлайн",
-                    value = dueDate,
-                    onValueChange = { dueDate = it },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                QuickAddType.TASK -> {
+                    TaktDatePickerField(
+                        label = "Дедлайн",
+                        value = dueDate,
+                        onValueChange = { dueDate = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().toggleable(
+                            value = requiredForExam,
+                            role = Role.Checkbox,
+                            onValueChange = { requiredForExam = it },
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = requiredForExam, onCheckedChange = null)
+                        Text("Потрібно для допуску до екзамену")
+                    }
+                }
 
                 QuickAddType.CLASS -> Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -192,6 +211,7 @@ fun QuickAddSheet(
                                 description = null,
                                 dueDate = dueDate,
                                 completed = false,
+                                requiredForExam = requiredForExam,
                             )
                         )
 
@@ -253,6 +273,7 @@ fun QuickAddSheet(
                             title = title,
                             details = details,
                             dueDate = dueDate,
+                            requiredForExam = requiredForExam,
                             startTime = startTime,
                             endTime = endTime,
                         )

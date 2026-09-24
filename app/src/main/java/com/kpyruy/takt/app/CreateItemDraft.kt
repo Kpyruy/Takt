@@ -10,6 +10,7 @@ data class CreateItemDraft(
     val title: String = "",
     val details: String = "",
     val dueDate: LocalDate? = null,
+    val requiredForExam: Boolean = false,
     val startTime: LocalTime? = null,
     val endTime: LocalTime? = null,
 )

@@ -37,11 +37,13 @@ fun GradeItemRow(
             Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
             Text(
                 buildList {
-                    add(item.type.label())
+                    add(item.type.label)
                     item.dueDate?.let {
                         add("до " + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                     }
                     if (item.requiredForExam) add("для допуску")
+                    item.minimumPointsForExam?.let { add("мін. ${it.displayNumber()} б.") }
+                    if (item.requiredForExam && item.completed && !item.meetsAdmissionRequirement) add("поріг не виконано")
                     add(if (item.completed) "завершено" else "очікується")
                 }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
@@ -76,18 +78,6 @@ fun GradeItemRow(
             )
         }
     }
-}
-
-internal fun GradeItemType.label(): String = when (this) {
-    GradeItemType.TEST -> "Тест"
-    GradeItemType.MIDTERM -> "Модуль / проміжний тест"
-    GradeItemType.LAB -> "Лабораторна"
-    GradeItemType.SEMINAR -> "Семінар"
-    GradeItemType.HOMEWORK -> "Домашня робота"
-    GradeItemType.PROJECT -> "Проєкт"
-    GradeItemType.ORAL -> "Усна відповідь"
-    GradeItemType.EXAM -> "Екзамен"
-    GradeItemType.OTHER -> "Інше"
 }
 
 internal fun Double.displayNumber(): String =

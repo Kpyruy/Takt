@@ -41,6 +41,7 @@ class BackupMappingsTest {
             dueDateEpochDay = 20730L,
             completed = false,
             requiredForExam = true,
+            minimumPointsForExam = 12.0,
         )
 
         assertEquals(entity, entity.toBackup().toEntity())
@@ -56,6 +57,9 @@ class BackupMappingsTest {
             dueDateEpochDay = 20730L,
             completed = false,
             requiredForExam = true,
+            earnedPoints = 4.0,
+            maxPoints = 10.0,
+            minimumPointsForExam = 5.0,
         )
 
         assertEquals(entity, entity.toBackup().toEntity())

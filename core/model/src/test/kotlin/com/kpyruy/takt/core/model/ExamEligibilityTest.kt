@@ -107,4 +107,47 @@ class ExamEligibilityTest {
         assertEquals(3, result.completedCount)
     }
 
+    @Test
+    fun completedAssessmentNeedsItsMinimumPointsForAdmission() {
+        val assessment = GradeItem(
+            id = "test",
+            courseId = "course",
+            title = "Entry test",
+            type = GradeItemType.TEST,
+            earnedPoints = 9.0,
+            maxPoints = 20.0,
+            completed = true,
+            requiredForExam = true,
+            minimumPointsForExam = 10.0,
+        )
+
+        val below = ExamEligibilityCalculator.calculate(emptyList(), listOf(assessment))
+        assertEquals(1, below.requiredCount)
+        assertEquals(0, below.completedCount)
+        assertFalse(below.eligible)
+
+        val atMinimum = ExamEligibilityCalculator.calculate(emptyList(), listOf(assessment.copy(earnedPoints = 10.0)))
+        assertEquals(1, atMinimum.completedCount)
+        assertTrue(atMinimum.eligible)
+    }
+
+    @Test
+    fun completedTaskNeedsItsMinimumPointsForAdmission() {
+        val task = StudyTask(
+            id = "homework",
+            courseId = "course",
+            title = "Homework",
+            description = null,
+            dueDate = null,
+            completed = true,
+            requiredForExam = true,
+            earnedPoints = 4.0,
+            maxPoints = 10.0,
+            minimumPointsForExam = 5.0,
+        )
+
+        assertFalse(ExamEligibilityCalculator.calculate(listOf(task), emptyList()).eligible)
+        assertTrue(ExamEligibilityCalculator.calculate(listOf(task.copy(earnedPoints = 5.0)), emptyList()).eligible)
+    }
+
 }

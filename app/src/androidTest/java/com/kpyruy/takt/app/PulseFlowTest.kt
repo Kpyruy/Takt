@@ -112,8 +112,7 @@ class PulseFlowTest {
         compose.onNode(hasText("Бали") and isSelected()).assertExists()
         back()
         clickRoot("Сьогодні")
-        compose.onNodeWithContentDescription("Додати або налаштувати").performClick()
-        compose.onNodeWithText("Усі способи додавання").performClick()
+        compose.onNodeWithContentDescription("Додати").performClick()
         compose.onNodeWithText("Швидко").assertExists()
     }
 

@@ -122,9 +122,9 @@ fun StudyPlanScreen(
         if (filter == 0) semesters.forEach { (semester, semesterCourses) ->
             item(key = "semester-$semester") {
                 val activeCourseIds = semesterCourses.filter { it.status == CourseStatus.ENROLLED }.map { it.id }.toSet()
-                val pendingTask = tasks.filter { it.courseId in activeCourseIds && it.requiredForExam && !it.completed }
+                val pendingTask = tasks.filter { it.courseId in activeCourseIds && it.requiredForExam && !it.meetsAdmissionRequirement }
                     .sortedWith(compareBy<com.kpyruy.takt.core.model.StudyTask> { it.dueDate == null }.thenBy { it.dueDate }.thenBy { it.title }).firstOrNull()
-                val pendingAssessment = grades.filter { it.courseId in activeCourseIds && it.requiredForExam && !it.completed }.sortedBy { it.dueDate ?: java.time.LocalDate.MAX }.firstOrNull()
+                val pendingAssessment = grades.filter { it.courseId in activeCourseIds && it.requiredForExam && !it.meetsAdmissionRequirement }.sortedBy { it.dueDate ?: java.time.LocalDate.MAX }.firstOrNull()
                 val taskComesFirst = pendingTask != null && (pendingAssessment == null ||
                     (pendingTask.dueDate ?: java.time.LocalDate.MAX) <= (pendingAssessment.dueDate ?: java.time.LocalDate.MAX))
                 val nextTask = pendingTask.takeIf { taskComesFirst }

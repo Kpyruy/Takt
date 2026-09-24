@@ -46,8 +46,8 @@ object ExamEligibilityCalculator {
         val requiredAssessments = assessments.filter { it.requiredForExam }
         val requiredCount = requiredTasks.size + requiredAssessments.size
         val completedCount =
-            requiredTasks.count { it.completed } +
-                requiredAssessments.count { it.completed }
+            requiredTasks.count { it.meetsAdmissionRequirement } +
+                requiredAssessments.count { it.meetsAdmissionRequirement }
 
         return ExamEligibility(
             requiredCount = requiredCount,

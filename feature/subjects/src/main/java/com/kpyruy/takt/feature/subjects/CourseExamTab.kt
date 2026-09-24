@@ -44,6 +44,7 @@ import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.model.asScoredGradeItem
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import java.time.format.DateTimeFormatter
@@ -66,8 +67,9 @@ internal fun CourseExamTab(
 ) {
     var showEditor by remember { mutableStateOf(false) }
     var target by rememberSaveable { mutableStateOf(GradeLetter.A) }
-    val projection = remember(gradeItems, gradeScale) { GradeProjection.calculate(gradeItems, gradeScale) }
-    val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
+    val allGradedWork = remember(gradeItems, tasks) { gradeItems + tasks.mapNotNull { it.asScoredGradeItem() } }
+    val projection = remember(allGradedWork, gradeScale) { GradeProjection.calculate(allGradedWork, gradeScale) }
+    val coursework = allGradedWork.filterNot { it.type == GradeItemType.EXAM }
     val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
     val maximum = coursework.sumOf { it.maxPoints }
     val needed = projection.examPointsNeeded[target]
@@ -116,9 +118,9 @@ internal fun CourseExamTab(
                 }
             }
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
-            PotentialSummary(projection, gradeItems.any { !it.completed })
+            PotentialSummary(projection, allGradedWork.any { !it.completed })
         }
-        CompactAdmission(eligibility, tasks.firstOrNull { it.requiredForExam && !it.completed }?.title, onAdmission)
+        CompactAdmission(eligibility, tasks.firstOrNull { it.requiredForExam && !it.meetsAdmissionRequirement }?.title, onAdmission)
         if (!examInfo?.notes.isNullOrBlank()) SmallText(examInfo!!.notes)
         ExamMaterialsSection(courseId, materials, onAddMaterial, onDeleteMaterial)
         ManualGradeSection(manualGrade, onManualGradeChange)
@@ -129,7 +131,7 @@ internal fun CourseExamTab(
         EditExamInfoSheet(
             courseId = courseId,
             initial = examInfo,
-            gradeItems = gradeItems,
+            gradeItems = allGradedWork,
             onDismiss = { showEditor = false },
             onSave = {
                 onSaveExamInfo(it)

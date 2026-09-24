@@ -22,7 +22,8 @@ internal fun CalendarDeadlineStrip(task: StudyTask, onCompletedChange: (Boolean)
         contentColor = ink) {
         Row(Modifier.fillMaxWidth().padding(start = 13.dp, end = 3.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-            Text("дедлайн", style = MaterialTheme.typography.bodySmall)
+            Text(if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) "поріг не виконано" else "дедлайн",
+                style = MaterialTheme.typography.bodySmall)
             Checkbox(checked = task.completed, onCheckedChange = onCompletedChange,
                 modifier = Modifier.semantics { contentDescription = "Завершити: ${task.title}" })
         }

@@ -93,6 +93,7 @@ data class BackupGradeItem(
     val dueDateEpochDay: Long? = null,
     val completed: Boolean = true,
     val requiredForExam: Boolean = false,
+    val minimumPointsForExam: Double? = null,
 )
 
 @Serializable
@@ -120,6 +121,9 @@ data class BackupStudyTask(
     val dueDateEpochDay: Long? = null,
     val completed: Boolean,
     val requiredForExam: Boolean = false,
+    val earnedPoints: Double? = null,
+    val maxPoints: Double? = null,
+    val minimumPointsForExam: Double? = null,
 )
 
 @Serializable

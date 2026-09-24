@@ -131,6 +131,7 @@ internal fun GradeItemEntity.toBackup() = BackupGradeItem(
     dueDateEpochDay = dueDateEpochDay,
     completed = completed,
     requiredForExam = requiredForExam,
+    minimumPointsForExam = minimumPointsForExam,
 )
 
 internal fun BackupGradeItem.toEntity() = GradeItemEntity(
@@ -144,6 +145,7 @@ internal fun BackupGradeItem.toEntity() = GradeItemEntity(
     dueDateEpochDay = dueDateEpochDay,
     completed = completed,
     requiredForExam = requiredForExam,
+    minimumPointsForExam = minimumPointsForExam,
 )
 
 internal fun GradeScaleEntity.toBackup() = BackupGradeScale(
@@ -182,6 +184,9 @@ internal fun StudyTaskEntity.toBackup() = BackupStudyTask(
     dueDateEpochDay = dueDateEpochDay,
     completed = completed,
     requiredForExam = requiredForExam,
+    earnedPoints = earnedPoints,
+    maxPoints = maxPoints,
+    minimumPointsForExam = minimumPointsForExam,
 )
 
 internal fun BackupStudyTask.toEntity() = StudyTaskEntity(
@@ -192,6 +197,9 @@ internal fun BackupStudyTask.toEntity() = StudyTaskEntity(
     dueDateEpochDay = dueDateEpochDay,
     completed = completed,
     requiredForExam = requiredForExam,
+    earnedPoints = earnedPoints,
+    maxPoints = maxPoints,
+    minimumPointsForExam = minimumPointsForExam,
 )
 
 internal fun CourseNoteEntity.toBackup() = BackupCourseNote(

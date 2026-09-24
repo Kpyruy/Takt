@@ -42,6 +42,10 @@ fun CalendarDeadlineRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) {
+                    Text("Поріг для допуску не виконано", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error)
+                }
             }
             Text("Дедлайн", color = MaterialTheme.colorScheme.primary)
         }

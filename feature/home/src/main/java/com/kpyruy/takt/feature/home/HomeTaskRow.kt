@@ -41,8 +41,18 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
             Column(Modifier.weight(1f)) {
                 Text(task.title, style = MaterialTheme.typography.titleSmall,
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null)
-                Text(courseTitle + if (task.requiredForExam) " · Для допуску" else "",
+                val minimum = task.minimumPointsForExam?.let { " · мін. ${it.pointText()} б." }.orEmpty()
+                Text(courseTitle + if (task.requiredForExam) " · Для допуску$minimum" else "",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                task.maxPoints?.let { maximum ->
+                    Text("${task.earnedPoints?.pointText() ?: "—"} / ${maximum.pointText()} б.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) {
+                    Text("Поріг для допуску не виконано", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error)
+                }
                 if (largeText) dueLabel()
             }
             if (!largeText) dueLabel()

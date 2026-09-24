@@ -1,9 +1,11 @@
 package com.kpyruy.takt.feature.subjects
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,6 +38,8 @@ import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
+import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.model.asScoredGradeItem
 import com.kpyruy.takt.core.ui.components.CompactSummaryItem
 import com.kpyruy.takt.core.ui.components.CompactSummaryStrip
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -44,18 +48,22 @@ import com.kpyruy.takt.core.ui.components.SectionCard
 internal fun CourseAssessmentsTab(
     course: Course,
     gradeItems: List<GradeItem>,
+    tasks: List<StudyTask>,
     gradeScale: GradeScale,
     eligibility: ExamEligibility,
     manualGrade: GradeLetter?,
     onAddGrade: () -> Unit,
     onEditGrade: (GradeItem) -> Unit,
+    onEditTask: (StudyTask) -> Unit,
     onDeleteGrade: (String) -> Unit,
     onEditScale: () -> Unit,
     onManualGradeChange: (GradeLetter?) -> Unit,
 ) {
     var showLegend by remember { mutableStateOf(false) }
-    val projection = GradeProjection.calculate(gradeItems, gradeScale)
-    val summary = GradeSummary.calculate(gradeItems, gradeScale, manualGrade)
+    val allGradedWork = gradeItems + tasks.mapNotNull { it.asScoredGradeItem() }
+    val scoredTasks = tasks.filter { it.maxPoints != null }
+    val projection = GradeProjection.calculate(allGradedWork, gradeScale)
+    val summary = GradeSummary.calculate(allGradedWork, gradeScale, manualGrade)
 
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -155,7 +163,7 @@ internal fun CourseAssessmentsTab(
         if (course.gradingType != CourseGradingType.PASS_FAIL) {
             SectionCard {
                 Text("Оцінювані роботи", style = MaterialTheme.typography.titleMedium)
-                if (gradeItems.isEmpty()) {
+                if (gradeItems.isEmpty() && scoredTasks.isEmpty()) {
                     Text(
                         "Поки немає тестів, робіт або екзамену.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -170,6 +178,20 @@ internal fun CourseAssessmentsTab(
                             onEdit = { onEditGrade(item) },
                             onDelete = { onDeleteGrade(item.id) },
                         )
+                    }
+                    if (scoredTasks.isNotEmpty()) {
+                        if (gradeItems.isNotEmpty()) HorizontalDivider()
+                        Text("Завдання з балами", style = MaterialTheme.typography.titleSmall)
+                        scoredTasks.forEach { task ->
+                            val maximum = task.maxPoints ?: return@forEach
+                            Row(Modifier.fillMaxWidth().clickable { onEditTask(task) }.padding(vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                Text("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()}",
+                                    style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
                     }
                 }
                 Row(

@@ -17,6 +17,9 @@ class StudyContentMappingTest {
             dueDate = LocalDate.of(2026, 9, 25),
             completed = false,
             requiredForExam = true,
+            earnedPoints = 4.0,
+            maxPoints = 10.0,
+            minimumPointsForExam = 5.0,
         )
 
         assertEquals(model, model.toEntity().toDomain())
