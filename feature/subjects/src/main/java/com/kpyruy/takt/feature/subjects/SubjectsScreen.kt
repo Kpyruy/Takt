@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,7 +45,6 @@ fun SubjectsScreen(
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
     onCourseClick: (String) -> Unit,
-    onAdd: () -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val current = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
@@ -57,14 +55,13 @@ fun SubjectsScreen(
             (course.title.contains(query, true) || course.code.contains(query, true))
     }
     Column(Modifier.fillMaxSize().background(subjectBackground()).padding(horizontal = 20.dp, vertical = 18.dp)) {
-        ScreenHeader(title = "Предмети", subtitle = "${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні",
-            action = { TaktIconButton(Icons.Default.Add, "Додати", onAdd) })
+        ScreenHeader(title = "Предмети", subtitle = "${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні")
         OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
             placeholder = { Text("Знайти предмет", fontSize = 12.sp, lineHeight = 16.sp) }, leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
             singleLine = true, shape = RoundedCornerShape(11.dp), textStyle = MaterialTheme.typography.bodySmall,
             colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant))
         TaktUnderlineTabs(labels = listOf("Активні · ${current.size}", "Усі", "Закриті"), selectedIndex = filter, onSelected = { filter = it })
-        LazyColumn {
+        LazyColumn(contentPadding = PaddingValues(bottom = 80.dp)) {
             items(visible, key = { it.id }) { course ->
                 SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
             }

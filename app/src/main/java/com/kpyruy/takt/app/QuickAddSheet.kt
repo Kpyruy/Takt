@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +14,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,7 +67,7 @@ fun QuickAddSheet(
     val needsCourse = type == QuickAddType.TASK || type == QuickAddType.NOTE
     val activeCourses = courses.activeCourseChoices()
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    TaktFullSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

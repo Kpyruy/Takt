@@ -9,13 +9,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.foundation.background
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -86,7 +87,6 @@ fun CalendarScreen(
     studyContentRepository: StudyContentRepository,
     studyPlanRepository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
-    onAdd: () -> Unit,
     onOpenCourse: (String) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
@@ -211,7 +211,6 @@ fun CalendarScreen(
         ScreenHeader(
             title = "Календар",
             subtitle = headerSubtitle,
-            action = { TaktIconButton(Icons.Default.Add, "Додати подію", onAdd) },
         )
 
         TaktSegmentedTabs(
@@ -352,6 +351,7 @@ fun CalendarScreen(
                             onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                             onEventLongClick = onEventLongClick,
                         )
+                        Spacer(Modifier.height(80.dp))
                     }
                 }
             }
@@ -386,7 +386,7 @@ private fun SelectedDayAgenda(
             SectionCard {
                 Text("На цей день занять немає")
                 Text(
-                    "Додай пару або разову подію кнопкою + вгорі.",
+                    "Додай пару або разову подію кнопкою + внизу праворуч.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -400,5 +400,6 @@ private fun SelectedDayAgenda(
                 onEventLongClick = onEventLongClick,
             )
         }
+        Spacer(Modifier.height(80.dp))
     }
 }

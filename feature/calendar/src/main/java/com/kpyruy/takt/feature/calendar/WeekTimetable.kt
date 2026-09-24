@@ -93,7 +93,8 @@ fun WeekTimetable(
     Row(
         modifier = Modifier
             .horizontalScroll(horizontal)
-            .verticalScroll(vertical),
+            .verticalScroll(vertical)
+            .padding(bottom = 80.dp),
     ) {
         Column(
             modifier = Modifier.width(48.dp),

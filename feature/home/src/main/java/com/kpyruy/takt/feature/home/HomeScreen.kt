@@ -6,15 +6,15 @@ import androidx.compose.material.icons.outlined.PersonOff
 import com.kpyruy.takt.core.ui.components.lessonInteraction
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.kpyruy.takt.core.data.*
 import com.kpyruy.takt.core.model.*
+import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -58,11 +59,7 @@ fun HomeScreen(
     studyContentRepository: StudyContentRepository,
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
-    onOpenCourses: () -> Unit,
-    onQuickAction: (HomeQuickAction) -> Unit,
-    onOpenCalendar: () -> Unit,
     onOpenCourse: (String) -> Unit,
-    onAdd: () -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -81,13 +78,8 @@ fun HomeScreen(
     }
     val today = clock.toLocalDate()
     var selectedDate by remember(today) { mutableStateOf(today) }
-    var showActions by remember { mutableStateOf(false) }
     val now = clock.toLocalTime()
     val timeWidth = 43.dp * maxOf(1f, LocalDensity.current.fontScale * .9f)
-    val dates = remember(selectedDate) {
-        val monday = selectedDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        (0L..6L).map(monday::plusDays)
-    }
     val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences) {
         settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
             rules, exceptions, oneOffEvents, selectedDate, settings.effectiveParity(selectedDate), absences,
@@ -112,7 +104,7 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(selectedDate.dayOfMonth.toString(), fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold,
+            Text(selectedDate.dayOfMonth.toString(), Modifier.testTag("home-date-number"), fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold,
                 letterSpacing = (-2).sp)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
@@ -122,23 +114,12 @@ fun HomeScreen(
                     " · ${selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())} тиждень",
                     style = MaterialTheme.typography.bodySmall, color = muted)
             }
-            Box {
-                TaktIconButton(Icons.Default.Add, "Додати або налаштувати", onClick = { showActions = true })
-                DropdownMenu(expanded = showActions, onDismissRequest = { showActions = false }) {
-                    listOf(HomeQuickAction.LESSON to "Пара", HomeQuickAction.TASK to "Завдання",
-                        HomeQuickAction.EXAM to "Екзамен", HomeQuickAction.NOTE to "Нотатка").forEach { (action, label) ->
-                        DropdownMenuItem(text = { Text(label) }, onClick = { showActions = false; onQuickAction(action) })
-                    }
-                    DropdownMenuItem(text = { Text("Усі способи додавання") }, onClick = { showActions = false; onAdd() })
-                    HorizontalDivider()
-                    DropdownMenuItem(text = { Text("Календар") }, onClick = { showActions = false; onOpenCalendar() })
-                    DropdownMenuItem(text = { Text("Предмети") }, onClick = { showActions = false; onOpenCourses() })
-                    DropdownMenuItem(text = { Text("Налаштування") }, onClick = { showActions = false; onOpenSettings() })
-                }
-            }
+            TaktIconButton(Icons.Outlined.Settings, "Налаштування", onClick = onOpenSettings)
         }
         Spacer(Modifier.height(24.dp))
-        HomeWeekStrip(dates, selectedDate) { selectedDate = it }
+        key(today) {
+            HomeWeekStrip(selected = selectedDate, onSelect = { selectedDate = it })
+        }
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Твій день", style = MaterialTheme.typography.labelLarge)
@@ -153,21 +134,23 @@ fun HomeScreen(
             val active = event.id == next?.id
             val cancelled = event.status == ScheduleEventStatus.CANCELLED
             val finished = selectedDate < today || (selectedDate == today && event.endTime < now)
+            val subjectColor = taktSubjectColor(event.courseId ?: event.title)
+            val contentAlpha = if ((finished || cancelled) && !event.isAbsent) 0.5f else 1f
             val status = when(event.status) {
                 ScheduleEventStatus.CANCELLED -> "Скасовано"
                 ScheduleEventStatus.MOVED -> "Перенесено"
                 ScheduleEventStatus.ONE_OFF -> "Разова подія"
                 ScheduleEventStatus.NORMAL -> null
             }
-            Row(Modifier.fillMaxWidth().alpha(if ((finished || cancelled) && !event.isAbsent) 0.5f else 1f), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(event.startTime.format(time), Modifier.width(timeWidth),
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(event.startTime.format(time), Modifier.width(timeWidth).alpha(contentAlpha),
                     style = MaterialTheme.typography.bodySmall, color = if (active) accent else muted)
                 Row(Modifier.weight(1f).height(IntrinsicSize.Min)
                     .clip(RoundedCornerShape(topEnd = 13.dp, bottomEnd = 13.dp))
                     .background(if (active) accent.copy(alpha = 0.09f) else Color.Transparent)
                     .lessonInteraction({ event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) }, { onEventLongClick(event) })) {
-                    Box(Modifier.width(2.dp).fillMaxHeight().background(if (active) accent else MaterialTheme.colorScheme.outlineVariant))
-                    Column(Modifier.weight(1f).padding(13.dp)) {
+                    Box(Modifier.width(2.dp).fillMaxHeight().background(subjectColor))
+                    Column(Modifier.weight(1f).padding(13.dp).alpha(contentAlpha)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CourseInlineIcon(event.courseId)
                             Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
@@ -236,19 +219,35 @@ fun HomeScreen(
                 scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
             }
         }
+        Spacer(Modifier.height(76.dp))
     }
 }
 
 @Composable
-private fun HomeWeekStrip(dates: List<LocalDate>, selected: LocalDate, onSelect: (LocalDate) -> Unit) {
+private fun HomeWeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
     val weekday = remember { DateTimeFormatter.ofPattern("EE", Locale("uk")) }
-    BoxWithConstraints(Modifier.fillMaxWidth().testTag("home-week-strip")) {
-        val fontScale = LocalDensity.current.fontScale
-        val width = maxOf(48.dp, if (fontScale > 1.15f) 48.dp * fontScale else (maxWidth - 6.dp) / 7)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-            items(dates, key = { it.toEpochDay() }) { date ->
+    val anchorWeek = remember { selected.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
+    val centerPage = Int.MAX_VALUE / 2
+    val pagerState = rememberPagerState(initialPage = centerPage, pageCount = { Int.MAX_VALUE })
+    var selectedWeekday by remember { mutableIntStateOf(selected.dayOfWeek.value) }
+
+    LaunchedEffect(selected.dayOfWeek) { selectedWeekday = selected.dayOfWeek.value }
+    LaunchedEffect(pagerState.settledPage, selectedWeekday) {
+        val week = anchorWeek.plusWeeks((pagerState.settledPage - centerPage).toLong())
+        val date = week.plusDays((selectedWeekday - 1).toLong())
+        if (date != selected) onSelect(date)
+    }
+
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxWidth().testTag("home-week-strip"),
+    ) { page ->
+        val week = anchorWeek.plusWeeks((page - centerPage).toLong())
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+            repeat(7) { day ->
+                val date = week.plusDays(day.toLong())
                 val active = date == selected
-                Column(Modifier.width(width).clip(RoundedCornerShape(12.dp))
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
                     .background(if (active) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .selectable(active, role = Role.Tab) { onSelect(date) }.padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {

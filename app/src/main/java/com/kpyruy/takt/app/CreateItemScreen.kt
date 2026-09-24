@@ -127,9 +127,10 @@ fun CreateItemScreen(
                 },
             )
 
+            CreateItemType.TEST,
             CreateItemType.EXAM -> AddGradeItemForm(
                 courseId = courseId.orEmpty(),
-                initialType = GradeItemType.EXAM,
+                initialType = if (type == CreateItemType.TEST) GradeItemType.TEST else GradeItemType.EXAM,
                 initialTitle = draft?.title.orEmpty(),
                 showHeading = false,
                 onSave = { item ->

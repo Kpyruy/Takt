@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +30,7 @@ fun AddNoteSheet(
     onDismiss: () -> Unit,
     onSave: (CourseNote) -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    TaktFullSheet(onDismissRequest = onDismiss) {
         AddNoteForm(
             courseId = courseId,
             initialNote = initialNote,

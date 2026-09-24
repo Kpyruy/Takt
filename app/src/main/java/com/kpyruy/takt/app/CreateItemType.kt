@@ -6,6 +6,7 @@ enum class CreateItemType(
 ) {
     CLASS("Пара", false),
     TASK("Завдання", true),
+    TEST("Тест", true),
     EXAM("Екзамен", true),
     NOTE("Нотатка", true),
     EVENT("Подія", false),
