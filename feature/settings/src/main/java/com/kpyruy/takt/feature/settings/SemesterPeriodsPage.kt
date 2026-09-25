@@ -3,7 +3,9 @@ package com.kpyruy.takt.feature.settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AssessmentPhase
@@ -48,13 +52,21 @@ import java.time.temporal.ChronoUnit
 @Composable
 internal fun SemesterPeriodsPage(
     semesters: List<Int>,
+    currentSemester: Int?,
     settings: AppSettings,
     onBack: () -> Unit,
     onSave: (Map<Int, SemesterPeriod>) -> Unit,
 ) {
     BackHandler(onBack = onBack)
     val available = semesters.ifEmpty { listOf(1) }
-    var selectedSemester by remember(available) { mutableIntStateOf(available.first()) }
+    var selectedSemester by remember(available, currentSemester) {
+        mutableIntStateOf(currentSemester?.takeIf { it in available } ?: available.first())
+    }
+    val semesterListState = rememberLazyListState()
+    LaunchedEffect(currentSemester, available) {
+        val index = available.indexOf(currentSemester)
+        if (index >= 0) semesterListState.scrollToItem(index)
+    }
     var drafts by remember(settings.semesterPeriods) { mutableStateOf(settings.semesterPeriods) }
     val draft = drafts[selectedSemester] ?: SemesterPeriod()
     val changed = drafts != settings.semesterPeriods
@@ -83,9 +95,9 @@ internal fun SemesterPeriodsPage(
         ) {
             ScreenHeader(title = "Періоди навчання",
                 navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } })
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            LazyRow(Modifier.fillMaxWidth(), state = semesterListState,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                available.forEach { semester ->
+                items(available) { semester ->
                     val selected = semester == selectedSemester
                     Surface(
                         modifier = Modifier.clickable { selectedSemester = semester },
@@ -93,7 +105,8 @@ internal fun SemesterPeriodsPage(
                         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                     ) {
-                        Text("$semester семестр", Modifier.padding(horizontal = 15.dp, vertical = 11.dp),
+                        Text("$semester семестр" + if (semester == currentSemester) " · зараз" else "",
+                            Modifier.padding(horizontal = 15.dp, vertical = 11.dp),
                             style = MaterialTheme.typography.labelLarge,
                             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                     }
@@ -150,8 +163,9 @@ internal fun SemesterPeriodsPage(
                         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                     ) {
-                        Text(label, Modifier.padding(horizontal = 5.dp, vertical = 13.dp),
+                        Text(label, Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 13.dp),
                             style = MaterialTheme.typography.labelMedium,
+                            textAlign = TextAlign.Center,
                             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                     }
                 }

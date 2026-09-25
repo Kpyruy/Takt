@@ -14,6 +14,11 @@ import org.junit.Test
 
 class StoredSettingsCodecTest {
     @Test
+    fun invalidCurrentSemesterFallsBackToAutomaticSelection() {
+        assertEquals(null, StoredSettingsCodec.decode(null, false, null, currentSemester = "0").currentSemester)
+        assertEquals(null, StoredSettingsCodec.decode(null, false, null, currentSemester = "oops").currentSemester)
+    }
+    @Test
     fun validStoredValues_areDecoded() {
         assertEquals(
             AppSettings(
@@ -57,6 +62,7 @@ class StoredSettingsCodecTest {
             weekLayout = "COMPACT_LIST",
             homeWorkFilter = HomeWorkFilterCodec.encode(HomeWorkFilter(period = HomeWorkPeriod.SEVEN_DAYS)),
             semesterPeriods = SemesterPeriodsCodec.encode(periods),
+            currentSemester = "5",
         )
 
         assertEquals(CardAppearance.TONAL_FILLED, settings.cardAppearance)
@@ -65,5 +71,6 @@ class StoredSettingsCodecTest {
         assertEquals(WeekLayout.COMPACT_LIST, settings.weekLayout)
         assertEquals(HomeWorkPeriod.SEVEN_DAYS, settings.homeWorkFilter.period)
         assertEquals(periods, settings.semesterPeriods)
+        assertEquals(5, settings.currentSemester)
     }
 }

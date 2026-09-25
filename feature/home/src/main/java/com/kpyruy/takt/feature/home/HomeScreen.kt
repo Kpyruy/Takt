@@ -82,7 +82,10 @@ fun HomeScreen(
     var selectedDate by remember(today) { mutableStateOf(today) }
     val now = clock.toLocalTime()
     val timeWidth = 43.dp * maxOf(1f, LocalDensity.current.fontScale * .9f)
-    val courseSemesters = remember(courses) { courses.associate { it.id to it.semester } }
+    val currentSemester = settings.effectiveCurrentSemester(courses)
+    val courseSemesters = remember(courses, currentSemester) {
+        courses.associate { it.id to settings.academicSemester(it, currentSemester) }
+    }
     val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences, courseSemesters) {
         settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
             rules, exceptions, oneOffEvents, selectedDate, settings.effectiveParity(selectedDate), absences,

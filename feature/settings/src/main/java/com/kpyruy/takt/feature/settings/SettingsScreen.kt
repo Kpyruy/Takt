@@ -164,6 +164,7 @@ fun SettingsScreen(
     if (showPeriods) {
         SemesterPeriodsPage(
             semesters = (courses.map { it.semester } + settings.semesterPeriods.keys).distinct().sorted(),
+            currentSemester = settings.effectiveCurrentSemester(courses),
             settings = settings,
             onBack = { showPeriods = false },
             onSave = { periods -> scope.launch { settingsRepository.setSemesterPeriods(periods) } },

@@ -123,7 +123,10 @@ fun CalendarScreen(
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = settings.effectiveParity(selectedDate)
     val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
-    val courseSemesters = remember(courses) { courses.associate { it.id to it.semester } }
+    val currentSemester = settings.effectiveCurrentSemester(courses)
+    val courseSemesters = remember(courses, currentSemester) {
+        courses.associate { it.id to settings.academicSemester(it, currentSemester) }
+    }
 
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("d MMM", Locale("uk")) }
     val monthTitleFormatter = remember { DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk")) }

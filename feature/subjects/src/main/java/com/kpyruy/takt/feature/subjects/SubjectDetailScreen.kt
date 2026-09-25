@@ -77,6 +77,7 @@ fun SubjectDetailScreen(
     initialTab: String = "Огляд",
 ) {
     val course by remember(repository, courseId) { repository.observeCourse(courseId) }.collectAsStateWithLifecycle(initialValue = null)
+    val allCourses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val gradeItems by remember(gradeRepository, courseId) { gradeRepository.observeItems(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val gradeScale by remember(gradeRepository, courseId) { gradeRepository.observeScale(courseId) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
     val manualGrade by remember(gradeRepository, courseId) { gradeRepository.observeManualGrade(courseId) }.collectAsStateWithLifecycle(initialValue = null)
@@ -125,7 +126,7 @@ fun SubjectDetailScreen(
         return
     }
 
-    val assessmentPhase = settings.assessmentPhase(item, today)
+    val assessmentPhase = settings.assessmentPhase(item, today, settings.effectiveCurrentSemester(allCourses))
     val tabs = if (item.gradingType != CourseGradingType.PASS_FAIL) {
         listOf("Огляд", "Бали", "Задачі", "Екзамен", "Нотатки")
     } else {

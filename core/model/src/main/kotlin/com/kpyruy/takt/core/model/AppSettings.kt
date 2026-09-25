@@ -49,7 +49,18 @@ data class AppSettings(
     val weekLayout: WeekLayout = WeekLayout.TIMETABLE,
     val homeWorkFilter: HomeWorkFilter = HomeWorkFilter(),
     val semesterPeriods: Map<Int, SemesterPeriod> = emptyMap(),
+    val currentSemester: Int? = null,
 ) {
+    fun effectiveCurrentSemester(courses: List<Course>): Int? =
+        currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }
+            ?: courses.filter { it.status == CourseStatus.ENROLLED }.maxOfOrNull { it.semester }
+            ?: courses.filter { it.status != CourseStatus.FULFILLED && it.status != CourseStatus.NOT_NEEDED }
+                .minOfOrNull { it.semester }
+            ?: courses.maxOfOrNull { it.semester }
+
+    fun academicSemester(course: Course, current: Int?): Int =
+        if (course.status == CourseStatus.ENROLLED) current ?: course.semester else course.semester
+
     fun effectiveParity(date: LocalDate): WeekParity = when (parityOverride) {
         ParityOverride.AUTO -> WeekParity.fromIsoWeek(
             date.get(WeekFields.ISO.weekOfWeekBasedYear())
@@ -66,8 +77,8 @@ data class AppSettings(
     fun assessmentPhase(semester: Int, date: LocalDate): AssessmentPhase =
         semesterPeriods[semester]?.assessmentPhase(date) ?: AssessmentPhase.STUDY
 
-    fun assessmentPhase(course: Course, date: LocalDate): AssessmentPhase =
-        semesterPeriods[course.semester]?.assessmentPhase(date)
+    fun assessmentPhase(course: Course, date: LocalDate, current: Int? = null): AssessmentPhase =
+        semesterPeriods[academicSemester(course, current)]?.assessmentPhase(date)
             ?: if (course.gradingType == CourseGradingType.EXAM_LETTER) AssessmentPhase.EXAM
             else AssessmentPhase.STUDY
 

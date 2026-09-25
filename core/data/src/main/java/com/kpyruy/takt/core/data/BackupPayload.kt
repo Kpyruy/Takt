@@ -21,7 +21,7 @@ data class BackupPayload(
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 4
+        const val CURRENT_VERSION = 5
     }
 }
 
@@ -173,6 +173,7 @@ data class BackupSettings(
     val weekLayout: String = "TIMETABLE",
     val homeWorkFilter: BackupHomeWorkFilter = BackupHomeWorkFilter(),
     val semesterPeriods: List<BackupSemesterPeriod> = emptyList(),
+    val currentSemester: Int? = null,
 )
 
 @Serializable

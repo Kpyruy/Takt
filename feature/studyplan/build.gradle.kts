@@ -23,4 +23,5 @@ dependencies {
     implementation(libs.compose.material.icons)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
+    testImplementation(libs.junit)
 }

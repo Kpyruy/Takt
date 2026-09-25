@@ -111,7 +111,7 @@ fun TaktApp(
         }
     }
 
-    LaunchedEffect(documentStore) {
+    LaunchedEffect(documentStore, documentStatus) {
         delay(1500)
         if (!documentStore.isConnected) {
             val result = snackbarHostState.showSnackbar(
@@ -287,6 +287,7 @@ fun TaktApp(
             composable(Destination.PLAN.route) {
                 StudyPlanScreen(
                     repository = repository,
+                    settingsRepository = settingsRepository,
                     onCourseClick = ::openCourse,
                 )
             }

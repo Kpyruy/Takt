@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.AppSettingsRepository
+import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.TaktIconButton
@@ -30,13 +34,18 @@ import com.kpyruy.takt.core.ui.components.TaktIconButton
 @Composable
 fun StudyPlanScreen(
     repository: StudyPlanRepository,
+    settingsRepository: AppSettingsRepository,
     onCourseClick: (String) -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val earned = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits } }
     val semesters = remember(courses) { courses.groupBy { it.semester }.toSortedMap() }
+    val currentSemester = settings.effectiveCurrentSemester(courses)
     val largeText = LocalDensity.current.fontScale > 1.2f
-    val completedSemesters = remember(semesters) { semesters.values.count { semesterState(it) == SemesterState.COMPLETED } }
+    val completedSemesters = remember(semesters, currentSemester) {
+        semesters.count { (semester, items) -> semesterState(items, semester == currentSemester) == SemesterState.COMPLETED }
+    }
     var expandedSemesters by rememberSaveable { mutableStateOf(emptySet<Int>()) }
     var filter by rememberSaveable { mutableIntStateOf(0) }
     var editingCourseId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -45,6 +54,7 @@ fun StudyPlanScreen(
     val activeCourses = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
     val completedCourses = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED } }
     var menuExpanded by remember { mutableStateOf(false) }
+    var selectingSemester by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).testTag("progress-screen"),
@@ -95,6 +105,21 @@ fun StudyPlanScreen(
                 drawStopIndicator = {},
                 trackColor = MaterialTheme.colorScheme.outlineVariant,
             )
+            Spacer(Modifier.height(14.dp))
+            Surface(onClick = { selectingSemester = true },
+                modifier = Modifier.fillMaxWidth().testTag("current-semester-selector"),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Icon(Icons.Default.Schedule, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
+                    Text("Поточний семестр · ${currentSemester ?: "—"}", Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.ExpandMore, "Обрати семестр", Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             Spacer(Modifier.height(16.dp))
             TaktUnderlineTabs(listOf("План", "Активні · ${activeCourses.size}", "Здані · ${completedCourses.size}"), filter, { filter = it })
             Text(if (filter == 0) "Розгорни семестр · натисни статус, щоб змінити" else "Предмети з усіх семестрів · натисни статус, щоб змінити",
@@ -113,6 +138,7 @@ fun StudyPlanScreen(
                 SemesterSection(
                     semester = semester,
                     courses = semesterCourses,
+                    isCurrent = semester == currentSemester,
                     expanded = semester in expandedSemesters,
                     onExpandedChange = { expanded -> expandedSemesters = if (expanded) expandedSemesters + semester else expandedSemesters - semester },
                     onCourseClick = onCourseClick,
@@ -136,5 +162,14 @@ fun StudyPlanScreen(
             iconCourseId = null
         }, onDismiss = { iconCourseId = null })
     }
+    if (selectingSemester) CurrentSemesterSheet(
+        semesters = semesters.mapValues { (_, items) -> items.count { it.status == CourseStatus.ENROLLED } },
+        currentSemester = currentSemester,
+        onSelect = { selected -> scope.launch {
+            settingsRepository.setCurrentSemester(selected)
+            selectingSemester = false
+        } },
+        onDismiss = { selectingSemester = false },
+    )
 
 }

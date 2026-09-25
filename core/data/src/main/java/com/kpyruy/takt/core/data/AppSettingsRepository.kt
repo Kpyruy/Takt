@@ -24,4 +24,5 @@ interface AppSettingsRepository {
     suspend fun setWeekLayout(layout: WeekLayout)
     suspend fun setHomeWorkFilter(filter: HomeWorkFilter)
     suspend fun setSemesterPeriods(periods: Map<Int, SemesterPeriod>)
+    suspend fun setCurrentSemester(semester: Int?)
 }

@@ -3,9 +3,11 @@ package com.kpyruy.takt.feature.subjects
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.AttachFile
@@ -24,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.CourseNote
 import kotlinx.coroutines.launch
@@ -42,9 +45,9 @@ fun CourseNoteCard(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(note.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-            Text(note.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (note.content.isNotBlank()) Text(note.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
             note.attachments.forEach { attachment ->
                 Row(modifier = Modifier.fillMaxWidth().clickable {
                     scope.launch {
@@ -57,7 +60,7 @@ fun CourseNoteCard(
                             })
                         }.onFailure { Toast.makeText(context, "Немає застосунку для відкриття файла", Toast.LENGTH_SHORT).show() }
                     }
-                }) {
+                }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Default.AttachFile, contentDescription = null)
                     Text(attachment.name, color = MaterialTheme.colorScheme.primary)
                 }

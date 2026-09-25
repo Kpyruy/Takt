@@ -77,5 +77,6 @@ class RoomBackupRepository(
         settingsRepository.setWeekLayout(settings.weekLayout)
         settingsRepository.setHomeWorkFilter(settings.homeWorkFilter)
         settingsRepository.setSemesterPeriods(settings.semesterPeriods)
+        settingsRepository.setCurrentSemester(settings.currentSemester)
     }
 }

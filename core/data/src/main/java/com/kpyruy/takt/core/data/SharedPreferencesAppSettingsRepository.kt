@@ -88,6 +88,14 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(semesterPeriods = cleaned)
     }
 
+    override suspend fun setCurrentSemester(semester: Int?) {
+        require(semester == null || semester > 0)
+        preferences.edit().apply {
+            if (semester == null) remove(KEY_CURRENT_SEMESTER) else putInt(KEY_CURRENT_SEMESTER, semester)
+        }.apply()
+        state.value = state.value.copy(currentSemester = semester)
+    }
+
     private fun read(): AppSettings = StoredSettingsCodec.decode(
         cancellationStyle = preferences.getString(KEY_CANCELLATION_STYLE, null),
         showHiddenLessons = preferences.getBoolean(KEY_SHOW_HIDDEN, false),
@@ -98,6 +106,7 @@ class SharedPreferencesAppSettingsRepository(
         weekLayout = preferences.getString(KEY_WEEK_LAYOUT, null),
         homeWorkFilter = preferences.getString(KEY_HOME_WORK_FILTER, null),
         semesterPeriods = preferences.getString(KEY_SEMESTER_PERIODS, null),
+        currentSemester = preferences.getInt(KEY_CURRENT_SEMESTER, 0).toString(),
     )
 
     private companion object {
@@ -111,5 +120,6 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_WEEK_LAYOUT = "week_layout"
         const val KEY_HOME_WORK_FILTER = "home_work_filter"
         const val KEY_SEMESTER_PERIODS = "semester_periods"
+        const val KEY_CURRENT_SEMESTER = "current_semester"
     }
 }

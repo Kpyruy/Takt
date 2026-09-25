@@ -194,18 +194,17 @@ class TaktDocumentStore(
             target.delete()
             throw error
         }
-        "takt:///$folderName/${target.name ?: fileName}"
+        TaktMaterialReference.encode(folderName, target.name ?: fileName)
     }
 
     suspend fun resolve(uri: String): Uri? = withContext(Dispatchers.IO) {
         if (!uri.startsWith("takt://")) return@withContext runCatching { Uri.parse(uri) }.getOrNull()
-        val segments = Uri.parse(uri).let { listOfNotNull(it.host) + it.pathSegments }
-        if (segments.size != 2) return@withContext null
-        rootOrNull()?.findFile(segments[0])?.findFile(segments[1])?.uri
+        val path = TaktMaterialReference.decode(uri) ?: return@withContext null
+        rootOrNull()?.findFile(path.folderName)?.findFile(path.fileName)?.uri
     }
 
     fun displayName(uri: String): String =
-        if (uri.startsWith("takt://")) Uri.parse(uri).lastPathSegment.orEmpty().substringAfter('-')
+        if (uri.startsWith("takt://")) TaktMaterialReference.decode(uri)?.fileName.orEmpty().substringAfter('-')
         else Uri.parse(uri).lastPathSegment.orEmpty().substringAfterLast('/')
 
     suspend fun sourceDisplayName(uri: Uri): String = withContext(Dispatchers.IO) { sourceName(uri) }

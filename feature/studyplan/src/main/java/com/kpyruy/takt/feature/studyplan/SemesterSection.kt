@@ -33,9 +33,19 @@ import com.kpyruy.takt.core.model.CourseStatus
 
 internal enum class SemesterState { COMPLETED, ACTIVE, FUTURE }
 
-internal fun semesterState(courses: List<Course>): SemesterState = when {
+internal fun activeCoursesLabel(count: Int): String {
+    val word = when {
+        count % 100 in 11..14 -> "активних предметів"
+        count % 10 == 1 -> "активний предмет"
+        count % 10 in 2..4 -> "активні предмети"
+        else -> "активних предметів"
+    }
+    return "$count $word"
+}
+
+internal fun semesterState(courses: List<Course>, isCurrent: Boolean = false): SemesterState = when {
+    isCurrent -> SemesterState.ACTIVE
     courses.isNotEmpty() && courses.all { it.status == CourseStatus.FULFILLED || it.status == CourseStatus.NOT_NEEDED } && courses.any { it.status == CourseStatus.FULFILLED } -> SemesterState.COMPLETED
-    courses.any { it.status == CourseStatus.ENROLLED } -> SemesterState.ACTIVE
     else -> SemesterState.FUTURE
 }
 
@@ -43,19 +53,24 @@ internal fun semesterState(courses: List<Course>): SemesterState = when {
 fun SemesterSection(
     semester: Int,
     courses: List<Course>,
+    isCurrent: Boolean,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onCourseClick: (String) -> Unit,
     onCourseStatus: (Course) -> Unit,
 ) {
-    val state = semesterState(courses)
+    val state = semesterState(courses, isCurrent)
     val doneCount = courses.count { it.status == CourseStatus.FULFILLED }
     val relevantCount = courses.count { it.status != CourseStatus.NOT_NEEDED }
     val activeCount = courses.count { it.status == CourseStatus.ENROLLED }
     val stateLabel = when (state) {
         SemesterState.COMPLETED -> "закрито"
-        SemesterState.ACTIVE -> "$activeCount активних предметів"
-        SemesterState.FUTURE -> if (courses.any { it.status == CourseStatus.FULFILLED }) "частково виконано" else "заплановано"
+        SemesterState.ACTIVE -> "поточний семестр"
+        SemesterState.FUTURE -> when {
+            activeCount > 0 -> activeCoursesLabel(activeCount)
+            courses.any { it.status == CourseStatus.FULFILLED } -> "частково виконано"
+            else -> "заплановано"
+        }
     }
     val line = MaterialTheme.colorScheme.outlineVariant
     val accent = MaterialTheme.colorScheme.primary

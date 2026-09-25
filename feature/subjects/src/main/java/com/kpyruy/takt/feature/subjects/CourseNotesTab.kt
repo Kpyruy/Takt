@@ -7,7 +7,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -31,25 +30,22 @@ internal fun CourseNotesTab(
         modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SectionCard {
-            Text("Нотатки", style = MaterialTheme.typography.titleMedium)
-            if (notes.isEmpty()) {
-                Text("Поки немає нотаток.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                notes.forEachIndexed { index, note ->
-                    if (index > 0) HorizontalDivider()
-                    CourseNoteCard(
-                        note = note,
-                        documentStore = documentStore,
-                        onEdit = { onEdit(note) },
-                        onDelete = { onDelete(note) },
-                    )
-                }
+        if (notes.isEmpty()) SectionCard {
+            Text("Поки немає нотаток.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        notes.forEach { note ->
+            SectionCard {
+                CourseNoteCard(
+                    note = note,
+                    documentStore = documentStore,
+                    onEdit = { onEdit(note) },
+                    onDelete = { onDelete(note) },
+                )
             }
-            OutlinedButton(onClick = onAddNote, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text("Додати нотатку")
-            }
+        }
+        OutlinedButton(onClick = onAddNote, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Text("Додати нотатку")
         }
     }
 }

@@ -19,6 +19,7 @@ object StoredSettingsCodec {
         weekLayout: String? = null,
         homeWorkFilter: String? = null,
         semesterPeriods: String? = null,
+        currentSemester: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -37,6 +38,7 @@ object StoredSettingsCodec {
                 ?: default.weekLayout,
             homeWorkFilter = HomeWorkFilterCodec.decode(homeWorkFilter),
             semesterPeriods = SemesterPeriodsCodec.decode(semesterPeriods),
+            currentSemester = currentSemester?.toIntOrNull()?.takeIf { it > 0 },
         )
     }
 

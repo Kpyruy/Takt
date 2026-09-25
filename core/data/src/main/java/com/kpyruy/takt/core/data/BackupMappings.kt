@@ -278,6 +278,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     weekLayout = weekLayout.name,
     homeWorkFilter = homeWorkFilter.toBackup(),
     semesterPeriods = semesterPeriods.toBackup(),
+    currentSemester = currentSemester,
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -296,6 +297,7 @@ internal fun BackupSettings.toModel() = AppSettings(
         .getOrDefault(WeekLayout.TIMETABLE),
     homeWorkFilter = homeWorkFilter.toModel(),
     semesterPeriods = semesterPeriods.toModel(),
+    currentSemester = currentSemester?.takeIf { it > 0 },
 )
 
 internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->

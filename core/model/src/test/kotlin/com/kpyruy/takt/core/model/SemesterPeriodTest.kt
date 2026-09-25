@@ -64,4 +64,33 @@ class SemesterPeriodTest {
         assertEquals(AssessmentPhase.STUDY,
             AppSettings(semesterPeriods = mapOf(3 to period)).assessmentPhase(course, today))
     }
+
+    @Test fun oneCurrentSemesterDoesNotChangeWhereActiveCoursesBelong() {
+        val older = Course("older", "OLD", "Retake", 5, 3, CourseStatus.ENROLLED)
+        val current = Course("current", "NOW", "Current", 5, 5, CourseStatus.ENROLLED)
+        val courses = listOf(older, current)
+        assertEquals(5, AppSettings().effectiveCurrentSemester(courses))
+        assertEquals(3, AppSettings(currentSemester = 3).effectiveCurrentSemester(courses))
+        assertEquals(5, AppSettings(currentSemester = 99).effectiveCurrentSemester(courses))
+        assertEquals(3, older.semester)
+    }
+
+    @Test fun activeRetakeUsesCurrentAcademicPeriod() {
+        val retake = Course("retake", "OLD", "Retake", 5, 3, CourseStatus.ENROLLED)
+        val previous = period.copy(studyEnd = LocalDate.of(2027, 2, 28),
+            examStart = LocalDate.of(2026, 9, 1), examEnd = LocalDate.of(2026, 9, 30))
+        val settings = AppSettings(currentSemester = 5, semesterPeriods = mapOf(3 to previous, 5 to period))
+        val day = LocalDate.of(2026, 10, 1)
+
+        assertEquals(5, settings.academicSemester(retake, 5))
+        assertEquals(AssessmentPhase.STUDY, settings.assessmentPhase(retake, day, 5))
+        assertEquals(AssessmentPhase.EXAM, settings.assessmentPhase(retake, day, 3))
+
+        val lesson = ScheduleRule("retake-lesson", retake.id, "Lesson", DayOfWeek.MONDAY,
+            LocalTime.of(9, 0), LocalTime.of(10, 0), ScheduleRecurrence.WEEKLY)
+        val afterCurrentStudy = LocalDate.of(2026, 12, 21)
+        assertFalse(settings.allowsRecurringLesson(lesson,
+            mapOf(retake.id to settings.academicSemester(retake, 5)), afterCurrentStudy))
+        assertTrue(settings.allowsRecurringLesson(lesson, mapOf(retake.id to 3), afterCurrentStudy))
+    }
 }
