@@ -8,6 +8,7 @@ import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.model.HomeWorkFilter
+import com.kpyruy.takt.core.model.SemesterPeriod
 import kotlinx.coroutines.flow.Flow
 
 interface AppSettingsRepository {
@@ -22,4 +23,5 @@ interface AppSettingsRepository {
     suspend fun setAppearance(themeMode: AppThemeMode, themeFamily: ThemeFamily, cardAppearance: CardAppearance)
     suspend fun setWeekLayout(layout: WeekLayout)
     suspend fun setHomeWorkFilter(filter: HomeWorkFilter)
+    suspend fun setSemesterPeriods(periods: Map<Int, SemesterPeriod>)
 }

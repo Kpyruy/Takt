@@ -295,6 +295,7 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     backupRepository = backupRepository,
                     documentStore = documentStore,
+                    studyPlanRepository = repository,
                     onBack = { navController.popBackStack() },
                 )
             }

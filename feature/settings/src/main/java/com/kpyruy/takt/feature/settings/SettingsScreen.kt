@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.Button
@@ -40,6 +41,7 @@ import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
 import com.kpyruy.takt.core.data.DocumentSyncStatus
 import com.kpyruy.takt.core.data.TaktDocumentStore
+import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -53,6 +55,7 @@ fun SettingsScreen(
     settingsRepository: AppSettingsRepository,
     backupRepository: BackupRepository,
     documentStore: TaktDocumentStore,
+    studyPlanRepository: StudyPlanRepository,
     onBack: () -> Unit,
 ) {
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
@@ -62,6 +65,9 @@ fun SettingsScreen(
     var showAppearance by remember { mutableStateOf(false) }
     var showCalendar by remember { mutableStateOf(false) }
     var showTasks by remember { mutableStateOf(false) }
+    var showPeriods by remember { mutableStateOf(false) }
+    val courses by remember(studyPlanRepository) { studyPlanRepository.observeCourses() }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
     val unmigratedMaterials by documentStore.unmigratedMaterials.collectAsStateWithLifecycle()
 
@@ -155,6 +161,15 @@ fun SettingsScreen(
         )
         return
     }
+    if (showPeriods) {
+        SemesterPeriodsPage(
+            semesters = (courses.map { it.semester } + settings.semesterPeriods.keys).distinct().sorted(),
+            settings = settings,
+            onBack = { showPeriods = false },
+            onSave = { periods -> scope.launch { settingsRepository.setSemesterPeriods(periods) } },
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -182,6 +197,11 @@ fun SettingsScreen(
             title = "Календар і розклад",
             icon = Icons.Outlined.CalendarMonth,
             onClick = { showCalendar = true },
+        )
+        SettingsNavigationTile(
+            title = "Періоди навчання",
+            icon = Icons.Outlined.DateRange,
+            onClick = { showPeriods = true },
         )
 
         SettingsNavigationTile(

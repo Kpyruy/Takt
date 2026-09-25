@@ -1,6 +1,9 @@
 package com.kpyruy.takt.feature.subjects
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -44,6 +47,7 @@ import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseNote
@@ -55,6 +59,8 @@ import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.TaktUnderlineTabs
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
+import java.time.LocalDate
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -78,6 +84,13 @@ fun SubjectDetailScreen(
     val notes by remember(studyContentRepository, courseId) { studyContentRepository.observeNotes(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val examInfo by remember(examRepository, courseId) { examRepository.observeExamInfo(courseId) }.collectAsStateWithLifecycle(initialValue = null)
     val examMaterials by remember(examRepository, courseId) { examRepository.observeMaterials(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val today by androidx.compose.runtime.produceState(LocalDate.now(), lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) { value = LocalDate.now(); delay(60_000L) }
+        }
+    }
     val eligibility = remember(tasks, gradeItems) {
         ExamEligibilityCalculator.calculate(tasks, gradeItems)
     }
@@ -112,7 +125,8 @@ fun SubjectDetailScreen(
         return
     }
 
-    val tabs = if (item.gradingType == CourseGradingType.EXAM_LETTER) {
+    val assessmentPhase = settings.assessmentPhase(item, today)
+    val tabs = if (item.gradingType != CourseGradingType.PASS_FAIL) {
         listOf("Огляд", "Бали", "Задачі", "Екзамен", "Нотатки")
     } else {
         listOf("Огляд", "Бали", "Задачі", "Нотатки")
@@ -155,6 +169,7 @@ fun SubjectDetailScreen(
             when (tab) {
                 "Огляд" -> CourseOverviewTab(
                     course = item,
+                    phase = assessmentPhase,
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
                     tasks = tasks,
@@ -167,6 +182,7 @@ fun SubjectDetailScreen(
                 )
                 "Бали" -> CourseAssessmentsTab(
                     course = item,
+                    phase = assessmentPhase,
                     gradeItems = gradeItems,
                     tasks = tasks,
                     gradeScale = gradeScale,

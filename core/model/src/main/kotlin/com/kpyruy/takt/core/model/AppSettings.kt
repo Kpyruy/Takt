@@ -48,6 +48,7 @@ data class AppSettings(
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val weekLayout: WeekLayout = WeekLayout.TIMETABLE,
     val homeWorkFilter: HomeWorkFilter = HomeWorkFilter(),
+    val semesterPeriods: Map<Int, SemesterPeriod> = emptyMap(),
 ) {
     fun effectiveParity(date: LocalDate): WeekParity = when (parityOverride) {
         ParityOverride.AUTO -> WeekParity.fromIsoWeek(
@@ -56,6 +57,19 @@ data class AppSettings(
         ParityOverride.EVEN -> WeekParity.EVEN
         ParityOverride.ODD -> WeekParity.ODD
     }
+
+    fun allowsRecurringLesson(rule: ScheduleRule, courseSemesters: Map<String, Int>, date: LocalDate): Boolean {
+        val semester = rule.courseId?.let(courseSemesters::get) ?: return true
+        return semesterPeriods[semester]?.allowsRecurringLesson(date) ?: true
+    }
+
+    fun assessmentPhase(semester: Int, date: LocalDate): AssessmentPhase =
+        semesterPeriods[semester]?.assessmentPhase(date) ?: AssessmentPhase.STUDY
+
+    fun assessmentPhase(course: Course, date: LocalDate): AssessmentPhase =
+        semesterPeriods[course.semester]?.assessmentPhase(date)
+            ?: if (course.gradingType == CourseGradingType.EXAM_LETTER) AssessmentPhase.EXAM
+            else AssessmentPhase.STUDY
 
     fun filterScheduleEvents(events: List<ResolvedScheduleEvent>): List<ResolvedScheduleEvent> {
         if (cancellationStyle != CancellationDisplayStyle.HIDDEN || showHiddenLessons) {

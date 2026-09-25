@@ -44,8 +44,10 @@ class SchedulePolishTest {
         compose.onNodeWithContentDescription("Налаштування предмета").assertExists().performClick()
         compose.onNodeWithText("ОЦІНЮВАННЯ").assertIsDisplayed()
         capture("settings")
+        compose.onNodeWithContentDescription("Змінити статус").performClick()
         compose.onNodeWithTag("settings-status-PLANNED").performClick()
         compose.waitUntil(5_000) { runBlocking { data.studyPlanRepository.observeCourse("FYZI_6B").first()?.status == CourseStatus.PLANNED } }
+        compose.onNodeWithContentDescription("Змінити статус").performClick()
         compose.onNodeWithTag("settings-status-ENROLLED").performClick()
         compose.onNodeWithText("Іконка предмета").performClick()
         // Swiping at both boundaries must never drag/dismiss the icon dialog.

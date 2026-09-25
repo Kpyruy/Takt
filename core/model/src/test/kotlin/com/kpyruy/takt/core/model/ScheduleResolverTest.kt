@@ -21,6 +21,23 @@ class ScheduleResolverTest {
     )
 
     @Test
+    fun semesterBoundaryStopsRecurringButKeepsExplicitMoveFromStudyPeriod() {
+        val afterStudy = date.plusDays(8)
+        val moved = ScheduleException("move-after-study", physics.id, date,
+            ScheduleExceptionType.MOVED, replacementDate = afterStudy)
+        val allowed: (ScheduleRule, LocalDate) -> Boolean = { _, occurrence -> occurrence <= date }
+
+        val result = ScheduleResolver.eventsForDate(listOf(physics), listOf(moved), emptyList(),
+            afterStudy, ruleAllowed = allowed)
+
+        assertEquals(1, result.size)
+        assertEquals(ScheduleEventStatus.MOVED, result.single().status)
+        assertEquals(date, result.single().sourceDate)
+        assertEquals(emptyList<ResolvedScheduleEvent>(), ScheduleResolver.eventsForDate(
+            listOf(physics), emptyList(), emptyList(), afterStudy, ruleAllowed = allowed))
+    }
+
+    @Test
     fun cancellation_keepsOccurrenceButMarksItCancelled() {
         val result = ScheduleResolver.eventsForDate(
             rules = listOf(physics),

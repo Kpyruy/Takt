@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.model.AssessmentPhase
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
@@ -40,6 +41,7 @@ import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.model.asScoredGradeItem
+import com.kpyruy.takt.core.model.forPhase
 import com.kpyruy.takt.core.ui.components.CompactSummaryItem
 import com.kpyruy.takt.core.ui.components.CompactSummaryStrip
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -47,6 +49,7 @@ import com.kpyruy.takt.core.ui.components.SectionCard
 @Composable
 internal fun CourseAssessmentsTab(
     course: Course,
+    phase: AssessmentPhase,
     gradeItems: List<GradeItem>,
     tasks: List<StudyTask>,
     gradeScale: GradeScale,
@@ -64,12 +67,17 @@ internal fun CourseAssessmentsTab(
     val scoredTasks = tasks.filter { it.maxPoints != null }
     val projection = GradeProjection.calculate(allGradedWork, gradeScale)
     val summary = GradeSummary.calculate(allGradedWork, gradeScale, manualGrade)
+    val displayType = course.gradingType.forPhase(phase)
 
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        when (course.gradingType) {
+        if (displayType != CourseGradingType.PASS_FAIL) {
+            Text(if (phase == AssessmentPhase.EXAM) "ЕКЗАМЕНАЦІЙНЕ ОЦІНЮВАННЯ" else "ОЦІНЮВАННЯ ПІД ЧАС НАВЧАННЯ",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        }
+        when (displayType) {
             CourseGradingType.EXAM_LETTER -> {
                 CompactSummaryStrip(
                     items = listOf(
@@ -209,7 +217,7 @@ internal fun CourseAssessmentsTab(
             }
         }
 
-        if (course.gradingType == CourseGradingType.CONTINUOUS_LETTER) {
+        if (displayType == CourseGradingType.CONTINUOUS_LETTER) {
             ManualGradeSection(manualGrade = manualGrade, onManualGradeChange = onManualGradeChange)
         }
     }

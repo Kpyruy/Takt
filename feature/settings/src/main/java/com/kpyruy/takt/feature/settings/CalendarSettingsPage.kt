@@ -1,6 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +55,7 @@ internal fun CalendarSettingsPage(
     onWeekLayout: (WeekLayout) -> Unit,
 ) {
     BackHandler(onBack = onBack)
+    var parityExpanded by remember { mutableStateOf(false) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -101,7 +109,9 @@ internal fun CalendarSettingsPage(
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     CancellationDisplayStyle.MARKED -> Text("09:00  Теорія права  ·  Скасовано",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CancellationDisplayStyle.HIDDEN -> Unit
+                    CancellationDisplayStyle.HIDDEN -> Text("Скасовані пари зникнуть із розкладу",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -114,17 +124,37 @@ internal fun CalendarSettingsPage(
             }
         }
         SettingsSectionTitle("Парність тижня")
-        listOf(
+        val parityOptions = listOf(
             ParityOverride.AUTO to "Автоматично",
             ParityOverride.EVEN to "Завжди парний",
             ParityOverride.ODD to "Завжди непарний",
-        ).forEach { (parity, label) ->
-            CalendarChoiceCard(
-                title = label,
-                selected = settings.parityOverride == parity,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { onParityOverride(parity) },
-            ) {}
+        )
+        val selectedParityLabel = parityOptions.first { it.first == settings.parityOverride }.second
+        Surface(
+            modifier = Modifier.fillMaxWidth().clickable { parityExpanded = !parityExpanded },
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        ) {
+            Row(Modifier.heightIn(min = 58.dp).padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(selectedParityLabel, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold)
+                Icon(if (parityExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = if (parityExpanded) "Згорнути вибір" else "Змінити парність")
+            }
+        }
+        AnimatedVisibility(visible = parityExpanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                parityOptions.filter { it.first != settings.parityOverride }.forEach { (parity, label) ->
+                    CalendarChoiceCard(
+                        title = label,
+                        selected = false,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onParityOverride(parity); parityExpanded = false },
+                    ) {}
+                }
+            }
         }
     }
 }

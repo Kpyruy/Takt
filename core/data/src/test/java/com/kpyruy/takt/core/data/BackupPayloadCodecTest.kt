@@ -147,6 +147,7 @@ class BackupPayloadCodecTest {
                 themeMode = "DARK",
                 weekLayout = "COMPACT_LIST",
                 homeWorkFilter = BackupHomeWorkFilter(period = "SEVEN_DAYS"),
+                semesterPeriods = listOf(BackupSemesterPeriod(3, "2026-09-01", "2026-12-18", "2027-01-11", "2027-02-05")),
             ),
         )
 
@@ -218,6 +219,7 @@ class BackupPayloadCodecTest {
         assertEquals("BLUE", restored.settings.themeFamily)
         assertEquals("SYSTEM", restored.settings.themeMode)
         assertEquals("TIMETABLE", restored.settings.weekLayout)
+        assertEquals(emptyList<BackupSemesterPeriod>(), restored.settings.semesterPeriods)
     }
 
     @Test(expected = IllegalArgumentException::class)

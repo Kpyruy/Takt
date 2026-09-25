@@ -43,6 +43,10 @@ class StoredSettingsCodecTest {
 
     @Test
     fun decodeRestoresVisualPreferences() {
+        val periods = mapOf(3 to com.kpyruy.takt.core.model.SemesterPeriod(
+            studyStart = java.time.LocalDate.of(2026, 9, 1),
+            studyEnd = java.time.LocalDate.of(2026, 12, 18),
+        ))
         val settings = StoredSettingsCodec.decode(
             cancellationStyle = "MARKED",
             showHiddenLessons = true,
@@ -52,6 +56,7 @@ class StoredSettingsCodecTest {
             themeMode = "DARK",
             weekLayout = "COMPACT_LIST",
             homeWorkFilter = HomeWorkFilterCodec.encode(HomeWorkFilter(period = HomeWorkPeriod.SEVEN_DAYS)),
+            semesterPeriods = SemesterPeriodsCodec.encode(periods),
         )
 
         assertEquals(CardAppearance.TONAL_FILLED, settings.cardAppearance)
@@ -59,5 +64,6 @@ class StoredSettingsCodecTest {
         assertEquals(AppThemeMode.DARK, settings.themeMode)
         assertEquals(WeekLayout.COMPACT_LIST, settings.weekLayout)
         assertEquals(HomeWorkPeriod.SEVEN_DAYS, settings.homeWorkFilter.period)
+        assertEquals(periods, settings.semesterPeriods)
     }
 }

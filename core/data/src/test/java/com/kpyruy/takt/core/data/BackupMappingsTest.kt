@@ -9,7 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class BackupMappingsTest {
-    @Test fun homeWorkFilterSurvivesBackupMapping() {
+    @Test fun homeWorkFilterAndSemesterPeriodsSurviveBackupMapping() {
         val settings = com.kpyruy.takt.core.model.AppSettings(
             homeWorkFilter = com.kpyruy.takt.core.model.HomeWorkFilter(
                 period = com.kpyruy.takt.core.model.HomeWorkPeriod.SEVEN_DAYS,
@@ -17,6 +17,13 @@ class BackupMappingsTest {
                 types = setOf(com.kpyruy.takt.core.model.GradeItemType.TEST, null),
                 fromDate = java.time.LocalDate.of(2026, 10, 1),
             ),
+            semesterPeriods = mapOf(5 to com.kpyruy.takt.core.model.SemesterPeriod(
+                studyStart = java.time.LocalDate.of(2026, 9, 1),
+                studyEnd = java.time.LocalDate.of(2026, 12, 18),
+                examStart = java.time.LocalDate.of(2027, 1, 11),
+                examEnd = java.time.LocalDate.of(2027, 2, 5),
+                assessmentMode = com.kpyruy.takt.core.model.AssessmentPhaseMode.EXAM,
+            )),
         )
         assertEquals(settings, settings.toBackup().toModel())
     }

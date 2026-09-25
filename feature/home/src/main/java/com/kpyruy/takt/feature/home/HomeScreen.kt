@@ -82,9 +82,13 @@ fun HomeScreen(
     var selectedDate by remember(today) { mutableStateOf(today) }
     val now = clock.toLocalTime()
     val timeWidth = 43.dp * maxOf(1f, LocalDensity.current.fontScale * .9f)
-    val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences) {
+    val courseSemesters = remember(courses) { courses.associate { it.id to it.semester } }
+    val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences, courseSemesters) {
         settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
             rules, exceptions, oneOffEvents, selectedDate, settings.effectiveParity(selectedDate), absences,
+            ruleAllowed = { rule, occurrenceDate ->
+                settings.allowsRecurringLesson(rule, courseSemesters, occurrenceDate)
+            },
         )).sortedBy { it.startTime }
     }
     val next = if (selectedDate == today) ScheduleTimeline.nextEvent(

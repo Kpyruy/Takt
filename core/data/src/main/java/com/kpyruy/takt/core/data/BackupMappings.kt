@@ -20,6 +20,8 @@ import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.model.HomeWorkPeriod
 import com.kpyruy.takt.core.model.HomeWorkFilter
+import com.kpyruy.takt.core.model.SemesterPeriod
+import com.kpyruy.takt.core.model.AssessmentPhaseMode
 import com.kpyruy.takt.core.model.GradeItemType
 import java.time.LocalDate
 
@@ -275,6 +277,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     themeMode = themeMode.name,
     weekLayout = weekLayout.name,
     homeWorkFilter = homeWorkFilter.toBackup(),
+    semesterPeriods = semesterPeriods.toBackup(),
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -292,7 +295,27 @@ internal fun BackupSettings.toModel() = AppSettings(
     weekLayout = runCatching { WeekLayout.valueOf(weekLayout) }
         .getOrDefault(WeekLayout.TIMETABLE),
     homeWorkFilter = homeWorkFilter.toModel(),
+    semesterPeriods = semesterPeriods.toModel(),
 )
+
+internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->
+    BackupSemesterPeriod(semester, period.studyStart?.toString(), period.studyEnd?.toString(),
+        period.examStart?.toString(), period.examEnd?.toString(), period.assessmentMode.name)
+}
+
+internal fun List<BackupSemesterPeriod>.toModel(): Map<Int, SemesterPeriod> = mapNotNull { saved ->
+    runCatching {
+        val period = SemesterPeriod(
+            studyStart = saved.studyStart?.let(LocalDate::parse),
+            studyEnd = saved.studyEnd?.let(LocalDate::parse),
+            examStart = saved.examStart?.let(LocalDate::parse),
+            examEnd = saved.examEnd?.let(LocalDate::parse),
+            assessmentMode = runCatching { AssessmentPhaseMode.valueOf(saved.assessmentMode) }
+                .getOrDefault(AssessmentPhaseMode.AUTO),
+        )
+        (saved.semester to period).takeIf { saved.semester > 0 && period.hasValidDates() }
+    }.getOrNull()
+}.toMap()
 
 internal fun HomeWorkFilter.toBackup() = BackupHomeWorkFilter(
     period = period.name,

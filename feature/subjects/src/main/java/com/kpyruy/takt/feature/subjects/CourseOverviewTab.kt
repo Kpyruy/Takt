@@ -23,11 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.model.AssessmentPhase
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseRequirementType
-import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
+import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
@@ -41,6 +42,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 internal fun CourseOverviewTab(
     course: Course,
+    phase: AssessmentPhase,
     gradeItems: List<GradeItem>,
     gradeScale: GradeScale,
     tasks: List<StudyTask>,
@@ -55,8 +57,10 @@ internal fun CourseOverviewTab(
     val projection = GradeProjection.calculate(allGradedWork, gradeScale)
     val requiredTasks = tasks.filter { it.requiredForExam }.sortedBy { it.completed }
     val requiredGrades = gradeItems.filter { it.requiredForExam }.sortedBy { it.completed }
+    val hasExam = course.gradingType != CourseGradingType.PASS_FAIL &&
+        (phase == AssessmentPhase.EXAM || gradeItems.any { it.type == GradeItemType.EXAM })
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        if (course.gradingType == CourseGradingType.EXAM_LETTER) AdmissionProgressCard(eligibility)
+        if (hasExam) AdmissionProgressCard(eligibility)
         if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection)
         else SubjectPanel {
             Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
@@ -87,7 +91,7 @@ internal fun CourseOverviewTab(
         }
         Text("Під рукою", style = MaterialTheme.typography.titleMedium)
         ResourceRow("Формули й конспекти", "Нотатки та матеріали предмета", onNotes)
-        if (course.gradingType == CourseGradingType.EXAM_LETTER) ResourceRow("Підготовка до екзамену", "Дата, цільова оцінка й матеріали", onExam)
+        if (hasExam) ResourceRow("Підготовка до екзамену", "Дата, цільова оцінка й матеріали", onExam)
         course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; ResourceRow("Програма предмета", course.code) { runCatching { uriHandler.openUri(url) } } }
         Spacer(Modifier.height(12.dp))
     }
@@ -100,18 +104,4 @@ internal fun CourseOverviewTab(
         Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
     }
     HorizontalDivider()
-}
-
-internal fun CourseStatus.label(): String = when (this) {
-    CourseStatus.FULFILLED -> "Закрито"
-    CourseStatus.ENROLLED -> "Активний"
-    CourseStatus.PLANNED -> "План"
-    CourseStatus.NOT_ENROLLED -> "Не записаний"
-    CourseStatus.NOT_NEEDED -> "Не потрібно"
-}
-
-internal fun CourseGradingType.label(): String = when (this) {
-    CourseGradingType.EXAM_LETTER -> "Екзамен A–FX"
-    CourseGradingType.CONTINUOUS_LETTER -> "Поточне A–FX"
-    CourseGradingType.PASS_FAIL -> "Зараховано / ні"
 }

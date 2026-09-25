@@ -126,9 +126,10 @@ object ScheduleResolver {
         date: LocalDate,
         parityOverride: WeekParity? = null,
         absences: List<LessonAbsence> = emptyList(),
+        ruleAllowed: (ScheduleRule, LocalDate) -> Boolean = { _, _ -> true },
     ): List<ResolvedScheduleEvent> {
         val recurring = rules
-            .filter { it.occursOn(date, parityOverride) }
+            .filter { it.occursOn(date, parityOverride) && ruleAllowed(it, date) }
             .mapNotNull { rule ->
                 val exception = exceptions.firstOrNull {
                     it.ruleId == rule.id && it.date == date
@@ -178,6 +179,7 @@ object ScheduleResolver {
             }
             .mapNotNull { exception ->
                 val rule = rules.firstOrNull { it.id == exception.ruleId } ?: return@mapNotNull null
+                if (!ruleAllowed(rule, exception.date)) return@mapNotNull null
                 ResolvedScheduleEvent(
                     id = rule.id,
                     courseId = rule.courseId,

@@ -9,6 +9,7 @@ import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.model.HomeWorkFilter
+import com.kpyruy.takt.core.model.SemesterPeriod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -80,6 +81,13 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(homeWorkFilter = filter)
     }
 
+    override suspend fun setSemesterPeriods(periods: Map<Int, SemesterPeriod>) {
+        require(periods.all { (semester, period) -> semester > 0 && period.hasValidDates() })
+        val cleaned = periods.filterValues { !it.isEmpty }
+        preferences.edit().putString(KEY_SEMESTER_PERIODS, SemesterPeriodsCodec.encode(cleaned)).apply()
+        state.value = state.value.copy(semesterPeriods = cleaned)
+    }
+
     private fun read(): AppSettings = StoredSettingsCodec.decode(
         cancellationStyle = preferences.getString(KEY_CANCELLATION_STYLE, null),
         showHiddenLessons = preferences.getBoolean(KEY_SHOW_HIDDEN, false),
@@ -89,6 +97,7 @@ class SharedPreferencesAppSettingsRepository(
         themeMode = preferences.getString(KEY_THEME_MODE, null),
         weekLayout = preferences.getString(KEY_WEEK_LAYOUT, null),
         homeWorkFilter = preferences.getString(KEY_HOME_WORK_FILTER, null),
+        semesterPeriods = preferences.getString(KEY_SEMESTER_PERIODS, null),
     )
 
     private companion object {
@@ -101,5 +110,6 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_WEEK_LAYOUT = "week_layout"
         const val KEY_HOME_WORK_FILTER = "home_work_filter"
+        const val KEY_SEMESTER_PERIODS = "semester_periods"
     }
 }

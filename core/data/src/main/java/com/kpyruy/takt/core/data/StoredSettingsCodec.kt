@@ -18,6 +18,7 @@ object StoredSettingsCodec {
         themeMode: String? = null,
         weekLayout: String? = null,
         homeWorkFilter: String? = null,
+        semesterPeriods: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -35,6 +36,7 @@ object StoredSettingsCodec {
             weekLayout = enumValueOrNull<WeekLayout>(weekLayout)
                 ?: default.weekLayout,
             homeWorkFilter = HomeWorkFilterCodec.decode(homeWorkFilter),
+            semesterPeriods = SemesterPeriodsCodec.decode(semesterPeriods),
         )
     }
 

@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.HomeWorkFilter
 import com.kpyruy.takt.core.model.HomeWorkPeriod
 import com.kpyruy.takt.core.ui.components.ScreenHeader
-import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 
 @Composable
@@ -49,23 +51,30 @@ internal fun TaskSettingsPage(
             navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } },
         )
         SettingsSectionTitle("Показувати задачі за")
-        listOf(
+        val periods = listOf(
             HomeWorkPeriod.SEVEN_DAYS to "7 днів",
             HomeWorkPeriod.FOURTEEN_DAYS to "14 днів",
             HomeWorkPeriod.ALL to "Усі дати",
             HomeWorkPeriod.CUSTOM to "Свій період",
-        ).forEach { (period, label) ->
-            val selected = filter.period == period
-            Surface(
-                modifier = Modifier.fillMaxWidth().clickable { onChange(filter.copy(period = period)) },
-                shape = MaterialTheme.shapes.medium,
-                color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
-            ) {
-                Row(Modifier.heightIn(min = 52.dp).padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                    if (selected) Icon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary)
+        )
+        periods.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                pair.forEach { (period, label) ->
+                    val selected = filter.period == period
+                    Surface(
+                        modifier = Modifier.weight(1f).clickable { onChange(filter.copy(period = period)) },
+                        shape = MaterialTheme.shapes.medium,
+                        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                    ) {
+                        Row(Modifier.heightIn(min = 72.dp).padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Text(label, Modifier.weight(1f), fontWeight = FontWeight.SemiBold,
+                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                            if (selected) Icon(Icons.Outlined.Check, null,
+                                tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
+                    }
                 }
             }
         }
@@ -74,13 +83,11 @@ internal fun TaskSettingsPage(
             TaktDatePickerField("До", filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
         }
         SettingsSectionTitle("Що включати")
-        SectionCard {
-            TaskSwitchRow("Без дати", filter.includeUndated) {
-                onChange(filter.copy(includeUndated = it))
-            }
-            TaskSwitchRow("Виконані", filter.includeCompleted) {
-                onChange(filter.copy(includeCompleted = it))
-            }
+        TaskToggleCard("Без дати", Icons.Outlined.EventNote, filter.includeUndated) {
+            onChange(filter.copy(includeUndated = it))
+        }
+        TaskToggleCard("Виконані", Icons.Outlined.TaskAlt, filter.includeCompleted) {
+            onChange(filter.copy(includeCompleted = it))
         }
         if (filter != HomeWorkFilter()) {
             OutlinedButton(onClick = { onChange(HomeWorkFilter()) }, modifier = Modifier.fillMaxWidth()) {
@@ -91,10 +98,25 @@ internal fun TaskSettingsPage(
 }
 
 @Composable
-private fun TaskSwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 60.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(title, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-        Switch(checked = checked, onCheckedChange = onChange)
+private fun TaskToggleCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable { onChange(!checked) },
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(Modifier.heightIn(min = 68.dp).padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
+                Icon(icon, null, Modifier.padding(9.dp).size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Switch(checked = checked, onCheckedChange = onChange)
+        }
     }
 }

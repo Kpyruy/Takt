@@ -123,6 +123,7 @@ fun CalendarScreen(
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = settings.effectiveParity(selectedDate)
     val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
+    val courseSemesters = remember(courses) { courses.associate { it.id to it.semester } }
 
     val shortDateFormatter = remember { DateTimeFormatter.ofPattern("d MMM", Locale("uk")) }
     val monthTitleFormatter = remember { DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk")) }
@@ -149,8 +150,11 @@ fun CalendarScreen(
             date = date,
             parityOverride = settings.effectiveParity(date),
             absences = absences,
+            ruleAllowed = { rule, occurrenceDate ->
+                settings.allowsRecurringLesson(rule, courseSemesters, occurrenceDate)
+            },
         ))
-    val eventsByDate = remember(visibleDates, rules, exceptions, oneOffEvents, absences, settings) {
+    val eventsByDate = remember(visibleDates, rules, exceptions, oneOffEvents, absences, settings, courseSemesters) {
         visibleDates.associateWith(::resolveEvents)
     }
     val pendingTasksByDate = remember(tasks) {
