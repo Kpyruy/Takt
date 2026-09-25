@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
@@ -76,6 +77,7 @@ fun WeekCompactList(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
+                                    .alpha(if (event.isAbsent) 0.6f else 1f)
                                     .lessonInteraction({ onEventClick(event) }, { onEventLongClick(event) })
                                     .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,

@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () -> Unit) {
@@ -51,12 +53,24 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            Text(
-                if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
-                    else "до ${item.maxPoints.pointText()} б.",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
+                        else "до ${item.maxPoints.pointText()} б.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                item.dueDate?.let { date ->
+                    val today = LocalDate.now()
+                    Text(when (date) {
+                        today -> "Сьогодні"
+                        today.plusDays(1) -> "Завтра"
+                        else -> date.format(DateTimeFormatter.ofPattern("dd.MM"))
+                    }, style = MaterialTheme.typography.labelSmall,
+                        color = if (date <= today) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
     }
 }

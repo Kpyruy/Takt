@@ -88,17 +88,15 @@ fun HomeScreen(
         )).sortedBy { it.startTime }
     }
     val next = if (selectedDate == today) ScheduleTimeline.nextEvent(
-        events.filter { it.status != ScheduleEventStatus.CANCELLED }, now,
+        events.filter { it.status != ScheduleEventStatus.CANCELLED && !it.isAbsent }, now,
     ) else null
     val deadlines = remember(tasks, selectedDate) {
         tasks.filter { it.dueDate == selectedDate && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
     }
     val assessmentDeadlines = remember(assessments, selectedDate) { assessments.filter { it.dueDate == selectedDate } }
-    val untimed = remember(tasks) {
-        tasks.filter { it.dueDate == null && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
+    val classDays = remember(today, rules, exceptions, oneOffEvents, settings) {
+        HomeWorkPlanner.nextClassDays(today, rules, exceptions, oneOffEvents, settings)
     }
-    val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
-    val courseCodes = remember(courses) { courses.associate { it.id to it.code } }
     val uk = remember { Locale("uk") }
     val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val weekday = remember(uk) { DateTimeFormatter.ofPattern("EEEE", uk) }
@@ -133,16 +131,16 @@ fun HomeScreen(
             Text("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.completed }}", style = MaterialTheme.typography.bodySmall, color = muted)
         }
         Spacer(Modifier.height(23.dp))
-        if (events.isEmpty() && deadlines.isEmpty() && assessmentDeadlines.isEmpty()) {
-            Text("На цей день подій немає", style = MaterialTheme.typography.bodyMedium, color = muted)
+        if (events.isEmpty()) {
+            Text("Пар на цей день немає", style = MaterialTheme.typography.bodyMedium, color = muted)
             Spacer(Modifier.height(20.dp))
         }
         events.forEachIndexed { index, event ->
-            val active = event.id == next?.id
+            val visual = HomeLessonVisual.forEvent(event, selectedDate, today, now, next?.id)
+            val active = visual.active
             val cancelled = event.status == ScheduleEventStatus.CANCELLED
-            val finished = selectedDate < today || (selectedDate == today && event.endTime < now)
             val subjectColor = taktSubjectColor(event.courseId ?: event.title)
-            val contentAlpha = if (finished || cancelled) 0.5f else 1f
+            val contentAlpha = if (visual.muted) 0.5f else 1f
             val status = when(event.status) {
                 ScheduleEventStatus.CANCELLED -> "Скасовано"
                 ScheduleEventStatus.MOVED -> "Перенесено"
@@ -152,7 +150,7 @@ fun HomeScreen(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(event.startTime.format(time), Modifier.width(timeWidth).alpha(contentAlpha),
                     style = MaterialTheme.typography.bodySmall, color = if (active) accent else muted)
-                Row(Modifier.weight(1f).height(IntrinsicSize.Min)
+                Row(Modifier.weight(1f).height(IntrinsicSize.Min).testTag("home-lesson-${event.id}")
                     .clip(RoundedCornerShape(topEnd = 13.dp, bottomEnd = 13.dp))
                     .background(if (active) accent.copy(alpha = 0.09f) else Color.Transparent)
                     .lessonInteraction({ event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) }, { onEventLongClick(event) })) {
@@ -167,7 +165,8 @@ fun HomeScreen(
                             }
                             if (active) {
                                 val minutes = Duration.between(now, event.startTime).toMinutes()
-                                Text(if (minutes > 0) "$minutes хв" else "Зараз", style = MaterialTheme.typography.labelSmall, color = accent)
+                                Text(if (minutes > 0) "$minutes хв" else "Зараз",
+                                    Modifier.testTag("home-active-${event.id}"), style = MaterialTheme.typography.labelSmall, color = accent)
                             }
                         }
                         Spacer(Modifier.height(4.dp))
@@ -203,32 +202,11 @@ fun HomeScreen(
             }
         }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        if (deadlines.isNotEmpty() || assessmentDeadlines.isNotEmpty()) {
-            Spacer(Modifier.height(14.dp))
-            Text("Завдання на день", style = MaterialTheme.typography.bodySmall, color = muted)
-            Spacer(Modifier.height(12.dp))
-            deadlines.forEach { task ->
-                HomeTaskRow(task, courseTitles[task.courseId] ?: task.courseId) { completed ->
-                    scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
-                }
-            }
-            assessmentDeadlines.forEach { item ->
-                HomeAssessmentRow(item, courseCodes[item.courseId] ?: item.courseId) {
-                    onOpenAssessment(item)
-                }
-            }
-            HorizontalDivider(Modifier.padding(top = 16.dp, bottom = 8.dp))
-        }
         Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Без дати", style = MaterialTheme.typography.bodySmall, color = muted)
-            Text("Задач: ${untimed.size}", style = MaterialTheme.typography.bodySmall, color = muted)
-        }
-        untimed.forEach { task ->
-            HomeTaskRow(task, courseTitles[task.courseId] ?: task.courseId) { completed ->
+        HomeTasksSection(tasks, assessments, courses, today, classDays,
+            onTaskCompleted = { task, completed ->
                 scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
-            }
-        }
+            }, onOpenAssessment = onOpenAssessment)
         Spacer(Modifier.height(76.dp))
     }
 }

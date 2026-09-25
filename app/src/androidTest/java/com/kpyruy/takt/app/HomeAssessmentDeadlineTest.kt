@@ -17,7 +17,7 @@ import org.junit.Test
 class HomeAssessmentDeadlineTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    @Test fun testAppearsOnItsFridayAndOpensCourseTasks() {
+    @Test fun datedTestAppearsInUnifiedTasksAndOpensCourseTasks() {
         val repository = (compose.activity.application as TaktApplication).dataContainer.gradeRepository
         val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val friday = monday.plusDays(4)
@@ -36,9 +36,11 @@ class HomeAssessmentDeadlineTest {
         }
 
         try {
-            compose.onNodeWithTag("home-day-${monday.toEpochDay()}").performClick()
-            compose.onNodeWithTag("home-assessment-$id").assertDoesNotExist()
-            compose.onNodeWithTag("home-day-${friday.toEpochDay()}").performClick()
+            compose.onNodeWithTag("home-tasks-filter").performClick()
+            compose.onNodeWithText("Усі").performClick()
+            compose.onNodeWithText("Готово").performClick()
+            compose.onNodeWithText("Завдання на день").assertDoesNotExist()
+            compose.onNodeWithText("Без дати").assertDoesNotExist()
             compose.onNodeWithTag("home-assessment-$id").assertIsDisplayed().performClick()
             compose.onNodeWithText("Задачі").assertIsSelected()
             compose.onNodeWithTag("course-work-$id").assertIsDisplayed()
@@ -47,7 +49,7 @@ class HomeAssessmentDeadlineTest {
         }
     }
 
-    @Test fun datedTestIsShownInDayTasksBelowLessonsWithCourseCode() {
+    @Test fun datedTestIsShownInUnifiedTasksBelowLessonsWithCourseCode() {
         val repository = (compose.activity.application as TaktApplication).dataContainer.gradeRepository
         val id = "home-task-placement-test"
         runBlocking {
@@ -58,16 +60,51 @@ class HomeAssessmentDeadlineTest {
             ))
         }
         try {
-            val section = compose.onNodeWithText("Завдання на день")
+            val section = compose.onNodeWithText("Задачі")
             val assessment = compose.onNodeWithTag("home-assessment-$id")
             section.assertIsDisplayed()
             assessment.assertIsDisplayed()
             compose.onNodeWithText("TPAR_6B · 45 хв").assertIsDisplayed()
+            compose.onNodeWithText("Завдання на день").assertDoesNotExist()
             org.junit.Assert.assertTrue(
                 assessment.getUnclippedBoundsInRoot().top > section.getUnclippedBoundsInRoot().top
             )
         } finally {
             runBlocking { repository.deleteItem(id) }
+        }
+    }
+
+    @Test fun ordinaryTaskAndTestAreBothInTasksAndTypeFilterWorks() {
+        val container = (compose.activity.application as TaktApplication).dataContainer
+        val date = LocalDate.now().plusDays(1)
+        val taskId = "home-unified-task"
+        val testId = "home-unified-test"
+        runBlocking {
+            container.studyContentRepository.upsertTask(com.kpyruy.takt.core.model.StudyTask(
+                taskId, "TPAR_6B", "Unified homework", null, date, false,
+            ))
+            container.gradeRepository.upsertItem(GradeItem(
+                testId, "TPAR_6B", "Unified quiz", GradeItemType.TEST,
+                0.0, 10.0, dueDate = date, completed = false,
+            ))
+        }
+        try {
+            compose.onNodeWithTag("home-tasks-filter").performClick()
+            compose.onNodeWithText("Усі").performClick()
+            compose.onNodeWithText("Готово").performClick()
+            compose.onNodeWithTag("home-task-$taskId").assertIsDisplayed()
+            compose.onNodeWithTag("home-assessment-$testId").assertIsDisplayed()
+            compose.onNodeWithTag("home-tasks-filter").performClick()
+            compose.onNodeWithText("Тест").performScrollTo().performClick()
+            compose.onNodeWithText("Тест").assertIsSelected()
+            compose.onNodeWithText("Готово").performClick()
+            compose.onNodeWithTag("home-task-$taskId").assertDoesNotExist()
+            compose.onNodeWithTag("home-assessment-$testId").assertIsDisplayed()
+        } finally {
+            runBlocking {
+                container.studyContentRepository.deleteTask(taskId)
+                container.gradeRepository.deleteItem(testId)
+            }
         }
     }
 

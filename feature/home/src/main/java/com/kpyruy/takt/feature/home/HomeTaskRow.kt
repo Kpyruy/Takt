@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
@@ -34,7 +35,7 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
         }
     }
     SwipeCompletionBox(completed = task.completed, onCompletedChange = onCompletedChange) {
-        Row(Modifier.fillMaxWidth().animateContentSize().padding(vertical = 4.dp),
+        Row(Modifier.fillMaxWidth().testTag("home-task-${task.id}").animateContentSize().padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Checkbox(checked = task.completed, onCheckedChange = onCompletedChange,
                 modifier = Modifier.semantics { contentDescription = task.title })

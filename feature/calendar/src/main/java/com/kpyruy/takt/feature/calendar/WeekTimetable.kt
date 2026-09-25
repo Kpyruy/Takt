@@ -23,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -154,6 +155,7 @@ fun WeekTimetable(
                                 .width(width)
                                 .height(eventHeight(laneEvent.event))
                                 .padding(horizontal = 2.dp, vertical = 1.dp)
+                                .alpha(if (laneEvent.event.isAbsent) 0.6f else 1f)
                                 .lessonInteraction({ onEventClick(laneEvent.event) }, { onEventLongClick(laneEvent.event) }),
                             shape = MaterialTheme.shapes.extraSmall,
                             color = subjectColor.copy(alpha = 0.18f),

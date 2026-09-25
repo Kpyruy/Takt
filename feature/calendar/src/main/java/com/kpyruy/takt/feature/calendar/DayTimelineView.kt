@@ -216,7 +216,7 @@ private fun TimelineEventBlock(
     ) TextDecoration.LineThrough else null
 
     Surface(
-        modifier = modifier.alpha(if (dimmed || cancelled) 0.8f else 1f).semantics { contentDescription = "${event.title}, ${event.lessonType.label}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", тест" else ""}" }.lessonInteraction(onClick, onLongClick),
+        modifier = modifier.alpha(if (dimmed || cancelled || event.isAbsent) 0.6f else 1f).semantics { contentDescription = "${event.title}, ${event.lessonType.label}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", тест" else ""}" }.lessonInteraction(onClick, onLongClick),
         shape = RoundedCornerShape(7.dp),
         color = lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),
     ) {
