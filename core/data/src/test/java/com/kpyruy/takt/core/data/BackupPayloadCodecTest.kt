@@ -74,6 +74,7 @@ class BackupPayloadCodecTest {
                     requiredForExam = true,
                     minimumPointsForExam = 12.0,
                     lessonId = "physics-friday-rule",
+                    durationMinutes = 45,
                 )
             ),
             gradeScales = listOf(

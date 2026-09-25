@@ -47,6 +47,30 @@ class HomeAssessmentDeadlineTest {
         }
     }
 
+    @Test fun datedTestIsShownInDayTasksBelowLessonsWithCourseCode() {
+        val repository = (compose.activity.application as TaktApplication).dataContainer.gradeRepository
+        val id = "home-task-placement-test"
+        runBlocking {
+            repository.upsertItem(GradeItem(
+                id = id, courseId = "TPAR_6B", title = "Placement quiz",
+                type = GradeItemType.TEST, earnedPoints = 0.0, maxPoints = 20.0,
+                dueDate = LocalDate.now(), completed = false, durationMinutes = 45,
+            ))
+        }
+        try {
+            val section = compose.onNodeWithText("Завдання на день")
+            val assessment = compose.onNodeWithTag("home-assessment-$id")
+            section.assertIsDisplayed()
+            assessment.assertIsDisplayed()
+            compose.onNodeWithText("TPAR_6B · 45 хв").assertIsDisplayed()
+            org.junit.Assert.assertTrue(
+                assessment.getUnclippedBoundsInRoot().top > section.getUnclippedBoundsInRoot().top
+            )
+        } finally {
+            runBlocking { repository.deleteItem(id) }
+        }
+    }
+
     @Test fun completedAssessmentStillAppearsInCalendarOnItsDate() {
         val repository = (compose.activity.application as TaktApplication).dataContainer.gradeRepository
         val id = "calendar-today-test"

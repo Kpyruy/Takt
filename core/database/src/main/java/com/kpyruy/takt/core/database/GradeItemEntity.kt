@@ -20,4 +20,5 @@ data class GradeItemEntity(
     val requiredForExam: Boolean = false,
     val minimumPointsForExam: Double? = null,
     val lessonId: String? = null,
+    val durationMinutes: Int? = null,
 )

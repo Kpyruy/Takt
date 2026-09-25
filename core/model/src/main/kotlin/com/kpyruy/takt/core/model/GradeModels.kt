@@ -27,6 +27,7 @@ data class GradeItem(
     val requiredForExam: Boolean = false,
     val minimumPointsForExam: Double? = null,
     val lessonId: String? = null,
+    val durationMinutes: Int? = null,
 ) {
     init {
         require(maxPoints > 0.0) { "maxPoints must be positive" }
@@ -35,6 +36,7 @@ data class GradeItem(
             (minimumPointsForExam.isFinite() && minimumPointsForExam >= 0.0 && minimumPointsForExam <= maxPoints)) {
             "minimumPointsForExam must be between 0 and maxPoints"
         }
+        require(durationMinutes == null || durationMinutes > 0) { "durationMinutes must be positive" }
     }
 
     val meetsAdmissionRequirement: Boolean

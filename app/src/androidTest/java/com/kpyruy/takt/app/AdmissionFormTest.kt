@@ -41,6 +41,20 @@ class AdmissionFormTest {
         }
     }
 
+    @Test fun testDurationIsSavedInMinutesAndRestoredForEditing() {
+        var saved: GradeItem? = null
+        compose.setContent {
+            MaterialTheme {
+                AddGradeItemForm(courseId = "TPAR_6B", initialType = GradeItemType.TEST, onSave = { saved = it })
+            }
+        }
+        compose.onNode(hasText("Назва") and hasSetTextAction()).performTextInput("Short quiz")
+        compose.onNode(hasText("Максимум") and hasSetTextAction()).performTextInput("20")
+        compose.onNode(hasText("Тривалість тесту (хв)") and hasSetTextAction()).performTextInput("45")
+        compose.onNodeWithText("Зберегти").performClick()
+        compose.runOnIdle { assertEquals(45, saved?.durationMinutes) }
+    }
+
     @Test fun ordinaryTaskCanRequireMinimumPoints() {
         var saved: StudyTask? = null
         compose.setContent {

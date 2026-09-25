@@ -23,7 +23,7 @@ import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 
 @Composable
-internal fun HomeAssessmentRow(item: GradeItem, courseTitle: String, onClick: () -> Unit) {
+internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () -> Unit) {
     val subjectColor = taktSubjectColor(item.courseId)
     val icon = when (item.type) {
         GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
@@ -39,7 +39,10 @@ internal fun HomeAssessmentRow(item: GradeItem, courseTitle: String, onClick: ()
             Icon(icon, contentDescription = null, tint = subjectColor)
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.titleSmall)
-                Text(courseTitle, style = MaterialTheme.typography.bodySmall,
+                Text(buildList {
+                    add(courseCode)
+                    item.durationMinutes?.let { add("$it хв") }
+                }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (item.requiredForExam) {
                     val threshold = item.minimumPointsForExam?.let { " · мін. ${it.pointText()} б." }.orEmpty()

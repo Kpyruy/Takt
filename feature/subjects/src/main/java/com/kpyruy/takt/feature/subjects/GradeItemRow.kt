@@ -38,6 +38,7 @@ fun GradeItemRow(
             Text(
                 buildList {
                     add(item.type.label)
+                    item.durationMinutes?.let { add("$it хв") }
                     item.dueDate?.let {
                         add("до " + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                     }

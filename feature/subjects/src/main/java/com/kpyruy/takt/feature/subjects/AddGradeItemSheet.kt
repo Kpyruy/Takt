@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
@@ -93,6 +95,9 @@ fun AddGradeItemForm(
     var minimumText by remember(initialItem?.id) {
         mutableStateOf(initialItem?.minimumPointsForExam?.toEditableNumber().orEmpty())
     }
+    var durationText by remember(initialItem?.id) {
+        mutableStateOf(initialItem?.durationMinutes?.toString().orEmpty())
+    }
     var type by remember(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
     var dueDate by remember(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
     var lessonId by remember(initialItem?.id) { mutableStateOf(initialItem?.lessonId) }
@@ -156,6 +161,15 @@ fun AddGradeItemForm(
         )
 
         if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) {
+            OutlinedTextField(
+                value = durationText,
+                onValueChange = { durationText = it; error = null },
+                label = { Text("Тривалість тесту (хв)") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                isError = error != null,
+            )
             if (lessonOptions.isNotEmpty()) {
                 Text("Пара з тестом", style = MaterialTheme.typography.titleSmall)
                 lessonOptions.forEach { lesson ->
@@ -262,6 +276,10 @@ fun AddGradeItemForm(
                 val max = maxText.replace(',', '.').toDoubleOrNull()
                 val minimumInput = minimumText.takeIf { requiredForExam && type != GradeItemType.EXAM && it.isNotBlank() }
                 val minimum = minimumInput?.replace(',', '.')?.toDoubleOrNull()
+                val durationInput = durationText.takeIf {
+                    (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) && it.isNotBlank()
+                }
+                val duration = durationInput?.toIntOrNull()
                 when {
                     earned == null || max == null -> error = "Введіть числові значення балів."
                     !earned.isFinite() || earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
@@ -270,6 +288,8 @@ fun AddGradeItemForm(
                     minimumInput != null && minimum == null -> error = "Введіть числовий мінімум балів."
                     minimum != null && (!minimum.isFinite() || minimum < 0.0 || minimum > max) ->
                         error = "Мінімум має бути від 0 до максимуму балів."
+                    durationInput != null && (duration == null || duration <= 0) ->
+                        error = "Тривалість тесту має бути додатним числом хвилин."
                     else -> onSave(
                         GradeItem(
                             id = initialItem?.id ?: UUID.randomUUID().toString(),
@@ -285,6 +305,7 @@ fun AddGradeItemForm(
                             requiredForExam = requiredForExam,
                             minimumPointsForExam = minimum,
                             lessonId = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) selectedLessonId else null,
+                            durationMinutes = duration,
                         )
                     )
                 }

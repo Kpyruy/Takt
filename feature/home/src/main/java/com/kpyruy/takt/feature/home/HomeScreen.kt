@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -99,13 +98,13 @@ fun HomeScreen(
         tasks.filter { it.dueDate == null && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
     }
     val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
+    val courseCodes = remember(courses) { courses.associate { it.id to it.code } }
     val uk = remember { Locale("uk") }
     val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val weekday = remember(uk) { DateTimeFormatter.ofPattern("EEEE", uk) }
     val month = remember(uk) { DateTimeFormatter.ofPattern("LLLL", uk) }
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val accent = MaterialTheme.colorScheme.primary
-    val amber = if (MaterialTheme.colorScheme.surface.luminance() > .5f) Color(0xFF986126) else Color(0xFFEFC78F)
 
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
@@ -143,7 +142,7 @@ fun HomeScreen(
             val cancelled = event.status == ScheduleEventStatus.CANCELLED
             val finished = selectedDate < today || (selectedDate == today && event.endTime < now)
             val subjectColor = taktSubjectColor(event.courseId ?: event.title)
-            val contentAlpha = if ((finished || cancelled) && !event.isAbsent) 0.5f else 1f
+            val contentAlpha = if (finished || cancelled) 0.5f else 1f
             val status = when(event.status) {
                 ScheduleEventStatus.CANCELLED -> "Скасовано"
                 ScheduleEventStatus.MOVED -> "Перенесено"
@@ -203,39 +202,23 @@ fun HomeScreen(
                 }
             }
         }
-        // StudyTask stores a date, not a time: never invent a timed deadline.
-        deadlines.forEach { task ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Без\nчасу", Modifier.width(timeWidth).padding(top = 13.dp), style = MaterialTheme.typography.bodySmall, color = amber)
-                Row(Modifier.weight(1f).height(IntrinsicSize.Min)) {
-                    Box(Modifier.width(2.dp).fillMaxHeight().background(amber.copy(alpha = 0.7f)))
-                    Column(Modifier.weight(1f).padding(start = 13.dp, top = 13.dp, bottom = 13.dp)) {
-                        Text("ДЕДЛАЙН", style = MaterialTheme.typography.labelSmall, color = amber)
-                        HomeTaskRow(task, courseTitles[task.courseId] ?: task.courseId) { completed ->
-                            scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(13.dp))
-        }
-        assessmentDeadlines.forEach { item ->
-            val subjectColor = taktSubjectColor(item.courseId)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Без\nчасу", Modifier.width(timeWidth).padding(top = 13.dp), style = MaterialTheme.typography.bodySmall, color = subjectColor)
-                Row(Modifier.weight(1f).height(IntrinsicSize.Min)) {
-                    Box(Modifier.width(2.dp).fillMaxHeight().background(subjectColor))
-                    Column(Modifier.weight(1f).padding(start = 13.dp, top = 13.dp, bottom = 13.dp)) {
-                        Text(item.type.label.uppercase(uk), style = MaterialTheme.typography.labelSmall, color = subjectColor)
-                        HomeAssessmentRow(item, courseTitles[item.courseId] ?: item.courseId) {
-                            onOpenAssessment(item)
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(13.dp))
-        }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        if (deadlines.isNotEmpty() || assessmentDeadlines.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            Text("Завдання на день", style = MaterialTheme.typography.bodySmall, color = muted)
+            Spacer(Modifier.height(12.dp))
+            deadlines.forEach { task ->
+                HomeTaskRow(task, courseTitles[task.courseId] ?: task.courseId) { completed ->
+                    scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
+                }
+            }
+            assessmentDeadlines.forEach { item ->
+                HomeAssessmentRow(item, courseCodes[item.courseId] ?: item.courseId) {
+                    onOpenAssessment(item)
+                }
+            }
+            HorizontalDivider(Modifier.padding(top = 16.dp, bottom = 8.dp))
+        }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Без дати", style = MaterialTheme.typography.bodySmall, color = muted)
