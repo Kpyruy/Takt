@@ -53,6 +53,23 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(themeMode = themeMode)
     }
 
+    override suspend fun setAppearance(
+        themeMode: AppThemeMode,
+        themeFamily: ThemeFamily,
+        cardAppearance: CardAppearance,
+    ) {
+        preferences.edit()
+            .putString(KEY_THEME_MODE, themeMode.name)
+            .putString(KEY_THEME_FAMILY, themeFamily.name)
+            .putString(KEY_CARD_APPEARANCE, cardAppearance.name)
+            .apply()
+        state.value = state.value.copy(
+            themeMode = themeMode,
+            themeFamily = themeFamily,
+            cardAppearance = cardAppearance,
+        )
+    }
+
     override suspend fun setWeekLayout(layout: WeekLayout) {
         preferences.edit().putString(KEY_WEEK_LAYOUT, layout.name).apply()
         state.value = state.value.copy(weekLayout = layout)

@@ -1,32 +1,29 @@
 package com.kpyruy.takt.feature.settings
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,20 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
-import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.data.DocumentSyncStatus
+import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.AppSettings
-import com.kpyruy.takt.core.model.AppThemeMode
-import com.kpyruy.takt.core.model.CardAppearance
-import com.kpyruy.takt.core.model.CancellationDisplayStyle
-import com.kpyruy.takt.core.model.ParityOverride
-import com.kpyruy.takt.core.model.ThemeFamily
-import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
-import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -68,13 +59,11 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
+    var showAppearance by remember { mutableStateOf(false) }
+    var showCalendar by remember { mutableStateOf(false) }
+    var showTasks by remember { mutableStateOf(false) }
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
     val unmigratedMaterials by documentStore.unmigratedMaterials.collectAsStateWithLifecycle()
-    val darkPreview = when (settings.themeMode) {
-        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DARK -> true
-    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -133,153 +122,105 @@ fun SettingsScreen(
         }
     }
 
+    if (showAppearance) {
+        AppearanceSettingsPage(
+            settings = settings,
+            onBack = { showAppearance = false },
+            onApply = { preview ->
+                scope.launch {
+                    settingsRepository.setAppearance(preview.themeMode, preview.themeFamily, preview.cardAppearance)
+                    showAppearance = false
+                }
+            },
+        )
+        return
+    }
+    if (showCalendar) {
+        CalendarSettingsPage(
+            settings = settings,
+            onBack = { showCalendar = false },
+            onCancellationStyle = { scope.launch { settingsRepository.setCancellationStyle(it) } },
+            onShowHiddenLessons = { scope.launch { settingsRepository.setShowHiddenLessons(it) } },
+            onParityOverride = { scope.launch { settingsRepository.setParityOverride(it) } },
+            onWeekLayout = { scope.launch { settingsRepository.setWeekLayout(it) } },
+        )
+        return
+    }
+
+    if (showTasks) {
+        TaskSettingsPage(
+            filter = settings.homeWorkFilter,
+            onBack = { showTasks = false },
+            onChange = { scope.launch { settingsRepository.setHomeWorkFilter(it) } },
+        )
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
             title = "Налаштування",
+            subtitle = "Зроби Takt зручним саме для себе",
             navigation = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }
             },
         )
 
-        SettingsSectionTitle("Вигляд")
-        SectionCard {
-            Text("Режим теми", style = MaterialTheme.typography.titleMedium)
-            listOf(
-                AppThemeMode.SYSTEM to "Як у системі",
-                AppThemeMode.LIGHT to "Світла",
-                AppThemeMode.DARK to "Темна",
-            ).forEach { (option, label) ->
-                PreferenceRadioRow(
-                    label = label,
-                    selected = settings.themeMode == option,
-                    onClick = { scope.launch { settingsRepository.setThemeMode(option) } },
-                )
-            }
+        SettingsSectionTitle("Під себе")
+        SettingsNavigationTile(
+            title = "Вигляд",
+            summary = "${themeFamilyLabel(settings.themeFamily)} · ${themeModeLabel(settings.themeMode)} · ${cardAppearanceLabel(settings.cardAppearance)}",
+            icon = Icons.Outlined.Palette,
+            onClick = { showAppearance = true },
+        )
+        SettingsNavigationTile(
+            title = "Календар і розклад",
+            summary = "${weekLayoutLabel(settings.weekLayout)} · ${cancellationStyleLabel(settings.cancellationStyle)}",
+            icon = Icons.Outlined.CalendarMonth,
+            onClick = { showCalendar = true },
+        )
 
-            Text("Кольорова тема", style = MaterialTheme.typography.titleMedium)
-            listOf(
-                ThemeFamily.BLUE to "Синя",
-                ThemeFamily.GREEN to "Зелена",
-                ThemeFamily.PURPLE to "Фіолетова",
-                ThemeFamily.WARM to "Тепла",
-                ThemeFamily.MONOCHROME to "Монохром",
-            ).forEach { (option, label) ->
-                ThemeRadioRow(
-                    family = option,
-                    label = label,
-                    darkPreview = darkPreview,
-                    selected = settings.themeFamily == option,
-                    onClick = { scope.launch { settingsRepository.setThemeFamily(option) } },
-                )
-            }
-
-            Text("Картки", style = MaterialTheme.typography.titleMedium)
-            listOf(
-                CardAppearance.ELEVATED to "Підняті",
-                CardAppearance.TONAL_FILLED to "Заливка",
-            ).forEach { (option, label) ->
-                PreferenceRadioRow(
-                    label = label,
-                    selected = settings.cardAppearance == option,
-                    onClick = { scope.launch { settingsRepository.setCardAppearance(option) } },
-                )
-            }
-        }
-
-        SettingsSectionTitle("Календар")
-        SectionCard {
-            Text("Скасовані пари", style = MaterialTheme.typography.titleMedium)
-            listOf(
-                CancellationDisplayStyle.STRIKETHROUGH to "Закреслити",
-                CancellationDisplayStyle.HIDDEN to "Сховати",
-                CancellationDisplayStyle.MARKED to "Позначити",
-            ).forEach { (option, label) ->
-                PreferenceRadioRow(
-                    label = label,
-                    selected = settings.cancellationStyle == option,
-                    onClick = { scope.launch { settingsRepository.setCancellationStyle(option) } },
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Показувати приховані")
-                    Text(
-                        "Працює, коли стиль скасованих пар — «Сховати».",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = settings.showHiddenLessons,
-                    onCheckedChange = { show ->
-                        scope.launch { settingsRepository.setShowHiddenLessons(show) }
-                    },
-                )
-            }
-
-            Text("Парність тижня", style = MaterialTheme.typography.titleMedium)
-            listOf(
-                ParityOverride.AUTO to "Автоматично",
-                ParityOverride.EVEN to "Примусово парний",
-                ParityOverride.ODD to "Примусово непарний",
-            ).forEach { (option, label) ->
-                PreferenceRadioRow(
-                    label = label,
-                    selected = settings.parityOverride == option,
-                    onClick = { scope.launch { settingsRepository.setParityOverride(option) } },
-                )
-            }
-            Text(
-                "Автоматичний режим використовує ISO-номер календарного тижня.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Text("Вигляд тижня", style = MaterialTheme.typography.titleMedium)
-            listOf(
-                WeekLayout.TIMETABLE to "Таймтейбл",
-                WeekLayout.COMPACT_LIST to "Компактний список",
-            ).forEach { (option, label) ->
-                PreferenceRadioRow(
-                    label = label,
-                    selected = settings.weekLayout == option,
-                    onClick = { scope.launch { settingsRepository.setWeekLayout(option) } },
-                )
-            }
-        }
+        SettingsNavigationTile(
+            title = "Задачі",
+            summary = "${taskPeriodLabel(settings.homeWorkFilter.period)} · ${if (settings.homeWorkFilter.includeCompleted) "з виконаними" else "лише актуальні"}",
+            icon = Icons.Outlined.Checklist,
+            onClick = { showTasks = true },
+        )
 
         SettingsSectionTitle("Оцінювання")
         SectionCard {
             Text("Стандартна шкала", style = MaterialTheme.typography.titleMedium)
-            Text("A · 92–100%")
-            Text("B · 83–91%")
-            Text("C · 74–82%")
-            Text("D · 65–73%")
-            Text("E · 56–64%")
-            Text("FX · 0–55%")
-            Text(
-                "Для кожного предмета шкалу можна змінити окремо.",
+            Text("Орієнтир для всіх предметів. За потреби змінюй шкалу в самому предметі.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
+                    Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(grade, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(threshold, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Text("FX · нижче 56%", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         SettingsSectionTitle("Дані")
         SectionCard {
-            Text("Documents/Takt", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.size(9.dp).background(
+                    if (documentStatus == DocumentSyncStatus.READY) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.error, CircleShape))
+                Text("Documents/Takt", style = MaterialTheme.typography.titleMedium)
+            }
             Text(
                 when (documentStatus) {
                     DocumentSyncStatus.READY -> "Підключено · зміни зберігаються автоматично в data.json"
@@ -312,6 +253,8 @@ fun SettingsScreen(
                     }
                 }, modifier = Modifier.fillMaxWidth()) { Text("Залишити дані на телефоні") }
             }
+        }
+        SectionCard {
             Text("Резервна копія", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Експорт містить розклад, оцінювання, екзамени, матеріали, навчальний план, завдання, нотатки й налаштування.",
@@ -343,55 +286,6 @@ fun SettingsScreen(
                         MaterialTheme.colorScheme.primary
                     },
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PreferenceRadioRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Text(label)
-    }
-}
-
-@Composable
-private fun ThemeRadioRow(
-    family: ThemeFamily,
-    label: String,
-    darkPreview: Boolean,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Column(Modifier.weight(1f)) {
-            Text(label)
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                taktThemePreviewColors(family, dark = darkPreview).forEach { color ->
-                    Box(
-                        Modifier
-                            .size(12.dp)
-                            .background(color, CircleShape)
-                    )
-                }
             }
         }
     }

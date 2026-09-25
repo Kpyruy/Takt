@@ -213,7 +213,7 @@ fun TaktApp(
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
     }
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { if (currentRoute != SETTINGS_ROUTE) SnackbarHost(snackbarHostState) },
         containerColor = if (currentRoute == Destination.HOME.route || currentRoute == Destination.PLAN.route)
             MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
         bottomBar = {

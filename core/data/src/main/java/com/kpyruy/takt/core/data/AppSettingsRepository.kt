@@ -19,6 +19,7 @@ interface AppSettingsRepository {
     suspend fun setCardAppearance(appearance: CardAppearance)
     suspend fun setThemeFamily(themeFamily: ThemeFamily)
     suspend fun setThemeMode(themeMode: AppThemeMode)
+    suspend fun setAppearance(themeMode: AppThemeMode, themeFamily: ThemeFamily, cardAppearance: CardAppearance)
     suspend fun setWeekLayout(layout: WeekLayout)
     suspend fun setHomeWorkFilter(filter: HomeWorkFilter)
 }

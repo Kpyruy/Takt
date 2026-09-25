@@ -28,6 +28,7 @@ fun SectionCard(
         )
         CardAppearance.TONAL_FILLED -> CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurface,
         )
     }
     val elevation = CardDefaults.cardElevation(
