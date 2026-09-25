@@ -165,7 +165,6 @@ fun SettingsScreen(
     ) {
         ScreenHeader(
             title = "Налаштування",
-            subtitle = "Зроби Takt зручним саме для себе",
             navigation = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
@@ -176,20 +175,17 @@ fun SettingsScreen(
         SettingsSectionTitle("Під себе")
         SettingsNavigationTile(
             title = "Вигляд",
-            summary = "${themeFamilyLabel(settings.themeFamily)} · ${themeModeLabel(settings.themeMode)} · ${cardAppearanceLabel(settings.cardAppearance)}",
             icon = Icons.Outlined.Palette,
             onClick = { showAppearance = true },
         )
         SettingsNavigationTile(
             title = "Календар і розклад",
-            summary = "${weekLayoutLabel(settings.weekLayout)} · ${cancellationStyleLabel(settings.cancellationStyle)}",
             icon = Icons.Outlined.CalendarMonth,
             onClick = { showCalendar = true },
         )
 
         SettingsNavigationTile(
             title = "Задачі",
-            summary = "${taskPeriodLabel(settings.homeWorkFilter.period)} · ${if (settings.homeWorkFilter.includeCompleted) "з виконаними" else "лише актуальні"}",
             icon = Icons.Outlined.Checklist,
             onClick = { showTasks = true },
         )
@@ -197,9 +193,6 @@ fun SettingsScreen(
         SettingsSectionTitle("Оцінювання")
         SectionCard {
             Text("Стандартна шкала", style = MaterialTheme.typography.titleMedium)
-            Text("Орієнтир для всіх предметів. За потреби змінюй шкалу в самому предметі.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
                     Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -223,10 +216,10 @@ fun SettingsScreen(
             }
             Text(
                 when (documentStatus) {
-                    DocumentSyncStatus.READY -> "Підключено · зміни зберігаються автоматично в data.json"
+                    DocumentSyncStatus.READY -> "Підключено · синхронізація активна"
                     DocumentSyncStatus.CONFLICT -> "Локальні дані й копія в Documents/Takt відрізняються"
                     DocumentSyncStatus.ERROR -> "Помилка синхронізації. Перевірте доступ до папки."
-                    DocumentSyncStatus.DISCONNECTED -> "Підключіть папку Documents. Takt створить у ній Takt і збереже дані та матеріали."
+                    DocumentSyncStatus.DISCONNECTED -> "Не підключено"
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -256,10 +249,6 @@ fun SettingsScreen(
         }
         SectionCard {
             Text("Резервна копія", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Експорт містить розклад, оцінювання, екзамени, матеріали, навчальний план, завдання, нотатки й налаштування.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Button(
                 onClick = {
                     exportLauncher.launch("takt-backup-" + LocalDate.now() + ".json")

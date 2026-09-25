@@ -46,7 +46,6 @@ internal fun TaskSettingsPage(
     ) {
         ScreenHeader(
             title = "Задачі",
-            subtitle = "Те, що бачиш на головній, залишиться таким і після перезапуску.",
             navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } },
         )
         SettingsSectionTitle("Показувати задачі за")
@@ -76,15 +75,13 @@ internal fun TaskSettingsPage(
         }
         SettingsSectionTitle("Що включати")
         SectionCard {
-            TaskSwitchRow("Без дати", "Задачі, яким ще не задано дедлайн.", filter.includeUndated) {
+            TaskSwitchRow("Без дати", filter.includeUndated) {
                 onChange(filter.copy(includeUndated = it))
             }
-            TaskSwitchRow("Виконані", "Залишати завершені задачі в списку.", filter.includeCompleted) {
+            TaskSwitchRow("Виконані", filter.includeCompleted) {
                 onChange(filter.copy(includeCompleted = it))
             }
         }
-        Text("Предмети та типи задач можна швидко відфільтрувати біля списку на головній.",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (filter != HomeWorkFilter()) {
             OutlinedButton(onClick = { onChange(HomeWorkFilter()) }, modifier = Modifier.fillMaxWidth()) {
                 Text("Скинути фільтри задач")
@@ -94,13 +91,10 @@ internal fun TaskSettingsPage(
 }
 
 @Composable
-private fun TaskSwitchRow(title: String, detail: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun TaskSwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().heightIn(min = 60.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Text(title, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
         Switch(checked = checked, onCheckedChange = onChange)
     }
 }

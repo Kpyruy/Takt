@@ -37,8 +37,6 @@ import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
-import java.time.LocalDate
-import java.time.temporal.WeekFields
 
 @Composable
 internal fun CalendarSettingsPage(
@@ -56,7 +54,6 @@ internal fun CalendarSettingsPage(
     ) {
         ScreenHeader(
             title = "Календар і розклад",
-            subtitle = "Вибери, що бачити та як читати свій тиждень.",
             navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } },
         )
         SettingsSectionTitle("Вигляд тижня")
@@ -87,8 +84,6 @@ internal fun CalendarSettingsPage(
             }
         }
         SettingsSectionTitle("Скасовані пари")
-        Text("Одна й та сама пара в трьох варіантах", style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
         listOf(
             CancellationDisplayStyle.STRIKETHROUGH to "Закреслювати",
             CancellationDisplayStyle.MARKED to "Позначати",
@@ -106,27 +101,19 @@ internal fun CalendarSettingsPage(
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     CancellationDisplayStyle.MARKED -> Text("09:00  Теорія права  ·  Скасовано",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CancellationDisplayStyle.HIDDEN -> Text("Пара не відображатиметься в розкладі",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    CancellationDisplayStyle.HIDDEN -> Unit
                 }
             }
         }
         if (settings.cancellationStyle == CancellationDisplayStyle.HIDDEN) {
             SectionCard {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Показувати приховані", fontWeight = FontWeight.SemiBold)
-                        Text("Скасовані пари залишаться в календарі для довідки.",
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text("Показувати приховані", Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     Switch(checked = settings.showHiddenLessons, onCheckedChange = onShowHiddenLessons)
                 }
             }
         }
         SettingsSectionTitle("Парність тижня")
-        val week = LocalDate.now().get(WeekFields.ISO.weekOfWeekBasedYear())
-        Text("Зараз тиждень №$week за календарем ISO.", style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
         listOf(
             ParityOverride.AUTO to "Автоматично",
             ParityOverride.EVEN to "Завжди парний",
@@ -137,13 +124,7 @@ internal fun CalendarSettingsPage(
                 selected = settings.parityOverride == parity,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onParityOverride(parity) },
-            ) {
-                Text(when (parity) {
-                    ParityOverride.AUTO -> "За номером календарного тижня"
-                    ParityOverride.EVEN -> "Для розкладу з парними тижнями"
-                    ParityOverride.ODD -> "Для розкладу з непарними тижнями"
-                }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            ) {}
         }
     }
 }

@@ -77,7 +77,6 @@ internal fun AppearanceSettingsPage(
         ) {
             ScreenHeader(
                 title = "Твій вигляд",
-                subtitle = "Спробуй поєднання — зміни збережуться лише після застосування.",
                 navigation = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") }
                 },
@@ -151,11 +150,6 @@ internal fun AppearanceSettingsPage(
                     )
                 }
             }
-            Text(
-                "Підняті — світла поверхня й легка тінь. Заливка — тонований фон без тіні.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
