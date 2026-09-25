@@ -18,6 +18,10 @@ import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
+import com.kpyruy.takt.core.model.HomeWorkPeriod
+import com.kpyruy.takt.core.model.HomeWorkFilter
+import com.kpyruy.takt.core.model.GradeItemType
+import java.time.LocalDate
 
 internal fun com.kpyruy.takt.core.database.LessonAbsenceEntity.toBackup() = BackupLessonAbsence(eventId, dateEpochDay, isOneOff)
 internal fun BackupLessonAbsence.toEntity() = com.kpyruy.takt.core.database.LessonAbsenceEntity(eventId, dateEpochDay, isOneOff)
@@ -270,6 +274,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     themeFamily = themeFamily.name,
     themeMode = themeMode.name,
     weekLayout = weekLayout.name,
+    homeWorkFilter = homeWorkFilter.toBackup(),
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -286,4 +291,33 @@ internal fun BackupSettings.toModel() = AppSettings(
         .getOrDefault(AppThemeMode.SYSTEM),
     weekLayout = runCatching { WeekLayout.valueOf(weekLayout) }
         .getOrDefault(WeekLayout.TIMETABLE),
+    homeWorkFilter = homeWorkFilter.toModel(),
+)
+
+internal fun HomeWorkFilter.toBackup() = BackupHomeWorkFilter(
+    period = period.name,
+    courseId = courseId,
+    types = types.map { it?.name ?: "TASK" }.sorted(),
+    includeCompleted = includeCompleted,
+    includeUndated = includeUndated,
+    fromDate = fromDate?.toString(),
+    toDate = toDate?.toString(),
+)
+
+internal fun BackupHomeWorkFilter.toModel() = HomeWorkFilter(
+    period = when (period) {
+        "SEVEN_CLASS_DAYS" -> HomeWorkPeriod.SEVEN_DAYS
+        else -> runCatching { HomeWorkPeriod.valueOf(period) }.getOrDefault(HomeWorkPeriod.FOURTEEN_DAYS)
+    },
+    courseId = courseId,
+    types = buildSet {
+        types.forEach { stored ->
+            if (stored == "TASK") add(null)
+            else GradeItemType.entries.firstOrNull { it.name == stored }?.let(::add)
+        }
+    },
+    includeCompleted = includeCompleted,
+    includeUndated = includeUndated,
+    fromDate = fromDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+    toDate = toDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
 )

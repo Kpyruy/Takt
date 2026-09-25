@@ -2,7 +2,6 @@ package com.kpyruy.takt.feature.studyplan
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,7 +11,6 @@ import com.kpyruy.takt.core.ui.components.TaktUnderlineTabs
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,9 +22,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kpyruy.takt.core.data.StudyContentRepository
-import com.kpyruy.takt.core.data.GradeRepository
-import com.kpyruy.takt.core.model.ExamEligibilityCalculator
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.ui.components.ScreenHeader
@@ -35,15 +30,9 @@ import com.kpyruy.takt.core.ui.components.TaktIconButton
 @Composable
 fun StudyPlanScreen(
     repository: StudyPlanRepository,
-    studyContentRepository: StudyContentRepository,
-    gradeRepository: GradeRepository,
     onCourseClick: (String) -> Unit,
-    onTaskClick: (String) -> Unit = onCourseClick,
-    onAssessmentClick: (String) -> Unit = onCourseClick,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val grades by remember(gradeRepository) { gradeRepository.observeRecentItems(Int.MAX_VALUE) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val earned = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits } }
     val semesters = remember(courses) { courses.groupBy { it.semester }.toSortedMap() }
     val largeText = LocalDensity.current.fontScale > 1.2f
@@ -121,15 +110,6 @@ fun StudyPlanScreen(
         }
         if (filter == 0) semesters.forEach { (semester, semesterCourses) ->
             item(key = "semester-$semester") {
-                val activeCourseIds = semesterCourses.filter { it.status == CourseStatus.ENROLLED }.map { it.id }.toSet()
-                val pendingTask = tasks.filter { it.courseId in activeCourseIds && it.requiredForExam && !it.meetsAdmissionRequirement }
-                    .sortedWith(compareBy<com.kpyruy.takt.core.model.StudyTask> { it.dueDate == null }.thenBy { it.dueDate }.thenBy { it.title }).firstOrNull()
-                val pendingAssessment = grades.filter { it.courseId in activeCourseIds && it.requiredForExam && !it.meetsAdmissionRequirement }.sortedBy { it.dueDate ?: java.time.LocalDate.MAX }.firstOrNull()
-                val taskComesFirst = pendingTask != null && (pendingAssessment == null ||
-                    (pendingTask.dueDate ?: java.time.LocalDate.MAX) <= (pendingAssessment.dueDate ?: java.time.LocalDate.MAX))
-                val nextTask = pendingTask.takeIf { taskComesFirst }
-                val nextAssessment = pendingAssessment.takeUnless { taskComesFirst }
-                val nextCourseId = nextTask?.courseId ?: nextAssessment?.courseId
                 SemesterSection(
                     semester = semester,
                     courses = semesterCourses,
@@ -137,27 +117,6 @@ fun StudyPlanScreen(
                     onExpandedChange = { expanded -> expandedSemesters = if (expanded) expandedSemesters + semester else expandedSemesters - semester },
                     onCourseClick = onCourseClick,
                     onCourseStatus = { editingCourseId = it.id },
-                    nextAction = {
-                        nextCourseId?.let { courseId ->
-                            val course = semesterCourses.first { it.id == courseId }
-                            val eligibility = ExamEligibilityCalculator.calculate(tasks.filter { it.courseId == courseId }, grades.filter { it.courseId == courseId })
-                            Surface(
-                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).clickable { if (nextTask != null) onTaskClick(course.id) else onAssessmentClick(course.id) },
-                                shape = RoundedCornerShape(18.dp),
-                                color = MaterialTheme.colorScheme.background,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            ) {
-                                Column(Modifier.padding(13.dp)) {
-                                    Text("Найближчий крок", style = MaterialTheme.typography.titleMedium)
-                                    Text("Допуск з ${course.title}", Modifier.padding(top = 6.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Row(Modifier.fillMaxWidth().padding(top = 11.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("${eligibility.completedCount} із ${eligibility.requiredCount} робіт виконано", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Відкрити завдання: ${nextTask?.title ?: nextAssessment?.title.orEmpty()}", modifier = Modifier.size(18.dp))
-                                    }
-                                }
-                            }
-                        }
-                    },
                 )
             }
         }

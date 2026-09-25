@@ -7,6 +7,8 @@ import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
+import com.kpyruy.takt.core.model.HomeWorkPeriod
+import com.kpyruy.takt.core.model.HomeWorkFilter
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -49,11 +51,13 @@ class StoredSettingsCodecTest {
             themeFamily = "WARM",
             themeMode = "DARK",
             weekLayout = "COMPACT_LIST",
+            homeWorkFilter = HomeWorkFilterCodec.encode(HomeWorkFilter(period = HomeWorkPeriod.SEVEN_DAYS)),
         )
 
         assertEquals(CardAppearance.TONAL_FILLED, settings.cardAppearance)
         assertEquals(ThemeFamily.WARM, settings.themeFamily)
         assertEquals(AppThemeMode.DARK, settings.themeMode)
         assertEquals(WeekLayout.COMPACT_LIST, settings.weekLayout)
+        assertEquals(HomeWorkPeriod.SEVEN_DAYS, settings.homeWorkFilter.period)
     }
 }

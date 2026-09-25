@@ -94,9 +94,6 @@ fun HomeScreen(
         tasks.filter { it.dueDate == selectedDate && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
     }
     val assessmentDeadlines = remember(assessments, selectedDate) { assessments.filter { it.dueDate == selectedDate } }
-    val classDays = remember(today, rules, exceptions, oneOffEvents, settings) {
-        HomeWorkPlanner.nextClassDays(today, rules, exceptions, oneOffEvents, settings)
-    }
     val uk = remember { Locale("uk") }
     val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val weekday = remember(uk) { DateTimeFormatter.ofPattern("EEEE", uk) }
@@ -203,7 +200,9 @@ fun HomeScreen(
         }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Spacer(Modifier.height(14.dp))
-        HomeTasksSection(tasks, assessments, courses, today, classDays,
+        HomeTasksSection(tasks, assessments, courses, today,
+            savedFilter = settings.homeWorkFilter,
+            onFilterChange = { filter -> scope.launch { settingsRepository.setHomeWorkFilter(filter) } },
             onTaskCompleted = { task, completed ->
                 scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
             }, onOpenAssessment = onOpenAssessment)

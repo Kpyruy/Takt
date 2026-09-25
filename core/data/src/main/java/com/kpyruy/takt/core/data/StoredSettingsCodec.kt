@@ -17,6 +17,7 @@ object StoredSettingsCodec {
         themeFamily: String? = null,
         themeMode: String? = null,
         weekLayout: String? = null,
+        homeWorkFilter: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -33,6 +34,7 @@ object StoredSettingsCodec {
                 ?: default.themeMode,
             weekLayout = enumValueOrNull<WeekLayout>(weekLayout)
                 ?: default.weekLayout,
+            homeWorkFilter = HomeWorkFilterCodec.decode(homeWorkFilter),
         )
     }
 

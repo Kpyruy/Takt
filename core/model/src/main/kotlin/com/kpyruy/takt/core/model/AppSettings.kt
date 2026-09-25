@@ -47,6 +47,7 @@ data class AppSettings(
     val themeFamily: ThemeFamily = ThemeFamily.BLUE,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val weekLayout: WeekLayout = WeekLayout.TIMETABLE,
+    val homeWorkFilter: HomeWorkFilter = HomeWorkFilter(),
 ) {
     fun effectiveParity(date: LocalDate): WeekParity = when (parityOverride) {
         ParityOverride.AUTO -> WeekParity.fromIsoWeek(

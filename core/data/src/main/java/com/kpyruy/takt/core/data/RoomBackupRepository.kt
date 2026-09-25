@@ -75,5 +75,6 @@ class RoomBackupRepository(
         settingsRepository.setThemeFamily(settings.themeFamily)
         settingsRepository.setThemeMode(settings.themeMode)
         settingsRepository.setWeekLayout(settings.weekLayout)
+        settingsRepository.setHomeWorkFilter(settings.homeWorkFilter)
     }
 }

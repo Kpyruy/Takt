@@ -9,6 +9,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class BackupMappingsTest {
+    @Test fun homeWorkFilterSurvivesBackupMapping() {
+        val settings = com.kpyruy.takt.core.model.AppSettings(
+            homeWorkFilter = com.kpyruy.takt.core.model.HomeWorkFilter(
+                period = com.kpyruy.takt.core.model.HomeWorkPeriod.SEVEN_DAYS,
+                courseId = "TPAR_6B",
+                types = setOf(com.kpyruy.takt.core.model.GradeItemType.TEST, null),
+                fromDate = java.time.LocalDate.of(2026, 10, 1),
+            ),
+        )
+        assertEquals(settings, settings.toBackup().toModel())
+    }
+
     @Test
     fun noteAttachments_surviveBackupMapping() {
         val entity = com.kpyruy.takt.core.database.CourseNoteEntity(

@@ -8,6 +8,7 @@ import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
+import com.kpyruy.takt.core.model.HomeWorkFilter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -57,6 +58,11 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(weekLayout = layout)
     }
 
+    override suspend fun setHomeWorkFilter(filter: HomeWorkFilter) {
+        preferences.edit().putString(KEY_HOME_WORK_FILTER, HomeWorkFilterCodec.encode(filter)).apply()
+        state.value = state.value.copy(homeWorkFilter = filter)
+    }
+
     private fun read(): AppSettings = StoredSettingsCodec.decode(
         cancellationStyle = preferences.getString(KEY_CANCELLATION_STYLE, null),
         showHiddenLessons = preferences.getBoolean(KEY_SHOW_HIDDEN, false),
@@ -65,6 +71,7 @@ class SharedPreferencesAppSettingsRepository(
         themeFamily = preferences.getString(KEY_THEME_FAMILY, null),
         themeMode = preferences.getString(KEY_THEME_MODE, null),
         weekLayout = preferences.getString(KEY_WEEK_LAYOUT, null),
+        homeWorkFilter = preferences.getString(KEY_HOME_WORK_FILTER, null),
     )
 
     private companion object {
@@ -76,5 +83,6 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_THEME_FAMILY = "theme_family"
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_WEEK_LAYOUT = "week_layout"
+        const val KEY_HOME_WORK_FILTER = "home_work_filter"
     }
 }

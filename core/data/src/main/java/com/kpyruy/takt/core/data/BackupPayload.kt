@@ -171,6 +171,18 @@ data class BackupSettings(
     val themeFamily: String = "BLUE",
     val themeMode: String = "SYSTEM",
     val weekLayout: String = "TIMETABLE",
+    val homeWorkFilter: BackupHomeWorkFilter = BackupHomeWorkFilter(),
+)
+
+@Serializable
+data class BackupHomeWorkFilter(
+    val period: String = "FOURTEEN_DAYS",
+    val courseId: String? = null,
+    val types: List<String> = emptyList(),
+    val includeCompleted: Boolean = false,
+    val includeUndated: Boolean = true,
+    val fromDate: String? = null,
+    val toDate: String? = null,
 )
 
 object BackupPayloadCodec {

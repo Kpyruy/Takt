@@ -53,6 +53,7 @@ import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.model.CalendarMonthGrid
+import com.kpyruy.takt.core.model.CalendarDayMarkers
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
@@ -156,6 +157,7 @@ fun CalendarScreen(
         tasks.filter { !it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement) }
             .filter { it.dueDate != null }.groupBy { it.dueDate }
     }
+    val allTasksByDate = remember(tasks) { tasks.filter { it.dueDate != null }.groupBy { it.dueDate } }
     val assessmentsByDate = remember(assessments) {
         assessments.filter { it.dueDate != null }.groupBy { it.dueDate }
     }
@@ -203,10 +205,6 @@ fun CalendarScreen(
         }
     }
 
-    fun hasCalendarContent(date: LocalDate): Boolean =
-        pendingTasksByDate[date].orEmpty().isNotEmpty() ||
-            assessmentsByDate[date].orEmpty().isNotEmpty() || eventsForDate(date).isNotEmpty()
-
     val headerSubtitle = when (viewMode) {
         CalendarViewMode.DAY -> selectedDate.format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
         CalendarViewMode.WEEK -> "${weekStart.format(shortDateFormatter)} – ${weekStart.plusDays(6).format(shortDateFormatter)}"
@@ -236,8 +234,7 @@ fun CalendarScreen(
             WeekDaySelector(
                 dates = dates,
                 selectedDate = selectedDate,
-                onPreviousWeek = { selectDate(selectedDate.minusWeeks(1)) },
-                onNextWeek = { selectDate(selectedDate.plusWeeks(1)) },
+                onWeekChange = ::selectDate,
                 onSelect = {
                     selectDate(it)
                     if (viewMode == CalendarViewMode.WEEK) viewMode = CalendarViewMode.DAY
@@ -304,7 +301,8 @@ fun CalendarScreen(
                         WeekLayout.TIMETABLE -> WeekTimetable(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
-                            assessmentCountForDate = { assessmentsByDate[it].orEmpty().size },
+                            assessmentCountForDate = { date -> pendingTasksByDate[date].orEmpty().size +
+                                assessmentsByDate[date].orEmpty().size },
                             hasTest = ::hasTest,
                             onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                             onEventLongClick = onEventLongClick,
@@ -312,7 +310,8 @@ fun CalendarScreen(
                         WeekLayout.COMPACT_LIST -> WeekCompactList(
                             dates = dates,
                             eventsForDate = ::eventsForDate,
-                            assessmentCountForDate = { assessmentsByDate[it].orEmpty().size },
+                            workCountForDate = { date -> pendingTasksByDate[date].orEmpty().size +
+                                assessmentsByDate[date].orEmpty().size },
                             hasTest = ::hasTest,
                             onSelectDate = {
                                 selectDate(it)
@@ -334,7 +333,10 @@ fun CalendarScreen(
                             days = monthDays,
                             selectedDate = selectedDate,
                             today = today,
-                            hasContent = ::hasCalendarContent,
+                            markersForDate = { date -> CalendarDayMarkers.from(
+                                eventsForDate(date), allTasksByDate[date].orEmpty(),
+                                assessmentsByDate[date].orEmpty(),
+                            ) },
                             onSelect = ::selectDate,
                         )
 

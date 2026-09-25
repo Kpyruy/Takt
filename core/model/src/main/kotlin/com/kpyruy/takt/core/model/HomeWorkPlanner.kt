@@ -2,7 +2,7 @@ package com.kpyruy.takt.core.model
 
 import java.time.LocalDate
 
-enum class HomeWorkPeriod { SEVEN_CLASS_DAYS, FOURTEEN_DAYS, ALL, CUSTOM }
+enum class HomeWorkPeriod { SEVEN_DAYS, FOURTEEN_DAYS, ALL, CUSTOM }
 
 sealed interface HomeWorkEntry {
     val courseId: String
@@ -32,7 +32,7 @@ sealed interface HomeWorkEntry {
 }
 
 data class HomeWorkFilter(
-    val period: HomeWorkPeriod = HomeWorkPeriod.SEVEN_CLASS_DAYS,
+    val period: HomeWorkPeriod = HomeWorkPeriod.FOURTEEN_DAYS,
     val courseId: String? = null,
     /** Empty means every type; null is an ordinary task. */
     val types: Set<GradeItemType?> = emptySet(),
@@ -43,32 +43,12 @@ data class HomeWorkFilter(
 )
 
 object HomeWorkPlanner {
-    fun nextClassDays(
-        today: LocalDate,
-        rules: List<ScheduleRule>,
-        exceptions: List<ScheduleException>,
-        oneOffEvents: List<OneOffScheduleEvent>,
-        settings: AppSettings,
-        count: Int = 7,
-    ): List<LocalDate> {
-        require(count > 0)
-        val days = (1L..60L).asSequence().map(today::plusDays).filter { date ->
-            settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
-                rules, exceptions, oneOffEvents, date, settings.effectiveParity(date),
-            )).any { it.status != ScheduleEventStatus.CANCELLED }
-        }.take(count).toList()
-        // A fresh plan has no lessons yet; its tasks must still be discoverable.
-        return days.ifEmpty { (1L..count.toLong()).map(today::plusDays) }
-    }
-
     fun visible(
         tasks: List<StudyTask>,
         assessments: List<GradeItem>,
         today: LocalDate,
-        classDays: List<LocalDate>,
         filter: HomeWorkFilter,
     ): List<HomeWorkEntry> {
-        val dates = classDays.toSet()
         return buildList {
             tasks.forEach { add(HomeWorkEntry.Task(it)) }
             CourseWork.actionable(assessments).forEach { add(HomeWorkEntry.Graded(it)) }
@@ -80,8 +60,8 @@ object HomeWorkPlanner {
                 when (val date = entry.dueDate) {
                     null -> filter.includeUndated
                     else -> when (filter.period) {
-                        HomeWorkPeriod.SEVEN_CLASS_DAYS -> date == today || date in dates
-                        HomeWorkPeriod.FOURTEEN_DAYS -> date >= today && date <= today.plusDays(14)
+                        HomeWorkPeriod.SEVEN_DAYS -> date >= today && date < today.plusDays(7)
+                        HomeWorkPeriod.FOURTEEN_DAYS -> date >= today && date < today.plusDays(14)
                         HomeWorkPeriod.ALL -> true
                         HomeWorkPeriod.CUSTOM ->
                             (filter.fromDate == null || date >= filter.fromDate) &&

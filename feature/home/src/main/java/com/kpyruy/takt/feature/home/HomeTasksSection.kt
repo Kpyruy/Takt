@@ -30,7 +30,8 @@ private val homeWorkFilterSaver = Saver<HomeWorkFilter, List<String>>(
         filter.toDate?.toString().orEmpty(),
     ) },
     restore = { values -> HomeWorkFilter(
-        period = HomeWorkPeriod.valueOf(values[0]),
+        period = runCatching { HomeWorkPeriod.valueOf(values[0]) }
+            .getOrDefault(HomeWorkPeriod.FOURTEEN_DAYS),
         courseId = values[1].ifEmpty { null },
         types = values[2].split(',').filter { it.isNotEmpty() }
             .mapTo(mutableSetOf()) { if (it == "TASK") null else GradeItemType.valueOf(it) },
@@ -47,14 +48,20 @@ internal fun HomeTasksSection(
     assessments: List<GradeItem>,
     courses: List<Course>,
     today: LocalDate,
-    classDays: List<LocalDate>,
+    savedFilter: HomeWorkFilter,
+    onFilterChange: (HomeWorkFilter) -> Unit,
     onTaskCompleted: (StudyTask, Boolean) -> Unit,
     onOpenAssessment: (GradeItem) -> Unit,
 ) {
-    var filter by rememberSaveable(stateSaver = homeWorkFilterSaver) { mutableStateOf(HomeWorkFilter()) }
+    var filter by rememberSaveable(stateSaver = homeWorkFilterSaver) {
+        mutableStateOf(savedFilter)
+    }
+    LaunchedEffect(savedFilter) {
+        if (filter != savedFilter) filter = savedFilter
+    }
     var showFilters by remember { mutableStateOf(false) }
-    val entries = remember(tasks, assessments, today, classDays, filter) {
-        HomeWorkPlanner.visible(tasks, assessments, today, classDays, filter)
+    val entries = remember(tasks, assessments, today, filter) {
+        HomeWorkPlanner.visible(tasks, assessments, today, filter)
     }
     val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
     val courseCodes = remember(courses) { courses.associate { it.id to it.code } }
@@ -97,13 +104,16 @@ internal fun HomeTasksSection(
     }
 
     if (showFilters) {
-        HomeTaskFilterSheet(filter, filterCourses, onChange = { filter = it }, onDismiss = { showFilters = false })
+        HomeTaskFilterSheet(filter, filterCourses, onChange = { next ->
+            filter = next
+            onFilterChange(next)
+        }, onDismiss = { showFilters = false })
     }
 }
 
 private fun periodSummary(filter: HomeWorkFilter): String = when (filter.period) {
-    HomeWorkPeriod.SEVEN_CLASS_DAYS -> "Сьогодні та 7 наступних днів із парами"
-    HomeWorkPeriod.FOURTEEN_DAYS -> "Наступні 14 днів"
+    HomeWorkPeriod.SEVEN_DAYS -> "Найближчі 7 днів"
+    HomeWorkPeriod.FOURTEEN_DAYS -> "Найближчі 14 днів"
     HomeWorkPeriod.ALL -> "Усі дати"
     HomeWorkPeriod.CUSTOM -> "Обраний період"
 }
@@ -131,7 +141,7 @@ private fun HomeTaskFilterSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        HomeWorkPeriod.SEVEN_CLASS_DAYS to "7 днів із парами",
+                        HomeWorkPeriod.SEVEN_DAYS to "7 днів",
                         HomeWorkPeriod.FOURTEEN_DAYS to "14 днів",
                         HomeWorkPeriod.ALL to "Усі",
                         HomeWorkPeriod.CUSTOM to "Свій період",

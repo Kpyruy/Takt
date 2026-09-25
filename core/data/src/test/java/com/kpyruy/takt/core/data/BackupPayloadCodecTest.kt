@@ -146,6 +146,7 @@ class BackupPayloadCodecTest {
                 themeFamily = "WARM",
                 themeMode = "DARK",
                 weekLayout = "COMPACT_LIST",
+                homeWorkFilter = BackupHomeWorkFilter(period = "SEVEN_DAYS"),
             ),
         )
 

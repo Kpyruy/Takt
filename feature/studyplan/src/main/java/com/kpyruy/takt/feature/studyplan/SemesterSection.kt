@@ -47,7 +47,6 @@ fun SemesterSection(
     onExpandedChange: (Boolean) -> Unit,
     onCourseClick: (String) -> Unit,
     onCourseStatus: (Course) -> Unit,
-    nextAction: (@Composable () -> Unit)? = null,
 ) {
     val state = semesterState(courses)
     val doneCount = courses.count { it.status == CourseStatus.FULFILLED }
@@ -109,7 +108,6 @@ fun SemesterSection(
             LinearProgressIndicator(progress = { if (relevantCount == 0) 0f else doneCount.toFloat() / relevantCount },
                 modifier = Modifier.fillMaxWidth().height(3.dp), color = MaterialTheme.colorScheme.secondary,
                 trackColor = line, gapSize = 0.dp, drawStopIndicator = {})
-            nextAction?.invoke()
             AnimatedVisibility(visible = expanded) {
                 Column(Modifier.padding(top = 12.dp)) {
                     Text("${courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }} / ${courses.sumOf { it.credits }} кредитів", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

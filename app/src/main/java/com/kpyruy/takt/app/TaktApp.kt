@@ -287,11 +287,7 @@ fun TaktApp(
             composable(Destination.PLAN.route) {
                 StudyPlanScreen(
                     repository = repository,
-                    gradeRepository = gradeRepository,
-                    studyContentRepository = studyContentRepository,
                     onCourseClick = ::openCourse,
-                    onTaskClick = { navController.navigate("subject/$it?tab=tasks") },
-                    onAssessmentClick = { navController.navigate("subject/$it?tab=grades") },
                 )
             }
             composable(SETTINGS_ROUTE) {
