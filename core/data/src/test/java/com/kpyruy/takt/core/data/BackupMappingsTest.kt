@@ -35,7 +35,7 @@ class BackupMappingsTest {
             id = "note", courseId = "DIVR_6B", title = "Materials", content = "",
             updatedAtEpochMillis = 42,
             attachmentsJson = NoteAttachmentCodec.encode(
-                listOf(com.kpyruy.takt.core.model.NoteAttachment("diagram.png", "takt:///DIVR_6B/file.png", "image/png"))
+                listOf(com.kpyruy.takt.core.model.NoteAttachment("diagram.png", TaktMaterialReference.encode("DIVR_6B", "file.png"), "image/png"))
             ),
         )
         assertEquals(entity, entity.toBackup().toEntity())

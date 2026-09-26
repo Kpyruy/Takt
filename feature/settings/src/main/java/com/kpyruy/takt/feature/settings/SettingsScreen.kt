@@ -167,7 +167,7 @@ fun SettingsScreen(
             currentSemester = settings.effectiveCurrentSemester(courses),
             settings = settings,
             onBack = { showPeriods = false },
-            onSave = { periods -> scope.launch { settingsRepository.setSemesterPeriods(periods) } },
+            onSave = { periods -> settingsRepository.setSemesterPeriods(periods) },
         )
         return
     }

@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +35,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +51,7 @@ import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun SemesterPeriodsPage(
@@ -55,7 +59,7 @@ internal fun SemesterPeriodsPage(
     currentSemester: Int?,
     settings: AppSettings,
     onBack: () -> Unit,
-    onSave: (Map<Int, SemesterPeriod>) -> Unit,
+    onSave: suspend (Map<Int, SemesterPeriod>) -> Unit,
 ) {
     BackHandler(onBack = onBack)
     val available = semesters.ifEmpty { listOf(1) }
@@ -71,6 +75,9 @@ internal fun SemesterPeriodsPage(
     val draft = drafts[selectedSemester] ?: SemesterPeriod()
     val changed = drafts != settings.semesterPeriods
     val valid = drafts.values.all(SemesterPeriod::hasValidDates)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var saving by remember { mutableStateOf(false) }
     fun updateDraft(next: SemesterPeriod) {
         drafts = if (next.isEmpty) drafts - selectedSemester else drafts + (selectedSemester to next)
     }
@@ -78,11 +85,21 @@ internal fun SemesterPeriodsPage(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
                 Button(
-                    onClick = { onSave(drafts) },
-                    enabled = changed && valid,
+                    onClick = {
+                        saving = true
+                        scope.launch {
+                            val result = runCatching { onSave(drafts) }
+                            saving = false
+                            snackbarHostState.showSnackbar(
+                                if (result.isSuccess) "Періоди збережено" else "Не вдалося зберегти періоди",
+                            )
+                        }
+                    },
+                    enabled = changed && valid && !saving,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp),
                 ) { Text("Зберегти періоди") }
             }

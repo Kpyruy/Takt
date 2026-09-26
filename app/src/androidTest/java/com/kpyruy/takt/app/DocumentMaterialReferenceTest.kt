@@ -1,7 +1,6 @@
 package com.kpyruy.takt.app
 
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.test.platform.app.InstrumentationRegistry
 import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.NoteAttachment
@@ -16,7 +15,7 @@ import org.junit.Test
 
 /** Opt-in integration check after granting Documents on a disposable emulator. */
 class DocumentMaterialReferenceTest {
-    @Test fun copiedFileOpensThroughNewAndLegacyReferences() = runBlocking {
+    @Test fun copiedFileOpensThroughEncodedReference() = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("documentReview") == "true")
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val data = (context.applicationContext as TaktApplication).dataContainer
@@ -38,12 +37,5 @@ class DocumentMaterialReferenceTest {
         assertEquals(reference, stored.uri)
         assertNotNull(store.resolve(stored.uri))
 
-        val name = context.contentResolver.query(copied, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)!!.use {
-            it.moveToFirst()
-            it.getString(0)
-        }
-        val legacy = store.resolve("takt:///FYZI_6B/$name")
-        assertNotNull(legacy)
-        assertArrayEquals(bytes, context.contentResolver.openInputStream(legacy!!)!!.use { it.readBytes() })
     }
 }

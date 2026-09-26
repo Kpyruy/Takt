@@ -114,7 +114,7 @@ class BackupPayloadCodecTest {
                     title = "Formula",
                     content = "Remember this.",
                     updatedAtEpochMillis = 987654321L,
-                    attachments = listOf(BackupNoteAttachment("formula.pdf", "takt:///FYZI_6B/file.pdf", "application/pdf")),
+                    attachments = listOf(BackupNoteAttachment("formula.pdf", TaktMaterialReference.encode("FYZI_6B", "file.pdf"), "application/pdf")),
                 )
             ),
             examInfo = listOf(

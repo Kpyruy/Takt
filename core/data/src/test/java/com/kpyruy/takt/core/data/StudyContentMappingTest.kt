@@ -49,7 +49,7 @@ class StudyContentMappingTest {
             title = "PLC notes",
             content = "Remember signal types.",
             updatedAtEpochMillis = 123456789L,
-            attachments = listOf(NoteAttachment("Лекція.pdf", "takt:///TPAR_6B/abc-Lekcia.pdf", "application/pdf")),
+            attachments = listOf(NoteAttachment("Лекція.pdf", TaktMaterialReference.encode("TPAR_6B", "abc-Lekcia.pdf"), "application/pdf")),
         )
 
         assertEquals(model, model.toEntity().toDomain())

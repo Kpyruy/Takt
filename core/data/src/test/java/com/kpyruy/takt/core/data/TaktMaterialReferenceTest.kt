@@ -15,9 +15,9 @@ class TaktMaterialReferenceTest {
         assertEquals(TaktMaterialReference.Path("DIVR_6B", fileName), TaktMaterialReference.decode(reference))
     }
 
-    @Test fun existingUnescapedReferencesRemainReadable() {
-        assertEquals(TaktMaterialReference.Path("DIVR_6B", "a1b2c3d4-Лекція #1?.pdf"),
-            TaktMaterialReference.decode("takt:///DIVR_6B/a1b2c3d4-Лекція #1?.pdf"))
+    @Test fun onlyEncodedMaterialReferencesAreAccepted() {
+        assertNull(TaktMaterialReference.decode("takt:///DIVR_6B/a1b2c3d4-Лекція #1?.pdf"))
         assertNull(TaktMaterialReference.decode("takt:///DIVR_6B"))
+        assertNull(TaktMaterialReference.decode("takt://v2/DIVR_6B/file%2Fother.pdf"))
     }
 }
