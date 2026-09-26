@@ -46,10 +46,10 @@ Use JDK 17, Android SDK platform 35 and build tools 35.0.0. Set `ANDROID_HOME` t
 
 The wrapper pins Gradle 8.11.1 and verifies the distribution SHA-256. The Gradle wrapper and build configuration stay in Git so Android Studio can open the project; generated Gradle, Android Studio, and APK files are ignored. The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
 
-The interface supports Ukrainian, English, and Slovak. English is the default for new installs; choose another language during setup or in Settings. The choice is included in the `Documents/Takt` backup. To build a signed release APK, follow [release signing](docs/release-signing.md). Keep the signing key outside the repository.
+The interface supports Ukrainian, English, and Slovak. English is the default for new installs; choose another language during setup or in Settings. The choice is included in the `Documents/Takt` backup. To sign a release APK, use Android Studio's **Build → Generate Signed Bundle / APK → APK**, choose the **release** variant, and keep the keystore outside the repository. Use the same key for every update.
 
-The opt-in `PulseFlowTest` writes review fixtures through the real repositories. Run it only on a disposable emulator (API 35 recommended), with `-e pulseReview true`; it is skipped without that flag. See `design-explorations/2026-09-22/NATIVE-QA.md` for the reviewed screens and verification details.
+The opt-in `PulseFlowTest` writes review fixtures through the real repositories. Run it only on a disposable emulator (API 35 recommended), with `-e pulseReview true`; it is skipped without that flag.
 
 ## License
 
-Takt's source code is [source-available](LICENSE), not open-source licensed. Reuse in another project requires prior written permission from Kpyruy, considered only for free projects with publicly available source code. Paid or commercial use is not permitted. Design screenshots and artwork are not granted for reuse. Bundled third-party fonts keep their own licenses: [Inter](core/ui/src/main/resources/META-INF/Inter-LICENSE.txt) and [Noto](design-explorations/2026-09-22/assets/Noto-LICENSE.txt).
+Takt's source code is [source-available](LICENSE), not open-source licensed. Reuse in another project requires prior written permission from Kpyruy, considered only for free projects with publicly available source code. Paid or commercial use is not permitted. Design screenshots and artwork are not granted for reuse. The bundled [Inter](core/ui/src/main/resources/META-INF/Inter-LICENSE.txt) font keeps its own license.

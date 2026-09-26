@@ -16,3 +16,9 @@ captures/
 **/.kotlin/
 *.jks
 *.keystore
+
+# Local working notes and design explorations
+/docs/release-signing.md
+/docs/superpowers/plans/
+/docs/design/
+/design-explorations/
