@@ -2,6 +2,7 @@ package com.kpyruy.takt.feature.home
 
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
+import com.kpyruy.takt.core.ui.i18n.formatDurationMinutes
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
@@ -57,9 +58,7 @@ import java.util.Locale
 
 @Composable
 fun HomeScreen(
-    repository: StudyPlanRepository,
-    scheduleRepository: ScheduleRepository,
-    gradeRepository: GradeRepository,
+    planningSnapshot: kotlinx.coroutines.flow.StateFlow<PlanningSnapshot?>,
     studyContentRepository: StudyContentRepository,
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
@@ -68,14 +67,16 @@ fun HomeScreen(
     onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
-    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val absences by remember(scheduleRepository) { scheduleRepository.observeAbsences() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val rules by remember(scheduleRepository) { scheduleRepository.observeRules() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val oneOffEvents by remember(scheduleRepository) { scheduleRepository.observeOneOffEvents() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val exceptions by remember(scheduleRepository) { scheduleRepository.observeExceptions() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val assessments by remember(gradeRepository) { gradeRepository.observeAllItems() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+    val current by planningSnapshot.collectAsStateWithLifecycle()
+    val planning = current ?: return
+    val courses = planning.courses
+    val absences = planning.absences
+    val rules = planning.rules
+    val oneOffEvents = planning.oneOffEvents
+    val exceptions = planning.exceptions
+    val tasks = planning.tasks
+    val assessments = planning.assessments
+    val settings = planning.settings
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val clock by produceState(initialValue = LocalDateTime.now(), lifecycleOwner) {
@@ -213,7 +214,7 @@ fun HomeScreen(
             if (active && following != null) {
                 val minutes = Duration.between(event.endTime, following.startTime).toMinutes()
                 if (minutes > 0) {
-                    Text(t("Перерва · ${if (minutes >= 60) "${minutes / 60} год " else ""}${minutes % 60} хв"),
+                    Text(t("Перерва") + " · " + formatDurationMinutes(minutes),
                         Modifier.padding(start = 55.dp, bottom = 14.dp), style = MaterialTheme.typography.bodySmall, color = muted)
                 }
             }

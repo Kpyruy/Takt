@@ -3,6 +3,10 @@ package com.kpyruy.takt.core.ui.i18n
 /** Ukrainian source phrases are stable lookup keys for English UI text. */
 internal val enTranslations: Map<String, String> = mapOf(
     "Не вказано" to "Unspecified",
+    "Зимовий" to "Winter",
+    "Літній" to "Summer",
+    "Перерва" to "Break",
+    "Завантаження розкладу" to "Loading schedule",
     "тест" to "test",
     "Лек." to "Lect.",
     "Сем." to "Sem.",
@@ -425,7 +429,6 @@ internal val enTranslations: Map<String, String> = mapOf(
     "Предмет закрито" to "The subject is closed",
     "Предмет не знайдено" to "Subject not found",
     "Предмети" to "Subjects",
-    "Предмети з усіх семестрів · натисни статус, щоб змінити" to "Subjects from all semesters · click status to change",
     "Предметів не знайдено" to "No subjects found",
     "Прибрати вкладення" to "Remove attachments",
     "Програма предмета" to "Course syllabus",
@@ -469,7 +472,6 @@ internal val enTranslations: Map<String, String> = mapOf(
     "Результату ще немає" to "There is no result yet",
     "Робот автоматика" to "Automatic robot",
     "Робототехніка" to "Robotics",
-    "Розгорни семестр · натисни статус, щоб змінити" to "Expand semester · click status to change",
     "Розгорнути весь план" to "Expand the whole plan",
     "Розгорнути семестр" to "Expand the semester",
     "Розгорнуто" to "Expanded",

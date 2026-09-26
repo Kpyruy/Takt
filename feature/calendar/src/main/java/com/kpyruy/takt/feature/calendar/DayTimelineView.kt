@@ -1,6 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
 import com.kpyruy.takt.core.ui.i18n.t
+import com.kpyruy.takt.core.ui.i18n.formatDurationMinutes
 
 import androidx.compose.foundation.layout.Arrangement
 
@@ -50,10 +51,12 @@ import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.DayTimelineInterval
 import com.kpyruy.takt.core.model.DayTimelineLayout
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.isVisuallyMuted
 import com.kpyruy.takt.core.model.ScheduleEventStatus
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.ceil
@@ -92,6 +95,7 @@ fun DayTimelineView(
             while (true) { value = LocalTime.now(); delay(30_000L) }
         }
     }
+    val clock = LocalDateTime.of(today, now)
     // A proportional grid must not let a large title paint over the following event.
     // Dense schedules and increased text sizes use the existing agenda interaction instead.
     val agenda = ordered.any { it.endTime <= it.startTime } || LocalDensity.current.fontScale > 1.15f ||
@@ -102,7 +106,7 @@ fun DayTimelineView(
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             ordered.forEach { event ->
                 TimelineEventBlock(event, cancellationStyle, hasTest(event), { onEventClick(event) },
-                    onLongClick = { onEventLongClick(event) }, modifier = Modifier.fillMaxWidth(), dimmed = selectedDate == today && event.endTime < now, compact = false)
+                    onLongClick = { onEventLongClick(event) }, modifier = Modifier.fillMaxWidth(), dimmed = event.isVisuallyMuted(clock), compact = false)
             }
         }
         return
@@ -148,7 +152,7 @@ fun DayTimelineView(
                     .width(laneWidth)
                     .padding(end = if (placement.laneCount > 1) 3.dp else 0.dp)
                     .height(minutesToDp(placement.durationMinutes)),
-                dimmed = selectedDate == today && event.endTime < now,
+                dimmed = event.isVisuallyMuted(clock),
                 short = placement.durationMinutes < 75,
             )
         }
@@ -158,7 +162,7 @@ fun DayTimelineView(
             if (gap >= 35 && placements.all { it.laneCount == 1 }) {
                 val offset = Duration.between(rangeStart, current.endTime).toMinutes() + gap / 2
                 val currentOffset = Duration.between(rangeStart, now).toMinutes()
-                if (selectedDate != today || kotlin.math.abs(currentOffset - offset) > 18) Text(t("Перерва · ${if (gap >= 60) "${gap / 60} год " else ""}${gap % 60} хв"),
+                if (selectedDate != today || kotlin.math.abs(currentOffset - offset) > 18) Text(t("Перерва") + " · " + formatDurationMinutes(gap),
                     Modifier.offset(x = timelineLabelWidth + 13.dp, y = minutesToDp(offset) - 7.dp),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -206,6 +210,7 @@ private fun TimelineEventBlock(
     short: Boolean = false,
 ) {
     val subjectColor = taktSubjectColor(event.courseId ?: event.title)
+    val accentColor = if (dimmed) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
     val cancelled = event.status == ScheduleEventStatus.CANCELLED
     val status = if (event.isAbsent) t("Пропущено") else when (event.status) {
         ScheduleEventStatus.CANCELLED -> t("Скасовано")
@@ -220,10 +225,11 @@ private fun TimelineEventBlock(
     Surface(
         modifier = modifier.alpha(if (dimmed || cancelled || event.isAbsent) 0.6f else 1f).semantics { contentDescription = "${event.title}, ${t(event.lessonType.label)}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", ${t("тест")}" else ""}" }.lessonInteraction(onClick, onLongClick),
         shape = RoundedCornerShape(7.dp),
-        color = lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),
+        color = if (dimmed) MaterialTheme.colorScheme.surfaceContainerLow
+            else lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),
     ) {
         Row(Modifier.height(IntrinsicSize.Min)) {
-            Box(Modifier.width(3.dp).fillMaxHeight().background(subjectColor))
+            Box(Modifier.width(3.dp).fillMaxHeight().background(accentColor))
             Column(Modifier.padding(horizontal = 13.dp, vertical = if (short) 5.dp else 11.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CourseInlineIcon(event.courseId)

@@ -35,7 +35,6 @@ enum class AppThemeMode {
 }
 
 enum class AppLanguage {
-    SYSTEM,
     UKRAINIAN,
     ENGLISH,
     SLOVAK,
@@ -57,7 +56,7 @@ data class AppSettings(
     val homeWorkFilter: HomeWorkFilter = HomeWorkFilter(),
     val semesterPeriods: Map<Int, SemesterPeriod> = emptyMap(),
     val currentSemester: Int? = null,
-    val language: AppLanguage = AppLanguage.UKRAINIAN,
+    val language: AppLanguage = AppLanguage.ENGLISH,
 ) {
     fun effectiveCurrentSemester(courses: List<Course>): Int? =
         currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }

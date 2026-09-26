@@ -300,7 +300,7 @@ internal fun BackupSettings.toModel() = AppSettings(
     semesterPeriods = semesterPeriods.toModel(),
     currentSemester = currentSemester?.takeIf { it > 0 },
     language = runCatching { com.kpyruy.takt.core.model.AppLanguage.valueOf(language) }
-        .getOrDefault(com.kpyruy.takt.core.model.AppLanguage.UKRAINIAN),
+        .getOrDefault(com.kpyruy.takt.core.model.AppLanguage.ENGLISH),
 )
 
 internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->

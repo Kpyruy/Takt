@@ -138,8 +138,7 @@ fun StudyPlanScreen(
             }
             Spacer(Modifier.height(16.dp))
             TaktUnderlineTabs(listOf(t("План"), t("Активні · ${activeCourses.size}"), t("Здані · ${completedCourses.size}")), filter, { filter = it })
-            Text(if (filter == 0) t("Розгорни семестр · натисни статус, щоб змінити") else t("Предмети з усіх семестрів · натисни статус, щоб змінити"),
-                Modifier.padding(top = 10.dp, bottom = 18.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(12.dp))
         }
         if (filter != 0) {
             val filtered = if (filter == 1) activeCourses else completedCourses

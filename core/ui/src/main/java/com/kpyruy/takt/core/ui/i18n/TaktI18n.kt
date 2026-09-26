@@ -8,19 +8,10 @@ import java.util.Locale
 
 /** UI language is observable so switching it refreshes already open Compose screens. */
 object TaktI18n {
-    var language: AppLanguage by mutableStateOf(AppLanguage.UKRAINIAN)
+    var language: AppLanguage by mutableStateOf(AppLanguage.ENGLISH)
         private set
 
-    fun use(preference: AppLanguage, systemLocale: Locale = Locale.getDefault()) {
-        language = when (preference) {
-            AppLanguage.SYSTEM -> when (systemLocale.language) {
-                "uk" -> AppLanguage.UKRAINIAN
-                "sk" -> AppLanguage.SLOVAK
-                else -> AppLanguage.ENGLISH
-            }
-            else -> preference
-        }
-    }
+    fun use(preference: AppLanguage) { language = preference }
 
     val locale: Locale
         get() = when (language) {
@@ -62,6 +53,19 @@ internal class DynamicTranslation(
 }
 
 fun t(ukrainian: String): String = TaktI18n.text(ukrainian)
+
+fun formatDurationMinutes(minutes: Long): String {
+    val hours = minutes / 60
+    val remainingMinutes = minutes % 60
+    val (hourUnit, minuteUnit) = when (TaktI18n.language) {
+        AppLanguage.UKRAINIAN -> "год" to "хв"
+        AppLanguage.ENGLISH, AppLanguage.SLOVAK -> "h" to "min"
+    }
+    return listOfNotNull(
+        hours.takeIf { it > 0 }?.let { "$it $hourUnit" },
+        remainingMinutes.takeIf { it > 0 || hours == 0L }?.let { "$it $minuteUnit" },
+    ).joinToString(" ")
+}
 
 fun tf(ukrainianFormat: String, vararg arguments: Any?): String =
     String.format(TaktI18n.locale, t(ukrainianFormat), *arguments)

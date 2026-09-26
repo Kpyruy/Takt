@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.ThemeFamily
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -18,7 +19,7 @@ class FirstRunScreenTest {
     @Test fun themePreviewAndOptionalTourLeadToOwnSetup() {
         var chosen: AppSettings? = null
         compose.setContent {
-            FirstRunScreen(AppSettings(), onFinish = { chosen = it }, onRestore = { null })
+            FirstRunScreen(AppSettings(language = AppLanguage.UKRAINIAN), onFinish = { chosen = it }, onRestore = { null })
         }
         compose.onNodeWithText("Твій Takt").assertExists()
         compose.onNodeWithTag("onboarding-color-PURPLE").performScrollTo().performClick()

@@ -2,11 +2,17 @@ package com.kpyruy.takt.feature.studyplan
 
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.model.AppLanguage
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SemesterStateTest {
+    @After fun resetLanguage() = TaktI18n.use(AppLanguage.ENGLISH)
+
     @Test fun activeSubjectCountsUseUkrainianForms() {
+        TaktI18n.use(AppLanguage.UKRAINIAN)
         assertEquals("1 активний предмет", activeCoursesLabel(1))
         assertEquals("2 активні предмети", activeCoursesLabel(2))
         assertEquals("5 активних предметів", activeCoursesLabel(5))

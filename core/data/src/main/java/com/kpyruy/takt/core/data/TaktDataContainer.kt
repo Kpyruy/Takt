@@ -3,8 +3,18 @@ package com.kpyruy.takt.core.data
 import android.content.Context
 import androidx.room.Room
 import com.kpyruy.takt.core.database.TaktDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class TaktDataContainer(context: Context) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val database: TaktDatabase = Room.databaseBuilder(
         context.applicationContext,
         TaktDatabase::class.java,
@@ -36,6 +46,25 @@ class TaktDataContainer(context: Context) {
         RoomExamRepository(database.examDao())
     val settingsRepository: AppSettingsRepository =
         SharedPreferencesAppSettingsRepository(context)
+    val planningSnapshot: StateFlow<PlanningSnapshot?> = observePlanningSnapshot(
+        studyPlanRepository, scheduleRepository, studyContentRepository, gradeRepository, settingsRepository,
+    ).map<PlanningSnapshot, PlanningSnapshot?> { it }
+        .stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** Wait for the shared first frame to catch up after an onboarding restore. */
+    suspend fun awaitRestoredPlanning() {
+        val expected = PlanningSnapshot(
+            courses = studyPlanRepository.observeCourses().first(),
+            absences = scheduleRepository.observeAbsences().first(),
+            rules = scheduleRepository.observeRules().first(),
+            oneOffEvents = scheduleRepository.observeOneOffEvents().first(),
+            exceptions = scheduleRepository.observeExceptions().first(),
+            tasks = studyContentRepository.observeAllTasks().first(),
+            assessments = gradeRepository.observeAllItems().first(),
+            settings = settingsRepository.settings.first(),
+        )
+        withTimeoutOrNull(5_000L) { planningSnapshot.first { it == expected } }
+    }
     val backupRepository: BackupRepository =
         RoomBackupRepository(database, settingsRepository)
     val documentStore = TaktDocumentStore(context.applicationContext, database, backupRepository, settingsRepository)

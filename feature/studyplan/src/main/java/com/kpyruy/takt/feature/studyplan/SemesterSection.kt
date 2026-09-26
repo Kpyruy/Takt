@@ -112,7 +112,7 @@ fun SemesterSection(
                     }
                 }
                 Text(
-                    "${if (semester % 2 == 1) "Зимовий" else "Літній"} · $stateLabel",
+                    "${t(if (semester % 2 == 1) "Зимовий" else "Літній")} · $stateLabel",
                     Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

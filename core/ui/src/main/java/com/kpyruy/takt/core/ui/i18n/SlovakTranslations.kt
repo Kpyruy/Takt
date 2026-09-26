@@ -3,6 +3,10 @@ package com.kpyruy.takt.core.ui.i18n
 /** Ukrainian source phrases are stable lookup keys for Slovak UI text. */
 internal val skTranslations: Map<String, String> = mapOf(
     "Не вказано" to "Neuvedené",
+    "Зимовий" to "Zimný",
+    "Літній" to "Letný",
+    "Перерва" to "Prestávka",
+    "Завантаження розкладу" to "Načítava sa rozvrh",
     "тест" to "test",
     "Лек." to "Predn.",
     "Сем." to "Sem.",
@@ -425,7 +429,6 @@ internal val skTranslations: Map<String, String> = mapOf(
     "Предмет закрито" to "Predmet je uzavretý",
     "Предмет не знайдено" to "Predmet sa nenašiel",
     "Предмети" to "Predmety",
-    "Предмети з усіх семестрів · натисни статус, щоб змінити" to "Predmety zo všetkých semestrov · kliknutím na stav ich zmeníte",
     "Предметів не знайдено" to "Nenašli sa žiadne predmety",
     "Прибрати вкладення" to "Odstráňte prílohy",
     "Програма предмета" to "Sylabus predmetu",
@@ -469,7 +472,6 @@ internal val skTranslations: Map<String, String> = mapOf(
     "Результату ще немає" to "Zatiaľ nie je žiadny výsledok",
     "Робот автоматика" to "Automatický robot",
     "Робототехніка" to "Robotika",
-    "Розгорни семестр · натисни статус, щоб змінити" to "Rozbaliť semester · kliknutím na stav ho zmeníte",
     "Розгорнути весь план" to "Rozbaliť celý plán",
     "Розгорнути семестр" to "Rozbaliť semester",
     "Розгорнуто" to "Rozbalené",

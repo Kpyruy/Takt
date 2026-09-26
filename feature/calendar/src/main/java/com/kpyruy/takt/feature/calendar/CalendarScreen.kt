@@ -54,6 +54,7 @@ import com.kpyruy.takt.core.model.CalendarDayMarkers
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.isVisuallyMuted
 import com.kpyruy.takt.core.model.ScheduleException
 import com.kpyruy.takt.core.model.ScheduleExceptionType
 import com.kpyruy.takt.core.model.ScheduleResolver
@@ -67,6 +68,7 @@ import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
@@ -84,30 +86,31 @@ private enum class CalendarViewMode {
 
 @Composable
 fun CalendarScreen(
-    scheduleRepository: ScheduleRepository,
+    planningSnapshot: kotlinx.coroutines.flow.StateFlow<com.kpyruy.takt.core.data.PlanningSnapshot?>,
     studyContentRepository: StudyContentRepository,
-    gradeRepository: GradeRepository,
-    studyPlanRepository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
     onOpenCourse: (String) -> Unit,
     onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
 ) {
-    val absences by remember(scheduleRepository) { scheduleRepository.observeAbsences() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val rules by remember(scheduleRepository) { scheduleRepository.observeRules() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val oneOffEvents by remember(scheduleRepository) { scheduleRepository.observeOneOffEvents() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val exceptions by remember(scheduleRepository) { scheduleRepository.observeExceptions() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val tasks by remember(studyContentRepository) { studyContentRepository.observeAllTasks() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val assessments by remember(gradeRepository) { gradeRepository.observeAllItems() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val courses by remember(studyPlanRepository) { studyPlanRepository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+    val current by planningSnapshot.collectAsStateWithLifecycle()
+    val planning = current ?: return
+    val absences = planning.absences
+    val rules = planning.rules
+    val oneOffEvents = planning.oneOffEvents
+    val exceptions = planning.exceptions
+    val tasks = planning.tasks
+    val assessments = planning.assessments
+    val courses = planning.courses
+    val settings = planning.settings
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val today by produceState(LocalDate.now(), lifecycleOwner) {
+    val clock by produceState(LocalDateTime.now(), lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) { value = LocalDate.now(); delay(30_000L) }
+            while (true) { value = LocalDateTime.now(); delay(30_000L) }
         }
     }
+    val today = clock.toLocalDate()
 
     var selectedDate by rememberSaveable(stateSaver = Saver<LocalDate, Long>({ it.toEpochDay() }, { LocalDate.ofEpochDay(it) })) { mutableStateOf(today) }
     var weekStart by rememberSaveable(stateSaver = Saver<LocalDate, Long>({ it.toEpochDay() }, { LocalDate.ofEpochDay(it) })) {
@@ -286,6 +289,7 @@ fun CalendarScreen(
                     when (settings.weekLayout) {
                         WeekLayout.TIMETABLE -> WeekTimetable(
                             dates = dates,
+                            clock = clock,
                             eventsForDate = ::eventsForDate,
                             assessmentCountForDate = { date -> pendingTasksByDate[date].orEmpty().size +
                                 assessmentsByDate[date].orEmpty().size },
@@ -295,6 +299,7 @@ fun CalendarScreen(
                         )
                         WeekLayout.COMPACT_LIST -> WeekCompactList(
                             dates = dates,
+                            clock = clock,
                             eventsForDate = ::eventsForDate,
                             workCountForDate = { date -> pendingTasksByDate[date].orEmpty().size +
                                 assessmentsByDate[date].orEmpty().size },
@@ -323,6 +328,9 @@ fun CalendarScreen(
                                 eventsForDate(date), allTasksByDate[date].orEmpty(),
                                 assessmentsByDate[date].orEmpty(),
                             ) },
+                            lessonsAreMuted = { date -> eventsForDate(date).let { events ->
+                                events.isNotEmpty() && events.all { it.isVisuallyMuted(clock) }
+                            } },
                             onSelect = ::selectDate,
                         )
 

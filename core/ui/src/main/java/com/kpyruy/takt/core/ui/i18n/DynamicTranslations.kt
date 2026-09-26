@@ -38,7 +38,6 @@ internal val dynamicTranslations = listOf(
     DynamicTranslation("__ARG0__ семестр · __ARG1__ кр.", "Semester __ARG0__ · __ARG1__ credits", "__ARG0__. semester · __ARG1__ kreditov"),
     DynamicTranslation("__ARG0__ із __ARG1__ завершено", "__ARG0__ of __ARG1__ completed", "Dokončené: __ARG0__ z __ARG1__"),
     DynamicTranslation(" · Для допуску__ARG0__", " · Required for exam__ARG0__", " · Potrebné na skúšku__ARG0__"),
-    DynamicTranslation("Перерва · __ARG0____ARG1__ хв", "Break · __ARG0____ARG1__ min", "Prestávka · __ARG0____ARG1__ min"),
     DynamicTranslation("__ARG0__ / __ARG1__ кредитів", "__ARG0__ / __ARG1__ credits", "__ARG0__ / __ARG1__ kreditov"),
     DynamicTranslation(" / __ARG0__ кредитів", " / __ARG0__ credits", " / __ARG0__ kreditov"),
     DynamicTranslation(" · мін. __ARG0__ б.", " · min. __ARG0__ pts", " · min. __ARG0__ bodov"),

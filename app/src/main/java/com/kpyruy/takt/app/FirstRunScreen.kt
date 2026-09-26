@@ -13,6 +13,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -135,19 +136,18 @@ internal fun FirstRunScreen(
                         Text(t("Обери вигляд. Розклад почнеться з твоїх предметів."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(t("Мова"), style = MaterialTheme.typography.titleMedium)
-                        listOf(
-                            listOf(AppLanguage.UKRAINIAN to t("Українська"), AppLanguage.ENGLISH to "English"),
-                            listOf(AppLanguage.SLOVAK to "Slovenčina", AppLanguage.SYSTEM to t("Як телефон")),
-                        ).forEach { pair ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                pair.forEach { (language, label) ->
-                                    FilterChip(
-                                        selected = draft.language == language,
-                                        onClick = { draft = draft.copy(language = language) },
-                                        label = { Text(label) },
-                                        modifier = Modifier.weight(1f).testTag("onboarding-language-${language.name}"),
-                                    )
-                                }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(
+                                AppLanguage.ENGLISH to "English",
+                                AppLanguage.UKRAINIAN to t("Українська"),
+                                AppLanguage.SLOVAK to "Slovenčina",
+                            ).forEach { (language, label) ->
+                                FilterChip(
+                                    selected = draft.language == language,
+                                    onClick = { draft = draft.copy(language = language) },
+                                    label = { Text(label) },
+                                    modifier = Modifier.testTag("onboarding-language-${language.name}"),
+                                )
                             }
                         }
                         AppearanceLivePreview(draft)

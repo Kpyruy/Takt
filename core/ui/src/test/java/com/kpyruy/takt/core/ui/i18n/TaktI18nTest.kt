@@ -1,14 +1,14 @@
 package com.kpyruy.takt.core.ui.i18n
 
 import com.kpyruy.takt.core.model.AppLanguage
-import java.util.Locale
+import com.kpyruy.takt.core.model.AppSettings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TaktI18nTest {
-    @After fun resetLanguage() = TaktI18n.use(AppLanguage.UKRAINIAN)
+    @After fun resetLanguage() = TaktI18n.use(AppLanguage.ENGLISH)
 
     @Test fun chosenLanguageTranslatesStaticAndDynamicText() {
         TaktI18n.use(AppLanguage.ENGLISH)
@@ -26,10 +26,9 @@ class TaktI18nTest {
         assertEquals("Získané body: 12, dostupných je ešte 8", t("12 балів набрано, до 8 ще доступно"))
     }
 
-    @Test fun systemLanguageUsesSupportedLocaleAndFallsBackToEnglish() {
-        TaktI18n.use(AppLanguage.SYSTEM, Locale.forLanguageTag("sk-SK"))
-        assertEquals("Dnes", t("Сьогодні"))
-        TaktI18n.use(AppLanguage.SYSTEM, Locale.forLanguageTag("de-DE"))
+    @Test fun newInstallDefaultsToEnglish() {
+        assertEquals(AppLanguage.ENGLISH, AppSettings().language)
+        TaktI18n.use(AppSettings().language)
         assertEquals("Today", t("Сьогодні"))
     }
 
@@ -41,5 +40,14 @@ class TaktI18nTest {
     @Test fun staticCatalogsCoverTheSamePhrases() {
         assertTrue(enTranslations.isNotEmpty())
         assertEquals(enTranslations.keys, skTranslations.keys)
+    }
+
+    @Test fun breakDurationIncludesLocalizedHoursAndOmitsZeroMinutes() {
+        TaktI18n.use(AppLanguage.UKRAINIAN)
+        assertEquals("5 год 10 хв", formatDurationMinutes(310))
+        TaktI18n.use(AppLanguage.ENGLISH)
+        assertEquals("5 h 10 min", formatDurationMinutes(310))
+        TaktI18n.use(AppLanguage.SLOVAK)
+        assertEquals("5 h", formatDurationMinutes(300))
     }
 }

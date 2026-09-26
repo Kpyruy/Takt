@@ -41,6 +41,7 @@ fun MonthCalendar(
     selectedDate: LocalDate,
     today: LocalDate,
     markersForDate: (LocalDate) -> CalendarDayMarkers,
+    lessonsAreMuted: (LocalDate) -> Boolean,
     onSelect: (LocalDate) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -110,7 +111,7 @@ fun MonthCalendar(
 
                             Spacer(Modifier.size(4.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                if (markers.lessons) MonthMarkerDot(MaterialTheme.colorScheme.primary,
+                                if (markers.lessons) MonthMarkerDot(if (lessonsAreMuted(date)) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                                     "month-marker-lesson-${date.toEpochDay()}", selected)
                                 if (markers.work) MonthMarkerDot(MaterialTheme.colorScheme.tertiary,
                                     "month-marker-work-${date.toEpochDay()}", selected)

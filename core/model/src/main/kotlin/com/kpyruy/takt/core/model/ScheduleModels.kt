@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.model
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.temporal.WeekFields
 
@@ -117,6 +118,11 @@ data class ResolvedScheduleEvent(
     val sourceDate: LocalDate? = null,
     val lessonType: LessonType = LessonType.UNSPECIFIED,
 )
+
+fun ResolvedScheduleEvent.isVisuallyMuted(at: LocalDateTime): Boolean =
+    isAbsent || status == ScheduleEventStatus.CANCELLED ||
+        date.isBefore(at.toLocalDate()) ||
+        (date == at.toLocalDate() && !endTime.isAfter(at.toLocalTime()))
 
 object ScheduleResolver {
     fun eventsForDate(

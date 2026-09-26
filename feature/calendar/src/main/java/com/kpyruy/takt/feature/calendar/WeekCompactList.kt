@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.isVisuallyMuted
 import com.kpyruy.takt.core.model.ScheduleEventStatus
 import com.kpyruy.takt.core.ui.components.CourseInlineIcon
 import com.kpyruy.takt.core.ui.components.LessonTestBadge
@@ -31,6 +32,7 @@ import com.kpyruy.takt.core.ui.components.LessonTypeIcon
 import com.kpyruy.takt.core.ui.components.lessonInteraction
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
@@ -42,6 +44,7 @@ private val time = DateTimeFormatter.ofPattern("HH:mm")
 @Composable
 fun WeekCompactList(
     dates: List<LocalDate>,
+    clock: LocalDateTime,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
     workCountForDate: (LocalDate) -> Int = { 0 },
     hasTest: (ResolvedScheduleEvent) -> Boolean = { false },
@@ -90,7 +93,7 @@ fun WeekCompactList(
                         } else events.forEachIndexed { index, event ->
                             if (index > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant)
-                            WeekLessonRow(event, hasTest(event),
+                            WeekLessonRow(event, clock, hasTest(event),
                                 onClick = { onEventClick(event) },
                                 onLongClick = { onEventLongClick(event) })
                         }
@@ -126,11 +129,14 @@ private fun localizedCount(
 @Composable
 private fun WeekLessonRow(
     event: ResolvedScheduleEvent,
+    clock: LocalDateTime,
     hasTest: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
     val subjectColor = taktSubjectColor(event.courseId ?: event.title)
+    val muted = event.isVisuallyMuted(clock)
+    val accentColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
     val status = when {
         event.isAbsent -> t("Пропущено")
         event.status == ScheduleEventStatus.CANCELLED -> t("Скасовано")
@@ -138,14 +144,14 @@ private fun WeekLessonRow(
         else -> null
     }
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("week-lesson-${event.id}")
-        .alpha(if (event.isAbsent || event.status == ScheduleEventStatus.CANCELLED) 0.6f else 1f)
+        .alpha(if (muted) 0.6f else 1f)
         .lessonInteraction(onClick, onLongClick)
         .padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Text(event.startTime.format(time), Modifier.width(45.dp),
-            style = MaterialTheme.typography.labelLarge, color = subjectColor)
-        Box(Modifier.width(3.dp).fillMaxHeight().background(subjectColor, RoundedCornerShape(3.dp)))
+            style = MaterialTheme.typography.labelLarge, color = accentColor)
+        Box(Modifier.width(3.dp).fillMaxHeight().background(accentColor, RoundedCornerShape(3.dp)))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CourseInlineIcon(event.courseId)

@@ -30,8 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.isVisuallyMuted
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
@@ -86,6 +88,7 @@ private fun eventHeight(event: ResolvedScheduleEvent): Dp {
 @Composable
 fun WeekTimetable(
     dates: List<LocalDate>,
+    clock: LocalDateTime,
     eventsForDate: (LocalDate) -> List<ResolvedScheduleEvent>,
     assessmentCountForDate: (LocalDate) -> Int = { 0 },
     hasTest: (ResolvedScheduleEvent) -> Boolean = { false },
@@ -149,6 +152,7 @@ fun WeekTimetable(
                         val subjectColor = taktSubjectColor(
                             laneEvent.event.courseId ?: laneEvent.event.title
                         )
+                        val muted = laneEvent.event.isVisuallyMuted(clock)
                         Surface(
                             modifier = Modifier
                                 .offset(
@@ -158,10 +162,11 @@ fun WeekTimetable(
                                 .width(width)
                                 .height(eventHeight(laneEvent.event))
                                 .padding(horizontal = 2.dp, vertical = 1.dp)
-                                .alpha(if (laneEvent.event.isAbsent) 0.6f else 1f)
+                                .alpha(if (muted) 0.6f else 1f)
                                 .lessonInteraction({ onEventClick(laneEvent.event) }, { onEventLongClick(laneEvent.event) }),
                             shape = MaterialTheme.shapes.extraSmall,
-                            color = subjectColor.copy(alpha = 0.18f),
+                            color = if (muted) MaterialTheme.colorScheme.surfaceContainerLow
+                                else subjectColor.copy(alpha = 0.18f),
                         ) {
                             Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {

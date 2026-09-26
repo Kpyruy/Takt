@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle(
                 initialValue = AppSettings()
             )
-            SideEffect { TaktI18n.use(settings.language, resources.configuration.locales[0]) }
+            SideEffect { TaktI18n.use(settings.language) }
 
             TaktTheme(settings = settings) {
                 val lightSystemBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
                                 when (dataContainer.documentStore.connect(uri)) {
                                     DocumentSyncStatus.READY -> {
                                         if (dataContainer.studyPlanRepository.observeCourses().first().isNotEmpty()) {
+                                            dataContainer.awaitRestoredPlanning()
                                             dataContainer.firstRunRepository.complete()
                                             showOnboarding = false
                                             null
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     false -> TaktApp(
+                        planningSnapshot = dataContainer.planningSnapshot,
                         repository = dataContainer.studyPlanRepository,
                         scheduleRepository = dataContainer.scheduleRepository,
                         gradeRepository = dataContainer.gradeRepository,

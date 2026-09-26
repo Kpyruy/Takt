@@ -46,7 +46,6 @@ internal fun LanguageSettingsPage(
             },
         )
         listOf(
-            AppLanguage.SYSTEM to t("Як телефон"),
             AppLanguage.UKRAINIAN to t("Українська"),
             AppLanguage.ENGLISH to "English",
             AppLanguage.SLOVAK to "Slovenčina",

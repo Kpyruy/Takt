@@ -176,7 +176,7 @@ data class BackupSettings(
     val homeWorkFilter: BackupHomeWorkFilter = BackupHomeWorkFilter(),
     val semesterPeriods: List<BackupSemesterPeriod> = emptyList(),
     val currentSemester: Int? = null,
-    val language: String = "UKRAINIAN",
+    val language: String = "ENGLISH",
 )
 
 @Serializable

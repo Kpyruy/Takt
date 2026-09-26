@@ -32,6 +32,8 @@ import com.kpyruy.takt.core.ui.components.LocalCourseIconKeys
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,6 +53,7 @@ import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.data.DocumentSyncStatus
 import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
+import com.kpyruy.takt.core.data.PlanningSnapshot
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
@@ -67,6 +70,7 @@ import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.SubjectsScreen
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 
 private enum class Destination(val route: String, private val ukrainianLabel: String) {
     HOME("home", "Сьогодні"),
@@ -84,6 +88,7 @@ private const val CREATE_ROUTE = "create/{type}?courseId={courseId}"
 
 @Composable
 fun TaktApp(
+    planningSnapshot: StateFlow<PlanningSnapshot?>,
     repository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
     gradeRepository: GradeRepository,
@@ -94,10 +99,18 @@ fun TaktApp(
     documentStore: TaktDocumentStore,
 ) {
     val navController = rememberNavController()
+    val snapshotState = planningSnapshot.collectAsStateWithLifecycle()
+    val availableCourses by remember(snapshotState) {
+        derivedStateOf(structuralEqualityPolicy()) { snapshotState.value?.courses }
+    }
+    val courses = availableCourses
+    if (courses == null) {
+        PlanningLoadingScreen()
+        return
+    }
     val backStack by navController.currentBackStackEntryAsState()
-    val currentRoute = backStack?.destination?.route
+    val currentRoute = backStack?.destination?.route ?: Destination.HOME.route
     val showRootNavigation = Destination.entries.any { it.route == currentRoute }
-    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val courseIconKeys = remember(courses) { courses.associate { it.id to it.iconKey } }
     val scope = rememberCoroutineScope()
     val haptics = rememberTaktHaptics()
@@ -252,9 +265,7 @@ fun TaktApp(
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(
-                    repository = repository,
-                    scheduleRepository = scheduleRepository,
-                    gradeRepository = gradeRepository,
+                    planningSnapshot = planningSnapshot,
                     studyContentRepository = studyContentRepository,
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
@@ -269,10 +280,8 @@ fun TaktApp(
             }
             composable(Destination.CALENDAR.route) {
                 CalendarScreen(
-                    scheduleRepository = scheduleRepository,
+                    planningSnapshot = planningSnapshot,
                     studyContentRepository = studyContentRepository,
-                    gradeRepository = gradeRepository,
-                    studyPlanRepository = repository,
                     onOpenCourse = ::openCourse,
                     onOpenAssessment = { item ->
                         val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
