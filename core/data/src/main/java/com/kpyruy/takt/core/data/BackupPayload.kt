@@ -2,6 +2,8 @@ package com.kpyruy.takt.core.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 
 @Serializable
 data class BackupPayload(
@@ -207,12 +209,11 @@ object BackupPayloadCodec {
     fun encode(payload: BackupPayload): String = json.encodeToString(payload)
 
     fun decode(raw: String): BackupPayload {
-        val payload = json.decodeFromString<BackupPayload>(raw)
+        val document = json.parseToJsonElement(raw).jsonObject
+        require("courses" in document) { "Backup is missing courses section" }
+        val payload = json.decodeFromJsonElement<BackupPayload>(document)
         require(payload.version in 1..BackupPayload.CURRENT_VERSION) {
             "Unsupported Takt backup version: ${payload.version}"
-        }
-        require(payload.courses.isNotEmpty()) {
-            "Backup does not contain a study plan"
         }
         return payload
     }

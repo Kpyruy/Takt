@@ -224,8 +224,18 @@ class BackupPayloadCodecTest {
         assertEquals(null, restored.settings.currentSemester)
     }
 
+    @Test
+    fun freshLocalSnapshotWithNoCourses_canBeComparedWithDocumentsBackup() {
+        val raw = BackupPayloadCodec.encode(BackupPayload())
+
+        val restored = BackupPayloadCodec.decode(raw)
+
+        assertEquals(emptyList<BackupCourse>(), restored.courses)
+        assertEquals(true, restored.hasNoUserContent())
+    }
+
     @Test(expected = IllegalArgumentException::class)
-    fun emptyBackup_isRejectedBeforeItCanReplaceLocalData() {
+    fun backupMissingCoursesSection_isRejectedBeforeItCanReplaceLocalData() {
         BackupPayloadCodec.decode("""{"version":2}""")
     }
 
