@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -66,11 +68,14 @@ import com.kpyruy.takt.feature.subjects.SubjectsScreen
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
-private enum class Destination(val route: String, val label: String) {
+private enum class Destination(val route: String, private val ukrainianLabel: String) {
     HOME("home", "Сьогодні"),
     CALENDAR("calendar", "Календар"),
     SUBJECTS("subjects", "Предмети"),
     PLAN("plan", "Прогрес"),
+
+    ;
+    val label: String get() = t(ukrainianLabel)
 }
 
 private const val SETTINGS_ROUTE = "settings"
@@ -106,7 +111,7 @@ fun TaktApp(
                     if (status == DocumentSyncStatus.CONFLICT) navController.navigate(SETTINGS_ROUTE)
                 }
                 .onFailure { error ->
-                    snackbarHostState.showSnackbar("Не вдалося підключити Documents: ${error.message}")
+                    snackbarHostState.showSnackbar(t("Не вдалося підключити Documents: ${error.message}"))
                 }
         }
     }
@@ -115,8 +120,8 @@ fun TaktApp(
         delay(1500)
         if (!documentStore.isConnected) {
             val result = snackbarHostState.showSnackbar(
-                message = "Підключіть Documents/Takt для автозбереження й відновлення даних",
-                actionLabel = "Підключити",
+                message = t("Підключіть Documents/Takt для автозбереження й відновлення даних"),
+                actionLabel = t("Підключити"),
                 duration = SnackbarDuration.Indefinite,
             )
             if (result == SnackbarResult.ActionPerformed) folderPicker.launch(null)
@@ -126,9 +131,9 @@ fun TaktApp(
         if (documentStatus == DocumentSyncStatus.CONFLICT || documentStatus == DocumentSyncStatus.ERROR) {
             val result = snackbarHostState.showSnackbar(
                 message = if (documentStatus == DocumentSyncStatus.CONFLICT) {
-                    "Копія в Documents/Takt відрізняється від даних на телефоні"
-                } else "Не вдалося синхронізувати Documents/Takt",
-                actionLabel = "Перевірити",
+                    t("Копія в Documents/Takt відрізняється від даних на телефоні")
+                } else t("Не вдалося синхронізувати Documents/Takt"),
+                actionLabel = t("Перевірити"),
                 duration = SnackbarDuration.Indefinite,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
@@ -137,8 +142,8 @@ fun TaktApp(
     LaunchedEffect(unmigratedMaterials) {
         if (unmigratedMaterials > 0) {
             val result = snackbarHostState.showSnackbar(
-                message = "Не вдалося скопіювати $unmigratedMaterials старих матеріалів",
-                actionLabel = "Деталі",
+                message = t("Не вдалося скопіювати $unmigratedMaterials старих матеріалів"),
+                actionLabel = t("Деталі"),
                 duration = SnackbarDuration.Indefinite,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
@@ -317,7 +322,7 @@ fun TaktApp(
                     examRepository = examRepository,
                     documentStore = documentStore,
                     courseId = courseId,
-                    initialTab = when (entry.arguments?.getString("tab")) { "tasks" -> "Задачі"; "grades" -> "Бали"; else -> "Огляд" },
+                    initialTab = entry.arguments?.getString("tab").orEmpty().takeIf { it in setOf("tasks", "grades") } ?: "overview",
                     onBack = { navController.popBackStack() },
                 )
             }

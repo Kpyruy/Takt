@@ -1,7 +1,9 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 enum class CreateItemType(
-    val label: String,
+    private val ukrainianLabel: String,
     val requiresCourse: Boolean,
 ) {
     COURSE("Предмет", false),
@@ -12,4 +14,7 @@ enum class CreateItemType(
     NOTE("Нотатка", true),
     EVENT("Подія", false),
     REMINDER("Нагадування", false),
+
+    ;
+    val label: String get() = t(ukrainianLabel)
 }

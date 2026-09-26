@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,6 +24,7 @@ import androidx.core.view.WindowCompat
 import androidx.compose.runtime.getValue
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.ui.theme.TaktTheme
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.data.DocumentSyncStatus
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -41,6 +44,7 @@ class MainActivity : ComponentActivity() {
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle(
                 initialValue = AppSettings()
             )
+            SideEffect { TaktI18n.use(settings.language, resources.configuration.locales[0]) }
 
             TaktTheme(settings = settings) {
                 val lightSystemBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -56,6 +60,7 @@ class MainActivity : ComponentActivity() {
                         onFinish = { appearance -> scope.launch {
                             dataContainer.settingsRepository.setAppearance(
                                 appearance.themeMode, appearance.themeFamily, appearance.cardAppearance)
+                            dataContainer.settingsRepository.setLanguage(appearance.language)
                             dataContainer.firstRunRepository.complete()
                             showOnboarding = false
                         } },
@@ -67,12 +72,12 @@ class MainActivity : ComponentActivity() {
                                             dataContainer.firstRunRepository.complete()
                                             showOnboarding = false
                                             null
-                                        } else "У копії немає предметів. Налаштуй Takt для себе."
+                                        } else t("У копії немає предметів. Налаштуй Takt для себе.")
                                     }
-                                    DocumentSyncStatus.CONFLICT -> "Дані відрізняються. Перевір копію в налаштуваннях."
-                                    else -> "Не вдалося відновити дані"
+                                    DocumentSyncStatus.CONFLICT -> t("Дані відрізняються. Перевір копію в налаштуваннях.")
+                                    else -> t("Не вдалося відновити дані")
                                 }
-                            }.getOrElse { it.message ?: "Не вдалося відновити дані" }
+                            }.getOrElse { it.message ?: t("Не вдалося відновити дані") }
                         },
                     )
                     false -> TaktApp(

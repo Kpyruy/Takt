@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,5 +88,5 @@ fun TaktAddFab(onClick: () -> Unit) {
         onClick = onClick, modifier = Modifier.size(56.dp).testTag("root-add"), shape = RoundedCornerShape(18.dp),
         containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
         elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp, pressedElevation = 7.dp),
-    ) { Icon(Icons.Default.Add, contentDescription = "Додати") }
+    ) { Icon(Icons.Default.Add, contentDescription = t("Додати")) }
 }

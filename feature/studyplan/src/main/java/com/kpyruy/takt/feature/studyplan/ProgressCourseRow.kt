@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,11 +23,11 @@ import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.ui.components.CourseAvatar
 
 internal fun CourseStatus.title() = when (this) {
-    CourseStatus.FULFILLED -> "Здано"
-    CourseStatus.ENROLLED -> "Активний"
-    CourseStatus.PLANNED -> "Заплановано"
-    CourseStatus.NOT_ENROLLED -> "Не записаний"
-    CourseStatus.NOT_NEEDED -> "Не потрібний"
+    CourseStatus.FULFILLED -> t("Здано")
+    CourseStatus.ENROLLED -> t("Активний")
+    CourseStatus.PLANNED -> t("Заплановано")
+    CourseStatus.NOT_ENROLLED -> t("Не записаний")
+    CourseStatus.NOT_NEEDED -> t("Не потрібний")
 }
 internal fun CourseStatus.icon(): ImageVector = when (this) {
     CourseStatus.FULFILLED -> Icons.Outlined.CheckCircle
@@ -47,12 +49,12 @@ internal fun ProgressCourseRow(course: Course, onOpen: () -> Unit, onStatus: () 
             CourseAvatar(course)
             Column(Modifier.weight(1f)) {
                 Text(course.title, style = MaterialTheme.typography.titleSmall)
-                Text("${course.semester} семестр · ${course.credits} кр.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t("${course.semester} семестр · ${course.credits} кр."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         val color = course.status.tint()
         TextButton(onClick = onStatus, modifier = Modifier.widthIn(max = 110.dp).heightIn(min = 48.dp).testTag("status-${course.id}")
-            .semantics { contentDescription = "Змінити статус: ${course.title}"; stateDescription = course.status.title() }, contentPadding = PaddingValues(horizontal = 6.dp)) {
+            .semantics { contentDescription = t("Змінити статус: ${course.title}"); stateDescription = course.status.title() }, contentPadding = PaddingValues(horizontal = 6.dp)) {
             Icon(course.status.icon(), null, Modifier.size(16.dp), tint = color)
             Spacer(Modifier.width(5.dp))
             Text(course.status.title(), style = MaterialTheme.typography.labelSmall, color = color)
@@ -66,7 +68,7 @@ internal fun CourseStatusSheet(course: Course, onStatus: (CourseStatus) -> Unit,
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(course.title, style = MaterialTheme.typography.headlineSmall)
-            Text("${course.semester} семестр · статус можна змінити будь-коли", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("${course.semester} семестр · статус можна змінити будь-коли"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             CourseStatus.entries.forEach { status ->
                 Surface(onClick = { onStatus(status) }, Modifier.fillMaxWidth().testTag("choose-status-${status.name}"),
@@ -75,11 +77,11 @@ internal fun CourseStatusSheet(course: Course, onStatus: (CourseStatus) -> Unit,
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(status.icon(), null, Modifier.size(22.dp), tint = status.tint())
                         Text(status.title(), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                        if (status == course.status) Icon(Icons.Outlined.Check, "Обрано", Modifier.size(20.dp))
+                        if (status == course.status) Icon(Icons.Outlined.Check, t("Обрано"), Modifier.size(20.dp))
                     }
                 }
             }
-            TextButton(onClick = onIcon, modifier = Modifier.fillMaxWidth()) { Text("Змінити іконку предмета") }
+            TextButton(onClick = onIcon, modifier = Modifier.fillMaxWidth()) { Text(t("Змінити іконку предмета")) }
         }
     }
 }

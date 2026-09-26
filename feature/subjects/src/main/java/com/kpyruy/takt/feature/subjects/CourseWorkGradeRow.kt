@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,34 +52,34 @@ internal fun CourseWorkGradeRow(item: GradeItem, onEdit: () -> Unit, onDelete: (
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(icon, contentDescription = item.type.label, tint = taktSubjectColor(item.courseId))
+            Icon(icon, contentDescription = t(item.type.label), tint = taktSubjectColor(item.courseId))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
                 Text(buildList {
-                    add(item.type.label)
-                    item.durationMinutes?.let { add("$it хв") }
-                    item.dueDate?.let { add("до ${it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}") }
-                    if (item.requiredForExam) add("для допуску")
-                    item.minimumPointsForExam?.let { add("мін. ${it.displayNumber()} б.") }
+                    add(t(item.type.label))
+                    item.durationMinutes?.let { add(t("$it хв")) }
+                    item.dueDate?.let { add(t("до ${it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")) }
+                    if (item.requiredForExam) add(t("для допуску"))
+                    item.minimumPointsForExam?.let { add(t("мін. ${it.displayNumber()} б.")) }
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     when {
-                        item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> "Поріг не виконано"
-                        item.completed -> "Виконано · ${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} б."
-                        else -> "Очікується · до ${item.maxPoints.displayNumber()} б."
+                        item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Поріг не виконано")
+                        item.completed -> t("Виконано · ${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} б.")
+                        else -> t("Очікується · до ${item.maxPoints.displayNumber()} б.")
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = statusColor,
                 )
             }
-            if (item.completed) Icon(Icons.Outlined.CheckCircle, contentDescription = "Виконано", tint = statusColor)
+            if (item.completed) Icon(Icons.Outlined.CheckCircle, contentDescription = t("Виконано"), tint = statusColor)
             IconButton(onClick = { menuOpen = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Дії роботи")
+                Icon(Icons.Default.MoreVert, contentDescription = t("Дії роботи"))
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(text = { Text("Редагувати") }, onClick = { menuOpen = false; onEdit() })
-                DropdownMenuItem(text = { Text("Видалити") }, onClick = { menuOpen = false; onDelete() })
+                DropdownMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
+                DropdownMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
             }
         }
     }

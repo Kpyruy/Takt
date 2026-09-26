@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.LessonType
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.core.model.ScheduleEventStatus
 import com.kpyruy.takt.core.ui.components.CourseInlineIcon
@@ -30,9 +33,10 @@ import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 
-private val dayTitle = DateTimeFormatter.ofPattern("EEEE", Locale("uk"))
-private val dayDate = DateTimeFormatter.ofPattern("d MMM", Locale("uk"))
+private val dayTitle get() = DateTimeFormatter.ofPattern("EEEE", TaktI18n.locale)
+private val dayDate get() = DateTimeFormatter.ofPattern("d MMM", TaktI18n.locale)
 private val time = DateTimeFormatter.ofPattern("HH:mm")
 
 @Composable
@@ -68,19 +72,19 @@ fun WeekCompactList(
                         Row(Modifier.fillMaxWidth().padding(bottom = 7.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            Text("${events.size} ${ukrainianCount(events.size, "пара", "пари", "пар")}",
+                            Text(localizedCount(events.size, "пара", "пари", "пар", "class", "classes", "hodina", "hodiny", "hodín"),
                                 Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (workCount > 0) {
                                 Icon(Icons.Outlined.Assignment, null, Modifier.size(15.dp),
                                     tint = MaterialTheme.colorScheme.tertiary)
-                                Text("$workCount ${ukrainianCount(workCount, "робота", "роботи", "робіт")}",
+                                Text(localizedCount(workCount, "робота", "роботи", "робіт", "task", "tasks", "úloha", "úlohy", "úloh"),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.tertiary)
                             }
                         }
                         if (events.isEmpty()) {
-                            Text("Пар немає", Modifier.padding(vertical = 8.dp),
+                            Text(t("Пар немає"), Modifier.padding(vertical = 8.dp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else events.forEachIndexed { index, event ->
@@ -105,6 +109,20 @@ private fun ukrainianCount(count: Int, one: String, few: String, many: String): 
     else -> many
 }
 
+private fun localizedCount(
+    count: Int,
+    ukOne: String, ukFew: String, ukMany: String,
+    enOne: String, enMany: String,
+    skOne: String, skFew: String, skMany: String,
+): String {
+    val noun = when (TaktI18n.language) {
+        AppLanguage.ENGLISH -> if (count == 1) enOne else enMany
+        AppLanguage.SLOVAK -> when (count) { 1 -> skOne; in 2..4 -> skFew; else -> skMany }
+        else -> ukrainianCount(count, ukOne, ukFew, ukMany)
+    }
+    return "$count $noun"
+}
+
 @Composable
 private fun WeekLessonRow(
     event: ResolvedScheduleEvent,
@@ -114,9 +132,9 @@ private fun WeekLessonRow(
 ) {
     val subjectColor = taktSubjectColor(event.courseId ?: event.title)
     val status = when {
-        event.isAbsent -> "Пропущено"
-        event.status == ScheduleEventStatus.CANCELLED -> "Скасовано"
-        event.status == ScheduleEventStatus.MOVED -> "Перенесено"
+        event.isAbsent -> t("Пропущено")
+        event.status == ScheduleEventStatus.CANCELLED -> t("Скасовано")
+        event.status == ScheduleEventStatus.MOVED -> t("Перенесено")
         else -> null
     }
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("week-lesson-${event.id}")
@@ -138,13 +156,13 @@ private fun WeekLessonRow(
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (event.lessonType == LessonType.UNSPECIFIED) {
-                    Icon(Icons.Outlined.Event, "Подія", Modifier.size(16.dp),
+                    Icon(Icons.Outlined.Event, t("Подія"), Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else LessonTypeIcon(event.lessonType)
                 Text(buildList {
-                    event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.let { add(it.label) }
+                    event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.let { add(t(it.label)) }
                     event.room?.takeIf { it.isNotBlank() }?.let(::add)
-                    add("до ${event.endTime.format(time)}")
+                    add(t("до ${event.endTime.format(time)}"))
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)

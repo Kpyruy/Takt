@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -101,7 +103,7 @@ fun AddLessonForm(
     ) {
         if (showHeading) {
             Text(
-                text = if (initialRule == null) "Додати пару" else "Редагувати пару",
+                text = if (initialRule == null) t("Додати пару") else t("Редагувати пару"),
                 style = MaterialTheme.typography.headlineSmall,
             )
         }
@@ -115,7 +117,7 @@ fun AddLessonForm(
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Назва предмета") },
+            label = { Text(t("Назва предмета")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -123,12 +125,12 @@ fun AddLessonForm(
         OutlinedTextField(
             value = room,
             onValueChange = { room = it },
-            label = { Text("Аудиторія") },
+            label = { Text(t("Аудиторія")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
 
-        Text("День тижня", style = MaterialTheme.typography.titleSmall)
+        Text(t("День тижня"), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(DayOfWeek.entries) { option ->
                 FilterChip(
@@ -144,7 +146,7 @@ fun AddLessonForm(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TaktTimePickerField(
-                label = "Початок",
+                label = t("Початок"),
                 value = startTime,
                 onValueChange = {
                     startTime = it
@@ -153,7 +155,7 @@ fun AddLessonForm(
                 modifier = Modifier.weight(1f),
             )
             TaktTimePickerField(
-                label = "Кінець",
+                label = t("Кінець"),
                 value = endTime,
                 onValueChange = {
                     endTime = it
@@ -163,14 +165,14 @@ fun AddLessonForm(
             )
         }
 
-        Text("Повторення", style = MaterialTheme.typography.titleSmall)
+        Text(t("Повторення"), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        ScheduleRecurrence.WEEKLY to "Щотижня",
-                        ScheduleRecurrence.ODD_WEEKS to "Непарні",
-                        ScheduleRecurrence.EVEN_WEEKS to "Парні",
+                        ScheduleRecurrence.WEEKLY to t("Щотижня"),
+                        ScheduleRecurrence.ODD_WEEKS to t("Непарні"),
+                        ScheduleRecurrence.EVEN_WEEKS to t("Парні"),
                     ).forEach { (option, label) ->
                         FilterChip(
                             selected = recurrence == option,
@@ -184,7 +186,7 @@ fun AddLessonForm(
 
         if (showTimeError) {
             Text(
-                text = "Кінець має бути пізніше початку.",
+                text = t("Кінець має бути пізніше початку."),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -214,17 +216,17 @@ fun AddLessonForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialRule == null) "Зберегти" else "Оновити")
+            Text(if (initialRule == null) t("Зберегти") else t("Оновити"))
         }
     }
 }
 
 private fun DayOfWeek.shortLabel(): String = when (this) {
-    DayOfWeek.MONDAY -> "Пн"
-    DayOfWeek.TUESDAY -> "Вт"
-    DayOfWeek.WEDNESDAY -> "Ср"
-    DayOfWeek.THURSDAY -> "Чт"
-    DayOfWeek.FRIDAY -> "Пт"
-    DayOfWeek.SATURDAY -> "Сб"
-    DayOfWeek.SUNDAY -> "Нд"
+    DayOfWeek.MONDAY -> t("Пн")
+    DayOfWeek.TUESDAY -> t("Вт")
+    DayOfWeek.WEDNESDAY -> t("Ср")
+    DayOfWeek.THURSDAY -> t("Чт")
+    DayOfWeek.FRIDAY -> t("Пт")
+    DayOfWeek.SATURDAY -> t("Сб")
+    DayOfWeek.SUNDAY -> t("Нд")
 }

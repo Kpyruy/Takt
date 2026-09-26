@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +33,7 @@ internal fun CourseNotesTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (notes.isEmpty()) SectionCard {
-            Text("Поки немає нотаток.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("Поки немає нотаток."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         notes.forEach { note ->
             SectionCard {
@@ -45,7 +47,7 @@ internal fun CourseNotesTab(
         }
         OutlinedButton(onClick = onAddNote, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, contentDescription = null)
-            Text("Додати нотатку")
+            Text(t("Додати нотатку"))
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -66,7 +68,7 @@ internal fun AppearanceSettingsPage(
                     onClick = { onApply(draft) },
                     enabled = changed,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp),
-                ) { Text(if (changed) "Застосувати вигляд" else "Вигляд застосовано") }
+                ) { Text(if (changed) t("Застосувати вигляд") else t("Вигляд застосовано")) }
             }
         },
     ) { insets ->
@@ -76,19 +78,19 @@ internal fun AppearanceSettingsPage(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             ScreenHeader(
-                title = "Твій вигляд",
+                title = t("Твій вигляд"),
                 navigation = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
                 },
             )
-            SettingsSectionTitle("Так це виглядатиме")
+            SettingsSectionTitle(t("Так це виглядатиме"))
             AppearanceLivePreview(draft)
-            SettingsSectionTitle("Освітлення")
+            SettingsSectionTitle(t("Освітлення"))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
-                    AppThemeMode.SYSTEM to "Як телефон",
-                    AppThemeMode.LIGHT to "Світла",
-                    AppThemeMode.DARK to "Темна",
+                    AppThemeMode.SYSTEM to t("Як телефон"),
+                    AppThemeMode.LIGHT to t("Світла"),
+                    AppThemeMode.DARK to t("Темна"),
                 ).forEach { (mode, label) ->
                     SelectablePill(
                         label = label,
@@ -98,14 +100,14 @@ internal fun AppearanceSettingsPage(
                     )
                 }
             }
-            SettingsSectionTitle("Палітра")
+            SettingsSectionTitle(t("Палітра"))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
-                    ThemeFamily.BLUE to "Синя",
-                    ThemeFamily.GREEN to "Зелена",
-                    ThemeFamily.PURPLE to "Фіолетова",
-                    ThemeFamily.WARM to "Тепла",
-                    ThemeFamily.MONOCHROME to "Монохром",
+                    ThemeFamily.BLUE to t("Синя"),
+                    ThemeFamily.GREEN to t("Зелена"),
+                    ThemeFamily.PURPLE to t("Фіолетова"),
+                    ThemeFamily.WARM to t("Тепла"),
+                    ThemeFamily.MONOCHROME to t("Монохром"),
                 ).forEach { (family, label) ->
                     val selected = draft.themeFamily == family
                     val dark = when (draft.themeMode) {
@@ -135,11 +137,11 @@ internal fun AppearanceSettingsPage(
                     }
                 }
             }
-            SettingsSectionTitle("Стиль карток")
+            SettingsSectionTitle(t("Стиль карток"))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
-                    CardAppearance.ELEVATED to "Підняті",
-                    CardAppearance.TONAL_FILLED to "Заливка",
+                    CardAppearance.ELEVATED to t("Підняті"),
+                    CardAppearance.TONAL_FILLED to t("Заливка"),
                 ).forEach { (appearance, label) ->
                     CardStyleOption(
                         settings = draft,
@@ -164,9 +166,9 @@ fun AppearanceLivePreview(settings: AppSettings) {
         ) {
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("ПРИКЛАД", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
+                    Text(t("ПРИКЛАД"), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Text("Твій день", style = MaterialTheme.typography.labelSmall,
+                    Text(t("Твій день"), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 SectionCard {
@@ -175,8 +177,8 @@ fun AppearanceLivePreview(settings: AppSettings) {
                         Column {
                             Text("09:00 — 10:30", style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            Text("Твоя перша пара", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text("Лекція · ауд. 302", style = MaterialTheme.typography.bodySmall,
+                            Text(t("Твоя перша пара"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(t("Лекція · ауд. 302"), style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -189,8 +191,8 @@ fun AppearanceLivePreview(settings: AppSettings) {
                                 modifier = Modifier.size(16.dp))
                         }
                         Column {
-                            Text("Підготувати конспект", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text("Твій предмет · завтра", style = MaterialTheme.typography.bodySmall,
+                            Text(t("Підготувати конспект"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(t("Твій предмет · завтра"), style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }

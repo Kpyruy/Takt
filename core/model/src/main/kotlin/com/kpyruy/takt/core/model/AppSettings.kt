@@ -34,6 +34,13 @@ enum class AppThemeMode {
     DARK,
 }
 
+enum class AppLanguage {
+    SYSTEM,
+    UKRAINIAN,
+    ENGLISH,
+    SLOVAK,
+}
+
 enum class WeekLayout {
     TIMETABLE,
     COMPACT_LIST,
@@ -50,6 +57,7 @@ data class AppSettings(
     val homeWorkFilter: HomeWorkFilter = HomeWorkFilter(),
     val semesterPeriods: Map<Int, SemesterPeriod> = emptyMap(),
     val currentSemester: Int? = null,
+    val language: AppLanguage = AppLanguage.UKRAINIAN,
 ) {
     fun effectiveCurrentSemester(courses: List<Course>): Int? =
         currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }

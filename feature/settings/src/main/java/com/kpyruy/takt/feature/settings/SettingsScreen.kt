@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,6 +66,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
     var showAppearance by remember { mutableStateOf(false) }
+    var showLanguage by remember { mutableStateOf(false) }
     var showCalendar by remember { mutableStateOf(false) }
     var showTasks by remember { mutableStateOf(false) }
     var showPeriods by remember { mutableStateOf(false) }
@@ -80,15 +84,15 @@ fun SettingsScreen(
                     val json = backupRepository.exportJson()
                     withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openOutputStream(uri)
-                            ?: error("Не вдалося відкрити файл")
+                            ?: error(t("Не вдалося відкрити файл"))
                         stream.bufferedWriter().use { it.write(json) }
                     }
                 }
                 backupMessage = if (result.isSuccess) {
-                    "Резервну копію збережено."
+                    t("Резервну копію збережено.")
                 } else {
-                    "Помилка експорту: " +
-                        (result.exceptionOrNull()?.message ?: "невідома помилка")
+                    t("Помилка експорту: ") +
+                        (result.exceptionOrNull()?.message ?: t("невідома помилка"))
                 }
             }
         }
@@ -102,16 +106,16 @@ fun SettingsScreen(
                 val result = runCatching {
                     val raw = withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openInputStream(uri)
-                            ?: error("Не вдалося відкрити файл")
+                            ?: error(t("Не вдалося відкрити файл"))
                         stream.bufferedReader().use { it.readText() }
                     }
                     backupRepository.importJson(raw)
                 }
                 backupMessage = if (result.isSuccess) {
-                    "Резервну копію відновлено."
+                    t("Резервну копію відновлено.")
                 } else {
-                    "Помилка імпорту: " +
-                        (result.exceptionOrNull()?.message ?: "невідома помилка")
+                    t("Помилка імпорту: ") +
+                        (result.exceptionOrNull()?.message ?: t("невідома помилка"))
                 }
             }
         }
@@ -121,9 +125,9 @@ fun SettingsScreen(
         if (uri != null) scope.launch {
             val result = runCatching { documentStore.connect(uri) }
             backupMessage = when (result.getOrNull()) {
-                DocumentSyncStatus.READY -> "Documents/Takt підключено. Дані синхронізуються автоматично."
-                DocumentSyncStatus.CONFLICT -> "Знайдено різні дані. Виберіть, яку версію залишити."
-                else -> "Помилка підключення: ${result.exceptionOrNull()?.message ?: "невідома помилка"}"
+                DocumentSyncStatus.READY -> t("Documents/Takt підключено. Дані синхронізуються автоматично.")
+                DocumentSyncStatus.CONFLICT -> t("Знайдено різні дані. Виберіть, яку версію залишити.")
+                else -> t("Помилка підключення: ${result.exceptionOrNull()?.message ?: "невідома помилка"}")
             }
         }
     }
@@ -137,6 +141,17 @@ fun SettingsScreen(
                     settingsRepository.setAppearance(preview.themeMode, preview.themeFamily, preview.cardAppearance)
                     showAppearance = false
                 }
+            },
+        )
+        return
+    }
+    if (showLanguage) {
+        LanguageSettingsPage(
+            selected = settings.language,
+            onBack = { showLanguage = false },
+            onSelected = { language ->
+                scope.launch { settingsRepository.setLanguage(language) }
+                showLanguage = false
             },
         )
         return
@@ -180,40 +195,45 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = "Налаштування",
+            title = t("Налаштування"),
             navigation = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Назад"))
                 }
             },
         )
 
-        SettingsSectionTitle("Під себе")
+        SettingsSectionTitle(t("Під себе"))
         SettingsNavigationTile(
-            title = "Вигляд",
+            title = t("Вигляд"),
             icon = Icons.Outlined.Palette,
             onClick = { showAppearance = true },
         )
         SettingsNavigationTile(
-            title = "Календар і розклад",
+            title = t("Мова"),
+            icon = Icons.Outlined.Language,
+            onClick = { showLanguage = true },
+        )
+        SettingsNavigationTile(
+            title = t("Календар і розклад"),
             icon = Icons.Outlined.CalendarMonth,
             onClick = { showCalendar = true },
         )
         SettingsNavigationTile(
-            title = "Періоди навчання",
+            title = t("Періоди навчання"),
             icon = Icons.Outlined.DateRange,
             onClick = { showPeriods = true },
         )
 
         SettingsNavigationTile(
-            title = "Задачі",
+            title = t("Задачі"),
             icon = Icons.Outlined.Checklist,
             onClick = { showTasks = true },
         )
 
-        SettingsSectionTitle("Оцінювання")
+        SettingsSectionTitle(t("Оцінювання"))
         SectionCard {
-            Text("Стандартна шкала", style = MaterialTheme.typography.titleMedium)
+            Text(t("Стандартна шкала"), style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
                     Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -223,11 +243,11 @@ fun SettingsScreen(
                     }
                 }
             }
-            Text("FX · нижче 56%", style = MaterialTheme.typography.bodySmall,
+            Text(t("FX · нижче 56%"), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        SettingsSectionTitle("Дані")
+        SettingsSectionTitle(t("Дані"))
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.size(9.dp).background(
@@ -237,46 +257,46 @@ fun SettingsScreen(
             }
             Text(
                 when (documentStatus) {
-                    DocumentSyncStatus.READY -> "Підключено · синхронізація активна"
-                    DocumentSyncStatus.CONFLICT -> "Локальні дані й копія в Documents/Takt відрізняються"
-                    DocumentSyncStatus.ERROR -> "Помилка синхронізації. Перевірте доступ до папки."
-                    DocumentSyncStatus.DISCONNECTED -> "Не підключено"
+                    DocumentSyncStatus.READY -> t("Підключено · синхронізація активна")
+                    DocumentSyncStatus.CONFLICT -> t("Локальні дані й копія в Documents/Takt відрізняються")
+                    DocumentSyncStatus.ERROR -> t("Помилка синхронізації. Перевірте доступ до папки.")
+                    DocumentSyncStatus.DISCONNECTED -> t("Не підключено")
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (unmigratedMaterials > 0) {
                 Text(
-                    "Не вдалося скопіювати $unmigratedMaterials старих матеріалів. Додайте їх заново, поки оригінали доступні.",
+                    t("Не вдалося скопіювати $unmigratedMaterials старих матеріалів. Додайте їх заново, поки оригінали доступні."),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
             OutlinedButton(onClick = { folderLauncher.launch(null) }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) "Підключити Documents" else "Змінити папку")
+                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t("Підключити Documents") else t("Змінити папку"))
             }
             if (documentStatus == DocumentSyncStatus.CONFLICT) {
                 Button(onClick = {
                     scope.launch {
                         backupMessage = runCatching { documentStore.restoreFromDocuments() }
-                            .fold({ "Дані відновлено з Documents/Takt." }, { "Помилка відновлення: ${it.message}" })
+                            .fold({ t("Дані відновлено з Documents/Takt.") }, { t("Помилка відновлення: ${it.message}") })
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text("Відновити з Documents/Takt") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(t("Відновити з Documents/Takt")) }
                 OutlinedButton(onClick = {
                     scope.launch {
                         backupMessage = runCatching { documentStore.saveCurrentToDocuments() }
-                            .fold({ "Поточні дані записано в Documents/Takt." }, { "Помилка збереження: ${it.message}" })
+                            .fold({ t("Поточні дані записано в Documents/Takt.") }, { t("Помилка збереження: ${it.message}") })
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text("Замінити копію даними телефона") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(t("Замінити копію даними телефона")) }
             }
         }
         SectionCard {
-            Text("Резервна копія", style = MaterialTheme.typography.titleMedium)
+            Text(t("Резервна копія"), style = MaterialTheme.typography.titleMedium)
             Button(
                 onClick = {
                     exportLauncher.launch("takt-backup-" + LocalDate.now() + ".json")
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Експортувати JSON")
+                Text(t("Експортувати JSON"))
             }
             OutlinedButton(
                 onClick = {
@@ -284,13 +304,13 @@ fun SettingsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Відновити з JSON")
+                Text(t("Відновити з JSON"))
             }
             backupMessage?.let { message ->
                 Text(
                     message,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (message.startsWith("Помилка")) {
+                    color = if (message.startsWith(t("Помилка"))) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
@@ -94,7 +96,7 @@ fun AddNoteForm(
                         }.onSuccess { attachment ->
                             attachments = attachments + attachment
                             attachmentError = null
-                        }.onFailure { attachmentError = "Не вдалося додати файл: ${it.message}" }
+                        }.onFailure { attachmentError = t("Не вдалося додати файл: ${it.message}") }
                     }
                 } finally {
                     copyingFiles = false
@@ -106,7 +108,7 @@ fun AddNoteForm(
         if (uri != null) scope.launch {
             runCatching { documentStore.connect(uri) }
                 .onSuccess { filesPicker.launch(arrayOf("*/*")) }
-                .onFailure { attachmentError = "Не вдалося підключити папку: ${it.message}" }
+                .onFailure { attachmentError = t("Не вдалося підключити папку: ${it.message}") }
         }
     }
 
@@ -116,21 +118,21 @@ fun AddNoteForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialNote == null) "Нова нотатка" else "Редагувати нотатку",
+                if (initialNote == null) t("Нова нотатка") else t("Редагувати нотатку"),
                 style = MaterialTheme.typography.headlineSmall,
             )
         }
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Заголовок") },
+            label = { Text(t("Заголовок")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         OutlinedTextField(
             value = content,
             onValueChange = { content = it },
-            label = { Text("Нотатка") },
+            label = { Text(t("Нотатка")) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 5,
         )
@@ -139,7 +141,7 @@ fun AddNoteForm(
                 Icon(Icons.Default.AttachFile, contentDescription = null)
                 Text(attachment.name, modifier = Modifier.weight(1f))
                 IconButton(onClick = { attachments = attachments - attachment }) {
-                    Icon(Icons.Default.Close, contentDescription = "Прибрати вкладення")
+                    Icon(Icons.Default.Close, contentDescription = t("Прибрати вкладення"))
                 }
             }
         }
@@ -147,10 +149,10 @@ fun AddNoteForm(
             if (documentStore.isConnected) filesPicker.launch(arrayOf("*/*")) else folderPicker.launch(null)
         }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.AttachFile, contentDescription = null)
-            Text("Додати фото або файл")
+            Text(t("Додати фото або файл"))
         }
         attachmentError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (copyingFiles) Text("Копіювання файлів…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (copyingFiles) Text(t("Копіювання файлів…"), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Button(
             onClick = {
                 onSave(
@@ -167,7 +169,7 @@ fun AddNoteForm(
             enabled = !copyingFiles && title.isNotBlank() && (content.isNotBlank() || attachments.isNotEmpty()),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialNote == null) "Зберегти" else "Оновити")
+            Text(if (initialNote == null) t("Зберегти") else t("Оновити"))
         }
     }
 }

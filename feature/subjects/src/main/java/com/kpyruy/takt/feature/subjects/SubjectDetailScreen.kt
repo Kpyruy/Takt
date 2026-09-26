@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -74,7 +76,7 @@ fun SubjectDetailScreen(
     documentStore: TaktDocumentStore,
     courseId: String,
     onBack: () -> Unit,
-    initialTab: String = "Огляд",
+    initialTab: String = "overview",
 ) {
     val course by remember(repository, courseId) { repository.observeCourse(courseId) }.collectAsStateWithLifecycle(initialValue = null)
     val allCourses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -109,53 +111,53 @@ fun SubjectDetailScreen(
     var showAddNote by remember { mutableStateOf(false) }
     var editingNote by remember { mutableStateOf<CourseNote?>(null) }
 
-    BackHandler(enabled = selectedTab == "Екзамен") { selectedTab = "Огляд" }
+    BackHandler(enabled = selectedTab == "exam") { selectedTab = "overview" }
     val item = course
     if (item == null) {
         Column(Modifier.fillMaxSize().padding(20.dp)) {
             ScreenHeader(
-                title = "Предмет",
+                title = t("Предмет"),
                 navigation = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = t("Назад"))
                     }
                 },
             )
-            Text("Предмет не знайдено", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("Предмет не знайдено"), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
 
     val assessmentPhase = settings.assessmentPhase(item, today, settings.effectiveCurrentSemester(allCourses))
     val tabs = if (item.gradingType != CourseGradingType.PASS_FAIL) {
-        listOf("Огляд", "Бали", "Задачі", "Екзамен", "Нотатки")
+        listOf("overview", "grades", "tasks", "exam", "notes")
     } else {
-        listOf("Огляд", "Бали", "Задачі", "Нотатки")
+        listOf("overview", "grades", "tasks", "notes")
     }
 
     LaunchedEffect(tabs) {
-        if (selectedTab !in tabs) selectedTab = "Огляд"
+        if (selectedTab !in tabs) selectedTab = "overview"
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(subjectBackground(paper = selectedTab != "Екзамен")).padding(horizontal = 20.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxSize().background(subjectBackground(paper = selectedTab != "exam")).padding(horizontal = 20.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            IconButton(onClick = { if (selectedTab == "Екзамен") selectedTab = "Огляд" else onBack() }) { Icon(Icons.Default.ArrowBack, "Назад") }
-            Text(if (selectedTab == "Екзамен") item.title else "Предмет", Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.MoreHoriz, "Налаштування предмета") }
+            IconButton(onClick = { if (selectedTab == "exam") selectedTab = "overview" else onBack() }) { Icon(Icons.Default.ArrowBack, t("Назад")) }
+            Text(if (selectedTab == "exam") item.title else t("Предмет"), Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.MoreHoriz, t("Налаштування предмета")) }
         }
-        if (selectedTab == "Екзамен") {
-            ScreenHeader(title = "Екзамен")
+        if (selectedTab == "exam") {
+            ScreenHeader(title = t("Екзамен"))
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { ScreenHeader(title = item.title, subtitle = item.code + " · " + item.credits + " кредитів · " + item.semester + " семестр") }
-                IconButton(onClick = { showIconPicker = true }, modifier = Modifier.semantics { contentDescription = "Змінити іконку предмета" }) {
+                Box(Modifier.weight(1f)) { ScreenHeader(title = item.title, subtitle = item.code + " · " + item.credits + t(" кредитів · ") + t("${item.semester} семестр")) }
+                IconButton(onClick = { showIconPicker = true }, modifier = Modifier.semantics { contentDescription = t("Змінити іконку предмета") }) {
                     SubjectMonogram(item)
                 }
             }
-            TaktUnderlineTabs(labels = tabs, selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0), onSelected = { selectedTab = tabs[it] })
+            TaktUnderlineTabs(labels = tabs.map(::subjectTabLabel), selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0), onSelected = { selectedTab = tabs[it] })
         }
 
         AnimatedContent(
@@ -168,7 +170,7 @@ fun SubjectDetailScreen(
             label = "course-tab",
         ) { tab ->
             when (tab) {
-                "Огляд" -> CourseOverviewTab(
+                "overview" -> CourseOverviewTab(
                     course = item,
                     phase = assessmentPhase,
                     gradeItems = gradeItems,
@@ -178,10 +180,10 @@ fun SubjectDetailScreen(
                     onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
                     onEditTask = { editingTask = it },
                     onEditGrade = { editingGrade = it },
-                    onNotes = { selectedTab = "Нотатки" },
-                    onExam = { selectedTab = "Екзамен" },
+                    onNotes = { selectedTab = "notes" },
+                    onExam = { selectedTab = "exam" },
                 )
-                "Бали" -> CourseAssessmentsTab(
+                "grades" -> CourseAssessmentsTab(
                     course = item,
                     phase = assessmentPhase,
                     gradeItems = gradeItems,
@@ -198,7 +200,7 @@ fun SubjectDetailScreen(
                         scope.launch { gradeRepository.setManualGrade(courseId, grade) }
                     },
                 )
-                "Задачі" -> CourseTasksTab(
+                "tasks" -> CourseTasksTab(
                     tasks = tasks,
                     gradeItems = gradeItems,
                     eligibility = eligibility,
@@ -214,7 +216,7 @@ fun SubjectDetailScreen(
                     onDeleteGrade = { grade -> scope.launch { gradeRepository.deleteItem(grade.id) } },
                     onAddGrade = { showAddGrade = true },
                 )
-                "Екзамен" -> CourseExamTab(
+                "exam" -> CourseExamTab(
                     courseId = courseId,
                     courseCode = item.code,
                     documentStore = documentStore,
@@ -225,7 +227,7 @@ fun SubjectDetailScreen(
                     examInfo = examInfo,
                     materials = examMaterials,
                     manualGrade = manualGrade,
-                    onAdmission = { selectedTab = "Задачі" },
+                    onAdmission = { selectedTab = "tasks" },
                     onSaveExamInfo = { info ->
                         scope.launch {
                             examRepository.upsertExamInfo(info)
@@ -245,7 +247,7 @@ fun SubjectDetailScreen(
                         scope.launch { gradeRepository.setManualGrade(courseId, grade) }
                     },
                 )
-                "Нотатки" -> CourseNotesTab(
+                "notes" -> CourseNotesTab(
                     notes = notes,
                     documentStore = documentStore,
                     onEdit = { editingNote = it },
@@ -350,4 +352,12 @@ fun SubjectDetailScreen(
             },
         )
     }
+}
+
+private fun subjectTabLabel(tab: String): String = when (tab) {
+    "grades" -> t("Бали")
+    "tasks" -> t("Задачі")
+    "exam" -> t("Екзамен")
+    "notes" -> t("Нотатки")
+    else -> t("Огляд")
 }

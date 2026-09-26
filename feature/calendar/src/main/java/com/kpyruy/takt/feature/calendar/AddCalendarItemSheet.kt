@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,20 +31,20 @@ fun AddCalendarItemSheet(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Що додати?")
+            Text(t("Що додати?"))
             Button(
                 onClick = onAddRecurring,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Repeat, contentDescription = null)
-                Text("Повторювана пара")
+                Text(t("Повторювана пара"))
             }
             OutlinedButton(
                 onClick = onAddOneOff,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Event, contentDescription = null)
-                Text("Разова подія / блокова акція")
+                Text(t("Разова подія / блокова акція"))
             }
         }
     }

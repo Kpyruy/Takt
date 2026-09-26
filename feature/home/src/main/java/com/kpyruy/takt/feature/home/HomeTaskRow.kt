@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,7 +31,7 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
     val dueLabel: @Composable () -> Unit = {
         task.dueDate?.let { date ->
             val today = LocalDate.now()
-            Text(when (date) { today -> "Сьогодні"; today.plusDays(1) -> "Завтра"; else -> date.format(DateTimeFormatter.ofPattern("dd.MM")) },
+            Text(when (date) { today -> t("Сьогодні"); today.plusDays(1) -> t("Завтра"); else -> date.format(DateTimeFormatter.ofPattern("dd.MM")) },
                 color = if (date <= today) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.labelSmall)
         }
@@ -42,16 +44,16 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
             Column(Modifier.weight(1f)) {
                 Text(task.title, style = MaterialTheme.typography.titleSmall,
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null)
-                val minimum = task.minimumPointsForExam?.let { " · мін. ${it.pointText()} б." }.orEmpty()
-                Text(courseTitle + if (task.requiredForExam) " · Для допуску$minimum" else "",
+                val minimum = task.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty()
+                Text(courseTitle + if (task.requiredForExam) t(" · Для допуску$minimum") else "",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 task.maxPoints?.let { maximum ->
-                    Text("${task.earnedPoints?.pointText() ?: "—"} / ${maximum.pointText()} б.",
+                    Text(t("${task.earnedPoints?.pointText() ?: "—"} / ${maximum.pointText()} б."),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) {
-                    Text("Поріг для допуску не виконано", style = MaterialTheme.typography.labelSmall,
+                    Text(t("Поріг для допуску не виконано"), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error)
                 }
                 if (largeText) dueLabel()

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -14,7 +16,7 @@ import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.Course
 
 @Composable
-fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earned: Double = 0.0, maximum: Double = 0.0, scoreLabel: String = "За семестр") {
+fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earned: Double = 0.0, maximum: Double = 0.0, scoreLabel: String = t("За семестр")) {
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.padding(vertical = 18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SubjectMonogram(course)

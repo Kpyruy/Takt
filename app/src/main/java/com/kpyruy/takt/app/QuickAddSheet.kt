@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,10 +43,13 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 
-private enum class QuickAddType(val label: String) {
+private enum class QuickAddType(private val ukrainianLabel: String) {
     TASK("Завдання"),
     CLASS("Пара"),
     NOTE("Нотатка"),
+
+    ;
+    val label: String get() = t(ukrainianLabel)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +86,7 @@ fun QuickAddSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Швидке додавання", style = MaterialTheme.typography.headlineSmall)
+            Text(t("Швидке додавання"), style = MaterialTheme.typography.headlineSmall)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 QuickAddType.entries.forEach { option ->
@@ -98,7 +103,7 @@ fun QuickAddSheet(
             }
 
             if (needsCourse) {
-                Text("Предмет", style = MaterialTheme.typography.labelLarge)
+                Text(t("Предмет"), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(activeCourses, key = { it.id }) { course ->
                         FilterChip(
@@ -112,7 +117,7 @@ fun QuickAddSheet(
                     }
                 }
                 if (activeCourses.isEmpty()) {
-                    Text("Немає активних предметів. Познач предмет активним у «Прогресі».", style = MaterialTheme.typography.bodySmall)
+                    Text(t("Немає активних предметів. Познач предмет активним у «Прогресі»."), style = MaterialTheme.typography.bodySmall)
                 }
             }
 
@@ -129,7 +134,7 @@ fun QuickAddSheet(
                     title = it
                     error = null
                 },
-                label = { Text(if (type == QuickAddType.CLASS) "Назва пари" else "Назва") },
+                label = { Text(if (type == QuickAddType.CLASS) t("Назва пари") else t("Назва")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -137,7 +142,7 @@ fun QuickAddSheet(
             when (type) {
                 QuickAddType.TASK -> {
                     TaktDatePickerField(
-                        label = "Дедлайн",
+                        label = t("Дедлайн"),
                         value = dueDate,
                         onValueChange = { dueDate = it },
                         modifier = Modifier.fillMaxWidth(),
@@ -152,7 +157,7 @@ fun QuickAddSheet(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Checkbox(checked = requiredForExam, onCheckedChange = null)
-                        Text("Потрібно для допуску до екзамену")
+                        Text(t("Потрібно для допуску до екзамену"))
                     }
                 }
 
@@ -161,13 +166,13 @@ fun QuickAddSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TaktTimePickerField(
-                        label = "Початок",
+                        label = t("Початок"),
                         value = startTime,
                         onValueChange = { startTime = it },
                         modifier = Modifier.weight(1f),
                     )
                     TaktTimePickerField(
-                        label = "Кінець",
+                        label = t("Кінець"),
                         value = endTime,
                         onValueChange = { endTime = it },
                         modifier = Modifier.weight(1f),
@@ -177,7 +182,7 @@ fun QuickAddSheet(
                 QuickAddType.NOTE -> OutlinedTextField(
                     value = details,
                     onValueChange = { details = it },
-                    label = { Text("Текст") },
+                    label = { Text(t("Текст")) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                 )
@@ -190,15 +195,15 @@ fun QuickAddSheet(
             Button(
                 onClick = {
                     if (title.isBlank()) {
-                        error = "Введіть назву."
+                        error = t("Введіть назву.")
                         return@Button
                     }
                     if (needsCourse && courseId == null) {
-                        error = "Оберіть предмет."
+                        error = t("Оберіть предмет.")
                         return@Button
                     }
                     if (courseId != null && activeCourses.none { it.id == courseId }) {
-                        error = "Цей предмет уже не активний. Оберіть активний предмет."
+                        error = t("Цей предмет уже не активний. Оберіть активний предмет.")
                         return@Button
                     }
 
@@ -217,7 +222,7 @@ fun QuickAddSheet(
 
                         QuickAddType.CLASS -> {
                             if (endTime <= startTime) {
-                                error = "Кінець має бути пізніше початку."
+                                error = t("Кінець має бути пізніше початку.")
                                 return@Button
                             }
                             onSaveLesson(
@@ -237,7 +242,7 @@ fun QuickAddSheet(
 
                         QuickAddType.NOTE -> {
                             if (details.isBlank()) {
-                                error = "Додайте текст нотатки."
+                                error = t("Додайте текст нотатки.")
                                 return@Button
                             }
                             onSaveNote(
@@ -254,7 +259,7 @@ fun QuickAddSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Зберегти")
+                Text(t("Зберегти"))
             }
 
             TextButton(
@@ -281,7 +286,7 @@ fun QuickAddSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Більше параметрів")
+                Text(t("Більше параметрів"))
             }
         }
     }

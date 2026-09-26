@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -73,19 +75,19 @@ internal fun HomeTasksSection(
 
     Column(Modifier.fillMaxWidth().testTag("home-tasks-section")) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Задачі", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text(t("Задачі"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             Text(entries.size.toString(), Modifier.testTag("home-tasks-count"),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = { showFilters = true }, modifier = Modifier.testTag("home-tasks-filter")) {
-                Icon(Icons.Outlined.Tune, "Фільтри задач")
+                Icon(Icons.Outlined.Tune, t("Фільтри задач"))
             }
         }
         Text(periodSummary(filter), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         if (entries.isEmpty()) {
-            Text("За цим фільтром задач немає", style = MaterialTheme.typography.bodyMedium,
+            Text(t("За цим фільтром задач немає"), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             entries.forEach { entry ->
@@ -112,10 +114,10 @@ internal fun HomeTasksSection(
 }
 
 private fun periodSummary(filter: HomeWorkFilter): String = when (filter.period) {
-    HomeWorkPeriod.SEVEN_DAYS -> "Найближчі 7 днів"
-    HomeWorkPeriod.FOURTEEN_DAYS -> "Найближчі 14 днів"
-    HomeWorkPeriod.ALL -> "Усі дати"
-    HomeWorkPeriod.CUSTOM -> "Обраний період"
+    HomeWorkPeriod.SEVEN_DAYS -> t("Найближчі 7 днів")
+    HomeWorkPeriod.FOURTEEN_DAYS -> t("Найближчі 14 днів")
+    HomeWorkPeriod.ALL -> t("Усі дати")
+    HomeWorkPeriod.CUSTOM -> t("Обраний період")
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -133,18 +135,18 @@ private fun HomeTaskFilterSheet(
             .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Фільтри задач", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, "Закрити фільтри") }
+                Text(t("Фільтри задач"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити фільтри")) }
             }
             Column {
-                Text("ПЕРІОД", style = MaterialTheme.typography.labelSmall,
+                Text(t("ПЕРІОД"), style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        HomeWorkPeriod.SEVEN_DAYS to "7 днів",
-                        HomeWorkPeriod.FOURTEEN_DAYS to "14 днів",
-                        HomeWorkPeriod.ALL to "Усі",
-                        HomeWorkPeriod.CUSTOM to "Свій період",
+                        HomeWorkPeriod.SEVEN_DAYS to t("7 днів"),
+                        HomeWorkPeriod.FOURTEEN_DAYS to t("14 днів"),
+                        HomeWorkPeriod.ALL to t("Усі"),
+                        HomeWorkPeriod.CUSTOM to t("Свій період"),
                     ).forEach { (period, label) ->
                         FilterChip(selected = filter.period == period,
                             onClick = { onChange(filter.copy(period = period)) },
@@ -152,19 +154,19 @@ private fun HomeTaskFilterSheet(
                     }
                 }
                 if (filter.period == HomeWorkPeriod.CUSTOM) {
-                    TaktDatePickerField("Від", filter.fromDate,
+                    TaktDatePickerField(t("Від"), filter.fromDate,
                         { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
-                    TaktDatePickerField("До", filter.toDate,
+                    TaktDatePickerField(t("До"), filter.toDate,
                         { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
                 }
             }
             Column {
-                Text("ПРЕДМЕТ", style = MaterialTheme.typography.labelSmall,
+                Text(t("ПРЕДМЕТ"), style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = filter.courseId == null,
                         onClick = { onChange(filter.copy(courseId = null)) },
-                        label = { Text("Усі предмети") }, shape = RoundedCornerShape(12.dp))
+                        label = { Text(t("Усі предмети")) }, shape = RoundedCornerShape(12.dp))
                     courses.forEach { course ->
                         FilterChip(selected = filter.courseId == course.id,
                             onClick = { onChange(filter.copy(courseId = course.id)) },
@@ -173,15 +175,15 @@ private fun HomeTaskFilterSheet(
                 }
             }
             Column {
-                Text("ТИП", style = MaterialTheme.typography.labelSmall,
+                Text(t("ТИП"), style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = filter.types.isEmpty(),
                         onClick = { onChange(filter.copy(types = emptySet())) },
-                        label = { Text("Усі типи") }, shape = RoundedCornerShape(12.dp))
+                        label = { Text(t("Усі типи")) }, shape = RoundedCornerShape(12.dp))
                     val types: List<Pair<GradeItemType?, String>> =
-                        listOf(null to "Завдання") + GradeItemType.entries
-                            .filterNot { it == GradeItemType.EXAM }.map { it to it.label }
+                        listOf(null to t("Завдання")) + GradeItemType.entries
+                            .filterNot { it == GradeItemType.EXAM }.map { it to t(it.label) }
                     types.forEach { (type, label) ->
                         FilterChip(selected = type in filter.types,
                             onClick = {
@@ -193,13 +195,13 @@ private fun HomeTaskFilterSheet(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(filter.includeUndated, onCheckedChange = { onChange(filter.copy(includeUndated = it)) })
-                Text("Показувати задачі без дати")
+                Text(t("Показувати задачі без дати"))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(filter.includeCompleted, onCheckedChange = { onChange(filter.copy(includeCompleted = it)) })
-                Text("Показувати виконані")
+                Text(t("Показувати виконані"))
             }
-            Button(onClick = onDismiss, Modifier.fillMaxWidth()) { Text("Готово") }
+            Button(onClick = onDismiss, Modifier.fillMaxWidth()) { Text(t("Готово")) }
         }
     }
 }

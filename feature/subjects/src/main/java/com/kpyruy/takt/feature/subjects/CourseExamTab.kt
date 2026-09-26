@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -49,6 +51,7 @@ import com.kpyruy.takt.core.model.asScoredGradeItem
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import java.time.format.DateTimeFormatter
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 
 @Composable
 internal fun CourseExamTab(
@@ -83,33 +86,33 @@ internal fun CourseExamTab(
             Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(15.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text(examInfo?.date?.dayOfMonth?.toString() ?: "—", fontSize = 27.sp, lineHeight = 35.sp, fontWeight = FontWeight.SemiBold)
-                    SmallText(examInfo?.date?.format(DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale.forLanguageTag("uk"))) ?: "ДАТА")
+                    SmallText(examInfo?.date?.format(DateTimeFormatter.ofPattern("MMM yyyy", TaktI18n.locale)) ?: t("ДАТА"))
                 }
                 VerticalDivider(Modifier.height(42.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(listOfNotNull(examInfo?.startTime?.toString(), examInfo?.room).joinToString(" · ").ifBlank { "Додати дату й аудиторію" }, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
-                    SmallText("Підсумковий екзамен · спроба ${examInfo?.attemptNumber ?: 1}/${examInfo?.maxAttempts ?: 3}")
+                    Text(listOfNotNull(examInfo?.startTime?.toString(), examInfo?.room).joinToString(" · ").ifBlank { t("Додати дату й аудиторію") }, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+                    SmallText(t("Підсумковий екзамен · спроба ${examInfo?.attemptNumber ?: 1}/${examInfo?.maxAttempts ?: 3}"))
                 }
-                Icon(Icons.Default.CalendarMonth, "Редагувати дані екзамену", Modifier.size(20.dp))
+                Icon(Icons.Default.CalendarMonth, t("Редагувати дані екзамену"), Modifier.size(20.dp))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ExamMetric("За семестр", earned.displayNumber(), "/ ${maximum.displayNumber()}", Modifier.weight(1f))
-            ExamMetric("Доступно на екзамені", if (gradeItems.any { it.type == GradeItemType.EXAM }) projection.examRemainingPoints.displayNumber() else "—", "балів", Modifier.weight(1f))
+            ExamMetric(t("За семестр"), earned.displayNumber(), "/ ${maximum.displayNumber()}", Modifier.weight(1f))
+            ExamMetric(t("Доступно на екзамені"), if (gradeItems.any { it.type == GradeItemType.EXAM }) projection.examRemainingPoints.displayNumber() else "—", t("балів"), Modifier.weight(1f))
         }
         SubjectPanel {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Цільова оцінка", style = MaterialTheme.typography.titleMedium)
+                Text(t("Цільова оцінка"), style = MaterialTheme.typography.titleMedium)
                 Surface(shape = RoundedCornerShape(7.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                    Text("${target.name} · від ${threshold.displayNumber()}%", Modifier.padding(horizontal = 8.dp, vertical = 5.dp), fontSize = 11.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Text(t("${target.name} · від ${threshold.displayNumber()}%"), Modifier.padding(horizontal = 8.dp, vertical = 5.dp), fontSize = 11.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.primary)
                 }
             }
             Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(needed?.displayNumber() ?: "—", fontSize = 37.sp, lineHeight = 48.sp, fontWeight = FontWeight.SemiBold)
-                SmallText(if (needed != null) "із ${projection.examRemainingPoints.displayNumber()} балів на екзамені" else if (projection.examRemainingPoints > 0) "Ціль недосяжна" else "Немає незавершеного екзамену", Modifier.padding(bottom = 7.dp).weight(1f))
+                SmallText(if (needed != null) t("із ${projection.examRemainingPoints.displayNumber()} балів на екзамені") else if (projection.examRemainingPoints > 0) t("Ціль недосяжна") else t("Немає незавершеного екзамену"), Modifier.padding(bottom = 7.dp).weight(1f))
             }
-            SmallText(if (needed == null) "Розрахунок за поточною шкалою оцінювання."
-                else "${projection.securedPoints.displayNumber()} набрано" + (if (pendingOther > 0) " + до ${pendingOther.displayNumber()} за інші роботи" else " за семестр") + " + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}")
+            SmallText(if (needed == null) t("Розрахунок за поточною шкалою оцінювання.")
+                else t("${projection.securedPoints.displayNumber()} набрано") + (if (pendingOther > 0) t(" + до ${pendingOther.displayNumber()} за інші роботи") else t(" за семестр")) + t(" + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}"))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 listOf(GradeLetter.A, GradeLetter.B, GradeLetter.C, GradeLetter.D, GradeLetter.E).forEach { grade ->
                     Surface(onClick = { target = grade }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = target == grade; role = Role.RadioButton }, shape = RoundedCornerShape(9.dp),

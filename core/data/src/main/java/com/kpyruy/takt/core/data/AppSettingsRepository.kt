@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -20,6 +21,7 @@ interface AppSettingsRepository {
     suspend fun setCardAppearance(appearance: CardAppearance)
     suspend fun setThemeFamily(themeFamily: ThemeFamily)
     suspend fun setThemeMode(themeMode: AppThemeMode)
+    suspend fun setLanguage(language: AppLanguage)
     suspend fun setAppearance(themeMode: AppThemeMode, themeFamily: ThemeFamily, cardAppearance: CardAppearance)
     suspend fun setWeekLayout(layout: WeekLayout)
     suspend fun setHomeWorkFilter(filter: HomeWorkFilter)

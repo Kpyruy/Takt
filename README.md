@@ -15,7 +15,7 @@ The project is currently private and under active development. It is designed as
 - `feature:calendar` — timetable/calendar
 - `feature:subjects` — subjects and grade tracking
 - `feature:studyplan` — six-semester study plan and credit progress
-- `feature:settings` — app preferences and future backup controls
+- `feature:settings` — app preferences, language, and backup controls
 
 ## Current target
 
@@ -31,5 +31,7 @@ Use JDK 17, Android SDK platform 35 and build tools 35.0.0. Set `ANDROID_HOME` t
 ```
 
 The wrapper pins Gradle 8.11.1 and verifies the distribution SHA-256. Android Studio is optional. The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+
+The interface supports Ukrainian, English, and Slovak. Choose a language during setup or in Settings; the choice is included in the `Documents/Takt` backup. To build a signed release APK, follow [release signing](docs/release-signing.md). Keep the signing key outside the repository.
 
 The opt-in `PulseFlowTest` writes review fixtures through the real repositories. Run it only on a disposable emulator (API 35 recommended), with `-e pulseReview true`; it is skipped without that flag. See `design-explorations/2026-09-22/NATIVE-QA.md` for the reviewed screens and verification details.

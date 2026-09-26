@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,9 +47,9 @@ fun GlobalAddSheet(
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Додати", style = MaterialTheme.typography.headlineSmall)
+            Text(t("Додати"), style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Оберіть тип елемента",
+                t("Оберіть тип елемента"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -71,7 +73,7 @@ fun GlobalAddSheet(
                             ) {
                                 Icon(type.icon(), contentDescription = null,
                                     modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
-                                Text(type?.label ?: "Швидко", style = MaterialTheme.typography.labelLarge,
+                                Text(type?.label ?: t("Швидко"), style = MaterialTheme.typography.labelLarge,
                                     maxLines = 1)
                             }
                         }

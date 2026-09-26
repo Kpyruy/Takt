@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,10 +44,10 @@ internal fun CalendarAssessmentStrip(item: GradeItem, courseTitle: String, onCli
             Icon(icon, contentDescription = null, tint = subjectColor)
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.titleSmall)
-                Text("${item.type.label} · $courseTitle", style = MaterialTheme.typography.bodySmall,
+                Text("${t(item.type.label)} · $courseTitle", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(if (item.completed) "${item.earnedPoints.pointLabel()}/${item.maxPoints.pointLabel()}" else "до ${item.maxPoints.pointLabel()} б.",
+            Text(if (item.completed) "${item.earnedPoints.pointLabel()}/${item.maxPoints.pointLabel()}" else t("до ${item.maxPoints.pointLabel()} б."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

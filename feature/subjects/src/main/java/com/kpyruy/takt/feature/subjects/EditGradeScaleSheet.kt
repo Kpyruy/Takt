@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,9 +50,9 @@ fun EditGradeScaleSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Шкала предмета", style = MaterialTheme.typography.headlineSmall)
+            Text(t("Шкала предмета"), style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Вкажи мінімальний відсоток для кожної оцінки.",
+                t("Вкажи мінімальний відсоток для кожної оцінки."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -85,7 +87,7 @@ fun EditGradeScaleSheet(
                 }
             }
 
-            Text("FX · 0%–нижче межі E")
+            Text(t("FX · 0%–нижче межі E"))
 
             if (error != null) {
                 Text(
@@ -101,7 +103,7 @@ fun EditGradeScaleSheet(
                         it.replace(',', '.').toDoubleOrNull()
                     }
                     if (values.any { it == null }) {
-                        error = "Усі межі мають бути числами."
+                        error = t("Усі межі мають бути числами.")
                         return@Button
                     }
                     val parsed = values.filterNotNull()
@@ -113,7 +115,7 @@ fun EditGradeScaleSheet(
                         parsed[4] > 0.0
 
                     if (!valid) {
-                        error = "Межі мають спадати: A > B > C > D > E > 0."
+                        error = t("Межі мають спадати: A > B > C > D > E > 0.")
                         return@Button
                     }
 
@@ -132,7 +134,7 @@ fun EditGradeScaleSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Зберегти шкалу")
+                Text(t("Зберегти шкалу"))
             }
         }
     }

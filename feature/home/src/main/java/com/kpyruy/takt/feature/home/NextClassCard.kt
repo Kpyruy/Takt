@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,23 +37,23 @@ internal fun NextClassCard(event: ResolvedScheduleEvent, now: LocalTime, onClick
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(if (current) "Зараз триває" else "Наступна пара", style = MaterialTheme.typography.labelMedium)
+                Text(if (current) t("Зараз триває") else t("Наступна пара"), style = MaterialTheme.typography.labelMedium)
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
             Text(event.title, style = MaterialTheme.typography.headlineSmall)
-            Text(listOfNotNull(event.room?.let { "Аудиторія $it" },
+            Text(listOfNotNull(event.room?.let { t("Аудиторія $it") },
                 when (event.status) {
-                    ScheduleEventStatus.MOVED -> "Перенесено"
-                    ScheduleEventStatus.ONE_OFF -> "Разова подія"
+                    ScheduleEventStatus.MOVED -> t("Перенесено")
+                    ScheduleEventStatus.ONE_OFF -> t("Разова подія")
                     else -> null
-                }).joinToString(" · ").ifBlank { "Аудиторію ще не вказано" },
+                }).joinToString(" · ").ifBlank { t("Аудиторію ще не вказано") },
                 style = MaterialTheme.typography.bodySmall)
             HorizontalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.24f))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("${event.startTime.format(time)}–${event.endTime.format(time)}",
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                Text(if (current) "Зараз" else "Через ${Duration.between(now, event.startTime).toMinutes()} хв",
+                Text(if (current) t("Зараз") else t("Через ${Duration.between(now, event.startTime).toMinutes()} хв"),
                     style = MaterialTheme.typography.labelMedium)
             }
         }

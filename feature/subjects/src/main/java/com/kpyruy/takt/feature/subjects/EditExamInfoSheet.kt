@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,10 +61,10 @@ internal fun EditExamInfoSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Екзамен", style = MaterialTheme.typography.headlineSmall)
+            Text(t("Екзамен"), style = MaterialTheme.typography.headlineSmall)
 
             TaktDatePickerField(
-                label = "Дата",
+                label = t("Дата"),
                 value = date,
                 onValueChange = {
                     date = it
@@ -72,7 +74,7 @@ internal fun EditExamInfoSheet(
             )
             if (date != null) {
                 TextButton(onClick = { date = null }) {
-                    Text("Дата ще не відома")
+                    Text(t("Дата ще не відома"))
                 }
 
                 Row(
@@ -80,7 +82,7 @@ internal fun EditExamInfoSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TaktTimePickerField(
-                        label = "Початок",
+                        label = t("Початок"),
                         value = startTime,
                         onValueChange = {
                             startTime = it
@@ -89,7 +91,7 @@ internal fun EditExamInfoSheet(
                         modifier = Modifier.weight(1f),
                     )
                     TaktTimePickerField(
-                        label = "Кінець",
+                        label = t("Кінець"),
                         value = endTime,
                         onValueChange = {
                             endTime = it
@@ -103,12 +105,12 @@ internal fun EditExamInfoSheet(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text("Аудиторія") },
+                label = { Text(t("Аудиторія")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
 
-            Text("Спроба · максимум 3", style = MaterialTheme.typography.labelLarge)
+            Text(t("Спроба · максимум 3"), style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 (1..3).forEach { number ->
                     FilterChip(
@@ -120,13 +122,13 @@ internal fun EditExamInfoSheet(
             }
 
             if (examItems.isNotEmpty()) {
-                Text("Пов'язаний результат", style = MaterialTheme.typography.labelLarge)
+                Text(t("Пов'язаний результат"), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         FilterChip(
                             selected = linkedGradeItemId == null,
                             onClick = { linkedGradeItemId = null },
-                            label = { Text("Не вибрано") },
+                            label = { Text(t("Не вибрано")) },
                         )
                     }
                     items(examItems, key = { it.id }) { item ->
@@ -142,7 +144,7 @@ internal fun EditExamInfoSheet(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Нотатки") },
+                label = { Text(t("Нотатки")) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
             )
@@ -154,7 +156,7 @@ internal fun EditExamInfoSheet(
             Button(
                 onClick = {
                     if (date != null && endTime <= startTime) {
-                        error = "Кінець має бути пізніше початку."
+                        error = t("Кінець має бути пізніше початку.")
                         return@Button
                     }
                     onSave(
@@ -173,7 +175,7 @@ internal fun EditExamInfoSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Зберегти")
+                Text(t("Зберегти"))
             }
         }
     }

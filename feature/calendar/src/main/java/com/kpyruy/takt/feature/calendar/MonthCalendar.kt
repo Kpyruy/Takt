@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,7 +45,7 @@ fun MonthCalendar(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд").forEach { label ->
+            listOf(t("Пн"), t("Вт"), t("Ср"), t("Чт"), t("Пт"), t("Сб"), t("Нд")).forEach { label ->
                 Text(
                     text = label,
                     modifier = Modifier.weight(1f),
@@ -76,9 +78,9 @@ fun MonthCalendar(
                             .semantics {
                                 contentDescription = buildList {
                                     add(date.toString())
-                                    if (markers.lessons) add("пари")
-                                    if (markers.work) add("задачі")
-                                    if (markers.exams) add("іспит")
+                                    if (markers.lessons) add(t("пари"))
+                                    if (markers.work) add(t("задачі"))
+                                    if (markers.exams) add(t("іспит"))
                                 }.joinToString(", ")
                             }
                             .clickable { onSelect(date) },
@@ -123,11 +125,11 @@ fun MonthCalendar(
         Row(Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically) {
-            MonthLegendItem(MaterialTheme.colorScheme.primary, "Пари")
+            MonthLegendItem(MaterialTheme.colorScheme.primary, t("Пари"))
             Spacer(Modifier.width(14.dp))
-            MonthLegendItem(MaterialTheme.colorScheme.tertiary, "Задачі")
+            MonthLegendItem(MaterialTheme.colorScheme.tertiary, t("Задачі"))
             Spacer(Modifier.width(14.dp))
-            MonthLegendItem(MaterialTheme.colorScheme.error, "Іспити")
+            MonthLegendItem(MaterialTheme.colorScheme.error, t("Іспити"))
         }
     }
 }

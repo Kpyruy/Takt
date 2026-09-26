@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -52,13 +54,13 @@ fun CourseNoteCard(
                 Row(modifier = Modifier.fillMaxWidth().clickable {
                     scope.launch {
                         val uri = documentStore.resolve(attachment.uri)
-                        if (uri == null) Toast.makeText(context, "Файл недоступний", Toast.LENGTH_SHORT).show()
+                        if (uri == null) Toast.makeText(context, t("Файл недоступний"), Toast.LENGTH_SHORT).show()
                         else runCatching {
                             context.startActivity(Intent(Intent.ACTION_VIEW).apply {
                                 setDataAndType(uri, attachment.mimeType)
                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             })
-                        }.onFailure { Toast.makeText(context, "Немає застосунку для відкриття файла", Toast.LENGTH_SHORT).show() }
+                        }.onFailure { Toast.makeText(context, t("Немає застосунку для відкриття файла"), Toast.LENGTH_SHORT).show() }
                     }
                 }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(Icons.Default.AttachFile, contentDescription = null)
@@ -67,18 +69,18 @@ fun CourseNoteCard(
             }
         }
         IconButton(onClick = { menuOpen = true }) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Дії нотатки")
+            Icon(Icons.Default.MoreVert, contentDescription = t("Дії нотатки"))
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             DropdownMenuItem(
-                text = { Text("Редагувати") },
+                text = { Text(t("Редагувати")) },
                 onClick = {
                     menuOpen = false
                     onEdit()
                 },
             )
             DropdownMenuItem(
-                text = { Text("Видалити") },
+                text = { Text(t("Видалити")) },
                 onClick = {
                     menuOpen = false
                     onDelete()

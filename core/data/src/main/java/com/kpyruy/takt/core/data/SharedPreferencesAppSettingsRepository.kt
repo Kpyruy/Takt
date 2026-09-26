@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.data
 
 import android.content.Context
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -52,6 +53,11 @@ class SharedPreferencesAppSettingsRepository(
     override suspend fun setThemeMode(themeMode: AppThemeMode) {
         preferences.edit().putString(KEY_THEME_MODE, themeMode.name).apply()
         state.value = state.value.copy(themeMode = themeMode)
+    }
+
+    override suspend fun setLanguage(language: AppLanguage) {
+        preferences.edit().putString(KEY_LANGUAGE, language.name).apply()
+        state.value = state.value.copy(language = language)
     }
 
     override suspend fun setAppearance(
@@ -107,6 +113,7 @@ class SharedPreferencesAppSettingsRepository(
         homeWorkFilter = preferences.getString(KEY_HOME_WORK_FILTER, null),
         semesterPeriods = preferences.getString(KEY_SEMESTER_PERIODS, null),
         currentSemester = preferences.getInt(KEY_CURRENT_SEMESTER, 0).toString(),
+        language = preferences.getString(KEY_LANGUAGE, null),
     )
 
     private companion object {
@@ -121,5 +128,6 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_HOME_WORK_FILTER = "home_work_filter"
         const val KEY_SEMESTER_PERIODS = "semester_periods"
         const val KEY_CURRENT_SEMESTER = "current_semester"
+        const val KEY_LANGUAGE = "language"
     }
 }

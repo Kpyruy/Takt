@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -51,7 +53,7 @@ fun TaktDatePickerField(
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
-        placeholder = { Text("Оберіть дату") },
+        placeholder = { Text(t("Оберіть дату")) },
         modifier = modifier
             .clickable { showPicker = true }
             .pointerInput(Unit) {
@@ -76,12 +78,12 @@ fun TaktDatePickerField(
                         showPicker = false
                     },
                 ) {
-                    Text("Готово")
+                    Text(t("Готово"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text("Скасувати")
+                    Text(t("Скасувати"))
                 }
             },
         ) {
@@ -132,12 +134,12 @@ fun TaktTimePickerField(
                         showPicker = false
                     },
                 ) {
-                    Text("Готово")
+                    Text(t("Готово"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text("Скасувати")
+                    Text(t("Скасувати"))
                 }
             },
             text = {

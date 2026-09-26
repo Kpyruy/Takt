@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,15 +39,15 @@ fun GradeItemRow(
             Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
             Text(
                 buildList {
-                    add(item.type.label)
-                    item.durationMinutes?.let { add("$it хв") }
+                    add(t(item.type.label))
+                    item.durationMinutes?.let { add(t("$it хв")) }
                     item.dueDate?.let {
-                        add("до " + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                        add(t("до ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                     }
-                    if (item.requiredForExam) add("для допуску")
-                    item.minimumPointsForExam?.let { add("мін. ${it.displayNumber()} б.") }
-                    if (item.requiredForExam && item.completed && !item.meetsAdmissionRequirement) add("поріг не виконано")
-                    add(if (item.completed) "завершено" else "очікується")
+                    if (item.requiredForExam) add(t("для допуску"))
+                    item.minimumPointsForExam?.let { add(t("мін. ${it.displayNumber()} б.")) }
+                    if (item.requiredForExam && item.completed && !item.meetsAdmissionRequirement) add(t("поріг не виконано"))
+                    add(if (item.completed) t("завершено") else t("очікується"))
                 }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -55,23 +57,23 @@ fun GradeItemRow(
             if (item.completed) {
                 item.earnedPoints.displayNumber() + " / " + item.maxPoints.displayNumber()
             } else {
-                "до " + item.maxPoints.displayNumber()
+                t("до ") + item.maxPoints.displayNumber()
             },
             style = MaterialTheme.typography.labelLarge,
         )
         IconButton(onClick = { menuOpen = true }) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Дії оцінювання")
+            Icon(Icons.Default.MoreVert, contentDescription = t("Дії оцінювання"))
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             DropdownMenuItem(
-                text = { Text("Редагувати") },
+                text = { Text(t("Редагувати")) },
                 onClick = {
                     menuOpen = false
                     onEdit()
                 },
             )
             DropdownMenuItem(
-                text = { Text("Видалити") },
+                text = { Text(t("Видалити")) },
                 onClick = {
                     menuOpen = false
                     onDelete()

@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -20,6 +21,7 @@ object StoredSettingsCodec {
         homeWorkFilter: String? = null,
         semesterPeriods: String? = null,
         currentSemester: String? = null,
+        language: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -39,6 +41,7 @@ object StoredSettingsCodec {
             homeWorkFilter = HomeWorkFilterCodec.decode(homeWorkFilter),
             semesterPeriods = SemesterPeriodsCodec.decode(semesterPeriods),
             currentSemester = currentSemester?.toIntOrNull()?.takeIf { it > 0 },
+            language = enumValueOrNull<AppLanguage>(language) ?: default.language,
         )
     }
 

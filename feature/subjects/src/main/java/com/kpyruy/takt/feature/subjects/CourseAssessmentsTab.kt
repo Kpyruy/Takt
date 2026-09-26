@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -74,7 +76,7 @@ internal fun CourseAssessmentsTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (displayType != CourseGradingType.PASS_FAIL) {
-            Text(if (phase == AssessmentPhase.EXAM) "ЕКЗАМЕНАЦІЙНЕ ОЦІНЮВАННЯ" else "ОЦІНЮВАННЯ ПІД ЧАС НАВЧАННЯ",
+            Text(if (phase == AssessmentPhase.EXAM) t("ЕКЗАМЕНАЦІЙНЕ ОЦІНЮВАННЯ") else t("ОЦІНЮВАННЯ ПІД ЧАС НАВЧАННЯ"),
                 style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
         when (displayType) {
@@ -87,11 +89,11 @@ internal fun CourseAssessmentsTab(
                             } else {
                                 eligibility.completedCount.toString() + "/" + eligibility.requiredCount
                             },
-                            label = "робіт для допуску",
+                            label = t("робіт для допуску"),
                         ),
                         CompactSummaryItem(
                             value = projection.securedPoints.displayNumber(),
-                            label = "балів гарантовано",
+                            label = t("балів гарантовано"),
                         ),
                     )
                 )
@@ -103,24 +105,24 @@ internal fun CourseAssessmentsTab(
                         verticalAlignment = Alignment.Top,
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text("До екзамену", style = MaterialTheme.typography.titleMedium)
+                            Text(t("До екзамену"), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                projection.securedPoints.displayNumber() + " балів уже зафіксовано",
+                                projection.securedPoints.displayNumber() + t(" балів уже зафіксовано"),
                                 style = MaterialTheme.typography.titleLarge,
                             )
                             val examAdded = gradeItems.any { it.type == GradeItemType.EXAM }
                             Text(
                                 text = if (examAdded) {
-                                    "Максимально можлива оцінка зараз: " +
+                                    t("Максимально можлива оцінка зараз: ") +
                                         (projection.maximumPossibleLetter?.name ?: "—")
                                 } else {
-                                    "Додай екзамен, щоб побачити максимальну можливу оцінку."
+                                    t("Додай екзамен, щоб побачити максимальну можливу оцінку.")
                                 },
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         IconButton(onClick = { showLegend = true }) {
-                            Icon(Icons.Default.Info, contentDescription = "Шкала оцінювання")
+                            Icon(Icons.Default.Info, contentDescription = t("Шкала оцінювання"))
                         }
                     }
                 }
@@ -131,10 +133,10 @@ internal fun CourseAssessmentsTab(
                     .take(3)
                 if (upcoming.isNotEmpty()) {
                     SectionCard {
-                        Text("Найближче", style = MaterialTheme.typography.titleMedium)
+                        Text(t("Найближче"), style = MaterialTheme.typography.titleMedium)
                         upcoming.forEach { item ->
                             Text(
-                                item.title + " · до " + item.maxPoints.displayNumber() + " б.",
+                                item.title + t(" · до ") + item.maxPoints.displayNumber() + t(" б."),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -143,7 +145,7 @@ internal fun CourseAssessmentsTab(
             }
 
             CourseGradingType.CONTINUOUS_LETTER -> SectionCard {
-                Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
+                Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
                 if (summary.maxPoints > 0.0) {
                     Text(
                         summary.earnedPoints.displayNumber() + " / " + summary.maxPoints.displayNumber() +
@@ -151,18 +153,18 @@ internal fun CourseAssessmentsTab(
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Text(
-                        "Оцінка: " + (summary.letter?.name ?: "—"),
+                        t("Оцінка: ") + (summary.letter?.name ?: "—"),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    Text("Ще немає результатів", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("Ще немає результатів"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             CourseGradingType.PASS_FAIL -> SectionCard {
-                Text("Без A–FX", style = MaterialTheme.typography.titleMedium)
+                Text(t("Без A–FX"), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Цей предмет оцінюється як «зараховано / не зараховано».",
+                    t("Цей предмет оцінюється як «зараховано / не зараховано»."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -170,10 +172,10 @@ internal fun CourseAssessmentsTab(
 
         if (course.gradingType != CourseGradingType.PASS_FAIL) {
             SectionCard {
-                Text("Оцінювані роботи", style = MaterialTheme.typography.titleMedium)
+                Text(t("Оцінювані роботи"), style = MaterialTheme.typography.titleMedium)
                 if (gradeItems.isEmpty() && scoredTasks.isEmpty()) {
                     Text(
-                        "Поки немає тестів, робіт або екзамену.",
+                        t("Поки немає тестів, робіт або екзамену."),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -189,7 +191,7 @@ internal fun CourseAssessmentsTab(
                     }
                     if (scoredTasks.isNotEmpty()) {
                         if (gradeItems.isNotEmpty()) HorizontalDivider()
-                        Text("Завдання з балами", style = MaterialTheme.typography.titleSmall)
+                        Text(t("Завдання з балами"), style = MaterialTheme.typography.titleSmall)
                         scoredTasks.forEach { task ->
                             val maximum = task.maxPoints ?: return@forEach
                             Row(Modifier.fillMaxWidth().clickable { onEditTask(task) }.padding(vertical = 10.dp),
@@ -208,10 +210,10 @@ internal fun CourseAssessmentsTab(
                 ) {
                     Button(onClick = onAddGrade, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Text("Додати")
+                        Text(t("Додати"))
                     }
                     OutlinedButton(onClick = onEditScale, modifier = Modifier.weight(1f)) {
-                        Text("Шкала")
+                        Text(t("Шкала"))
                     }
                 }
             }
@@ -226,13 +228,13 @@ internal fun CourseAssessmentsTab(
         AlertDialog(
             onDismissRequest = { showLegend = false },
             confirmButton = {
-                TextButton(onClick = { showLegend = false }) { Text("Готово") }
+                TextButton(onClick = { showLegend = false }) { Text(t("Готово")) }
             },
-            title = { Text("Шкала предмета") },
+            title = { Text(t("Шкала предмета")) },
             text = {
                 Text(
                     gradeScale.bands.joinToString("\n") { band ->
-                        band.grade.name + " · від " + band.minimumPercentage.displayNumber() + "%"
+                        band.grade.name + t(" · від ") + band.minimumPercentage.displayNumber() + "%"
                     }
                 )
             },
@@ -246,16 +248,16 @@ internal fun ManualGradeSection(
     onManualGradeChange: (GradeLetter?) -> Unit,
 ) {
     SectionCard {
-        Text("Підсумкова оцінка вручну", style = MaterialTheme.typography.titleMedium)
+        Text(t("Підсумкова оцінка вручну"), style = MaterialTheme.typography.titleMedium)
         Text(
-            "Використовуй тільки коли підсумкова оцінка вже офіційно відома.",
+            t("Використовуй тільки коли підсумкова оцінка вже офіційно відома."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         FilterChip(
             selected = manualGrade == null,
             onClick = { onManualGradeChange(null) },
-            label = { Text("Авто") },
+            label = { Text(t("Авто")) },
         )
         androidx.compose.foundation.lazy.LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -270,7 +272,7 @@ internal fun ManualGradeSection(
             }
         }
         if (manualGrade != null) {
-            Text("Вручну: " + manualGrade.name, color = MaterialTheme.colorScheme.primary)
+            Text(t("Вручну: ") + manualGrade.name, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

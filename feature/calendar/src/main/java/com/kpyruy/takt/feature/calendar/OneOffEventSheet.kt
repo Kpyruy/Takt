@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -110,9 +112,9 @@ fun OneOffEventForm(
         if (showHeading) {
             Text(
                 when {
-                    initialEvent != null -> "Редагувати подію"
-                    isReminder -> "Нагадування"
-                    else -> "Разова подія"
+                    initialEvent != null -> t("Редагувати подію")
+                    isReminder -> t("Нагадування")
+                    else -> t("Разова подія")
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
@@ -129,7 +131,7 @@ fun OneOffEventForm(
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(if (isReminder) "Що нагадати" else "Назва") },
+            label = { Text(if (isReminder) t("Що нагадати") else t("Назва")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -139,24 +141,24 @@ fun OneOffEventForm(
                 FilterChip(
                     selected = type == OneOffScheduleEventType.EXTRA,
                     onClick = { type = OneOffScheduleEventType.EXTRA },
-                    label = { Text("Додаткова пара") },
+                    label = { Text(t("Додаткова пара")) },
                 )
                 FilterChip(
                     selected = type == OneOffScheduleEventType.BLOCK_ACTION,
                     onClick = { type = OneOffScheduleEventType.BLOCK_ACTION },
-                    label = { Text("Блокова акція") },
+                    label = { Text(t("Блокова акція")) },
                 )
             }
         } else {
             Text(
-                "Це нагадування відображається всередині Takt; системне Android-сповіщення не створюється.",
+                t("Це нагадування відображається всередині Takt; системне Android-сповіщення не створюється."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         TaktDatePickerField(
-            label = "Дата",
+            label = t("Дата"),
             value = date,
             onValueChange = {
                 date = it
@@ -170,7 +172,7 @@ fun OneOffEventForm(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TaktTimePickerField(
-                label = "Початок",
+                label = t("Початок"),
                 value = startTime,
                 onValueChange = {
                     startTime = it
@@ -180,7 +182,7 @@ fun OneOffEventForm(
                 modifier = Modifier.weight(1f),
             )
             TaktTimePickerField(
-                label = "Кінець",
+                label = t("Кінець"),
                 value = endTime,
                 onValueChange = {
                     endTime = it
@@ -194,7 +196,7 @@ fun OneOffEventForm(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text("Аудиторія") },
+                label = { Text(t("Аудиторія")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -211,7 +213,7 @@ fun OneOffEventForm(
         Button(
             onClick = {
                 if (endTime <= startTime) {
-                    error = "Кінець має бути пізніше початку."
+                    error = t("Кінець має бути пізніше початку.")
                     return@Button
                 }
                 onSave(
@@ -231,7 +233,7 @@ fun OneOffEventForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialEvent == null) "Додати" else "Оновити")
+            Text(if (initialEvent == null) t("Додати") else t("Оновити"))
         }
     }
 }

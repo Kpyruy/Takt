@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -14,10 +16,10 @@ import com.kpyruy.takt.core.model.LessonType
 @Composable
 fun LessonTypeSelector(value: LessonType, onChange: (LessonType) -> Unit) {
     Column {
-        Text("Тип заняття", style = MaterialTheme.typography.titleSmall)
+        Text(t("Тип заняття"), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(LessonType.entries) { type ->
-                FilterChip(selected = type == value, onClick = { onChange(type) }, label = { Text(type.label) },
+                FilterChip(selected = type == value, onClick = { onChange(type) }, label = { Text(t(type.label)) },
                     leadingIcon = if (type == LessonType.UNSPECIFIED) null else ({ LessonTypeIcon(type) }))
             }
         }
@@ -33,5 +35,5 @@ fun LessonTypeIcon(type: LessonType) {
         LessonType.PRACTICE -> Icons.Outlined.EditNote
         LessonType.LAB -> Icons.Outlined.Science
     }
-    Icon(vector, type.label, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    Icon(vector, t(type.label), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
 }

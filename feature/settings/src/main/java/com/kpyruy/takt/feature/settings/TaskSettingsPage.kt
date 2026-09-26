@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -47,15 +49,15 @@ internal fun TaskSettingsPage(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = "Задачі",
-            navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } },
+            title = t("Задачі"),
+            navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) } },
         )
-        SettingsSectionTitle("Показувати задачі за")
+        SettingsSectionTitle(t("Показувати задачі за"))
         val periods = listOf(
-            HomeWorkPeriod.SEVEN_DAYS to "7 днів",
-            HomeWorkPeriod.FOURTEEN_DAYS to "14 днів",
-            HomeWorkPeriod.ALL to "Усі дати",
-            HomeWorkPeriod.CUSTOM to "Свій період",
+            HomeWorkPeriod.SEVEN_DAYS to t("7 днів"),
+            HomeWorkPeriod.FOURTEEN_DAYS to t("14 днів"),
+            HomeWorkPeriod.ALL to t("Усі дати"),
+            HomeWorkPeriod.CUSTOM to t("Свій період"),
         )
         periods.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -79,19 +81,19 @@ internal fun TaskSettingsPage(
             }
         }
         if (filter.period == HomeWorkPeriod.CUSTOM) {
-            TaktDatePickerField("Від", filter.fromDate, { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
-            TaktDatePickerField("До", filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
+            TaktDatePickerField(t("Від"), filter.fromDate, { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
+            TaktDatePickerField(t("До"), filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
         }
-        SettingsSectionTitle("Що включати")
-        TaskToggleCard("Без дати", Icons.Outlined.EventNote, filter.includeUndated) {
+        SettingsSectionTitle(t("Що включати"))
+        TaskToggleCard(t("Без дати"), Icons.Outlined.EventNote, filter.includeUndated) {
             onChange(filter.copy(includeUndated = it))
         }
-        TaskToggleCard("Виконані", Icons.Outlined.TaskAlt, filter.includeCompleted) {
+        TaskToggleCard(t("Виконані"), Icons.Outlined.TaskAlt, filter.includeCompleted) {
             onChange(filter.copy(includeCompleted = it))
         }
         if (filter != HomeWorkFilter()) {
             OutlinedButton(onClick = { onChange(HomeWorkFilter()) }, modifier = Modifier.fillMaxWidth()) {
-                Text("Скинути фільтри задач")
+                Text(t("Скинути фільтри задач"))
             }
         }
     }

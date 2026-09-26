@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,21 +57,23 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.ui.theme.TaktTheme
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
 import com.kpyruy.takt.feature.settings.AppearanceLivePreview
 import kotlinx.coroutines.launch
 
 private data class TourPage(val title: String, val body: String, val icon: ImageVector)
 
-private val tourPages = listOf(
-    TourPage("Сьогодні", "Пари та задачі на вибраний день. Натисни пару, щоб відкрити предмет.", Icons.Outlined.Today),
-    TourPage("Календар", "Дивись розклад за днем, тижнем або місяцем. Затисни «Тиждень» для вибору таймтейблу чи списку. Двічі натисни активний режим, щоб повернутися до сьогодні.", Icons.Outlined.CalendarMonth),
-    TourPage("Предмети", "Спочатку створи предмет із власною назвою та кодом. До нього привʼязуються пари й задачі.", Icons.Outlined.MenuBook),
-    TourPage("Прогрес", "Позначай активні й здані предмети, обирай поточний семестр та стеж за балами.", Icons.Outlined.School),
-    TourPage("Налаштування", "Тут можна змінити вигляд, розклад і задачі та підключити резервну копію. Після додавання предметів обери поточний семестр у Прогресі, а в Налаштування → Періоди навчання вкажи дати занять та екзаменів.", Icons.Outlined.Settings),
+private fun localizedTourPages() = listOf(
+    TourPage(t("Сьогодні"), t("Пари та задачі на вибраний день. Натисни пару, щоб відкрити предмет."), Icons.Outlined.Today),
+    TourPage(t("Календар"), t("Дивись розклад за днем, тижнем або місяцем. Затисни «Тиждень» для вибору таймтейблу чи списку. Двічі натисни активний режим, щоб повернутися до сьогодні."), Icons.Outlined.CalendarMonth),
+    TourPage(t("Предмети"), t("Спочатку створи предмет із власною назвою та кодом. До нього привʼязуються пари й задачі."), Icons.Outlined.MenuBook),
+    TourPage(t("Прогрес"), t("Позначай активні й здані предмети, обирай поточний семестр та стеж за балами."), Icons.Outlined.School),
+    TourPage(t("Налаштування"), t("Тут можна змінити вигляд, розклад і задачі та підключити резервну копію. Після додавання предметів обери поточний семестр у Прогресі, а в Налаштування → Періоди навчання вкажи дати занять та екзаменів."), Icons.Outlined.Settings),
 )
 
 @Composable
@@ -78,6 +83,8 @@ internal fun FirstRunScreen(
     onRestore: suspend (Uri) -> String?,
 ) {
     var draft by remember { mutableStateOf(settings) }
+    SideEffect { TaktI18n.use(draft.language) }
+    val tourPages = remember(TaktI18n.language) { localizedTourPages() }
     var step by rememberSaveable { mutableIntStateOf(0) }
     var tourIndex by rememberSaveable { mutableIntStateOf(0) }
     var restoreMessage by remember { mutableStateOf<String?>(null) }
@@ -106,12 +113,12 @@ internal fun FirstRunScreen(
                             },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("onboarding-primary"),
                         ) {
-                            Text(when (step) { 0 -> "Далі"; 1 -> "Показати короткий тур";
-                                else -> if (tourIndex == tourPages.lastIndex) "Почати" else "Далі" })
+                            Text(when (step) { 0 -> t("Далі"); 1 -> t("Показати короткий тур");
+                                else -> if (tourIndex == tourPages.lastIndex) t("Почати") else t("Далі") })
                         }
                         if (step == 1 || step == 2) {
                             TextButton(onClick = { onFinish(draft) }, modifier = Modifier.fillMaxWidth()) {
-                                Text(if (step == 1) "Почати без туру" else "Пропустити тур")
+                                Text(if (step == 1) t("Почати без туру") else t("Пропустити тур"))
                             }
                         }
                     }
@@ -124,27 +131,43 @@ internal fun FirstRunScreen(
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 when (step) {
                     0 -> {
-                        Text("Твій Takt", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text("Обери вигляд. Розклад почнеться з твоїх предметів.",
+                        Text(t("Твій Takt"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t("Обери вигляд. Розклад почнеться з твоїх предметів."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("Мова"), style = MaterialTheme.typography.titleMedium)
+                        listOf(
+                            listOf(AppLanguage.UKRAINIAN to t("Українська"), AppLanguage.ENGLISH to "English"),
+                            listOf(AppLanguage.SLOVAK to "Slovenčina", AppLanguage.SYSTEM to t("Як телефон")),
+                        ).forEach { pair ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                pair.forEach { (language, label) ->
+                                    FilterChip(
+                                        selected = draft.language == language,
+                                        onClick = { draft = draft.copy(language = language) },
+                                        label = { Text(label) },
+                                        modifier = Modifier.weight(1f).testTag("onboarding-language-${language.name}"),
+                                    )
+                                }
+                            }
+                        }
                         AppearanceLivePreview(draft)
-                        Text("Тема", style = MaterialTheme.typography.titleMedium)
+                        Text(t("Тема"), style = MaterialTheme.typography.titleMedium)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(AppThemeMode.SYSTEM to "Як телефон", AppThemeMode.LIGHT to "Світла",
-                                AppThemeMode.DARK to "Темна").forEach { (mode, label) ->
+                            listOf(AppThemeMode.SYSTEM to t("Як телефон"), AppThemeMode.LIGHT to t("Світла"),
+                                AppThemeMode.DARK to t("Темна")).forEach { (mode, label) ->
                                 FilterChip(selected = draft.themeMode == mode, onClick = { draft = draft.copy(themeMode = mode) },
                                     label = { Text(label) }, modifier = Modifier.weight(1f).testTag("onboarding-theme-${mode.name}"))
                             }
                         }
-                        Text("Колір", style = MaterialTheme.typography.titleMedium)
+                        Text(t("Колір"), style = MaterialTheme.typography.titleMedium)
                         val dark = when (draft.themeMode) {
                             AppThemeMode.SYSTEM -> isSystemInDarkTheme()
                             AppThemeMode.LIGHT -> false
                             AppThemeMode.DARK -> true
                         }
-                        listOf(ThemeFamily.BLUE to "Синя", ThemeFamily.GREEN to "Зелена",
-                            ThemeFamily.PURPLE to "Фіолетова", ThemeFamily.WARM to "Тепла",
-                            ThemeFamily.MONOCHROME to "Монохром").forEach { (family, label) ->
+                        listOf(ThemeFamily.BLUE to t("Синя"), ThemeFamily.GREEN to t("Зелена"),
+                            ThemeFamily.PURPLE to t("Фіолетова"), ThemeFamily.WARM to t("Тепла"),
+                            ThemeFamily.MONOCHROME to t("Монохром")).forEach { (family, label) ->
                             val selected = draft.themeFamily == family
                             Surface(
                                 modifier = Modifier.fillMaxWidth().clickable { draft = draft.copy(themeFamily = family) }
@@ -165,12 +188,12 @@ internal fun FirstRunScreen(
                                 }
                             }
                         }
-                        TextButton(onClick = { folderPicker.launch(null) }) { Text("Відновити з Documents/Takt") }
+                        TextButton(onClick = { folderPicker.launch(null) }) { Text(t("Відновити з Documents/Takt")) }
                         restoreMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                     1 -> {
-                        Text("Показати, що де?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text("Короткий тур покаже головні розділи й налаштування. Його можна пропустити.",
+                        Text(t("Показати, що де?"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t("Короткий тур покаже головні розділи й налаштування. Його можна пропустити."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Surface(shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.primaryContainer) {
@@ -179,9 +202,9 @@ internal fun FirstRunScreen(
                                 verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Outlined.DateRange, null, tint = MaterialTheme.colorScheme.primary)
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text("Перед стартом розкладу", style = MaterialTheme.typography.titleSmall,
+                                    Text(t("Перед стартом розкладу"), style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold)
-                                    Text("Додай предмети, обери поточний семестр у Прогресі та задай дати занять і екзаменів у Налаштування → Періоди навчання.",
+                                    Text(t("Додай предмети, обери поточний семестр у Прогресі та задай дати занять і екзаменів у Налаштування → Періоди навчання."),
                                         style = MaterialTheme.typography.bodySmall)
                                 }
                             }
@@ -193,11 +216,11 @@ internal fun FirstRunScreen(
                         }
                     }
                     else -> {
-                        Text("Швидкий тур", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t("Швидкий тур"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                         LinearProgressIndicator(progress = { (tourIndex + 1) / tourPages.size.toFloat() },
                             modifier = Modifier.fillMaxWidth())
                         TourCard(tourPages[tourIndex])
-                        Text("${tourIndex + 1} із ${tourPages.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("${tourIndex + 1} із ${tourPages.size}"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

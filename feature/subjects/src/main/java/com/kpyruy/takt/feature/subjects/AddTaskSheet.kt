@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -93,32 +95,32 @@ fun AddTaskForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialTask == null) "Нове завдання" else "Редагувати завдання",
+                if (initialTask == null) t("Нове завдання") else t("Редагувати завдання"),
                 style = MaterialTheme.typography.headlineSmall,
             )
         }
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Назва") },
+            label = { Text(t("Назва")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Опис") },
+            label = { Text(t("Опис")) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 2,
         )
         TaktDatePickerField(
-            label = "Дедлайн",
+            label = t("Дедлайн"),
             value = dueDate,
             onValueChange = { dueDate = it },
             modifier = Modifier.fillMaxWidth(),
         )
         if (dueDate != null) {
-            TextButton(onClick = { dueDate = null }) { Text("Без дедлайну") }
+            TextButton(onClick = { dueDate = null }) { Text(t("Без дедлайну")) }
         }
 
         Row(
@@ -131,15 +133,15 @@ fun AddTaskForm(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = requiredForExam, onCheckedChange = null)
-            Text("Потрібно для допуску до екзамену")
+            Text(t("Потрібно для допуску до екзамену"))
         }
 
-        Text("Бали (необов’язково)", style = MaterialTheme.typography.titleSmall)
+        Text(t("Бали (необов’язково)"), style = MaterialTheme.typography.titleSmall)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = earnedText,
                 onValueChange = { earnedText = it; error = null },
-                label = { Text("Отримано") },
+                label = { Text(t("Отримано")) },
                 enabled = maxText.isNotBlank(),
                 modifier = Modifier.weight(1f),
                 singleLine = true,
@@ -152,7 +154,7 @@ fun AddTaskForm(
                     if (it.isBlank()) { earnedText = ""; minimumText = "" }
                     error = null
                 },
-                label = { Text("Максимум") },
+                label = { Text(t("Максимум")) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 isError = error != null,
@@ -162,7 +164,7 @@ fun AddTaskForm(
             OutlinedTextField(
                 value = minimumText,
                 onValueChange = { minimumText = it; error = null },
-                label = { Text("Мінімум балів для допуску") },
+                label = { Text(t("Мінімум балів для допуску")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = error != null,
@@ -181,11 +183,11 @@ fun AddTaskForm(
                 val minimum = minimumInput?.replace(',', '.')?.toDoubleOrNull()
                 when {
                     maxInput != null && (max == null || !max.isFinite() || max <= 0.0) ->
-                        error = "Максимум має бути числом більшим за 0."
+                        error = t("Максимум має бути числом більшим за 0.")
                     earnedInput != null && (earned == null || !earned.isFinite() || earned < 0.0 || earned > (max ?: 0.0)) ->
-                        error = "Отримані бали мають бути від 0 до максимуму."
+                        error = t("Отримані бали мають бути від 0 до максимуму.")
                     minimumInput != null && (minimum == null || !minimum.isFinite() || minimum < 0.0 || minimum > (max ?: 0.0)) ->
-                        error = "Мінімум має бути від 0 до максимуму балів."
+                        error = t("Мінімум має бути від 0 до максимуму балів.")
                     else -> onSave(
                         StudyTask(
                             id = initialTask?.id ?: UUID.randomUUID().toString(),
@@ -205,7 +207,7 @@ fun AddTaskForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialTask == null) "Зберегти" else "Оновити")
+            Text(if (initialTask == null) t("Зберегти") else t("Оновити"))
         }
     }
 }

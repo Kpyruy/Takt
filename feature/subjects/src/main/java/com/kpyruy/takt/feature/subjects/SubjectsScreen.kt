@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -57,21 +59,21 @@ fun SubjectsScreen(
             (course.title.contains(query, true) || course.code.contains(query, true))
     }
     Column(Modifier.fillMaxSize().background(subjectBackground()).padding(horizontal = 20.dp, vertical = 18.dp)) {
-        ScreenHeader(title = "Предмети", subtitle = "${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні",
-            action = { TextButton(onClick = onAddCourse) { Text("Додати") } })
+        ScreenHeader(title = t("Предмети"), subtitle = t("${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні"),
+            action = { TextButton(onClick = onAddCourse) { Text(t("Додати")) } })
         OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-            placeholder = { Text("Знайти предмет", fontSize = 12.sp, lineHeight = 16.sp) }, leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
+            placeholder = { Text(t("Знайти предмет"), fontSize = 12.sp, lineHeight = 16.sp) }, leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
             singleLine = true, shape = RoundedCornerShape(11.dp), textStyle = MaterialTheme.typography.bodySmall,
             colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant))
-        TaktUnderlineTabs(labels = listOf("Активні · ${current.size}", "Усі", "Закриті"), selectedIndex = filter, onSelected = { filter = it })
+        TaktUnderlineTabs(labels = listOf(t("Активні · ${current.size}"), t("Усі"), t("Закриті")), selectedIndex = filter, onSelected = { filter = it })
         LazyColumn(contentPadding = PaddingValues(bottom = 80.dp)) {
             items(visible, key = { it.id }) { course ->
                 SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
             }
             if (visible.isEmpty()) item {
                 Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SmallText(if (courses.isEmpty()) "Тут будуть твої предмети" else "Предметів не знайдено")
-                    if (courses.isEmpty()) Button(onClick = onAddCourse) { Text("Додати перший предмет") }
+                    SmallText(if (courses.isEmpty()) t("Тут будуть твої предмети") else t("Предметів не знайдено"))
+                    if (courses.isEmpty()) Button(onClick = onAddCourse) { Text(t("Додати перший предмет")) }
                 }
             }
         }
@@ -96,12 +98,12 @@ private fun SubjectProgressCard(
     val eligibility = ExamEligibilityCalculator.calculate(tasks, gradeItems)
     val next = tasks.filterNot { it.completed }.sortedBy { it.dueDate ?: java.time.LocalDate.MAX }.firstOrNull()
     val progressLine = when {
-        course.status == CourseStatus.FULFILLED -> "Предмет закрито"
-        !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) "1 робота до допуску" else "${eligibility.requiredCount - eligibility.completedCount} робіт до допуску"
+        course.status == CourseStatus.FULFILLED -> t("Предмет закрито")
+        !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 робота до допуску") else t("${eligibility.requiredCount - eligibility.completedCount} робіт до допуску")
         next != null -> next.title + (next.dueDate?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
-        course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> "Зараховано"; PassFailResult.FAILED -> "Не зараховано"; null -> "Результату ще немає" }
-        tasks.isNotEmpty() -> "Усі роботи здано"
-        else -> course.code + " · " + course.credits + " кредитів"
+        course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> t("Результату ще немає") }
+        tasks.isNotEmpty() -> t("Усі роботи здано")
+        else -> course.code + " · " + course.credits + t(" кредитів")
     }
     SubjectCard(course, progressLine, onClick, earned, maximum)
 }

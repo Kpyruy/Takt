@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,15 +38,15 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
     val parsedSemester = semester.toIntOrNull()
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        OutlinedTextField(title, { title = it; error = null }, label = { Text("Назва предмета") },
+        OutlinedTextField(title, { title = it; error = null }, label = { Text(t("Назва предмета")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-title"))
-        OutlinedTextField(code, { code = it; error = null }, label = { Text("Код предмета") },
+        OutlinedTextField(code, { code = it; error = null }, label = { Text(t("Код предмета")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-code"))
         OutlinedTextField(credits, { credits = it.filter(Char::isDigit); error = null },
-            label = { Text("Кредити") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = { Text(t("Кредити")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-credits"))
         OutlinedTextField(semester, { semester = it.filter(Char::isDigit); error = null },
-            label = { Text("Семестр") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = { Text(t("Семестр")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-semester"))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         Button(
@@ -56,12 +58,12 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                     }
                     saving = false
                     if (result.isSuccess) withContext(Dispatchers.Main.immediate) { onSaved() }
-                    else error = result.exceptionOrNull()?.message ?: "Не вдалося додати предмет"
+                    else error = result.exceptionOrNull()?.message ?: t("Не вдалося додати предмет")
                 }
             },
             enabled = !saving && title.isNotBlank() && code.isNotBlank() &&
                 parsedCredits != null && parsedSemester != null,
             modifier = Modifier.fillMaxWidth().testTag("save-course"),
-        ) { Text("Додати предмет") }
+        ) { Text(t("Додати предмет")) }
     }
 }

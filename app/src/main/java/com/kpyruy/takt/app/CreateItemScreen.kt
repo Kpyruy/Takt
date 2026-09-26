@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,17 +64,17 @@ fun CreateItemScreen(
     ) {
         ScreenHeader(
             title = type.label,
-            subtitle = "Повна форма",
+            subtitle = t("Повна форма"),
             navigation = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    Icon(Icons.Default.ArrowBack, contentDescription = t("Назад"))
                 }
             },
         )
 
         if (type.requiresCourse && courseId == null) {
             SectionCard {
-                Text("Спочатку обери предмет.", style = MaterialTheme.typography.titleMedium)
+                Text(t("Спочатку обери предмет."), style = MaterialTheme.typography.titleMedium)
             }
             return@Column
         }

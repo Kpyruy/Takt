@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -62,6 +64,7 @@ import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.StatusPill
 import com.kpyruy.takt.core.ui.motion.TaktMotion
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -122,9 +125,9 @@ fun CalendarScreen(
         courses.associate { it.id to settings.academicSemester(it, currentSemester) }
     }
 
-    val shortDateFormatter = remember { DateTimeFormatter.ofPattern("d MMM", Locale("uk")) }
-    val monthTitleFormatter = remember { DateTimeFormatter.ofPattern("LLLL yyyy", Locale("uk")) }
-    val selectedDateFormatter = remember { DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale("uk")) }
+    val shortDateFormatter = remember(TaktI18n.language) { DateTimeFormatter.ofPattern("d MMM", TaktI18n.locale) }
+    val monthTitleFormatter = remember(TaktI18n.language) { DateTimeFormatter.ofPattern("LLLL yyyy", TaktI18n.locale) }
+    val selectedDateFormatter = remember(TaktI18n.language) { DateTimeFormatter.ofPattern("EEEE, d MMMM", TaktI18n.locale) }
 
     val monthDays = remember(visibleMonth) { CalendarMonthGrid.days(visibleMonth) }
     val visibleDates = remember(
@@ -219,7 +222,7 @@ fun CalendarScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ScreenHeader(
-            title = "Календар",
+            title = t("Календар"),
             subtitle = headerSubtitle,
             action = { CalendarPeriodArrows(::navigatePrevious, ::navigateNext) },
         )
@@ -332,7 +335,7 @@ fun CalendarScreen(
                         val datedAssessments = assessmentsByDate[selectedDate].orEmpty()
                         if (deadlines.isNotEmpty() || datedAssessments.isNotEmpty()) {
                             SectionCard {
-                                Text("Дедлайни", style = MaterialTheme.typography.titleMedium)
+                                Text(t("Дедлайни"), style = MaterialTheme.typography.titleMedium)
                                 deadlines.forEachIndexed { index, task ->
                                     if (index > 0) HorizontalDivider()
                                     CalendarDeadlineRow(
@@ -408,9 +411,9 @@ private fun SelectedDayAgenda(
 
         if (events.isEmpty()) {
             SectionCard {
-                Text("На цей день занять немає")
+                Text(t("На цей день занять немає"))
                 Text(
-                    "Додай пару або разову подію кнопкою + внизу праворуч.",
+                    t("Додай пару або разову подію кнопкою + внизу праворуч."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

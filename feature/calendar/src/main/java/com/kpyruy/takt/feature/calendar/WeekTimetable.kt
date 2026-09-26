@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.ui.Alignment
 
 import com.kpyruy.takt.core.ui.components.lessonInteraction
@@ -32,12 +34,13 @@ import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 
 private const val TIMETABLE_START_HOUR = 7
 private const val TIMETABLE_END_HOUR = 21
 private val timetableHourHeight = 60.dp
 private val timetableColumnWidth = 132.dp
-private val timetableDayFormatter = DateTimeFormatter.ofPattern("EEE d", Locale("uk"))
+private val timetableDayFormatter get() = DateTimeFormatter.ofPattern("EEE d", TaktI18n.locale)
 private val timetableTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
 private data class LaneEvent(
@@ -163,7 +166,7 @@ fun WeekTimetable(
                             Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        listOf(if (laneEvent.event.isAbsent) "Пропущено" else "", laneEvent.event.lessonType.shortLabel, laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
+                                        listOf(if (laneEvent.event.isAbsent) t("Пропущено") else "", t(laneEvent.event.lessonType.shortLabel), laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
                                         modifier = Modifier.weight(1f),
                                         style = MaterialTheme.typography.labelMedium,
                                         maxLines = 2,

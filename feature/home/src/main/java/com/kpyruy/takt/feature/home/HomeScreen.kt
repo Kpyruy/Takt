@@ -1,5 +1,8 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.ui.i18n.t
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
+
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.outlined.PersonOff
@@ -103,10 +106,10 @@ fun HomeScreen(
         tasks.filter { it.dueDate == selectedDate && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
     }
     val assessmentDeadlines = remember(assessments, selectedDate) { assessments.filter { it.dueDate == selectedDate } }
-    val uk = remember { Locale("uk") }
+    val locale = TaktI18n.locale
     val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
-    val weekday = remember(uk) { DateTimeFormatter.ofPattern("EEEE", uk) }
-    val month = remember(uk) { DateTimeFormatter.ofPattern("LLLL", uk) }
+    val weekday = remember(locale) { DateTimeFormatter.ofPattern("EEEE", locale) }
+    val month = remember(locale) { DateTimeFormatter.ofPattern("LLLL", locale) }
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val accent = MaterialTheme.colorScheme.primary
 
@@ -122,10 +125,10 @@ fun HomeScreen(
                 Text(selectedDate.format(weekday).replaceFirstChar { it.uppercase() },
                     fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.65).sp)
                 Text(selectedDate.format(month).replaceFirstChar { it.uppercase() } +
-                    " · ${selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())} тиждень",
+                    t(" · ${selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())} тиждень"),
                     style = MaterialTheme.typography.bodySmall, color = muted)
             }
-            TaktIconButton(Icons.Outlined.Settings, "Налаштування", onClick = onOpenSettings)
+            TaktIconButton(Icons.Outlined.Settings, t("Налаштування"), onClick = onOpenSettings)
         }
         Spacer(Modifier.height(24.dp))
         key(today) {
@@ -134,19 +137,19 @@ fun HomeScreen(
         Spacer(Modifier.height(22.dp))
         if (courses.isEmpty()) {
             SectionCard {
-                Text("Створи свій розклад", style = MaterialTheme.typography.titleMedium)
-                Text("Спочатку додай предмет, потім пару.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text("Додати предмет") }
+                Text(t("Створи свій розклад"), style = MaterialTheme.typography.titleMedium)
+                Text(t("Спочатку додай предмет, потім пару."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text(t("Додати предмет")) }
             }
             Spacer(Modifier.height(22.dp))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Твій день", style = MaterialTheme.typography.labelLarge)
-            Text("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.completed }}", style = MaterialTheme.typography.bodySmall, color = muted)
+            Text(t("Твій день"), style = MaterialTheme.typography.labelLarge)
+            Text(t("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.completed }}"), style = MaterialTheme.typography.bodySmall, color = muted)
         }
         Spacer(Modifier.height(23.dp))
         if (events.isEmpty()) {
-            Text("Пар на цей день немає", style = MaterialTheme.typography.bodyMedium, color = muted)
+            Text(t("Пар на цей день немає"), style = MaterialTheme.typography.bodyMedium, color = muted)
             Spacer(Modifier.height(20.dp))
         }
         events.forEachIndexed { index, event ->
@@ -156,9 +159,9 @@ fun HomeScreen(
             val subjectColor = taktSubjectColor(event.courseId ?: event.title)
             val contentAlpha = if (visual.muted) 0.5f else 1f
             val status = when(event.status) {
-                ScheduleEventStatus.CANCELLED -> "Скасовано"
-                ScheduleEventStatus.MOVED -> "Перенесено"
-                ScheduleEventStatus.ONE_OFF -> "Разова подія"
+                ScheduleEventStatus.CANCELLED -> t("Скасовано")
+                ScheduleEventStatus.MOVED -> t("Перенесено")
+                ScheduleEventStatus.ONE_OFF -> t("Разова подія")
                 ScheduleEventStatus.NORMAL -> null
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -179,26 +182,26 @@ fun HomeScreen(
                             }
                             if (active) {
                                 val minutes = Duration.between(now, event.startTime).toMinutes()
-                                Text(if (minutes > 0) "$minutes хв" else "Зараз",
+                                Text(if (minutes > 0) t("$minutes хв") else t("Зараз"),
                                     Modifier.testTag("home-active-${event.id}"), style = MaterialTheme.typography.labelSmall, color = accent)
                             }
                         }
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             LessonTypeIcon(event.lessonType)
-                            Text(listOfNotNull(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label, event.room, status, if (!active) "до ${event.endTime.format(time)}" else null).joinToString(" · "),
+                            Text(listOfNotNull(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t), event.room, status, if (!active) t("до ${event.endTime.format(time)}") else null).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall, color = muted)
                         }
                         if (event.isAbsent) {
                             Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Icon(Icons.Outlined.PersonOff, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.error)
-                                Text("Пропущено", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                Text(t("Пропущено"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                             }
                         }
                         if (active) {
                             Spacer(Modifier.height(13.dp))
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("До ${event.endTime.format(time)}", style = MaterialTheme.typography.bodySmall)
+                                Text(t("До ${event.endTime.format(time)}"), style = MaterialTheme.typography.bodySmall)
                                 Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(17.dp))
                             }
                         }
@@ -210,7 +213,7 @@ fun HomeScreen(
             if (active && following != null) {
                 val minutes = Duration.between(event.endTime, following.startTime).toMinutes()
                 if (minutes > 0) {
-                    Text("Перерва · ${if (minutes >= 60) "${minutes / 60} год " else ""}${minutes % 60} хв",
+                    Text(t("Перерва · ${if (minutes >= 60) "${minutes / 60} год " else ""}${minutes % 60} хв"),
                         Modifier.padding(start = 55.dp, bottom = 14.dp), style = MaterialTheme.typography.bodySmall, color = muted)
                 }
             }
@@ -229,7 +232,7 @@ fun HomeScreen(
 
 @Composable
 private fun HomeWeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
-    val weekday = remember { DateTimeFormatter.ofPattern("EE", Locale("uk")) }
+    val weekday = remember(TaktI18n.language) { DateTimeFormatter.ofPattern("EE", TaktI18n.locale) }
     val anchorWeek = remember { selected.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
     val centerPage = Int.MAX_VALUE / 2
     val pagerState = rememberPagerState(initialPage = centerPage, pageCount = { Int.MAX_VALUE })

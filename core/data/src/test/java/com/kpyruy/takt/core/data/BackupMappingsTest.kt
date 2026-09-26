@@ -12,6 +12,7 @@ class BackupMappingsTest {
     @Test fun homeWorkFilterAndSemesterPeriodsSurviveBackupMapping() {
         val settings = com.kpyruy.takt.core.model.AppSettings(
             currentSemester = 5,
+            language = com.kpyruy.takt.core.model.AppLanguage.ENGLISH,
             homeWorkFilter = com.kpyruy.takt.core.model.HomeWorkFilter(
                 period = com.kpyruy.takt.core.model.HomeWorkPeriod.SEVEN_DAYS,
                 courseId = "TPAR_6B",

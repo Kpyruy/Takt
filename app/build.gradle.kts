@@ -4,6 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val releaseStorePath = providers.environmentVariable("TAKT_RELEASE_STORE_FILE").orNull
+val releaseStorePassword = providers.environmentVariable("TAKT_RELEASE_STORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("TAKT_RELEASE_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("TAKT_RELEASE_KEY_PASSWORD").orNull
+val releaseSigningReady = listOf(releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+    .all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.kpyruy.takt"
     compileSdk = 35
@@ -23,7 +30,27 @@ android {
     }
     buildFeatures { compose = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+
+    if (releaseSigningReady) {
+        signingConfigs.create("release") {
+            storeFile = file(requireNotNull(releaseStorePath))
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
+        buildTypes.getByName("release").signingConfig = signingConfigs.getByName("release")
+    }
 }
+
+val requireReleaseSigning = tasks.register("requireReleaseSigning") {
+    doLast {
+        check(releaseSigningReady && file(requireNotNull(releaseStorePath)).isFile) {
+            "Release signing is missing. Set TAKT_RELEASE_STORE_FILE, TAKT_RELEASE_STORE_PASSWORD, " +
+                "TAKT_RELEASE_KEY_ALIAS and TAKT_RELEASE_KEY_PASSWORD; see docs/release-signing.md."
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(requireReleaseSigning) }
 
 dependencies {
     implementation(project(":core:data"))

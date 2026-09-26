@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import android.os.SystemClock
 import android.view.ViewConfiguration
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -76,7 +78,7 @@ internal fun CalendarViewTabs(
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        listOf("День", "Тиждень", "Місяць").forEachIndexed { index, label ->
+        listOf(t("День"), t("Тиждень"), t("Місяць")).forEachIndexed { index, label ->
             val selected = index == selectedIndex
             Box(
                 modifier = (if (scrollable) Modifier.widthIn(min = 108.dp) else Modifier.weight(1f))
@@ -112,7 +114,7 @@ internal fun CalendarViewTabs(
                                 weekMenuExpanded = true
                             }
                         } else null,
-                        onLongClickLabel = if (index == 1) "Вибрати вигляд тижня" else null,
+                        onLongClickLabel = if (index == 1) t("Вибрати вигляд тижня") else null,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -132,15 +134,15 @@ internal fun CalendarViewTabs(
                             },
                             modifier = Modifier.size(28.dp),
                         ) {
-                            Icon(Icons.Default.KeyboardArrowDown, "Вибрати вигляд тижня", Modifier.size(19.dp))
+                            Icon(Icons.Default.KeyboardArrowDown, t("Вибрати вигляд тижня"), Modifier.size(19.dp))
                         }
                     }
                 }
                 if (index == 1) {
                     DropdownMenu(expanded = weekMenuExpanded, onDismissRequest = { weekMenuExpanded = false }) {
                         listOf(
-                            WeekLayout.TIMETABLE to "Таймтейбл",
-                            WeekLayout.COMPACT_LIST to "Список",
+                            WeekLayout.TIMETABLE to t("Таймтейбл"),
+                            WeekLayout.COMPACT_LIST to t("Список"),
                         ).forEach { (layout, title) ->
                             DropdownMenuItem(
                                 text = { Text(title) },
@@ -168,10 +170,10 @@ internal fun CalendarPeriodArrows(
 ) {
     Row(modifier = modifier.height(48.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrevious, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.ChevronLeft, contentDescription = "Попередній період")
+            Icon(Icons.Default.ChevronLeft, contentDescription = t("Попередній період"))
         }
         IconButton(onClick = onNext, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.ChevronRight, contentDescription = "Наступний період")
+            Icon(Icons.Default.ChevronRight, contentDescription = t("Наступний період"))
         }
     }
 }

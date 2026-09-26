@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -83,7 +85,7 @@ fun AddGradeItemForm(
     var title by remember(initialItem?.id, initialTitle, effectiveType) {
         mutableStateOf(
             initialItem?.title
-                ?: initialTitle.ifBlank { if (effectiveType == GradeItemType.EXAM) "Екзамен" else "" }
+                ?: initialTitle.ifBlank { if (effectiveType == GradeItemType.EXAM) t("Екзамен") else "" }
         )
     }
     var earnedText by remember(initialItem?.id) {
@@ -121,9 +123,9 @@ fun AddGradeItemForm(
         if (showHeading) {
             Text(
                 when {
-                    initialItem != null -> "Редагувати оцінювання"
-                    initialType == GradeItemType.EXAM -> "Додати екзамен"
-                    else -> "Додати оцінювання"
+                    initialItem != null -> t("Редагувати оцінювання")
+                    initialType == GradeItemType.EXAM -> t("Додати екзамен")
+                    else -> t("Додати оцінювання")
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
@@ -132,12 +134,12 @@ fun AddGradeItemForm(
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Назва") },
+            label = { Text(t("Назва")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
 
-        Text("Тип", style = MaterialTheme.typography.titleSmall)
+        Text(t("Тип"), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 GradeTypeChips(
@@ -151,7 +153,7 @@ fun AddGradeItemForm(
         }
 
         TaktDatePickerField(
-            label = "Дата / дедлайн",
+            label = t("Дата / дедлайн"),
             value = dueDate,
             onValueChange = {
                 if (dueDate != it) lessonId = null
@@ -164,14 +166,14 @@ fun AddGradeItemForm(
             OutlinedTextField(
                 value = durationText,
                 onValueChange = { durationText = it; error = null },
-                label = { Text("Тривалість тесту (хв)") },
+                label = { Text(t("Тривалість тесту (хв)")) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = error != null,
             )
             if (lessonOptions.isNotEmpty()) {
-                Text("Пара з тестом", style = MaterialTheme.typography.titleSmall)
+                Text(t("Пара з тестом"), style = MaterialTheme.typography.titleSmall)
                 lessonOptions.forEach { lesson ->
                     val selected = lesson.id == selectedLessonId
                     Row(
@@ -189,7 +191,7 @@ fun AddGradeItemForm(
                     }
                 }
             } else if (dueDate != null && scheduleRepository != null) {
-                Text("На цю дату немає пари цього предмета", style = MaterialTheme.typography.bodySmall,
+                Text(t("На цю дату немає пари цього предмета"), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -200,7 +202,7 @@ fun AddGradeItemForm(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(if (type == GradeItemType.EXAM) "Екзамен складено" else "Результат уже відомий")
+                Text(if (type == GradeItemType.EXAM) t("Екзамен складено") else t("Результат уже відомий"))
             }
             Switch(
                 checked = completed,
@@ -222,7 +224,7 @@ fun AddGradeItemForm(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Checkbox(checked = requiredForExam, onCheckedChange = null)
-                Text("Потрібно для допуску")
+                Text(t("Потрібно для допуску"))
             }
         }
 
@@ -237,7 +239,7 @@ fun AddGradeItemForm(
                     error = null
                 },
                 enabled = completed,
-                label = { Text("Отримано") },
+                label = { Text(t("Отримано")) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 isError = error != null,
@@ -248,7 +250,7 @@ fun AddGradeItemForm(
                     maxText = it
                     error = null
                 },
-                label = { Text("Максимум") },
+                label = { Text(t("Максимум")) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 isError = error != null,
@@ -259,7 +261,7 @@ fun AddGradeItemForm(
             OutlinedTextField(
                 value = minimumText,
                 onValueChange = { minimumText = it; error = null },
-                label = { Text("Мінімум балів для допуску") },
+                label = { Text(t("Мінімум балів для допуску")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = error != null,
@@ -281,15 +283,15 @@ fun AddGradeItemForm(
                 }
                 val duration = durationInput?.toIntOrNull()
                 when {
-                    earned == null || max == null -> error = "Введіть числові значення балів."
-                    !earned.isFinite() || earned < 0.0 -> error = "Отримані бали не можуть бути від'ємними."
-                    !max.isFinite() || max <= 0.0 -> error = "Максимум має бути більшим за 0."
-                    earned > max -> error = "Отримані бали не можуть перевищувати максимум."
-                    minimumInput != null && minimum == null -> error = "Введіть числовий мінімум балів."
+                    earned == null || max == null -> error = t("Введіть числові значення балів.")
+                    !earned.isFinite() || earned < 0.0 -> error = t("Отримані бали не можуть бути від'ємними.")
+                    !max.isFinite() || max <= 0.0 -> error = t("Максимум має бути більшим за 0.")
+                    earned > max -> error = t("Отримані бали не можуть перевищувати максимум.")
+                    minimumInput != null && minimum == null -> error = t("Введіть числовий мінімум балів.")
                     minimum != null && (!minimum.isFinite() || minimum < 0.0 || minimum > max) ->
-                        error = "Мінімум має бути від 0 до максимуму балів."
+                        error = t("Мінімум має бути від 0 до максимуму балів.")
                     durationInput != null && (duration == null || duration <= 0) ->
-                        error = "Тривалість тесту має бути додатним числом хвилин."
+                        error = t("Тривалість тесту має бути додатним числом хвилин.")
                     else -> onSave(
                         GradeItem(
                             id = initialItem?.id ?: UUID.randomUUID().toString(),
@@ -313,7 +315,7 @@ fun AddGradeItemForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialItem == null) "Зберегти" else "Оновити")
+            Text(if (initialItem == null) t("Зберегти") else t("Оновити"))
         }
     }
 }
@@ -325,15 +327,15 @@ private fun GradeTypeChips(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            GradeItemType.TEST to "Тест",
-            GradeItemType.MIDTERM to "Модуль",
-            GradeItemType.LAB to "Лаба",
-            GradeItemType.SEMINAR to "Семінар",
-            GradeItemType.HOMEWORK to "ДЗ",
-            GradeItemType.PROJECT to "Проєкт",
-            GradeItemType.ORAL to "Усне",
-            GradeItemType.EXAM to "Екзамен",
-            GradeItemType.OTHER to "Інше",
+            GradeItemType.TEST to t("Тест"),
+            GradeItemType.MIDTERM to t("Модуль"),
+            GradeItemType.LAB to t("Лаба"),
+            GradeItemType.SEMINAR to t("Семінар"),
+            GradeItemType.HOMEWORK to t("ДЗ"),
+            GradeItemType.PROJECT to t("Проєкт"),
+            GradeItemType.ORAL to t("Усне"),
+            GradeItemType.EXAM to t("Екзамен"),
+            GradeItemType.OTHER to t("Інше"),
         ).forEach { (option, label) ->
             FilterChip(
                 selected = selected == option,

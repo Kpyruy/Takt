@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Column
@@ -58,7 +60,7 @@ fun StudyTaskRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Checkbox(checked = task.completed, onCheckedChange = onCompletedChange, modifier = Modifier.semantics { contentDescription = "Виконано: ${task.title}" })
+                Checkbox(checked = task.completed, onCheckedChange = onCompletedChange, modifier = Modifier.semantics { contentDescription = t("Виконано: ${task.title}") })
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         task.title,
@@ -68,11 +70,11 @@ fun StudyTaskRow(
                     )
                     val supporting = buildList {
                         task.dueDate?.let {
-                            add("до " + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                            add(t("до ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                         }
-                        if (task.requiredForExam) add("потрібно для допуску")
-                        task.minimumPointsForExam?.let { add("мін. ${it.displayNumber()} б.") }
-                        if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) add("поріг не виконано")
+                        if (task.requiredForExam) add(t("потрібно для допуску"))
+                        task.minimumPointsForExam?.let { add(t("мін. ${it.displayNumber()} б.")) }
+                        if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) add(t("поріг не виконано"))
                     }.joinToString(" · ")
                     if (supporting.isNotBlank()) {
                         Text(
@@ -86,7 +88,7 @@ fun StudyTaskRow(
                         )
                     }
                     task.maxPoints?.let { maximum ->
-                        Text("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} б.",
+                        Text(t("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} б."),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -100,18 +102,18 @@ fun StudyTaskRow(
                     }
                 }
                 IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Дії завдання")
+                    Icon(Icons.Default.MoreVert, contentDescription = t("Дії завдання"))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text("Редагувати") },
+                        text = { Text(t("Редагувати")) },
                         onClick = {
                             menuOpen = false
                             onEdit()
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Видалити") },
+                        text = { Text(t("Видалити")) },
                         onClick = {
                             menuOpen = false
                             onDelete()

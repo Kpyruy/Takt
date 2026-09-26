@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,7 +43,7 @@ internal fun CurrentSemesterSheet(
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Поточний семестр", style = MaterialTheme.typography.headlineSmall)
+            Text(t("Поточний семестр"), style = MaterialTheme.typography.headlineSmall)
             semesters.forEach { (semester, activeCourses) ->
                 val selected = semester == currentSemester
                 Surface(
@@ -55,12 +57,12 @@ internal fun CurrentSemesterSheet(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("$semester семестр", style = MaterialTheme.typography.titleSmall)
+                            Text(t("$semester семестр"), style = MaterialTheme.typography.titleSmall)
                             if (activeCourses > 0) Text(activeCoursesLabel(activeCourses),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (selected) Icon(Icons.Outlined.Check, contentDescription = "Поточний",
+                        if (selected) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }

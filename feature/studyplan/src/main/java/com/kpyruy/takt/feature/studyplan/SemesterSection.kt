@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,10 +37,10 @@ internal enum class SemesterState { COMPLETED, ACTIVE, FUTURE }
 
 internal fun activeCoursesLabel(count: Int): String {
     val word = when {
-        count % 100 in 11..14 -> "активних предметів"
-        count % 10 == 1 -> "активний предмет"
-        count % 10 in 2..4 -> "активні предмети"
-        else -> "активних предметів"
+        count % 100 in 11..14 -> t("активних предметів")
+        count % 10 == 1 -> t("активний предмет")
+        count % 10 in 2..4 -> t("активні предмети")
+        else -> t("активних предметів")
     }
     return "$count $word"
 }
@@ -64,12 +66,12 @@ fun SemesterSection(
     val relevantCount = courses.count { it.status != CourseStatus.NOT_NEEDED }
     val activeCount = courses.count { it.status == CourseStatus.ENROLLED }
     val stateLabel = when (state) {
-        SemesterState.COMPLETED -> "закрито"
-        SemesterState.ACTIVE -> "поточний семестр"
+        SemesterState.COMPLETED -> t("закрито")
+        SemesterState.ACTIVE -> t("поточний семестр")
         SemesterState.FUTURE -> when {
             activeCount > 0 -> activeCoursesLabel(activeCount)
-            courses.any { it.status == CourseStatus.FULFILLED } -> "частково виконано"
-            else -> "заплановано"
+            courses.any { it.status == CourseStatus.FULFILLED } -> t("частково виконано")
+            else -> t("заплановано")
         }
     }
     val line = MaterialTheme.colorScheme.outlineVariant
@@ -90,8 +92,8 @@ fun SemesterSection(
                 contentAlignment = Alignment.Center,
             ) {
                 when (state) {
-                    SemesterState.COMPLETED -> Icon(Icons.Default.Check, "Завершений семестр", Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onPrimary)
-                    SemesterState.ACTIVE -> Icon(Icons.Default.Schedule, "Активний семестр", Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                    SemesterState.COMPLETED -> Icon(Icons.Default.Check, t("Завершений семестр"), Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                    SemesterState.ACTIVE -> Icon(Icons.Default.Schedule, t("Активний семестр"), Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onPrimary)
                     SemesterState.FUTURE -> Unit
                 }
             }
@@ -99,14 +101,14 @@ fun SemesterSection(
         Column(Modifier.weight(1f)) {
             Column(
                 Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("semester-toggle-$semester")
-                    .clickable(role = Role.Button, onClickLabel = if (expanded) "Згорнути семестр" else "Розгорнути семестр") { onExpandedChange(!expanded) }
-                    .semantics { stateDescription = if (expanded) "Розгорнуто" else "Згорнуто" },
+                    .clickable(role = Role.Button, onClickLabel = if (expanded) t("Згорнути семестр") else t("Розгорнути семестр")) { onExpandedChange(!expanded) }
+                    .semantics { stateDescription = if (expanded) t("Розгорнуто") else t("Згорнуто") },
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("$semester семестр", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp, lineHeight = 18.sp))
+                    Text(t("$semester семестр"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp, lineHeight = 18.sp))
                     Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (state == SemesterState.ACTIVE) {
-                        Text("зараз", Modifier.background(MaterialTheme.colorScheme.primaryContainer, androidx.compose.foundation.shape.RoundedCornerShape(7.dp)).padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = accent)
+                        Text(t("зараз"), Modifier.background(MaterialTheme.colorScheme.primaryContainer, androidx.compose.foundation.shape.RoundedCornerShape(7.dp)).padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = accent)
                     }
                 }
                 Text(
@@ -117,15 +119,15 @@ fun SemesterSection(
                 )
             }
             Row(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Здано $doneCount / $relevantCount", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                Text("${courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }} кр.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t("Здано $doneCount / $relevantCount"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                Text(t("${courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }} кр."), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             LinearProgressIndicator(progress = { if (relevantCount == 0) 0f else doneCount.toFloat() / relevantCount },
                 modifier = Modifier.fillMaxWidth().height(3.dp), color = MaterialTheme.colorScheme.secondary,
                 trackColor = line, gapSize = 0.dp, drawStopIndicator = {})
             AnimatedVisibility(visible = expanded) {
                 Column(Modifier.padding(top = 12.dp)) {
-                    Text("${courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }} / ${courses.sumOf { it.credits }} кредитів", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("${courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }} / ${courses.sumOf { it.credits }} кредитів"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     courses.forEach { course ->
                         HorizontalDivider(Modifier.padding(top = 8.dp), color = line)
                         ProgressCourseRow(course, onOpen = { onCourseClick(course.id) }, onStatus = { onCourseStatus(course) })

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.CourseAvatar
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.BorderStroke
@@ -46,13 +48,13 @@ fun SelectCourseSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                "Оберіть предмет",
+                t("Оберіть предмет"),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
             if (ordered.isEmpty()) {
                 Text(
-                    "Немає активних предметів. Познач предмет активним у «Прогресі».",
+                    t("Немає активних предметів. Познач предмет активним у «Прогресі»."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -74,7 +76,7 @@ fun SelectCourseSheet(
                             Text(course.title, style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(7.dp))
                             Text(
-                                "${course.code} · ${course.credits} кр. · семестр ${course.semester}",
+                                t("${course.code} · ${course.credits} кр. · семестр ${course.semester}"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

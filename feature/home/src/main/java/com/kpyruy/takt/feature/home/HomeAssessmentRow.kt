@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,12 +45,12 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                 Text(item.title, style = MaterialTheme.typography.titleSmall)
                 Text(buildList {
                     add(courseCode)
-                    item.durationMinutes?.let { add("$it хв") }
+                    item.durationMinutes?.let { add(t("$it хв")) }
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (item.requiredForExam) {
-                    val threshold = item.minimumPointsForExam?.let { " · мін. ${it.pointText()} б." }.orEmpty()
-                    Text("Для допуску$threshold", style = MaterialTheme.typography.labelSmall,
+                    val threshold = item.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty()
+                    Text(t("Для допуску$threshold"), style = MaterialTheme.typography.labelSmall,
                         color = if (item.completed && !item.meetsAdmissionRequirement) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -56,15 +58,15 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
-                        else "до ${item.maxPoints.pointText()} б.",
+                        else t("до ${item.maxPoints.pointText()} б."),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 item.dueDate?.let { date ->
                     val today = LocalDate.now()
                     Text(when (date) {
-                        today -> "Сьогодні"
-                        today.plusDays(1) -> "Завтра"
+                        today -> t("Сьогодні")
+                        today.plusDays(1) -> t("Завтра")
                         else -> date.format(DateTimeFormatter.ofPattern("dd.MM"))
                     }, style = MaterialTheme.typography.labelSmall,
                         color = if (date <= today) MaterialTheme.colorScheme.error

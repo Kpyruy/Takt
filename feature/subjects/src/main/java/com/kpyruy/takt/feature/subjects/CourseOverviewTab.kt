@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,11 +65,11 @@ internal fun CourseOverviewTab(
         if (hasExam) AdmissionProgressCard(eligibility)
         if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection)
         else SubjectPanel {
-            Text("Поточний результат", style = MaterialTheme.typography.titleMedium)
-            Text(when(course.passFailResult) { PassFailResult.PASSED -> "Зараховано"; PassFailResult.FAILED -> "Не зараховано"; null -> "Результату ще немає" })
+            Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
+            Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> t("Результату ще немає") })
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Обов’язкові роботи", style = MaterialTheme.typography.titleMedium)
+            Text(t("Обов’язкові роботи"), style = MaterialTheme.typography.titleMedium)
             Text("${eligibility.completedCount} / ${eligibility.requiredCount}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
         }
         Column {
@@ -75,7 +77,7 @@ internal fun CourseOverviewTab(
             requiredTasks.forEach { task ->
                 Row(Modifier.fillMaxWidth().clickable { onEditTask(task) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(task.completed, onCheckedChange = { onTaskCompleted(task, it) })
-                    Column(Modifier.weight(1f)) { Text(task.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (task.meetsAdmissionRequirement) "Зараховано" else if (task.completed) "Поріг балів не виконано" else task.description?.takeIf { it.isNotBlank() } ?: "Для допуску") }
+                    Column(Modifier.weight(1f)) { Text(task.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (task.meetsAdmissionRequirement) t("Зараховано") else if (task.completed) t("Поріг балів не виконано") else task.description?.takeIf { it.isNotBlank() } ?: t("Для допуску")) }
                     task.dueDate?.let { SmallText(it.format(DateTimeFormatter.ofPattern("dd.MM"))) }
                 }
                 HorizontalDivider()
@@ -83,16 +85,16 @@ internal fun CourseOverviewTab(
             requiredGrades.forEach { grade ->
                 Row(Modifier.fillMaxWidth().clickable { onEditGrade(grade) }.padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(if (grade.meetsAdmissionRequirement) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (grade.meetsAdmissionRequirement) "Зараховано" else if (grade.completed) "Поріг балів не виконано" else "Додати результат") }
+                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (grade.meetsAdmissionRequirement) t("Зараховано") else if (grade.completed) t("Поріг балів не виконано") else t("Додати результат")) }
                 }
                 HorizontalDivider()
             }
-            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText("Обов’язкових робіт не позначено", Modifier.padding(vertical = 16.dp))
+            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText(t("Обов’язкових робіт не позначено"), Modifier.padding(vertical = 16.dp))
         }
-        Text("Під рукою", style = MaterialTheme.typography.titleMedium)
-        ResourceRow("Формули й конспекти", "Нотатки та матеріали предмета", onNotes)
-        if (hasExam) ResourceRow("Підготовка до екзамену", "Дата, цільова оцінка й матеріали", onExam)
-        course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; ResourceRow("Програма предмета", course.code) { runCatching { uriHandler.openUri(url) } } }
+        Text(t("Під рукою"), style = MaterialTheme.typography.titleMedium)
+        ResourceRow(t("Формули й конспекти"), t("Нотатки та матеріали предмета"), onNotes)
+        if (hasExam) ResourceRow(t("Підготовка до екзамену"), t("Дата, цільова оцінка й матеріали"), onExam)
+        course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; ResourceRow(t("Програма предмета"), course.code) { runCatching { uriHandler.openUri(url) } } }
         Spacer(Modifier.height(12.dp))
     }
 }

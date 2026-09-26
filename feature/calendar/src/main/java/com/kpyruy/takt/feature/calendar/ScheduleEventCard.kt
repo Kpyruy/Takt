@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,7 +55,7 @@ fun ScheduleEventCard(
                 if (event.lessonType != com.kpyruy.takt.core.model.LessonType.UNSPECIFIED) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         com.kpyruy.takt.core.ui.components.LessonTypeIcon(event.lessonType)
-                        Text(" ${event.lessonType.label}", style = MaterialTheme.typography.bodySmall)
+                        Text(" ${t(event.lessonType.label)}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 if (!room.isNullOrBlank()) {
@@ -61,11 +63,11 @@ fun ScheduleEventCard(
                 }
             }
             when (event.status) {
-                ScheduleEventStatus.ONE_OFF -> StatusPill("Блок")
-                ScheduleEventStatus.MOVED -> StatusPill("Перенесено")
+                ScheduleEventStatus.ONE_OFF -> StatusPill(t("Блок"))
+                ScheduleEventStatus.MOVED -> StatusPill(t("Перенесено"))
                 ScheduleEventStatus.CANCELLED -> {
                     if (cancellationStyle != CancellationDisplayStyle.STRIKETHROUGH) {
-                        StatusPill("Скасовано")
+                        StatusPill(t("Скасовано"))
                     }
                 }
                 ScheduleEventStatus.NORMAL -> Unit

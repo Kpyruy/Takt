@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.*
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,27 +39,27 @@ fun LessonActionsSheet(
         containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label ?: "Пара", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t) ?: t("Пара"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, "Закрити дії пари") }
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити дії пари")) }
             }
-            Text(listOfNotNull(event.date.format(DateTimeFormatter.ofPattern("d MMMM", Locale("uk"))),
+            Text(listOfNotNull(event.date.format(DateTimeFormatter.ofPattern("d MMMM", TaktI18n.locale)),
                 "${event.startTime}–${event.endTime}", event.room).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(10.dp))
             if (event.status != ScheduleEventStatus.CANCELLED || event.isAbsent) {
                 Surface(shape = RoundedCornerShape(14.dp), color = if (event.isAbsent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerLow) {
-                    ActionRow(if (event.isAbsent) "Зняти позначку пропуску" else "Позначити пропуск", Icons.Outlined.PersonOff, onToggleAbsence)
+                    ActionRow(if (event.isAbsent) t("Зняти позначку пропуску") else t("Позначити пропуск"), Icons.Outlined.PersonOff, onToggleAbsence)
                 }
             }
-            if (actions.canMoveOccurrence) ActionRow("Перенести цю пару", Icons.Outlined.EventRepeat, onMoveOccurrence)
-            if (actions.canCancelOccurrence) ActionRow("Скасувати тільки цю пару", Icons.Outlined.EventBusy, onCancelOccurrence)
-            if (actions.canRestoreOccurrence) ActionRow("Повернути початкову пару", Icons.Outlined.Restore, onRestoreOccurrence)
+            if (actions.canMoveOccurrence) ActionRow(t("Перенести цю пару"), Icons.Outlined.EventRepeat, onMoveOccurrence)
+            if (actions.canCancelOccurrence) ActionRow(t("Скасувати тільки цю пару"), Icons.Outlined.EventBusy, onCancelOccurrence)
+            if (actions.canRestoreOccurrence) ActionRow(t("Повернути початкову пару"), Icons.Outlined.Restore, onRestoreOccurrence)
             if (actions.canEditRecurringRule || actions.canEditOneOff) HorizontalDivider(Modifier.padding(vertical = 6.dp))
-            if (actions.canEditRecurringRule) ActionRow("Редагувати", Icons.Outlined.Edit, onEditRule)
-            if (actions.canEditOneOff) ActionRow("Редагувати разову подію", Icons.Outlined.Edit, onEditOneOff)
-            if (actions.canDeleteRecurringRule) ActionRow("Видалити з розкладу", Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
-            if (actions.canDeleteOneOff) ActionRow("Видалити разову подію", Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
+            if (actions.canEditRecurringRule) ActionRow(t("Редагувати"), Icons.Outlined.Edit, onEditRule)
+            if (actions.canEditOneOff) ActionRow(t("Редагувати разову подію"), Icons.Outlined.Edit, onEditOneOff)
+            if (actions.canDeleteRecurringRule) ActionRow(t("Видалити з розкладу"), Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
+            if (actions.canDeleteOneOff) ActionRow(t("Видалити разову подію"), Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
         }
     }
 }

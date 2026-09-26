@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -29,38 +31,39 @@ fun CourseIconPicker(selectedKey: String?, onSelect: (String?) -> Unit, onDismis
     var query by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf("Усі") }
     val icons = CourseIcons.all.filter {
-        (category == "Усі" || it.category == category) && (it.label.contains(query, true) || it.key.contains(query, true))
+        (category == "Усі" || it.category == category) &&
+            (it.label.contains(query, true) || t(it.label).contains(query, true) || it.key.contains(query, true))
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxWidth().fillMaxHeight(.88f).padding(horizontal = 12.dp),
             shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Іконка предмета", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, "Закрити іконки") }
+                Text(t("Іконка предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити іконки")) }
             }
-            Text("${CourseIcons.all.size} іконок · обери свою", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("${CourseIcons.all.size} іконок · обери свою"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                placeholder = { Text("Пошук іконки") }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
+                placeholder = { Text(t("Пошук іконки")) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(listOf("Усі") + CourseIcons.all.map { it.category }.distinct()) { name ->
-                    FilterChip(selected = name == category, onClick = { category = name }, label = { Text(name) })
+                    FilterChip(selected = name == category, onClick = { category = name }, label = { Text(t(name)) })
                 }
             }
-            TextButton(onClick = { onSelect(null) }) { Text("Ініціали предмета") }
-            if (icons.isEmpty()) Text("Іконок не знайдено", Modifier.padding(24.dp))
+            TextButton(onClick = { onSelect(null) }) { Text(t("Ініціали предмета")) }
+            if (icons.isEmpty()) Text(t("Іконок не знайдено"), Modifier.padding(24.dp))
             LazyVerticalGrid(columns = GridCells.Adaptive(72.dp), modifier = Modifier.fillMaxWidth().weight(1f).testTag("course-icon-grid"),
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(icons, key = { it.key }) { option ->
                     val chosen = option.key == selectedKey
                     Surface(onClick = { onSelect(option.key) },
-                        modifier = Modifier.testTag("course-icon-${option.key}").semantics { selected = chosen; contentDescription = option.label },
+                        modifier = Modifier.testTag("course-icon-${option.key}").semantics { selected = chosen; contentDescription = t(option.label) },
                         shape = RoundedCornerShape(12.dp),
                         color = if (chosen) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
                         Column(Modifier.padding(8.dp).heightIn(min = 62.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(option.vector, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
-                            Text(option.label.substringBefore(' '), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(t(option.label).substringBefore(' '), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }

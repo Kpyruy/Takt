@@ -279,6 +279,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     homeWorkFilter = homeWorkFilter.toBackup(),
     semesterPeriods = semesterPeriods.toBackup(),
     currentSemester = currentSemester,
+    language = language.name,
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -298,6 +299,8 @@ internal fun BackupSettings.toModel() = AppSettings(
     homeWorkFilter = homeWorkFilter.toModel(),
     semesterPeriods = semesterPeriods.toModel(),
     currentSemester = currentSemester?.takeIf { it > 0 },
+    language = runCatching { com.kpyruy.takt.core.model.AppLanguage.valueOf(language) }
+        .getOrDefault(com.kpyruy.takt.core.model.AppLanguage.UKRAINIAN),
 )
 
 internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->

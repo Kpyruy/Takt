@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,11 +45,11 @@ fun CalendarDeadlineRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) {
-                    Text("Поріг для допуску не виконано", style = MaterialTheme.typography.labelSmall,
+                    Text(t("Поріг для допуску не виконано"), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error)
                 }
             }
-            Text("Дедлайн", color = MaterialTheme.colorScheme.primary)
+            Text(t("Дедлайн"), color = MaterialTheme.colorScheme.primary)
         }
     }
 }

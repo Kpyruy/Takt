@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,9 +29,10 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import kotlinx.coroutines.flow.drop
 
-private val dayFormatter = DateTimeFormatter.ofPattern("EE", Locale("uk"))
+private val dayFormatter get() = DateTimeFormatter.ofPattern("EE", TaktI18n.locale)
 private val baseWeek = LocalDate.of(2020, 1, 6)
 private const val centerPage = Int.MAX_VALUE / 2
 
@@ -64,10 +67,10 @@ fun WeekDaySelector(
         state = pagerState,
         modifier = Modifier.fillMaxWidth().testTag("calendar-week-strip").semantics {
             customActions = listOf(
-                CustomAccessibilityAction("Попередній тиждень") {
+                CustomAccessibilityAction(t("Попередній тиждень")) {
                     onWeekChange(currentWeek.minusWeeks(1).plusDays((currentWeekday - 1).toLong())); true
                 },
-                CustomAccessibilityAction("Наступний тиждень") {
+                CustomAccessibilityAction(t("Наступний тиждень")) {
                     onWeekChange(currentWeek.plusWeeks(1).plusDays((currentWeekday - 1).toLong())); true
                 },
             )

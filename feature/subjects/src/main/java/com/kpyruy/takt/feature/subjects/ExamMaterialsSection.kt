@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -68,25 +70,25 @@ internal fun ExamMaterialsSection(
                     uriText = ""
                     fileError = null
                 }
-                .onFailure { fileError = "Не вдалося додати файл: ${it.message}" }
+                .onFailure { fileError = t("Не вдалося додати файл: ${it.message}") }
         }
     }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) scope.launch {
             runCatching { documentStore.connect(uri) }
                 .onSuccess { filePicker.launch(arrayOf("*/*")) }
-                .onFailure { fileError = "Не вдалося підключити папку: ${it.message}" }
+                .onFailure { fileError = t("Не вдалося підключити папку: ${it.message}") }
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Підготовка", style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { adding = !adding }) { Text(if (adding) "Скасувати" else "Додати матеріал") }
+            Text(t("Підготовка"), style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = { adding = !adding }) { Text(if (adding) t("Скасувати") else t("Додати матеріал")) }
         }
 
         if (materials.isEmpty()) {
             Text(
-                "Додай конспект, файл або посилання для підготовки.",
+                t("Додай конспект, файл або посилання для підготовки."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
@@ -100,10 +102,10 @@ internal fun ExamMaterialsSection(
                     Column(Modifier.weight(1f).clickable {
                         scope.launch {
                             val resolved = documentStore.resolve(material.uri)
-                            if (resolved == null) Toast.makeText(context, "Файл недоступний", Toast.LENGTH_SHORT).show()
+                            if (resolved == null) Toast.makeText(context, t("Файл недоступний"), Toast.LENGTH_SHORT).show()
                             else runCatching {
                                 context.startActivity(Intent(Intent.ACTION_VIEW, resolved).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-                            }.onFailure { Toast.makeText(context, "Немає застосунку для відкриття матеріалу", Toast.LENGTH_SHORT).show() }
+                            }.onFailure { Toast.makeText(context, t("Немає застосунку для відкриття матеріалу"), Toast.LENGTH_SHORT).show() }
                         }
                     }) {
                         Text(material.title, style = MaterialTheme.typography.titleMedium)
@@ -115,7 +117,7 @@ internal fun ExamMaterialsSection(
                         )
                     }
                     IconButton(onClick = { onDelete(material) }) {
-                        Icon(Icons.Default.DeleteOutline, contentDescription = "Видалити матеріал")
+                        Icon(Icons.Default.DeleteOutline, contentDescription = t("Видалити матеріал"))
                     }
                 }
             }
@@ -125,14 +127,14 @@ internal fun ExamMaterialsSection(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Назва матеріалу") },
+                label = { Text(t("Назва матеріалу")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
             OutlinedTextField(
                 value = uriText,
                 onValueChange = { uriText = it },
-                label = { Text("Посилання") },
+                label = { Text(t("Посилання")) },
                 placeholder = { Text("https://…") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -149,7 +151,7 @@ internal fun ExamMaterialsSection(
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.AttachFile, contentDescription = null)
-                    Text("Файл")
+                    Text(t("Файл"))
                 }
                 Button(
                     onClick = {
@@ -159,7 +161,7 @@ internal fun ExamMaterialsSection(
                                 ExamMaterial(
                                     id = UUID.randomUUID().toString(),
                                     courseId = courseId,
-                                    title = title.trim().ifBlank { "Посилання" },
+                                    title = title.trim().ifBlank { t("Посилання") },
                                     uri = trimmedUri,
                                 )
                             )
@@ -170,7 +172,7 @@ internal fun ExamMaterialsSection(
                     enabled = uriText.isNotBlank(),
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Додати")
+                    Text(t("Додати"))
                 }
             }
             fileError?.let { Text(it, color = MaterialTheme.colorScheme.error) }

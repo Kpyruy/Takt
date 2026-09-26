@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -63,6 +64,7 @@ class StoredSettingsCodecTest {
             homeWorkFilter = HomeWorkFilterCodec.encode(HomeWorkFilter(period = HomeWorkPeriod.SEVEN_DAYS)),
             semesterPeriods = SemesterPeriodsCodec.encode(periods),
             currentSemester = "5",
+            language = "SLOVAK",
         )
 
         assertEquals(CardAppearance.TONAL_FILLED, settings.cardAppearance)
@@ -72,5 +74,6 @@ class StoredSettingsCodecTest {
         assertEquals(HomeWorkPeriod.SEVEN_DAYS, settings.homeWorkFilter.period)
         assertEquals(periods, settings.semesterPeriods)
         assertEquals(5, settings.currentSemester)
+        assertEquals(AppLanguage.SLOVAK, settings.language)
     }
 }

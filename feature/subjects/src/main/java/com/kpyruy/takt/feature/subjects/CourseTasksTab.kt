@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +50,7 @@ internal fun CourseTasksTab(
         AdmissionProgressCard(eligibility)
         SectionCard {
             if (work.isEmpty()) {
-                Text("Поки немає задач.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t("Поки немає задач."), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 work.forEachIndexed { index, entry ->
                     if (index > 0) HorizontalDivider()
@@ -69,11 +71,11 @@ internal fun CourseTasksTab(
             }
             OutlinedButton(onClick = onAddTask, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.Add, contentDescription = null)
-                Text("Додати завдання")
+                Text(t("Додати завдання"))
             }
             OutlinedButton(onClick = onAddGrade, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.Add, contentDescription = null)
-                Text("Додати оцінювану роботу")
+                Text(t("Додати оцінювану роботу"))
             }
         }
     }

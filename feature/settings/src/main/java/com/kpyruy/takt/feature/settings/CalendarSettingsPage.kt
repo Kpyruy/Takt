@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -61,14 +63,14 @@ internal fun CalendarSettingsPage(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = "Календар і розклад",
-            navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } },
+            title = t("Календар і розклад"),
+            navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) } },
         )
-        SettingsSectionTitle("Вигляд тижня")
+        SettingsSectionTitle(t("Вигляд тижня"))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf(
-                WeekLayout.TIMETABLE to "Таймтейбл",
-                WeekLayout.COMPACT_LIST to "Список",
+                WeekLayout.TIMETABLE to t("Таймтейбл"),
+                WeekLayout.COMPACT_LIST to t("Список"),
             ).forEach { (layout, label) ->
                 CalendarChoiceCard(
                     title = label,
@@ -80,22 +82,22 @@ internal fun CalendarSettingsPage(
                         Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("09:00", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             Box(Modifier.size(3.dp, 25.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
-                            Text("Лекція", style = MaterialTheme.typography.labelSmall)
+                            Text(t("Лекція"), style = MaterialTheme.typography.labelSmall)
                         }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text("ПН · 2 пари", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            Text("09:00  Лекція", style = MaterialTheme.typography.labelSmall)
+                            Text(t("ПН · 2 пари"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(t("09:00  Лекція"), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
             }
         }
-        SettingsSectionTitle("Скасовані пари")
+        SettingsSectionTitle(t("Скасовані пари"))
         listOf(
-            CancellationDisplayStyle.STRIKETHROUGH to "Закреслювати",
-            CancellationDisplayStyle.MARKED to "Позначати",
-            CancellationDisplayStyle.HIDDEN to "Ховати",
+            CancellationDisplayStyle.STRIKETHROUGH to t("Закреслювати"),
+            CancellationDisplayStyle.MARKED to t("Позначати"),
+            CancellationDisplayStyle.HIDDEN to t("Ховати"),
         ).forEach { (style, label) ->
             CalendarChoiceCard(
                 title = label,
@@ -104,12 +106,12 @@ internal fun CalendarSettingsPage(
                 onClick = { onCancellationStyle(style) },
             ) {
                 when (style) {
-                    CancellationDisplayStyle.STRIKETHROUGH -> Text("09:00  Теорія права",
+                    CancellationDisplayStyle.STRIKETHROUGH -> Text(t("09:00  Теорія права"),
                         textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CancellationDisplayStyle.MARKED -> Text("09:00  Теорія права  ·  Скасовано",
+                    CancellationDisplayStyle.MARKED -> Text(t("09:00  Теорія права  ·  Скасовано"),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CancellationDisplayStyle.HIDDEN -> Text("Скасовані пари зникнуть із розкладу",
+                    CancellationDisplayStyle.HIDDEN -> Text(t("Скасовані пари зникнуть із розкладу"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -118,16 +120,16 @@ internal fun CalendarSettingsPage(
         if (settings.cancellationStyle == CancellationDisplayStyle.HIDDEN) {
             SectionCard {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Показувати приховані", Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Text(t("Показувати приховані"), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     Switch(checked = settings.showHiddenLessons, onCheckedChange = onShowHiddenLessons)
                 }
             }
         }
-        SettingsSectionTitle("Парність тижня")
+        SettingsSectionTitle(t("Парність тижня"))
         val parityOptions = listOf(
-            ParityOverride.AUTO to "Автоматично",
-            ParityOverride.EVEN to "Завжди парний",
-            ParityOverride.ODD to "Завжди непарний",
+            ParityOverride.AUTO to t("Автоматично"),
+            ParityOverride.EVEN to t("Завжди парний"),
+            ParityOverride.ODD to t("Завжди непарний"),
         )
         val selectedParityLabel = parityOptions.first { it.first == settings.parityOverride }.second
         Surface(
@@ -141,7 +143,7 @@ internal fun CalendarSettingsPage(
                 Text(selectedParityLabel, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold)
                 Icon(if (parityExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = if (parityExpanded) "Згорнути вибір" else "Змінити парність")
+                    contentDescription = if (parityExpanded) t("Згорнути вибір") else t("Змінити парність"))
             }
         }
         AnimatedVisibility(visible = parityExpanded) {

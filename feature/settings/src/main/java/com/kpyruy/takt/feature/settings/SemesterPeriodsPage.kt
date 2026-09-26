@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -95,13 +97,13 @@ internal fun SemesterPeriodsPage(
                             val result = runCatching { onSave(drafts) }
                             saving = false
                             snackbarHostState.showSnackbar(
-                                if (result.isSuccess) "Періоди збережено" else "Не вдалося зберегти періоди",
+                                if (result.isSuccess) t("Періоди збережено") else t("Не вдалося зберегти періоди"),
                             )
                         }
                     },
                     enabled = changed && valid && !saving,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp),
-                ) { Text("Зберегти періоди") }
+                ) { Text(t("Зберегти періоди")) }
             }
         },
     ) { insets ->
@@ -110,8 +112,8 @@ internal fun SemesterPeriodsPage(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ScreenHeader(title = "Періоди навчання",
-                navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад") } })
+            ScreenHeader(title = t("Періоди навчання"),
+                navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) } })
             LazyRow(Modifier.fillMaxWidth(), state = semesterListState,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(available) { semester ->
@@ -122,7 +124,7 @@ internal fun SemesterPeriodsPage(
                         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                     ) {
-                        Text("$semester семестр" + if (semester == currentSemester) " · зараз" else "",
+                        Text(t("$semester семестр") + if (semester == currentSemester) t(" · зараз") else "",
                             Modifier.padding(horizontal = 15.dp, vertical = 11.dp),
                             style = MaterialTheme.typography.labelLarge,
                             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
@@ -132,26 +134,26 @@ internal fun SemesterPeriodsPage(
             key(selectedSemester) {
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Навчальний період", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Навчальний період"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                         if (draft.studyStart != null || draft.studyEnd != null) {
-                            TextButton(onClick = { updateDraft(draft.copy(studyStart = null, studyEnd = null)) }) { Text("Очистити") }
+                            TextButton(onClick = { updateDraft(draft.copy(studyStart = null, studyEnd = null)) }) { Text(t("Очистити")) }
                         }
                     }
-                    TaktDatePickerField("Початок навчання", draft.studyStart,
+                    TaktDatePickerField(t("Початок навчання"), draft.studyStart,
                         { updateDraft(draft.copy(studyStart = it)) }, Modifier.fillMaxWidth())
-                    TaktDatePickerField("Кінець навчання", draft.studyEnd,
+                    TaktDatePickerField(t("Кінець навчання"), draft.studyEnd,
                         { updateDraft(draft.copy(studyEnd = it)) }, Modifier.fillMaxWidth())
                 }
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Екзаменаційний період", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Екзаменаційний період"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                         if (draft.examStart != null || draft.examEnd != null) {
-                            TextButton(onClick = { updateDraft(draft.copy(examStart = null, examEnd = null)) }) { Text("Очистити") }
+                            TextButton(onClick = { updateDraft(draft.copy(examStart = null, examEnd = null)) }) { Text(t("Очистити")) }
                         }
                     }
-                    TaktDatePickerField("Початок екзаменів", draft.examStart,
+                    TaktDatePickerField(t("Початок екзаменів"), draft.examStart,
                         { updateDraft(draft.copy(examStart = it)) }, Modifier.fillMaxWidth())
-                    TaktDatePickerField("Кінець екзаменів", draft.examEnd,
+                    TaktDatePickerField(t("Кінець екзаменів"), draft.examEnd,
                         { updateDraft(draft.copy(examEnd = it)) }, Modifier.fillMaxWidth())
                 }
             }
@@ -159,19 +161,19 @@ internal fun SemesterPeriodsPage(
             val examStart = draft.examStart
             if (studyEnd != null && examStart != null && examStart > studyEnd.plusDays(1)) {
                 val days = ChronoUnit.DAYS.between(studyEnd, examStart) - 1
-                Text("Перерва між періодами · $days дн.",
+                Text(t("Перерва між періодами · $days дн."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!valid) {
-                Text("Для кожного періоду вкажи обидві дати в правильному порядку.",
+                Text(t("Для кожного періоду вкажи обидві дати в правильному порядку."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
-            SettingsSectionTitle("Режим оцінювання")
+            SettingsSectionTitle(t("Режим оцінювання"))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
-                    AssessmentPhaseMode.AUTO to "Авто",
-                    AssessmentPhaseMode.STUDY to "Навчання",
-                    AssessmentPhaseMode.EXAM to "Екзамени",
+                    AssessmentPhaseMode.AUTO to t("Авто"),
+                    AssessmentPhaseMode.STUDY to t("Навчання"),
+                    AssessmentPhaseMode.EXAM to t("Екзамени"),
                 ).forEach { (mode, label) ->
                     val selected = draft.assessmentMode == mode
                     Surface(
@@ -187,7 +189,7 @@ internal fun SemesterPeriodsPage(
                     }
                 }
             }
-            Text("Зараз: " + if (draft.assessmentPhase(now) == AssessmentPhase.EXAM) "екзамени" else "навчання",
+            Text(t("Зараз: ") + if (draft.assessmentPhase(now) == AssessmentPhase.EXAM) t("екзамени") else t("навчання"),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium)
         }

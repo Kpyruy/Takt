@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -47,11 +49,11 @@ fun MoveLessonSheet(
                 .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("Перенести пару", style = MaterialTheme.typography.headlineSmall)
+            Text(t("Перенести пару"), style = MaterialTheme.typography.headlineSmall)
             Text(event.title, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             TaktDatePickerField(
-                label = "Нова дата",
+                label = t("Нова дата"),
                 value = targetDate,
                 onValueChange = {
                     targetDate = it
@@ -65,7 +67,7 @@ fun MoveLessonSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TaktTimePickerField(
-                    label = "Початок",
+                    label = t("Початок"),
                     value = startTime,
                     onValueChange = {
                         startTime = it
@@ -74,7 +76,7 @@ fun MoveLessonSheet(
                     modifier = Modifier.weight(1f),
                 )
                 TaktTimePickerField(
-                    label = "Кінець",
+                    label = t("Кінець"),
                     value = endTime,
                     onValueChange = {
                         endTime = it
@@ -87,7 +89,7 @@ fun MoveLessonSheet(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text("Аудиторія") },
+                label = { Text(t("Аудиторія")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -99,7 +101,7 @@ fun MoveLessonSheet(
             Button(
                 onClick = {
                     if (endTime <= startTime) {
-                        error = "Кінець має бути пізніше початку."
+                        error = t("Кінець має бути пізніше початку.")
                         return@Button
                     }
                     onSave(
@@ -117,7 +119,7 @@ fun MoveLessonSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Перенести")
+                Text(t("Перенести"))
             }
         }
     }
