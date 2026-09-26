@@ -25,6 +25,27 @@ class CalendarPolishTest {
         waitForSelectedDay(today.plusWeeks(2))
     }
 
+    @Test fun weekLayoutMenuAndDoubleTapReturnToToday() {
+        val data = (compose.activity.application as TaktApplication).dataContainer
+        val today = LocalDate.now()
+        val originalLayout = runBlocking { data.settingsRepository.settings.first().weekLayout }
+        try {
+            compose.onNodeWithText("Календар").performClick()
+            compose.onNodeWithTag("calendar-view-week").performClick()
+            compose.onNodeWithTag("calendar-week-strip").performTouchInput { swipeLeft() }
+            waitForSelectedDay(today.plusWeeks(1))
+            compose.onNodeWithTag("calendar-view-week").performTouchInput { longClick() }
+            compose.onNodeWithText("Список").performClick()
+            compose.waitUntil(6_000) {
+                runBlocking { data.settingsRepository.settings.first().weekLayout } == WeekLayout.COMPACT_LIST
+            }
+            compose.onNodeWithTag("calendar-view-week").performTouchInput { doubleClick() }
+            waitForSelectedDay(today)
+        } finally {
+            runBlocking { data.settingsRepository.setWeekLayout(originalLayout) }
+        }
+    }
+
     @Test fun monthShowsIndependentLessonWorkAndExamMarkers() {
         val data = (compose.activity.application as TaktApplication).dataContainer
         val today = LocalDate.now()

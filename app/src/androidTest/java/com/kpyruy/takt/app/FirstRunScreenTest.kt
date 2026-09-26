@@ -20,12 +20,13 @@ class FirstRunScreenTest {
         compose.setContent {
             FirstRunScreen(AppSettings(), onFinish = { chosen = it }, onRestore = { null })
         }
-        compose.onNodeWithText("Твоя перша пара").assertExists()
+        compose.onNodeWithText("Твій Takt").assertExists()
         compose.onNodeWithTag("onboarding-color-PURPLE").performScrollTo().performClick()
         compose.onNodeWithTag("onboarding-primary").performClick()
         compose.onNodeWithText("Показати, що де?").assertExists()
+        compose.onNodeWithText("Перед стартом розкладу").assertExists()
         compose.onNodeWithTag("onboarding-primary").performClick()
-        listOf("Сьогодні", "Календар", "Предмети", "Прогрес").forEach { title ->
+        listOf("Сьогодні", "Календар", "Предмети", "Прогрес", "Налаштування").forEach { title ->
             compose.onNodeWithText(title).assertExists()
             compose.onNodeWithTag("onboarding-primary").performClick()
         }

@@ -38,8 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.GradeRepository
@@ -213,10 +211,6 @@ fun CalendarScreen(
         CalendarViewMode.WEEK -> "${weekStart.format(shortDateFormatter)} – ${weekStart.plusDays(6).format(shortDateFormatter)}"
         CalendarViewMode.MONTH -> visibleMonth.atDay(1).format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
     }
-    val expandedControls = LocalDensity.current.fontScale > 1.15f ||
-        LocalConfiguration.current.screenWidthDp < 360
-    val showPeriodNavigation = viewMode != CalendarViewMode.DAY || selectedDate != today
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -227,17 +221,19 @@ fun CalendarScreen(
         ScreenHeader(
             title = "Календар",
             subtitle = headerSubtitle,
-            action = if (!expandedControls && viewMode != CalendarViewMode.WEEK && showPeriodNavigation) {
-                { CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext) }
-            } else null,
+            action = { CalendarPeriodArrows(::navigatePrevious, ::navigateNext) },
         )
 
-        CalendarTabs(
-            labels = listOf("День", "Тиждень", "Місяць"),
+        CalendarViewTabs(
             selectedIndex = viewMode.ordinal,
+            weekLayout = settings.weekLayout,
             onSelected = { viewMode = CalendarViewMode.entries[it] },
-            modifier = if (expandedControls) Modifier.fillMaxWidth() else
-                Modifier.fillMaxWidth(0.78f).align(Alignment.CenterHorizontally),
+            onDoubleTap = {
+                viewMode = CalendarViewMode.entries[it]
+                selectDate(today)
+            },
+            onWeekLayoutSelected = { layout -> scope.launch { settingsRepository.setWeekLayout(layout) } },
+            modifier = Modifier.fillMaxWidth(),
         )
 
         if (viewMode != CalendarViewMode.MONTH) {
@@ -250,42 +246,6 @@ fun CalendarScreen(
                     if (viewMode == CalendarViewMode.WEEK) viewMode = CalendarViewMode.DAY
                 },
             )
-        }
-
-        if (viewMode == CalendarViewMode.WEEK) {
-            val weekLayoutTabs: @Composable (Modifier) -> Unit = { modifier ->
-                CalendarTabs(
-                    labels = listOf("Таймтейбл", "Список"),
-                    selectedIndex = if (settings.weekLayout == WeekLayout.TIMETABLE) 0 else 1,
-                    onSelected = { index ->
-                        scope.launch {
-                            settingsRepository.setWeekLayout(
-                                if (index == 0) WeekLayout.TIMETABLE else WeekLayout.COMPACT_LIST
-                            )
-                        }
-                    },
-                    modifier = modifier,
-                )
-            }
-            if (expandedControls) {
-                weekLayoutTabs(Modifier.fillMaxWidth())
-                if (showPeriodNavigation) {
-                    CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext)
-                }
-            } else {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    weekLayoutTabs(Modifier.weight(1f))
-                    if (showPeriodNavigation) {
-                        CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext)
-                    }
-                }
-            }
-        }
-
-        if (expandedControls && viewMode != CalendarViewMode.WEEK && showPeriodNavigation) {
-            CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext,
-                modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         AnimatedContent(

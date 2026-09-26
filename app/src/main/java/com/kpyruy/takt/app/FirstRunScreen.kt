@@ -25,8 +25,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
@@ -63,9 +65,10 @@ private data class TourPage(val title: String, val body: String, val icon: Image
 
 private val tourPages = listOf(
     TourPage("Сьогодні", "Пари та задачі на вибраний день. Натисни пару, щоб відкрити предмет.", Icons.Outlined.Today),
-    TourPage("Календар", "Дивись розклад за днем, тижнем або місяцем. Додай пару кнопкою +.", Icons.Outlined.CalendarMonth),
+    TourPage("Календар", "Дивись розклад за днем, тижнем або місяцем. Затисни «Тиждень» для вибору таймтейблу чи списку. Двічі натисни активний режим, щоб повернутися до сьогодні.", Icons.Outlined.CalendarMonth),
     TourPage("Предмети", "Спочатку створи предмет із власною назвою та кодом. До нього привʼязуються пари й задачі.", Icons.Outlined.MenuBook),
     TourPage("Прогрес", "Позначай активні й здані предмети, обирай поточний семестр та стеж за балами.", Icons.Outlined.School),
+    TourPage("Налаштування", "Тут можна змінити вигляд, розклад і задачі та підключити резервну копію. Після додавання предметів обери поточний семестр у Прогресі, а в Налаштування → Періоди навчання вкажи дати занять та екзаменів.", Icons.Outlined.Settings),
 )
 
 @Composable
@@ -167,8 +170,22 @@ internal fun FirstRunScreen(
                     }
                     1 -> {
                         Text("Показати, що де?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text("Короткий тур пояснить чотири головні розділи. Його можна пропустити.",
+                        Text("Короткий тур покаже головні розділи й налаштування. Його можна пропустити.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Surface(shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.primaryContainer) {
+                            Row(Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.Top) {
+                                Icon(Icons.Outlined.DateRange, null, tint = MaterialTheme.colorScheme.primary)
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("Перед стартом розкладу", style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold)
+                                    Text("Додай предмети, обери поточний семестр у Прогресі та задай дати занять і екзаменів у Налаштування → Періоди навчання.",
+                                        style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
                         tourPages.chunked(2).forEach { pair ->
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 pair.forEach { page -> TourTeaser(page, Modifier.weight(1f)) }
