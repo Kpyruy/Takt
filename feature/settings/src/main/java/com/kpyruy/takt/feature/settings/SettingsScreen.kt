@@ -265,7 +265,7 @@ fun SettingsScreen(
                         backupMessage = runCatching { documentStore.saveCurrentToDocuments() }
                             .fold({ "Поточні дані записано в Documents/Takt." }, { "Помилка збереження: ${it.message}" })
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text("Залишити дані на телефоні") }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Замінити копію даними телефона") }
             }
         }
         SectionCard {
