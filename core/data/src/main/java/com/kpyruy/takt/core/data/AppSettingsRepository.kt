@@ -10,10 +10,10 @@ import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.model.HomeWorkFilter
 import com.kpyruy.takt.core.model.SemesterPeriod
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface AppSettingsRepository {
-    val settings: Flow<AppSettings>
+    val settings: StateFlow<AppSettings>
 
     suspend fun setCancellationStyle(style: CancellationDisplayStyle)
     suspend fun setShowHiddenLessons(show: Boolean)

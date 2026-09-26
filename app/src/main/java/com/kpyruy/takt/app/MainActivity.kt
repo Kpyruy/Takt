@@ -4,6 +4,8 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.os.Bundle
+import android.content.res.Configuration
+import androidx.core.graphics.drawable.toDrawable
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +26,7 @@ import androidx.core.view.WindowCompat
 import androidx.compose.runtime.getValue
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.ui.theme.TaktTheme
+import com.kpyruy.takt.core.ui.theme.taktWindowBackgroundColor
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.data.DocumentSyncStatus
 import kotlinx.coroutines.launch
@@ -35,15 +38,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val dataContainer = (application as TaktApplication).dataContainer
+        val initialSettings = dataContainer.settingsRepository.settings.value
+        val systemDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        window.setBackgroundDrawable(taktWindowBackgroundColor(initialSettings, systemDark).toDrawable())
+        TaktI18n.use(initialSettings.language)
         setContent {
             var showOnboarding by remember { mutableStateOf<Boolean?>(null) }
             val scope = rememberCoroutineScope()
             LaunchedEffect(dataContainer) {
                 showOnboarding = dataContainer.firstRunRepository.shouldShow()
             }
-            val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle(
-                initialValue = AppSettings()
-            )
+            val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
             SideEffect { TaktI18n.use(settings.language) }
 
             TaktTheme(settings = settings) {

@@ -2,7 +2,7 @@
 
 Takt is an offline-first Android study planner for university schedules, grades, deadlines, and study progress.
 
-The project is currently private and under active development. It is designed as a modular Kotlin/Jetpack Compose application so individual areas such as timetable, grades, and study plan can evolve independently.
+The project is in pre-release development. It is designed as a modular Kotlin/Jetpack Compose application so individual areas such as timetable, grades, and study plan can evolve independently.
 
 ## Modules
 

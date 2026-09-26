@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
@@ -18,11 +19,7 @@ fun TaktTheme(
     settings: AppSettings = AppSettings(),
     content: @Composable () -> Unit,
 ) {
-    val darkTheme = when (settings.themeMode) {
-        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DARK -> true
-    }
+    val darkTheme = usesDarkTheme(settings, isSystemInDarkTheme())
     val palette = paletteFor(settings.themeFamily)
 
     CompositionLocalProvider(
@@ -36,4 +33,16 @@ fun TaktTheme(
             content = content,
         )
     }
+}
+
+/** Matches the surface shown by the loading screen before Compose draws its first frame. */
+fun taktWindowBackgroundColor(settings: AppSettings, systemDark: Boolean): Int {
+    val palette = paletteFor(settings.themeFamily)
+    return (if (usesDarkTheme(settings, systemDark)) palette.dark else palette.light).surface.toArgb()
+}
+
+private fun usesDarkTheme(settings: AppSettings, systemDark: Boolean): Boolean = when (settings.themeMode) {
+    AppThemeMode.SYSTEM -> systemDark
+    AppThemeMode.LIGHT -> false
+    AppThemeMode.DARK -> true
 }
