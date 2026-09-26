@@ -3,6 +3,7 @@ package com.kpyruy.takt.feature.settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -27,6 +28,7 @@ internal fun SettingsNavigationTile(
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
+    subtitle: String? = null,
 ) {
     SectionCard(modifier = Modifier.clickable(onClick = onClick)) {
         Row(
@@ -39,8 +41,12 @@ internal fun SettingsNavigationTile(
                     Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                 }
             }
-            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold)
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold)
+                subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
             Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

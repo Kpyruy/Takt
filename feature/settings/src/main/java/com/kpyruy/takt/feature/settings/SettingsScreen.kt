@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ import com.kpyruy.takt.core.data.BackupRepository
 import com.kpyruy.takt.core.data.DocumentSyncStatus
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.UniversityAccountRepository
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -59,6 +61,8 @@ fun SettingsScreen(
     backupRepository: BackupRepository,
     documentStore: TaktDocumentStore,
     studyPlanRepository: StudyPlanRepository,
+    universityAccountRepository: UniversityAccountRepository,
+    authenticateDevice: DeviceAuthenticationRequest,
     onBack: () -> Unit,
 ) {
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
@@ -70,6 +74,8 @@ fun SettingsScreen(
     var showCalendar by remember { mutableStateOf(false) }
     var showTasks by remember { mutableStateOf(false) }
     var showPeriods by remember { mutableStateOf(false) }
+    var showUniversityAccount by remember { mutableStateOf(false) }
+    val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val courses by remember(studyPlanRepository) { studyPlanRepository.observeCourses() }
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
@@ -186,6 +192,14 @@ fun SettingsScreen(
         )
         return
     }
+    if (showUniversityAccount) {
+        UniversityAccountPage(
+            repository = universityAccountRepository,
+            authenticate = authenticateDevice,
+            onBack = { showUniversityAccount = false },
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -229,6 +243,14 @@ fun SettingsScreen(
             title = t("Задачі"),
             icon = Icons.Outlined.Checklist,
             onClick = { showTasks = true },
+        )
+
+        SettingsSectionTitle(t("Акаунт"))
+        SettingsNavigationTile(
+            title = t("Університетська система"),
+            subtitle = if (hasUniversityAccount) t("UIS · дані збережено") else t("Локальний режим"),
+            icon = Icons.Outlined.AccountCircle,
+            onClick = { showUniversityAccount = true },
         )
 
         SettingsSectionTitle(t("Оцінювання"))

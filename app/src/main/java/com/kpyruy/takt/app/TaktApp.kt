@@ -57,6 +57,8 @@ import com.kpyruy.takt.core.data.PlanningSnapshot
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.UniversityAccountRepository
+import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
 import com.kpyruy.takt.core.ui.components.TaktAddFab
 import com.kpyruy.takt.core.ui.components.TaktBottomNavigation
 import com.kpyruy.takt.core.ui.components.TaktNavItem
@@ -97,6 +99,8 @@ fun TaktApp(
     settingsRepository: AppSettingsRepository,
     backupRepository: BackupRepository,
     documentStore: TaktDocumentStore,
+    universityAccountRepository: UniversityAccountRepository,
+    authenticateDevice: DeviceAuthenticationRequest,
 ) {
     val navController = rememberNavController()
     val snapshotState = planningSnapshot.collectAsStateWithLifecycle()
@@ -314,6 +318,8 @@ fun TaktApp(
                     backupRepository = backupRepository,
                     documentStore = documentStore,
                     studyPlanRepository = repository,
+                    universityAccountRepository = universityAccountRepository,
+                    authenticateDevice = authenticateDevice,
                     onBack = { navController.popBackStack() },
                 )
             }

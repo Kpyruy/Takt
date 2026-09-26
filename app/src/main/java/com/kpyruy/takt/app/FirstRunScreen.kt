@@ -45,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +59,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.DeviceAuthenticationResult
+import com.kpyruy.takt.core.data.UniversityAccountRepository
 import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.ThemeFamily
@@ -65,6 +68,8 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
 import com.kpyruy.takt.feature.settings.AppearanceLivePreview
+import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
+import com.kpyruy.takt.feature.settings.UniversityAccountForm
 import kotlinx.coroutines.launch
 
 private data class TourPage(val title: String, val body: String, val icon: ImageVector)
@@ -80,6 +85,8 @@ private fun localizedTourPages() = listOf(
 @Composable
 internal fun FirstRunScreen(
     settings: AppSettings,
+    universityAccountRepository: UniversityAccountRepository,
+    authenticateDevice: DeviceAuthenticationRequest,
     onFinish: (AppSettings) -> Unit,
     onRestore: suspend (Uri) -> String?,
 ) {
@@ -89,12 +96,15 @@ internal fun FirstRunScreen(
     var step by rememberSaveable { mutableIntStateOf(0) }
     var tourIndex by rememberSaveable { mutableIntStateOf(0) }
     var restoreMessage by remember { mutableStateOf<String?>(null) }
+    val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
+    var useUIS by rememberSaveable { mutableStateOf(universityAccountRepository.hasAccount.value) }
+    var accountMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) scope.launch { restoreMessage = onRestore(uri) }
     }
     BackHandler(step != 0) {
-        if (step == 2 && tourIndex > 0) tourIndex-- else step = if (step == 2) 1 else 0
+        if (step == 3 && tourIndex > 0) tourIndex-- else step--
     }
 
     TaktTheme(draft) {
@@ -108,18 +118,20 @@ internal fun FirstRunScreen(
                             onClick = {
                                 when (step) {
                                     0 -> step = 1
-                                    1 -> { step = 2; tourIndex = 0 }
+                                    1 -> step = 2
+                                    2 -> { step = 3; tourIndex = 0 }
                                     else -> if (tourIndex < tourPages.lastIndex) tourIndex++ else onFinish(draft)
                                 }
                             },
+                            enabled = step != 1 || !useUIS || hasUniversityAccount,
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("onboarding-primary"),
                         ) {
-                            Text(when (step) { 0 -> t("Далі"); 1 -> t("Показати короткий тур");
+                            Text(when (step) { 0, 1 -> t("Далі"); 2 -> t("Показати короткий тур");
                                 else -> if (tourIndex == tourPages.lastIndex) t("Почати") else t("Далі") })
                         }
-                        if (step == 1 || step == 2) {
+                        if (step == 2 || step == 3) {
                             TextButton(onClick = { onFinish(draft) }, modifier = Modifier.fillMaxWidth()) {
-                                Text(if (step == 1) t("Почати без туру") else t("Пропустити тур"))
+                                Text(if (step == 2) t("Почати без туру") else t("Пропустити тур"))
                             }
                         }
                     }
@@ -128,7 +140,7 @@ internal fun FirstRunScreen(
         ) { insets ->
             Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Text("TAKT  ·  ${step + 1} / 3", style = MaterialTheme.typography.labelLarge,
+                Text("TAKT  ·  ${step + 1} / 4", style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 when (step) {
                     0 -> {
@@ -192,6 +204,34 @@ internal fun FirstRunScreen(
                         restoreMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                     1 -> {
+                        Text(t("Як користуватися Takt?"), style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold)
+                        Text(t("Працюй повністю локально або збережи дані UIS для майбутнього підключення."),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = !useUIS, onClick = {
+                                if (hasUniversityAccount) {
+                                    authenticateDevice(t("Видалити дані UIS")) { result ->
+                                        if (result == DeviceAuthenticationResult.SUCCESS) {
+                                            runCatching { universityAccountRepository.remove() }
+                                                .onSuccess { useUIS = false; accountMessage = null }
+                                                .onFailure { accountMessage = t("Не вдалося видалити дані UIS") }
+                                        } else accountMessage = t("Підтвердження скасовано")
+                                    }
+                                } else useUIS = false
+                            },
+                                label = { Text(t("Локально")) }, modifier = Modifier.testTag("onboarding-local"))
+                            FilterChip(selected = useUIS, onClick = { useUIS = true },
+                                label = { Text("UIS") }, modifier = Modifier.testTag("onboarding-uis"))
+                        }
+                        if (useUIS) {
+                            Text(t("Вхід у UIS поки не виконується. Після збереження даних Takt проситиме захист телефона при кожному запуску."),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            UniversityAccountForm(universityAccountRepository, authenticateDevice)
+                        }
+                        accountMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    }
+                    2 -> {
                         Text(t("Показати, що де?"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                         Text(t("Короткий тур покаже головні розділи й налаштування. Його можна пропустити."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
