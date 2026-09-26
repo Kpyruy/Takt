@@ -25,14 +25,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.Composable
@@ -43,6 +38,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.GradeRepository
@@ -66,7 +63,6 @@ import com.kpyruy.takt.core.model.WeekParity
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.StatusPill
-import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -217,24 +213,31 @@ fun CalendarScreen(
         CalendarViewMode.WEEK -> "${weekStart.format(shortDateFormatter)} – ${weekStart.plusDays(6).format(shortDateFormatter)}"
         CalendarViewMode.MONTH -> visibleMonth.atDay(1).format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
     }
+    val expandedControls = LocalDensity.current.fontScale > 1.15f ||
+        LocalConfiguration.current.screenWidthDp < 360
+    val showPeriodNavigation = viewMode != CalendarViewMode.DAY || selectedDate != today
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp).padding(top = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ScreenHeader(
             title = "Календар",
             subtitle = headerSubtitle,
+            action = if (!expandedControls && viewMode != CalendarViewMode.WEEK && showPeriodNavigation) {
+                { CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext) }
+            } else null,
         )
 
-        TaktSegmentedTabs(
+        CalendarTabs(
             labels = listOf("День", "Тиждень", "Місяць"),
             selectedIndex = viewMode.ordinal,
             onSelected = { viewMode = CalendarViewMode.entries[it] },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = if (expandedControls) Modifier.fillMaxWidth() else
+                Modifier.fillMaxWidth(0.78f).align(Alignment.CenterHorizontally),
         )
 
         if (viewMode != CalendarViewMode.MONTH) {
@@ -250,26 +253,39 @@ fun CalendarScreen(
         }
 
         if (viewMode == CalendarViewMode.WEEK) {
-            TaktSegmentedTabs(
-                labels = listOf("Таймтейбл", "Список"),
-                selectedIndex = if (settings.weekLayout == WeekLayout.TIMETABLE) 0 else 1,
-                onSelected = { index ->
-                    scope.launch {
-                        settingsRepository.setWeekLayout(
-                            if (index == 0) WeekLayout.TIMETABLE else WeekLayout.COMPACT_LIST
-                        )
+            val weekLayoutTabs: @Composable (Modifier) -> Unit = { modifier ->
+                CalendarTabs(
+                    labels = listOf("Таймтейбл", "Список"),
+                    selectedIndex = if (settings.weekLayout == WeekLayout.TIMETABLE) 0 else 1,
+                    onSelected = { index ->
+                        scope.launch {
+                            settingsRepository.setWeekLayout(
+                                if (index == 0) WeekLayout.TIMETABLE else WeekLayout.COMPACT_LIST
+                            )
+                        }
+                    },
+                    modifier = modifier,
+                )
+            }
+            if (expandedControls) {
+                weekLayoutTabs(Modifier.fillMaxWidth())
+                if (showPeriodNavigation) {
+                    CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext)
+                }
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    weekLayoutTabs(Modifier.weight(1f))
+                    if (showPeriodNavigation) {
+                        CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext)
                     }
-                },
-            )
+                }
+            }
         }
 
-        if (viewMode == CalendarViewMode.MONTH || selectedDate != today) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = ::navigatePrevious) { Icon(Icons.Default.ChevronLeft, "Попередній період") }
-                TextButton(onClick = { selectDate(today) }) { Text("Сьогодні") }
-                IconButton(onClick = ::navigateNext) { Icon(Icons.Default.ChevronRight, "Наступний період") }
-            }
+        if (expandedControls && viewMode != CalendarViewMode.WEEK && showPeriodNavigation) {
+            CalendarPeriodNavigation(::navigatePrevious, { selectDate(today) }, ::navigateNext,
+                modifier = Modifier.align(Alignment.CenterHorizontally))
         }
 
         AnimatedContent(
