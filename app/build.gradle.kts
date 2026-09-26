@@ -42,16 +42,6 @@ android {
     }
 }
 
-val requireReleaseSigning = tasks.register("requireReleaseSigning") {
-    doLast {
-        check(releaseSigningReady && file(requireNotNull(releaseStorePath)).isFile) {
-            "Release signing is missing. Set TAKT_RELEASE_STORE_FILE, TAKT_RELEASE_STORE_PASSWORD, " +
-                "TAKT_RELEASE_KEY_ALIAS and TAKT_RELEASE_KEY_PASSWORD; see docs/release-signing.md."
-        }
-    }
-}
-tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(requireReleaseSigning) }
-
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:database"))

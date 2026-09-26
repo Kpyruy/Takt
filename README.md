@@ -30,7 +30,7 @@ Use JDK 17, Android SDK platform 35 and build tools 35.0.0. Set `ANDROID_HOME` t
 ./gradlew :core:model:test :core:data:testDebugUnitTest :app:lintDebug
 ```
 
-The wrapper pins Gradle 8.11.1 and verifies the distribution SHA-256. Android Studio is optional. The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+The wrapper pins Gradle 8.11.1 and verifies the distribution SHA-256. The Gradle wrapper and build configuration stay in Git so Android Studio can open the project; generated Gradle, Android Studio, and APK files are ignored. The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
 
 The interface supports Ukrainian, English, and Slovak. English is the default for new installs; choose another language during setup or in Settings. The choice is included in the `Documents/Takt` backup. To build a signed release APK, follow [release signing](docs/release-signing.md). Keep the signing key outside the repository.
 
