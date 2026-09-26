@@ -2,7 +2,21 @@
 
 Takt is an offline-first Android study planner for university schedules, grades, deadlines, and study progress.
 
-The project is in pre-release development. It is designed as a modular Kotlin/Jetpack Compose application so individual areas such as timetable, grades, and study plan can evolve independently.
+Version 0.1.0 is an early release. Takt is built with Kotlin and Jetpack Compose, and its schedule, grades, and study plan are separate modules.
+
+## Screenshots
+
+| Today | Week list |
+| :---: | :---: |
+| <img src="docs/screenshots/today.png" alt="Today's classes and upcoming tasks" width="260"> | <img src="docs/screenshots/week-list.png" alt="Calendar week list with classes and tasks" width="260"> |
+| Exam | Progress |
+| <img src="docs/screenshots/exam.png" alt="Exam preparation and target grade" width="260"> | <img src="docs/screenshots/progress.png" alt="Study plan and semester progress" width="260"> |
+
+These screenshots use English example data on a Pixel 7 emulator. A new installation starts with an empty study plan, not the example schedule.
+
+## Install
+
+Download the signed APK from [Releases](https://github.com/Kpyruy/Takt/releases/latest). Takt supports Android 8.0 and newer. Back up `Documents/Takt` before replacing a debug build: a release APK has a different signing key and cannot update a debug installation in place.
 
 ## Modules
 
