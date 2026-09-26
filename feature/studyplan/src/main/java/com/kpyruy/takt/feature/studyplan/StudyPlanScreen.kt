@@ -36,10 +36,13 @@ fun StudyPlanScreen(
     repository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
     onCourseClick: (String) -> Unit,
+    onAddCourse: () -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val earned = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits } }
+    val plannedCredits = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED ||
+        it.status == CourseStatus.ENROLLED || it.status == CourseStatus.PLANNED }.sumOf { it.credits } }
     val semesters = remember(courses) { courses.groupBy { it.semester }.toSortedMap() }
     val currentSemester = settings.effectiveCurrentSemester(courses)
     val largeText = LocalDensity.current.fontScale > 1.2f
@@ -56,6 +59,17 @@ fun StudyPlanScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var selectingSemester by remember { mutableStateOf(false) }
 
+    if (courses.isEmpty()) {
+        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+            .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ScreenHeader(title = "Твій шлях")
+            Text("Додай перший предмет, щоб бачити свій прогрес.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Button(onClick = onAddCourse) { Text("Додати предмет") }
+        }
+        return
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).testTag("progress-screen"),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 96.dp),
@@ -63,7 +77,7 @@ fun StudyPlanScreen(
         item {
             ScreenHeader(
                 title = "Твій шлях",
-                subtitle = "Бакалаврат · B-PIAR",
+                subtitle = "${courses.size} предметів у плані",
                 action = {
                     Box {
                         TaktIconButton(
@@ -88,7 +102,7 @@ fun StudyPlanScreen(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                     Text(earned.toString(), style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.9).sp))
-                    Text(" / 180 кредитів", modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(" / $plannedCredits кредитів", modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (!largeText) Text(
                     "$completedSemesters із ${semesters.size} завершено",
@@ -99,7 +113,7 @@ fun StudyPlanScreen(
             }
             if (largeText) Text("$completedSemesters із ${semesters.size} семестрів завершено", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             LinearProgressIndicator(
-                progress = { (earned / 180f).coerceIn(0f, 1f) },
+                progress = { if (plannedCredits > 0) (earned / plannedCredits.toFloat()).coerceIn(0f, 1f) else 0f },
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(5.dp),
                 gapSize = 0.dp,
                 drawStopIndicator = {},
@@ -147,7 +161,7 @@ fun StudyPlanScreen(
             }
         }
         item {
-            Text(if (earned >= 180) "Ціль у 180 кредитів досягнуто." else "До цілі — ще ${180 - earned} кредитів.", Modifier.padding(top = 2.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Зараховано $earned із $plannedCredits кредитів у плані.", Modifier.padding(top = 2.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     courses.firstOrNull { it.id == editingCourseId }?.let { course ->

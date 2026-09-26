@@ -8,8 +8,29 @@ import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.PassFailResult
 import kotlinx.coroutines.flow.map
+import java.util.Locale
+import java.util.UUID
 
 class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository {
+    override suspend fun addCourse(title: String, code: String, credits: Int, semester: Int): String {
+        val cleanTitle = title.trim()
+        val cleanCode = code.trim().uppercase(Locale.ROOT)
+        require(cleanTitle.isNotBlank()) { "Вкажи назву предмета" }
+        require(cleanCode.isNotBlank() && cleanCode.length <= 32 &&
+            cleanCode.all { it.isLetterOrDigit() || it == '_' || it == '-' || it == '.' }) {
+            "Код: до 32 літер, цифр, крапок або дефісів"
+        }
+        require(credits in 0..60) { "Кредити мають бути від 0 до 60" }
+        require(semester in 1..30) { "Семестр має бути від 1 до 30" }
+        require(dao.getAllSnapshot().none { it.code.equals(cleanCode, ignoreCase = true) }) {
+            "Предмет з таким кодом уже є"
+        }
+        val id = UUID.randomUUID().toString()
+        dao.insertAll(listOf(CourseEntity(id, cleanCode, cleanTitle, credits, semester,
+            CourseStatus.ENROLLED.storageValue, CourseRequirementType.COMPULSORY.name, null)))
+        return id
+    }
+
     override fun observeCourses() =
         dao.observeAll().map { items -> items.map(CourseEntity::toDomain) }
 

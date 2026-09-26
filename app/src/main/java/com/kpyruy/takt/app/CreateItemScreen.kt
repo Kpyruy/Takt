@@ -30,6 +30,7 @@ import com.kpyruy.takt.feature.calendar.OneOffEventForm
 import com.kpyruy.takt.feature.subjects.AddGradeItemForm
 import com.kpyruy.takt.feature.subjects.AddNoteForm
 import com.kpyruy.takt.core.data.TaktDocumentStore
+import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.feature.subjects.AddTaskForm
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -40,6 +41,7 @@ fun CreateItemScreen(
     courseId: String?,
     draft: CreateItemDraft?,
     courses: List<com.kpyruy.takt.core.model.Course> = emptyList(),
+    studyPlanRepository: StudyPlanRepository,
     scheduleRepository: ScheduleRepository,
     settingsRepository: AppSettingsRepository,
     gradeRepository: GradeRepository,
@@ -76,6 +78,7 @@ fun CreateItemScreen(
         }
 
         when (type) {
+            CreateItemType.COURSE -> AddCourseForm(studyPlanRepository, onSaved)
             CreateItemType.CLASS -> AddLessonForm(
                 courses = courses,
                 initialCourseId = courseId ?: draft?.courseId,

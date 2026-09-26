@@ -2,13 +2,9 @@ package com.kpyruy.takt.core.data
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.withTransaction
 import com.kpyruy.takt.core.database.TaktDatabase
 
 class TaktDataContainer(context: Context) {
-    private val bootstrapPreferences = context.applicationContext.getSharedPreferences(
-        "takt_bootstrap", Context.MODE_PRIVATE,
-    )
     val database: TaktDatabase = Room.databaseBuilder(
         context.applicationContext,
         TaktDatabase::class.java,
@@ -43,18 +39,5 @@ class TaktDataContainer(context: Context) {
     val backupRepository: BackupRepository =
         RoomBackupRepository(database, settingsRepository)
     val documentStore = TaktDocumentStore(context.applicationContext, database, backupRepository, settingsRepository)
-
-    suspend fun seedIfNeeded() {
-        if (bootstrapPreferences.getBoolean("initial_seed_complete", false)) return
-        database.withTransaction {
-            val courseDao = database.courseDao()
-            val scheduleDao = database.scheduleDao()
-            if (courseDao.count() == 0 && scheduleDao.countRules() == 0 && scheduleDao.countOneOffEvents() == 0) {
-                courseDao.insertAll(StudyPlanSeed.courses)
-                scheduleDao.upsertRules(DefaultTimetable.rules.map { it.toEntity() })
-                scheduleDao.upsertOneOffEvents(DefaultTimetable.oneOffEvents.map { it.toEntity() })
-            }
-        }
-        bootstrapPreferences.edit().putBoolean("initial_seed_complete", true).commit()
-    }
+    val firstRunRepository = FirstRunRepository(context.applicationContext, this)
 }

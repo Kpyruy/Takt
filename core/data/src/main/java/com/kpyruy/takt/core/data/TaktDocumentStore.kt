@@ -269,15 +269,7 @@ class TaktDocumentStore(
     private fun sameData(a: String, b: String) =
         BackupPayloadCodec.decode(a).copy(version = 0) == BackupPayloadCodec.decode(b).copy(version = 0)
 
-    private fun isPristine(raw: String): Boolean {
-        val data = BackupPayloadCodec.decode(raw)
-        return data.courses.associateBy { it.id } == StudyPlanSeed.courses.map { it.toBackup() }.associateBy { it.id } &&
-            data.scheduleRules.associateBy { it.id } == DefaultTimetable.rules.map { it.toEntity().toBackup() }.associateBy { it.id } &&
-            data.oneOffEvents.associateBy { it.id } == DefaultTimetable.oneOffEvents.map { it.toEntity().toBackup() }.associateBy { it.id } &&
-            data.lessonAbsences.isEmpty() && data.scheduleExceptions.isEmpty() && data.gradeItems.isEmpty() &&
-            data.gradeScales.isEmpty() && data.gradeOverrides.isEmpty() && data.studyTasks.isEmpty() &&
-            data.courseNotes.isEmpty() && data.examInfo.isEmpty() && data.examMaterials.isEmpty()
-    }
+    private fun isPristine(raw: String): Boolean = BackupPayloadCodec.decode(raw).hasNoUserContent()
 
     /** Convert older persisted document URIs while their original grant still exists. */
     private suspend fun migrateLegacyMaterials(): Boolean {
@@ -310,3 +302,9 @@ class TaktDocumentStore(
     private fun safeFileName(name: String): String =
         name.filterNot { it == '/' || it == '\\' || it.isISOControl() }.take(100).ifBlank { "material" }
 }
+
+internal fun BackupPayload.hasNoUserContent(): Boolean =
+    courses.isEmpty() && scheduleRules.isEmpty() && oneOffEvents.isEmpty() &&
+        lessonAbsences.isEmpty() && scheduleExceptions.isEmpty() && gradeItems.isEmpty() &&
+        gradeScales.isEmpty() && gradeOverrides.isEmpty() && studyTasks.isEmpty() &&
+        courseNotes.isEmpty() && examInfo.isEmpty() && examMaterials.isEmpty()

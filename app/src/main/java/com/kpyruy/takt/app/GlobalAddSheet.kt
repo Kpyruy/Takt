@@ -83,6 +83,7 @@ fun GlobalAddSheet(
 }
 
 private fun CreateItemType?.icon(): ImageVector = when (this) {
+    CreateItemType.COURSE -> Icons.Outlined.School
     CreateItemType.CLASS -> Icons.AutoMirrored.Outlined.MenuBook
     CreateItemType.TASK -> Icons.AutoMirrored.Outlined.Assignment
     CreateItemType.TEST -> Icons.Outlined.Quiz

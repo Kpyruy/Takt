@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.components.TaktIconButton
+import com.kpyruy.takt.core.ui.components.SectionCard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +60,7 @@ fun HomeScreen(
     studyContentRepository: StudyContentRepository,
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
+    onAddCourse: () -> Unit,
     onOpenCourse: (String) -> Unit,
     onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
@@ -130,6 +132,14 @@ fun HomeScreen(
             HomeWeekStrip(selected = selectedDate, onSelect = { selectedDate = it })
         }
         Spacer(Modifier.height(22.dp))
+        if (courses.isEmpty()) {
+            SectionCard {
+                Text("Створи свій розклад", style = MaterialTheme.typography.titleMedium)
+                Text("Спочатку додай предмет, потім пару.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text("Додати предмет") }
+            }
+            Spacer(Modifier.height(22.dp))
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Твій день", style = MaterialTheme.typography.labelLarge)
             Text("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.completed }}", style = MaterialTheme.typography.bodySmall, color = muted)

@@ -46,6 +46,7 @@ fun SubjectsScreen(
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
     onCourseClick: (String) -> Unit,
+    onAddCourse: () -> Unit,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val current = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
@@ -56,7 +57,8 @@ fun SubjectsScreen(
             (course.title.contains(query, true) || course.code.contains(query, true))
     }
     Column(Modifier.fillMaxSize().background(subjectBackground()).padding(horizontal = 20.dp, vertical = 18.dp)) {
-        ScreenHeader(title = "Предмети", subtitle = "${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні")
+        ScreenHeader(title = "Предмети", subtitle = "${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні",
+            action = { TextButton(onClick = onAddCourse) { Text("Додати") } })
         OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
             placeholder = { Text("Знайти предмет", fontSize = 12.sp, lineHeight = 16.sp) }, leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
             singleLine = true, shape = RoundedCornerShape(11.dp), textStyle = MaterialTheme.typography.bodySmall,
@@ -66,7 +68,12 @@ fun SubjectsScreen(
             items(visible, key = { it.id }) { course ->
                 SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
             }
-            if (visible.isEmpty()) item { SmallText("Предметів не знайдено", Modifier.padding(vertical = 24.dp)) }
+            if (visible.isEmpty()) item {
+                Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SmallText(if (courses.isEmpty()) "Тут будуть твої предмети" else "Предметів не знайдено")
+                    if (courses.isEmpty()) Button(onClick = onAddCourse) { Text("Додати перший предмет") }
+                }
+            }
         }
     }
 }

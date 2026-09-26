@@ -155,7 +155,7 @@ internal fun AppearanceSettingsPage(
 }
 
 @Composable
-private fun AppearanceLivePreview(settings: AppSettings) {
+fun AppearanceLivePreview(settings: AppSettings) {
     TaktTheme(settings) {
         Surface(
             shape = MaterialTheme.shapes.large,
@@ -164,9 +164,9 @@ private fun AppearanceLivePreview(settings: AppSettings) {
         ) {
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("СЬОГОДНІ", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
+                    Text("ПРИКЛАД", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Text("Пʼятниця, 25 вересня", style = MaterialTheme.typography.labelSmall,
+                    Text("Твій день", style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 SectionCard {
@@ -175,7 +175,7 @@ private fun AppearanceLivePreview(settings: AppSettings) {
                         Column {
                             Text("09:00 — 10:30", style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            Text("Теорія права", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text("Твоя перша пара", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             Text("Лекція · ауд. 302", style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -190,7 +190,7 @@ private fun AppearanceLivePreview(settings: AppSettings) {
                         }
                         Column {
                             Text("Підготувати конспект", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text("TPAR_6B · завтра", style = MaterialTheme.typography.bodySmall,
+                            Text("Твій предмет · завтра", style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }

@@ -253,6 +253,7 @@ fun TaktApp(
                     studyContentRepository = studyContentRepository,
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
+                    onAddCourse = { startCreate(CreateItemType.COURSE) },
                     onOpenCourse = ::openCourse,
                     onOpenAssessment = { item ->
                         val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
@@ -282,6 +283,7 @@ fun TaktApp(
                     gradeRepository = gradeRepository,
                     studyContentRepository = studyContentRepository,
                     onCourseClick = ::openCourse,
+                    onAddCourse = { startCreate(CreateItemType.COURSE) },
                 )
             }
             composable(Destination.PLAN.route) {
@@ -289,6 +291,7 @@ fun TaktApp(
                     repository = repository,
                     settingsRepository = settingsRepository,
                     onCourseClick = ::openCourse,
+                    onAddCourse = { startCreate(CreateItemType.COURSE) },
                 )
             }
             composable(SETTINGS_ROUTE) {
@@ -337,6 +340,7 @@ fun TaktApp(
                 if (type != null) {
                     CreateItemScreen(
                         courses = courses,                        type = type,
+                        studyPlanRepository = repository,
                         courseId = courseId,
                         draft = pendingCreateDraft?.takeIf { draft ->
                             draft.type == type &&

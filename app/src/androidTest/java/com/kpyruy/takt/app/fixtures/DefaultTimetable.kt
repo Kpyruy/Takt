@@ -1,4 +1,4 @@
-package com.kpyruy.takt.core.data
+package com.kpyruy.takt.app
 
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.OneOffScheduleEventType

@@ -20,6 +20,7 @@ class GlobalAddSheetTest {
             }
         }
 
+        compose.onNodeWithText("Предмет").assertIsDisplayed()
         compose.onNodeWithText("Тест").assertIsDisplayed().performClick()
         compose.onNodeWithText("Нагадування").assertIsDisplayed()
         compose.runOnIdle { assertEquals(CreateItemType.TEST, selected) }
