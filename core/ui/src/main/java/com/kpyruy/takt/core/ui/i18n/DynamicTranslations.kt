@@ -2,6 +2,13 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Templates use numbered placeholders so translated word order may differ from Ukrainian. */
 internal val dynamicTranslations = listOf(
+    DynamicTranslation("Прогрес · __ARG0__ змін", "Progress · __ARG0__ changes", "Postup · __ARG0__ zmien"),
+    DynamicTranslation("Предмети · __ARG0__ змін", "Courses · __ARG0__ changes", "Predmety · __ARG0__ zmien"),
+    DynamicTranslation("Розклад · __ARG0__ нових, __ARG1__ лише локально", "Timetable · __ARG0__ new, __ARG1__ local only", "Rozvrh · __ARG0__ nových, __ARG1__ iba miestnych"),
+    DynamicTranslation("Лише локально: __ARG0__ занять. Вони зникнуть лише після повної заміни.", "Local only: __ARG0__ classes. They are removed only by full replacement.", "Iba miestne: __ARG0__ hodín. Odstránia sa iba pri úplnom nahradení."),
+    DynamicTranslation("Локально: __ARG0__ – __ARG1__; іспити __ARG2__ – __ARG3__", "Local: __ARG0__ – __ARG1__; exams __ARG2__ – __ARG3__", "Miestne: __ARG0__ – __ARG1__; skúšky __ARG2__ – __ARG3__"),
+    DynamicTranslation("UIS: __ARG0__ – __ARG1__; іспити __ARG2__ – __ARG3__", "UIS: __ARG0__ – __ARG1__; exams __ARG2__ – __ARG3__", "UIS: __ARG0__ – __ARG1__; skúšky __ARG2__ – __ARG3__"),
+    DynamicTranslation("Локально: __ARG0__ із __ARG1__; UIS: __ARG2__ із __ARG3__", "Local: __ARG0__ of __ARG1__; UIS: __ARG2__ of __ARG3__", "Miestne: __ARG0__ z __ARG1__; UIS: __ARG2__ z __ARG3__"),
     DynamicTranslation("Імпортовано __ARG0__ предметів", "Imported __ARG0__ courses", "Importovaných __ARG0__ predmetov"),
     DynamicTranslation("Кредити UIS: __ARG0__ із __ARG1__", "UIS credits: __ARG0__ of __ARG1__", "Kredity UIS: __ARG0__ z __ARG1__"),
     DynamicTranslation("Кредити UIS: __ARG0__ із __ARG1__.", "UIS credits: __ARG0__ of __ARG1__.", "Kredity UIS: __ARG0__ z __ARG1__."),

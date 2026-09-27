@@ -15,6 +15,51 @@ class UisClientTest {
     private fun page(body: String) = MockResponse().setBody(body)
     private fun redirect(path: String) = MockResponse().setResponseCode(302).setHeader("Location", path)
 
+    @Test fun discoversPersonalLinksAndRequestsListWithNotes() {
+        server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
+        server.enqueue(redirect("/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))
+        server.enqueue(page(authenticated))
+        assertEquals(UisResult.CONNECTED, client.login("student", "password"))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <a href="/auth/student/harmonogram.pl?obdobi=741;fakulta=60">Calendar</a>
+            <a href="/auth/katalog/rozvrhy_view.pl?rozvrh_student_obec=1;format=html;rozvrh_student=321">Timetable</a>
+        """))
+        val links = client.readStudyLinks("123", "741")
+        assertTrue(links.timetable.toString().contains("rozvrh_student=321"))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a><table>
+            <tr><td></td><td><b>09/21/2026</b> - <b>12/12/2026</b></td><td>Teaching part</td></tr>
+            <tr><td></td><td><b>12/14/2026</b> - <b>02/13/2027</b></td><td>Exam period</td></tr>
+            </table>
+        """))
+        assertEquals("2026-09-21", client.readAcademicCalendar(links.calendar,
+            java.time.LocalDate.of(2026, 9, 27)).studyStart.toString())
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <form method="post" action="/auth/katalog/rozvrhy_view.pl">
+              <input type="hidden" name="rozvrh_student" value="321">
+              <input type="checkbox" name="nezvol_all" value="1" checked>
+              <input type="checkbox" name="poznamky" value="1" checked>
+              <select name="format"><option value="html" selected>HTML</option><option value="list">List</option></select>
+            </form>
+        """))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <table id="tmtab_1"><tbody><tr><td>Mon</td><td>13.00</td><td>14.50</td>
+            <td><a href="syllabus.pl?predmet=101">Physics</a></td><td>Lecture</td><td>T-231</td>
+            <td>Teacher</td><td>group</td><td>25</td></tr></tbody></table>
+        """))
+        assertEquals(1, client.readTimetable(links.timetable).size)
+        repeat(7) { server.takeRequest() }
+        val post = server.takeRequest()
+        assertEquals("POST", post.method)
+        val body = post.body.readUtf8()
+        assertTrue(body.contains("format=list"))
+        assertTrue(body.contains("nezvol_all=1"))
+        assertTrue(body.contains("poznamky=1"))
+    }
+
     @Test fun loginKeepsHiddenFieldsAndVerifiesSession() {
         server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
         server.enqueue(redirect("/auth/?lang=sk").addHeader("Set-Cookie", "UISAuth=fake-test-token; Path=/; HttpOnly"))
@@ -37,8 +82,15 @@ class UisClientTest {
             <table id="tmtab_1"><tr><td colspan="6">1st semester</td></tr>
             <tr><td><a href="../katalog/syllabus.pl?predmet=101">CODE_6B</a></td><td>Course</td><td>Exm</td><td>5</td><td>1x</td><td>ENROLLED</td></tr></table>
         """))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <table id="tmtab_1"><tr><td><a href="../katalog/syllabus.pl?predmet=101">CODE_6B</a></td>
+            <td>Slovenský predmet</td><td>Sk</td><td>5</td><td>1x</td><td>ZAPÍSANÉ</td></tr></table>
+        """))
 
-        assertEquals(1, client.readStudyPlan().courses.size)
+        val plan = client.readStudyPlan()
+        assertEquals(1, plan.courses.size)
+        assertEquals("Slovenský predmet", plan.courses.single().titleSk)
         repeat(4) { server.takeRequest() }
         val request = server.takeRequest()
         assertEquals("/auth/studijni/studijni_povinnosti.pl?lang=en", request.path)

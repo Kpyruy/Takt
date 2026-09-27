@@ -40,6 +40,8 @@ internal fun CourseEntity.toBackup() = BackupCourse(
     gradingType = gradingType,
     passFailResult = passFailResult,
     iconKey = iconKey,
+    titleEn = titleEn,
+    titleSk = titleSk,
 )
 
 internal fun BackupCourse.toEntity() = CourseEntity(
@@ -54,6 +56,8 @@ internal fun BackupCourse.toEntity() = CourseEntity(
     gradingType = gradingType,
     passFailResult = passFailResult,
     iconKey = iconKey,
+    titleEn = titleEn,
+    titleSk = titleSk,
 )
 
 internal fun ScheduleRuleEntity.toBackup() = BackupScheduleRule(
@@ -280,6 +284,8 @@ internal fun AppSettings.toBackup() = BackupSettings(
     semesterPeriods = semesterPeriods.toBackup(),
     currentSemester = currentSemester,
     language = language.name,
+    courseNameLanguage = courseNameLanguage.name,
+    ukrainianCourseNameFallback = ukrainianCourseNameFallback.name,
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -301,6 +307,12 @@ internal fun BackupSettings.toModel() = AppSettings(
     currentSemester = currentSemester?.takeIf { it > 0 },
     language = runCatching { com.kpyruy.takt.core.model.AppLanguage.valueOf(language) }
         .getOrDefault(com.kpyruy.takt.core.model.AppLanguage.ENGLISH),
+    courseNameLanguage = runCatching { com.kpyruy.takt.core.model.CourseNameLanguage.valueOf(courseNameLanguage) }
+        .getOrDefault(com.kpyruy.takt.core.model.CourseNameLanguage.FOLLOW_APP),
+    ukrainianCourseNameFallback = runCatching { com.kpyruy.takt.core.model.CourseNameLanguage.valueOf(ukrainianCourseNameFallback) }
+        .getOrDefault(com.kpyruy.takt.core.model.CourseNameLanguage.ENGLISH)
+        .takeIf { it != com.kpyruy.takt.core.model.CourseNameLanguage.FOLLOW_APP }
+        ?: com.kpyruy.takt.core.model.CourseNameLanguage.ENGLISH,
 )
 
 internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->

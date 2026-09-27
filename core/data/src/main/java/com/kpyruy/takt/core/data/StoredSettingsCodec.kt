@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppLanguage
+import com.kpyruy.takt.core.model.CourseNameLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -22,6 +23,8 @@ object StoredSettingsCodec {
         semesterPeriods: String? = null,
         currentSemester: String? = null,
         language: String? = null,
+        courseNameLanguage: String? = null,
+        ukrainianCourseNameFallback: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -42,6 +45,9 @@ object StoredSettingsCodec {
             semesterPeriods = SemesterPeriodsCodec.decode(semesterPeriods),
             currentSemester = currentSemester?.toIntOrNull()?.takeIf { it > 0 },
             language = enumValueOrNull<AppLanguage>(language) ?: default.language,
+            courseNameLanguage = enumValueOrNull<CourseNameLanguage>(courseNameLanguage) ?: default.courseNameLanguage,
+            ukrainianCourseNameFallback = enumValueOrNull<CourseNameLanguage>(ukrainianCourseNameFallback)
+                ?.takeIf { it != CourseNameLanguage.FOLLOW_APP } ?: default.ukrainianCourseNameFallback,
         )
     }
 

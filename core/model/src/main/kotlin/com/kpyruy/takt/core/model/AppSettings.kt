@@ -40,6 +40,8 @@ enum class AppLanguage {
     SLOVAK,
 }
 
+enum class CourseNameLanguage { FOLLOW_APP, ENGLISH, SLOVAK }
+
 enum class WeekLayout {
     TIMETABLE,
     COMPACT_LIST,
@@ -57,7 +59,21 @@ data class AppSettings(
     val semesterPeriods: Map<Int, SemesterPeriod> = emptyMap(),
     val currentSemester: Int? = null,
     val language: AppLanguage = AppLanguage.ENGLISH,
+    val courseNameLanguage: CourseNameLanguage = CourseNameLanguage.FOLLOW_APP,
+    val ukrainianCourseNameFallback: CourseNameLanguage = CourseNameLanguage.ENGLISH,
 ) {
+    fun displayCourseTitle(course: Course): String {
+        val selected = when (courseNameLanguage) {
+            CourseNameLanguage.FOLLOW_APP -> when (language) {
+                AppLanguage.ENGLISH -> CourseNameLanguage.ENGLISH
+                AppLanguage.SLOVAK -> CourseNameLanguage.SLOVAK
+                AppLanguage.UKRAINIAN -> ukrainianCourseNameFallback
+            }
+            else -> courseNameLanguage
+        }
+        return (if (selected == CourseNameLanguage.SLOVAK) course.titleSk else course.titleEn)
+            ?.takeIf { it.isNotBlank() } ?: course.title
+    }
     fun effectiveCurrentSemester(courses: List<Course>): Int? =
         currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }
             ?: courses.filter { it.status == CourseStatus.ENROLLED }.maxOfOrNull { it.semester }

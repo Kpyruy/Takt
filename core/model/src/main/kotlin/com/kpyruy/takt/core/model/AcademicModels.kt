@@ -39,6 +39,8 @@ data class Course(
     val gradingType: CourseGradingType = CourseGradingType.CONTINUOUS_LETTER,
     val passFailResult: PassFailResult? = null,
     val iconKey: String? = null,
+    val titleEn: String? = null,
+    val titleSk: String? = null,
 )
 
 fun List<Course>.activeCourseChoices(): List<Course> = filter { it.status == CourseStatus.ENROLLED }

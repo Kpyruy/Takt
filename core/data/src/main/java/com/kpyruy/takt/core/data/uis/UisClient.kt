@@ -22,6 +22,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import java.time.LocalDate
+import com.kpyruy.takt.core.model.SemesterPeriod
 
 /** Blocking, single-session client. Used only on Dispatchers.IO; never logs request data. */
 internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".toHttpUrl()) {
@@ -94,7 +96,61 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     fun readStudyPlan(): UisStudyPlan {
         val page = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=en")!!)
         check(isAuthenticated(page)) { "UIS session expired while reading the study plan" }
-        return UisStudyPlanParser.parse(page.html)
+        val english = UisStudyPlanParser.parse(page.html)
+        val slovakPage = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=sk")!!)
+        check(isAuthenticated(slovakPage)) { "UIS session expired while reading Slovak course names" }
+        val slovak = UisStudyPlanParser.slovakTitles(slovakPage.html)
+        return english.copy(courses = english.courses.map { course ->
+            course.copy(titleSk = slovak[course.code])
+        })
+    }
+
+    fun readStudyLinks(studyId: String, periodId: String): UisStudyLinks {
+        require(studyId.all(Char::isDigit) && periodId.all(Char::isDigit))
+        val page = exchange(origin.resolve("auth/student/moje_studium.pl?_m=3110;studium=$studyId;obdobi=$periodId;lang=en")!!)
+        check(isAuthenticated(page)) { "UIS session expired while reading study links" }
+        val doc = Jsoup.parse(page.html, page.url.toString())
+        fun find(path: String, criterion: String): HttpUrl? = doc.select("a[href]")
+            .firstNotNullOfOrNull { link ->
+                val url = page.url.resolve(link.attr("href"))
+                url?.takeIf { sameOrigin(it) && it.encodedPath == path && it.toString().contains(criterion) }
+            }
+        val calendar = find("/auth/student/harmonogram.pl", "obdobi=$periodId")
+            ?: error("UIS academic calendar link missing")
+        val timetable = find("/auth/katalog/rozvrhy_view.pl", "rozvrh_student=")
+            ?: error("UIS personal timetable link missing")
+        return UisStudyLinks(calendar, timetable)
+    }
+
+    fun readAcademicCalendar(url: HttpUrl, today: LocalDate = LocalDate.now()): SemesterPeriod {
+        val query = url.encodedQuery.orEmpty().split(';', '&')
+            .filterNot { it.startsWith("lang=") }.filter { it.isNotEmpty() }
+            .joinToString(";")
+        val page = exchange(url.newBuilder().encodedQuery("$query;lang=en".trimStart(';')).build())
+        check(isAuthenticated(page)) { "UIS session expired while reading academic calendar" }
+        return UisAcademicCalendarParser.parse(page.html, today)
+    }
+
+    fun readTimetable(url: HttpUrl): List<UisTimetableItem> {
+        val page = exchange(url)
+        check(isAuthenticated(page)) { "UIS session expired while reading timetable" }
+        val doc = Jsoup.parse(page.html, page.url.toString())
+        val form = doc.select("form").firstOrNull { it.selectFirst("select[name=format]") != null }
+            ?: error("UIS timetable format form missing")
+        val target = page.url.resolve(form.attr("action")) ?: error("UIS timetable form destination missing")
+        check(sameOrigin(target) && target.encodedPath == "/auth/katalog/rozvrhy_view.pl")
+        val fields = linkedMapOf<String, String>()
+        form.select("input[type=hidden][name]").forEach { fields[it.attr("name")] = it.attr("value") }
+        form.select("input[type=checkbox][name][checked]").forEach {
+            fields[it.attr("name")] = it.attr("value").ifBlank { "1" }
+        }
+        fields["typ_vypisu"] = "souhrn"
+        fields["format"] = "list"
+        fields["zobraz"] = "1"
+        fields["zobraz2"] = "Display"
+        val listPage = exchange(target, fields, referer = page.url)
+        check(isAuthenticated(listPage)) { "UIS session expired while reading timetable list" }
+        return UisTimetableParser.parse(listPage.html)
     }
 
     fun close() {
@@ -146,14 +202,14 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return LoginForm(target, fields)
     }
 
-    private fun exchange(url: HttpUrl, fields: Map<String, String>? = null): Page {
+    private fun exchange(url: HttpUrl, fields: Map<String, String>? = null, referer: HttpUrl? = null): Page {
         if (closed.get()) throw IOException("Session closed")
         if (!sameOrigin(url)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
         var request = Request.Builder().url(url).header("Accept-Language", "sk")
             .header("Cache-Control", "no-store")
             .apply { if (fields != null) {
                 header("Origin", origin.toString().trimEnd('/'))
-                header("Referer", origin.resolve("system/login.pl?lang=sk").toString())
+                header("Referer", (referer ?: origin.resolve("system/login.pl?lang=sk")!!).toString())
                 post(FormBody.Builder().apply { fields.forEach { (key, value) -> add(key, value) } }.build())
             } }.build()
         repeat(6) {
@@ -209,5 +265,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     private class LoginForm(val url: HttpUrl, val fields: MutableMap<String, String>)
     private class Page(val url: HttpUrl, val html: String)
 }
+
+internal data class UisStudyLinks(val calendar: HttpUrl, val timetable: HttpUrl)
 
 enum class UisResult { DISCONNECTED, CONNECTING, CONNECTED, SECOND_FACTOR, INVALID_CREDENTIALS, EXPIRED, UNAVAILABLE, UNEXPECTED_RESPONSE }

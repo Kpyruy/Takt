@@ -55,4 +55,16 @@ class AppSettingsTest {
         assertEquals(AppThemeMode.SYSTEM, settings.themeMode)
         assertEquals(WeekLayout.TIMETABLE, settings.weekLayout)
     }
+
+    @Test
+    fun courseNamesFollowAppLanguageAndKeepUkrainianChoice() {
+        val course = Course("1", "CODE", "Original", 5, 1, CourseStatus.ENROLLED,
+            titleEn = "English name", titleSk = "Slovenský názov")
+        val settings = AppSettings(language = AppLanguage.UKRAINIAN,
+            ukrainianCourseNameFallback = CourseNameLanguage.SLOVAK)
+        assertEquals("Slovenský názov", settings.displayCourseTitle(course))
+        assertEquals("English name", settings.copy(language = AppLanguage.ENGLISH).displayCourseTitle(course))
+        assertEquals("Slovenský názov", settings.copy(language = AppLanguage.ENGLISH,
+            courseNameLanguage = CourseNameLanguage.SLOVAK).displayCourseTitle(course))
+    }
 }

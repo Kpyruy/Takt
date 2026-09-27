@@ -25,12 +25,24 @@ internal data class UisCourse(
     val requirementType: CourseRequirementType,
     val gradingType: CourseGradingType,
     val syllabusUrl: String,
+    val titleSk: String? = null,
 )
 
 /** Reads only course rows from the selected study; UIS's other tables are not course data. */
 internal object UisStudyPlanParser {
     private val semesterPattern = Regex("""(\d{1,2})(?:st|nd|rd|th|\.|\s)\s*semester""", RegexOption.IGNORE_CASE)
     private val subjectPattern = Regex("""(?:[?;&]|^)predmet=(\d+)""")
+
+    fun slovakTitles(html: String): Map<String, String> {
+        val table = Jsoup.parse(html).selectFirst("table#tmtab_1") ?: return emptyMap()
+        return table.select("tr").mapNotNull { row ->
+            val cells = row.select("td")
+            if (cells.size != 6 || cells[0].selectFirst("a[href*=predmet=]") == null) return@mapNotNull null
+            val code = cells[0].text().trim().uppercase(Locale.ROOT)
+            val title = cells[1].text().trim()
+            if (code.isEmpty() || title.isEmpty()) null else code to title
+        }.toMap()
+    }
 
     fun parse(html: String): UisStudyPlan {
         val doc = Jsoup.parse(html, "https://is.stuba.sk/auth/studijni/studijni_povinnosti.pl")

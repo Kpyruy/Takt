@@ -3,6 +3,7 @@ package com.kpyruy.takt.core.data
 import android.content.Context
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppLanguage
+import com.kpyruy.takt.core.model.CourseNameLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -60,6 +61,17 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(language = language)
     }
 
+    override suspend fun setCourseNameLanguage(language: CourseNameLanguage) {
+        preferences.edit().putString(KEY_COURSE_NAME_LANGUAGE, language.name).apply()
+        state.value = state.value.copy(courseNameLanguage = language)
+    }
+
+    override suspend fun setUkrainianCourseNameFallback(language: CourseNameLanguage) {
+        require(language != CourseNameLanguage.FOLLOW_APP)
+        preferences.edit().putString(KEY_UKRAINIAN_NAME_FALLBACK, language.name).apply()
+        state.value = state.value.copy(ukrainianCourseNameFallback = language)
+    }
+
     override suspend fun setAppearance(
         themeMode: AppThemeMode,
         themeFamily: ThemeFamily,
@@ -114,6 +126,8 @@ class SharedPreferencesAppSettingsRepository(
         semesterPeriods = preferences.getString(KEY_SEMESTER_PERIODS, null),
         currentSemester = preferences.getInt(KEY_CURRENT_SEMESTER, 0).toString(),
         language = preferences.getString(KEY_LANGUAGE, null),
+        courseNameLanguage = preferences.getString(KEY_COURSE_NAME_LANGUAGE, null),
+        ukrainianCourseNameFallback = preferences.getString(KEY_UKRAINIAN_NAME_FALLBACK, null),
     )
 
     private companion object {
@@ -129,5 +143,7 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_SEMESTER_PERIODS = "semester_periods"
         const val KEY_CURRENT_SEMESTER = "current_semester"
         const val KEY_LANGUAGE = "language"
+        const val KEY_COURSE_NAME_LANGUAGE = "course_name_language"
+        const val KEY_UKRAINIAN_NAME_FALLBACK = "ukrainian_course_name_fallback"
     }
 }

@@ -78,5 +78,8 @@ class RoomBackupRepository(
         settingsRepository.setHomeWorkFilter(settings.homeWorkFilter)
         settingsRepository.setSemesterPeriods(settings.semesterPeriods)
         settingsRepository.setCurrentSemester(settings.currentSemester)
+        settingsRepository.setLanguage(settings.language)
+        settingsRepository.setCourseNameLanguage(settings.courseNameLanguage)
+        settingsRepository.setUkrainianCourseNameFallback(settings.ukrainianCourseNameFallback)
     }
 }

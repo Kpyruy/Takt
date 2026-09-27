@@ -86,4 +86,5 @@ internal fun UisConnectionControls(
             Text(t("Закрити сесію UIS"))
         }
     }
+    UisSyncReview(repository)
 }

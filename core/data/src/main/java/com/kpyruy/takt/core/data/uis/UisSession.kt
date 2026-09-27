@@ -6,6 +6,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import com.kpyruy.takt.core.model.SemesterPeriod
 
 /** Memory-only: neither UIS cookies nor pending two-factor credentials enter backups. */
 class UisSession {
@@ -38,6 +40,15 @@ class UisSession {
         val current = client ?: error("UIS session is not connected")
         check(mutableState.value == UisResult.CONNECTED)
         return withContext(Dispatchers.IO) { current.readStudyPlan() }
+    }
+
+    internal suspend fun readStudyContext(studyId: String, periodId: String): Pair<SemesterPeriod, List<com.kpyruy.takt.core.data.uis.UisTimetableItem>> {
+        val current = client ?: error("UIS session is not connected")
+        check(mutableState.value == UisResult.CONNECTED)
+        return withContext(Dispatchers.IO) {
+            val links = current.readStudyLinks(studyId, periodId)
+            current.readAcademicCalendar(links.calendar) to current.readTimetable(links.timetable)
+        }
     }
 
     fun disconnect() {

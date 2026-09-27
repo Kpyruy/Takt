@@ -92,13 +92,17 @@ fun HomeScreen(
     val courseSemesters = remember(courses, currentSemester) {
         courses.associate { it.id to settings.academicSemester(it, currentSemester) }
     }
-    val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences, courseSemesters) {
+    val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
+    val events = remember(rules, exceptions, oneOffEvents, selectedDate, settings, absences, courseSemesters, courseTitles) {
         settings.filterScheduleEvents(ScheduleResolver.eventsForDate(
             rules, exceptions, oneOffEvents, selectedDate, settings.effectiveParity(selectedDate), absences,
             ruleAllowed = { rule, occurrenceDate ->
                 settings.allowsRecurringLesson(rule, courseSemesters, occurrenceDate)
             },
-        )).sortedBy { it.startTime }
+        )).map { event ->
+            if (event.id.startsWith("uis:")) event.copy(title = courseTitles[event.courseId] ?: event.title)
+            else event
+        }.sortedBy { it.startTime }
     }
     val next = if (selectedDate == today) ScheduleTimeline.nextEvent(
         events.filter { it.status != ScheduleEventStatus.CANCELLED && !it.isAbsent }, now,

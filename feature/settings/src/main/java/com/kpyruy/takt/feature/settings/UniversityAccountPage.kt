@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,6 +38,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kpyruy.takt.core.data.UniversityAccountRepository
+import com.kpyruy.takt.core.model.CourseNameLanguage
 import com.kpyruy.takt.core.model.DeviceAuthenticationResult
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -85,6 +87,7 @@ fun UniversityAccountForm(
     var passwordVisible by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var authenticating by remember { mutableStateOf(false) }
+    var firstCourseLanguage by remember { mutableStateOf(CourseNameLanguage.ENGLISH) }
     val busy = authenticating || sessionState == UisResult.CONNECTING
 
     LaunchedEffect(repository) {
@@ -124,6 +127,16 @@ fun UniversityAccountForm(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         modifier = Modifier.fillMaxWidth().testTag("uis-password"),
     )
+    if (!hasAccount) {
+        Text(t("Якою мовою показувати назви предметів із UIS?"),
+            style = MaterialTheme.typography.titleSmall)
+        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = firstCourseLanguage == CourseNameLanguage.ENGLISH,
+                onClick = { firstCourseLanguage = CourseNameLanguage.ENGLISH }, label = { Text("English") })
+            FilterChip(selected = firstCourseLanguage == CourseNameLanguage.SLOVAK,
+                onClick = { firstCourseLanguage = CourseNameLanguage.SLOVAK }, label = { Text("Slovenčina") })
+        }
+    }
     UisConnectionControls(repository, canLogin = login.isNotBlank() && password.isNotEmpty(),
         authenticating = authenticating, onLogin = {
             scope.launch {
@@ -135,6 +148,7 @@ fun UniversityAccountForm(
                     if (result == DeviceAuthenticationResult.SUCCESS) {
                         // One local account. Submit exactly the current fields, never an older stored pair.
                         val credentials = com.kpyruy.takt.core.data.UniversityCredentials(login.trim(), password)
+                        if (!hasAccount) repository.setFirstCourseNameChoice(firstCourseLanguage)
                         val saved = runCatching { repository.save(credentials.login, credentials.password) }
                         if (saved.isSuccess) repository.signIn(credentials)
                         else message = t("Не вдалося зберегти дані UIS. Перевір логін, пароль і захист телефона.")

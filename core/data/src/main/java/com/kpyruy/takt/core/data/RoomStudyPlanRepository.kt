@@ -8,10 +8,14 @@ import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.PassFailResult
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import java.util.Locale
 import java.util.UUID
 
-class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository {
+class RoomStudyPlanRepository(
+    private val dao: CourseDao,
+    private val settingsRepository: AppSettingsRepository? = null,
+) : StudyPlanRepository {
     override suspend fun upsertImportedCourses(courses: List<Course>): Int {
         val existing = dao.getAllSnapshot().associateBy { it.code.uppercase(Locale.ROOT) }
         val imported = courses.distinctBy { it.code.uppercase(Locale.ROOT) }.map { course ->
@@ -29,6 +33,8 @@ class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository 
                 passFailResult = if (course.gradingType == CourseGradingType.PASS_FAIL)
                     course.passFailResult?.name else previous?.passFailResult,
                 iconKey = previous?.iconKey,
+                titleEn = course.titleEn ?: previous?.titleEn,
+                titleSk = course.titleSk ?: previous?.titleSk,
             )
         }
         dao.insertAll(imported)
@@ -54,14 +60,23 @@ class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository 
         return id
     }
 
-    override fun observeCourses() =
+    override fun observeCourses() = if (settingsRepository == null)
         dao.observeAll().map { items -> items.map(CourseEntity::toDomain) }
+    else combine(dao.observeAll(), settingsRepository.settings) { items, settings ->
+        items.map { settings.displayCourse(it.toDomain()) }
+    }
 
-    override fun observeSemester(semester: Int) =
+    override fun observeSemester(semester: Int) = if (settingsRepository == null)
         dao.observeSemester(semester).map { items -> items.map(CourseEntity::toDomain) }
+    else combine(dao.observeSemester(semester), settingsRepository.settings) { items, settings ->
+        items.map { settings.displayCourse(it.toDomain()) }
+    }
 
-    override fun observeCourse(courseId: String) =
+    override fun observeCourse(courseId: String) = if (settingsRepository == null)
         dao.observeById(courseId).map { it?.toDomain() }
+    else combine(dao.observeById(courseId), settingsRepository.settings) { item, settings ->
+        item?.toDomain()?.let(settings::displayCourse)
+    }
 
     override suspend fun setIcon(courseId: String, iconKey: String?) {
         dao.updateIcon(courseId, iconKey)
@@ -89,6 +104,9 @@ class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository 
     }
 }
 
+private fun com.kpyruy.takt.core.model.AppSettings.displayCourse(course: Course) =
+    course.copy(title = displayCourseTitle(course))
+
 private fun CourseEntity.toDomain() = Course(
     id = id,
     code = code,
@@ -104,4 +122,6 @@ private fun CourseEntity.toDomain() = Course(
     passFailResult = passFailResult?.let { stored ->
         runCatching { PassFailResult.valueOf(stored) }.getOrNull()
     },
+    titleEn = titleEn,
+    titleSk = titleSk,
 )

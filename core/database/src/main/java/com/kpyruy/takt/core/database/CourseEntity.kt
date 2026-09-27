@@ -18,4 +18,6 @@ data class CourseEntity(
     val gradingType: String = "CONTINUOUS_LETTER",
     val passFailResult: String? = null,
     val iconKey: String? = null,
+    val titleEn: String? = null,
+    val titleSk: String? = null,
 )

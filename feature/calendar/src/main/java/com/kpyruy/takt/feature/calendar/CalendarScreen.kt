@@ -156,8 +156,11 @@ fun CalendarScreen(
             ruleAllowed = { rule, occurrenceDate ->
                 settings.allowsRecurringLesson(rule, courseSemesters, occurrenceDate)
             },
-        ))
-    val eventsByDate = remember(visibleDates, rules, exceptions, oneOffEvents, absences, settings, courseSemesters) {
+        )).map { event ->
+            if (event.id.startsWith("uis:")) event.copy(title = courseTitles[event.courseId] ?: event.title)
+            else event
+        }
+    val eventsByDate = remember(visibleDates, rules, exceptions, oneOffEvents, absences, settings, courseSemesters, courseTitles) {
         visibleDates.associateWith(::resolveEvents)
     }
     val pendingTasksByDate = remember(tasks) {

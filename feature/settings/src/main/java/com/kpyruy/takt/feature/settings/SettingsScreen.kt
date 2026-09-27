@@ -154,11 +154,15 @@ fun SettingsScreen(
     if (showLanguage) {
         LanguageSettingsPage(
             selected = settings.language,
+            courseNameLanguage = settings.courseNameLanguage,
+            ukrainianFallback = settings.ukrainianCourseNameFallback,
             onBack = { showLanguage = false },
             onSelected = { language ->
                 scope.launch { settingsRepository.setLanguage(language) }
                 showLanguage = false
             },
+            onCourseNameSelected = { scope.launch { settingsRepository.setCourseNameLanguage(it) } },
+            onUkrainianFallbackSelected = { scope.launch { settingsRepository.setUkrainianCourseNameFallback(it) } },
         )
         return
     }
