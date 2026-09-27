@@ -26,6 +26,24 @@ class UisClientTest {
         assertTrue(post.body.readUtf8().contains("credential_1=p%26%3Dword"))
         assertEquals("UISAuth=fake-test-token", server.takeRequest().getHeader("Cookie"))
     }
+    @Test fun authenticatedStudyPlanRequestReusesOnlyTheMemorySession() {
+        server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
+        server.enqueue(redirect("/auth/?lang=sk").addHeader("Set-Cookie", "UISAuth=fake-test-token; Path=/; HttpOnly"))
+        server.enqueue(page(authenticated))
+        assertEquals(UisResult.CONNECTED, client.login("student", "password"))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <form name="formular"><input name="obdobi" value="741"><select name="studium"><option value="123" selected>Study</option></select></form>
+            <table id="tmtab_1"><tr><td colspan="6">1st semester</td></tr>
+            <tr><td><a href="../katalog/syllabus.pl?predmet=101">CODE_6B</a></td><td>Course</td><td>Exm</td><td>5</td><td>1x</td><td>ENROLLED</td></tr></table>
+        """))
+
+        assertEquals(1, client.readStudyPlan().courses.size)
+        repeat(4) { server.takeRequest() }
+        val request = server.takeRequest()
+        assertEquals("/auth/studijni/studijni_povinnosti.pl?lang=en", request.path)
+        assertEquals("UISAuth=fake-test-token", request.getHeader("Cookie"))
+    }
     @Test fun wrongPasswordIsNotSuccess() {
         server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}""")); server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
         assertEquals(UisResult.INVALID_CREDENTIALS, client.login("student", "wrong"))

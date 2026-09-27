@@ -12,6 +12,29 @@ import java.util.Locale
 import java.util.UUID
 
 class RoomStudyPlanRepository(private val dao: CourseDao) : StudyPlanRepository {
+    override suspend fun upsertImportedCourses(courses: List<Course>): Int {
+        val existing = dao.getAllSnapshot().associateBy { it.code.uppercase(Locale.ROOT) }
+        val imported = courses.distinctBy { it.code.uppercase(Locale.ROOT) }.map { course ->
+            val previous = existing[course.code.uppercase(Locale.ROOT)]
+            CourseEntity(
+                id = previous?.id ?: course.id,
+                code = course.code,
+                title = course.title,
+                credits = course.credits,
+                semester = course.semester,
+                status = course.status.storageValue,
+                requirementType = course.requirementType.name,
+                syllabusUrl = course.syllabusUrl,
+                gradingType = course.gradingType.name,
+                passFailResult = if (course.gradingType == CourseGradingType.PASS_FAIL)
+                    course.passFailResult?.name else previous?.passFailResult,
+                iconKey = previous?.iconKey,
+            )
+        }
+        dao.insertAll(imported)
+        return imported.size
+    }
+
     override suspend fun addCourse(title: String, code: String, credits: Int, semester: Int): String {
         val cleanTitle = title.trim()
         val cleanCode = code.trim().uppercase(Locale.ROOT)

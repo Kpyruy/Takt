@@ -7,6 +7,7 @@ import com.kpyruy.takt.core.model.PassFailResult
 import kotlinx.coroutines.flow.Flow
 
 interface StudyPlanRepository {
+    suspend fun upsertImportedCourses(courses: List<Course>): Int
     suspend fun addCourse(title: String, code: String, credits: Int, semester: Int): String
     fun observeCourses(): Flow<List<Course>>
     fun observeSemester(semester: Int): Flow<List<Course>>

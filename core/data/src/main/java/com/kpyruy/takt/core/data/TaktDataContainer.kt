@@ -46,7 +46,7 @@ class TaktDataContainer(context: Context) {
         RoomExamRepository(database.examDao())
     val settingsRepository: AppSettingsRepository =
         SharedPreferencesAppSettingsRepository(context)
-    val universityAccountRepository = UniversityAccountRepository(context)
+    val universityAccountRepository = UniversityAccountRepository(context, studyPlanRepository)
     val planningSnapshot: StateFlow<PlanningSnapshot?> = observePlanningSnapshot(
         studyPlanRepository, scheduleRepository, studyContentRepository, gradeRepository, settingsRepository,
     ).map<PlanningSnapshot, PlanningSnapshot?> { it }

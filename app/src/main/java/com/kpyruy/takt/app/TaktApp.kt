@@ -308,6 +308,7 @@ fun TaktApp(
                 StudyPlanScreen(
                     repository = repository,
                     settingsRepository = settingsRepository,
+                    universityAccountRepository = universityAccountRepository,
                     onCourseClick = ::openCourse,
                     onAddCourse = { startCreate(CreateItemType.COURSE) },
                 )

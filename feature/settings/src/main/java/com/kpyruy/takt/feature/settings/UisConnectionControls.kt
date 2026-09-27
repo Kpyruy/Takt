@@ -30,6 +30,7 @@ internal fun UisConnectionControls(
 ) {
     val failure by repository.session.failure.collectAsStateWithLifecycle()
     val state by repository.session.state.collectAsStateWithLifecycle()
+    val importProgress by repository.importProgress.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
     if (state !in listOf(UisResult.DISCONNECTED, UisResult.CONNECTING)) Text(t(when (state) {
@@ -43,6 +44,22 @@ internal fun UisConnectionControls(
         UisResult.UNEXPECTED_RESPONSE -> "Не вдалося розпізнати відповідь UIS"
     }))
     failure?.let { Text(uisFailureMessage(it), color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
+    if (importProgress.running) Text(t("Завантаження даних UIS…"))
+    if (importProgress.running && state != UisResult.CONNECTING) {
+        UisLoadingOverlay(onCancel = { repository.session.disconnect() }, title = "Завантаження даних UIS…")
+    }
+    importProgress.importedCourses?.let { count ->
+        Text(t("Імпортовано $count предметів"))
+    }
+    if (importProgress.earnedCredits != null && importProgress.requiredCredits != null) {
+        Text(t("Кредити UIS: ${importProgress.earnedCredits} із ${importProgress.requiredCredits}"))
+    }
+    importProgress.error?.let { Text(t(it), color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
+    if (importProgress.error != null && state == UisResult.CONNECTED) {
+        OutlinedButton(onClick = { scope.launch { repository.retryImport() } }, modifier = Modifier.fillMaxWidth()) {
+            Text(t("Повторити імпорт"))
+        }
+    }
     when (state) {
         UisResult.CONNECTING -> {
             Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text(t("Увійти в UIS")) }
@@ -55,12 +72,12 @@ internal fun UisConnectionControls(
             Button(onClick = {
                 val entered = code
                 code = ""
-                scope.launch { repository.session.submitCode(entered) }
+                scope.launch { repository.submitCode(entered) }
             }, enabled = code.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text(t("Підтвердити код")) }
         }
         UisResult.CONNECTED -> OutlinedButton(onClick = {
-            scope.launch { repository.session.check() }
-        }, modifier = Modifier.fillMaxWidth()) { Text(t("Перевірити сесію")) }
+            scope.launch { repository.checkAndImport() }
+        }, modifier = Modifier.fillMaxWidth()) { Text(t("Синхронізувати UIS")) }
         else -> Button(onClick = onLogin, enabled = canLogin && !authenticating,
             modifier = Modifier.fillMaxWidth().testTag("uis-sign-in")) { Text(t("Увійти в UIS")) }
     }

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.UniversityAccountRepository
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.CourseStatus
@@ -37,6 +38,7 @@ import com.kpyruy.takt.core.ui.components.TaktIconButton
 fun StudyPlanScreen(
     repository: StudyPlanRepository,
     settingsRepository: AppSettingsRepository,
+    universityAccountRepository: UniversityAccountRepository,
     onCourseClick: (String) -> Unit,
     onAddCourse: () -> Unit,
 ) {
@@ -45,6 +47,10 @@ fun StudyPlanScreen(
     val earned = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits } }
     val plannedCredits = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED ||
         it.status == CourseStatus.ENROLLED || it.status == CourseStatus.PLANNED }.sumOf { it.credits } }
+    val uisProgress by universityAccountRepository.importProgress.collectAsStateWithLifecycle()
+    val officialCredits = uisProgress.earnedCredits != null && uisProgress.requiredCredits != null
+    val displayedEarned = if (officialCredits) uisProgress.earnedCredits!! else earned
+    val displayedTotal = if (officialCredits) uisProgress.requiredCredits!! else plannedCredits
     val semesters = remember(courses) { courses.groupBy { it.semester }.toSortedMap() }
     val currentSemester = settings.effectiveCurrentSemester(courses)
     val largeText = LocalDensity.current.fontScale > 1.2f
@@ -103,8 +109,8 @@ fun StudyPlanScreen(
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
-                    Text(earned.toString(), style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.9).sp))
-                    Text(t(" / $plannedCredits кредитів"), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(displayedEarned.toString(), style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.9).sp))
+                    Text(t(" / $displayedTotal кредитів"), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (!largeText) Text(
                     t("$completedSemesters із ${semesters.size} завершено"),
@@ -115,7 +121,7 @@ fun StudyPlanScreen(
             }
             if (largeText) Text(t("$completedSemesters із ${semesters.size} семестрів завершено"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             LinearProgressIndicator(
-                progress = { if (plannedCredits > 0) (earned / plannedCredits.toFloat()).coerceIn(0f, 1f) else 0f },
+                progress = { if (displayedTotal > 0) (displayedEarned / displayedTotal.toFloat()).coerceIn(0f, 1f) else 0f },
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(5.dp),
                 gapSize = 0.dp,
                 drawStopIndicator = {},
@@ -162,7 +168,9 @@ fun StudyPlanScreen(
             }
         }
         item {
-            Text(t("Зараховано $earned із $plannedCredits кредитів у плані."), Modifier.padding(top = 2.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t(if (officialCredits) "Кредити UIS: $displayedEarned із $displayedTotal."
+                else "Зараховано $earned із $plannedCredits кредитів у плані."),
+                Modifier.padding(top = 2.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     courses.firstOrNull { it.id == editingCourseId }?.let { course ->

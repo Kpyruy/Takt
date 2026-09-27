@@ -136,7 +136,7 @@ fun UniversityAccountForm(
                         // One local account. Submit exactly the current fields, never an older stored pair.
                         val credentials = com.kpyruy.takt.core.data.UniversityCredentials(login.trim(), password)
                         val saved = runCatching { repository.save(credentials.login, credentials.password) }
-                        if (saved.isSuccess) repository.session.login(credentials)
+                        if (saved.isSuccess) repository.signIn(credentials)
                         else message = t("Не вдалося зберегти дані UIS. Перевір логін, пароль і захист телефона.")
                     } else message = authError(result)
                 } finally { authenticating = false }

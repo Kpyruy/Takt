@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.first
 class MainActivity : FragmentActivity() {
     private lateinit var deviceAuthenticator: DeviceAuthenticator
     private var foreground by mutableStateOf(false)
-    private var unlocked by mutableStateOf(false)
     private var unlockMessage by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +52,8 @@ class MainActivity : FragmentActivity() {
         deviceAuthenticator = DeviceAuthenticator(this)
         enableEdgeToEdge()
 
-        val dataContainer = (application as TaktApplication).dataContainer
+        val taktApplication = application as TaktApplication
+        val dataContainer = taktApplication.dataContainer
         val initialSettings = dataContainer.settingsRepository.settings.value
         val systemDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         window.setBackgroundDrawable(taktWindowBackgroundColor(initialSettings, systemDark).toDrawable())
@@ -67,8 +67,8 @@ class MainActivity : FragmentActivity() {
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
             val hasUniversityAccount by dataContainer.universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
             SideEffect { TaktI18n.use(settings.language) }
-            LaunchedEffect(hasUniversityAccount, unlocked, foreground) {
-                if (hasUniversityAccount && !unlocked && foreground && !deviceAuthenticator.isShowing) {
+            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground) {
+                if (hasUniversityAccount && !taktApplication.deviceUnlocked && foreground && !deviceAuthenticator.isShowing) {
                     requestUnlock()
                 }
             }
@@ -83,7 +83,7 @@ class MainActivity : FragmentActivity() {
                 }
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     when {
-                        hasUniversityAccount && !unlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
+                        hasUniversityAccount && !taktApplication.deviceUnlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
                         showOnboarding == true -> FirstRunScreen(
                             settings = settings,
                             universityAccountRepository = dataContainer.universityAccountRepository,
@@ -140,17 +140,24 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onStop() {
-        (application as TaktApplication).dataContainer.universityAccountRepository.session.disconnect()
         foreground = false
-        if (::deviceAuthenticator.isInitialized && !deviceAuthenticator.isShowing) unlocked = false
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        if (isFinishing) {
+            val taktApplication = application as TaktApplication
+            taktApplication.deviceUnlocked = false
+            taktApplication.dataContainer.universityAccountRepository.session.disconnect()
+        }
+        super.onDestroy()
     }
 
     private fun requestUnlock() {
         if (deviceAuthenticator.isShowing) return
         deviceAuthenticator.authenticate(t("Розблокувати Takt")) { result ->
             when (result) {
-                DeviceAuthenticationResult.SUCCESS -> { unlocked = true; unlockMessage = null }
+                DeviceAuthenticationResult.SUCCESS -> { (application as TaktApplication).deviceUnlocked = true; unlockMessage = null }
                 DeviceAuthenticationResult.CANCELLED -> unlockMessage = t("Підтвердження скасовано")
                 DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> unlockMessage =
                     t("Для доступу налаштуй PIN або пароль телефона")
@@ -164,7 +171,7 @@ class MainActivity : FragmentActivity() {
         onResult: (DeviceAuthenticationResult) -> Unit,
     ) {
         deviceAuthenticator.authenticate(title) { result ->
-            if (result == DeviceAuthenticationResult.SUCCESS) unlocked = true
+            if (result == DeviceAuthenticationResult.SUCCESS) (application as TaktApplication).deviceUnlocked = true
             onResult(result)
         }
     }

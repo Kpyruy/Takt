@@ -91,6 +91,12 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         }
     }
 
+    fun readStudyPlan(): UisStudyPlan {
+        val page = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=en")!!)
+        check(isAuthenticated(page)) { "UIS session expired while reading the study plan" }
+        return UisStudyPlanParser.parse(page.html)
+    }
+
     fun close() {
         closed.set(true)
         activeCall.get()?.cancel()

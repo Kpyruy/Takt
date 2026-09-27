@@ -1,6 +1,9 @@
 package com.kpyruy.takt.app
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.kpyruy.takt.core.data.TaktDataContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -8,6 +11,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class TaktApplication : Application() {
+    /** Survives activity recreation, but is reset when Android starts a new process. */
+    var deviceUnlocked by mutableStateOf(false)
+
     lateinit var dataContainer: TaktDataContainer
         private set
 

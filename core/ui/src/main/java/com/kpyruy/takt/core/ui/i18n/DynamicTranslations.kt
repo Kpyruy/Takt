@@ -2,6 +2,9 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Templates use numbered placeholders so translated word order may differ from Ukrainian. */
 internal val dynamicTranslations = listOf(
+    DynamicTranslation("Імпортовано __ARG0__ предметів", "Imported __ARG0__ courses", "Importovaných __ARG0__ predmetov"),
+    DynamicTranslation("Кредити UIS: __ARG0__ із __ARG1__", "UIS credits: __ARG0__ of __ARG1__", "Kredity UIS: __ARG0__ z __ARG1__"),
+    DynamicTranslation("Кредити UIS: __ARG0__ із __ARG1__.", "UIS credits: __ARG0__ of __ARG1__.", "Kredity UIS: __ARG0__ z __ARG1__."),
     DynamicTranslation("Не вдалося скопіювати __ARG0__ старих матеріалів. Додайте їх заново, поки оригінали доступні.", "Could not copy __ARG0__ older materials. Add them again while the originals are available.", "Nepodarilo sa skopírovať __ARG0__ starších materiálov. Pridaj ich znova, kým sú originály dostupné."),
     DynamicTranslation("__ARG0__ набрано + до __ARG1__ за незавершені роботи. Це потенціал, а не отримана оцінка.", "__ARG0__ earned + up to __ARG1__ from unfinished work. This is potential, not an earned grade.", "Získaných __ARG0__ + až __ARG1__ za nedokončené práce. Je to možný výsledok, nie získaná známka."),
     DynamicTranslation("__ARG0__ семестр · статус можна змінити будь-коли", "Semester __ARG0__ · status can be changed at any time", "__ARG0__. semester · stav môžeš kedykoľvek zmeniť"),

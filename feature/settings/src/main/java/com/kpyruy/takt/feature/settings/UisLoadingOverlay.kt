@@ -25,7 +25,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.kpyruy.takt.core.ui.i18n.t
 
 @Composable
-internal fun UisLoadingOverlay(onCancel: () -> Unit) {
+internal fun UisLoadingOverlay(onCancel: () -> Unit, title: String = "Підключення до UIS…") {
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { keyboard?.hide() }
     // A modal window dims and blocks the entire activity, including the bottom navigation.
@@ -46,7 +46,7 @@ internal fun UisLoadingOverlay(onCancel: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     CircularProgressIndicator(Modifier.size(36.dp), strokeWidth = 3.dp)
-                    Text(t("Підключення до UIS…"), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                    Text(t(title), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     TextButton(onClick = onCancel) { Text(t("Скасувати")) }
                 }
             }

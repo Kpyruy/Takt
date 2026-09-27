@@ -34,6 +34,12 @@ class UisSession {
         execute(current) { current.checkSession() }
     }
 
+    internal suspend fun readStudyPlan(): UisStudyPlan {
+        val current = client ?: error("UIS session is not connected")
+        check(mutableState.value == UisResult.CONNECTED)
+        return withContext(Dispatchers.IO) { current.readStudyPlan() }
+    }
+
     fun disconnect() {
         client?.close()
         client = null
