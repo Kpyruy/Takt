@@ -81,5 +81,6 @@ class RoomBackupRepository(
         settingsRepository.setLanguage(settings.language)
         settingsRepository.setCourseNameLanguage(settings.courseNameLanguage)
         settingsRepository.setUkrainianCourseNameFallback(settings.ukrainianCourseNameFallback)
+        settingsRepository.setUisAutoSync(settings.uisAutoSync)
     }
 }

@@ -42,6 +42,16 @@ enum class AppLanguage {
 
 enum class CourseNameLanguage { FOLLOW_APP, ENGLISH, SLOVAK }
 
+enum class UisRefreshFrequency { MANUAL, DAILY, WEEKLY, MONTHLY, TEACHING_START }
+
+data class UisAutoSyncSettings(
+    val progress: UisRefreshFrequency = UisRefreshFrequency.WEEKLY,
+    val subjects: UisRefreshFrequency = UisRefreshFrequency.MANUAL,
+    val periods: UisRefreshFrequency = UisRefreshFrequency.MANUAL,
+    val timetable: UisRefreshFrequency = UisRefreshFrequency.TEACHING_START,
+    val applyProgressAutomatically: Boolean = true,
+)
+
 enum class WeekLayout {
     TIMETABLE,
     COMPACT_LIST,
@@ -61,6 +71,7 @@ data class AppSettings(
     val language: AppLanguage = AppLanguage.ENGLISH,
     val courseNameLanguage: CourseNameLanguage = CourseNameLanguage.FOLLOW_APP,
     val ukrainianCourseNameFallback: CourseNameLanguage = CourseNameLanguage.ENGLISH,
+    val uisAutoSync: UisAutoSyncSettings = UisAutoSyncSettings(),
 ) {
     fun displayCourseTitle(course: Course): String {
         val selected = when (courseNameLanguage) {

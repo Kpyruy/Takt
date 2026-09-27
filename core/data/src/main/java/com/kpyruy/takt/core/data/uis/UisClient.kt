@@ -116,9 +116,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
                 url?.takeIf { sameOrigin(it) && it.encodedPath == path && it.toString().contains(criterion) }
             }
         val calendar = find("/auth/student/harmonogram.pl", "obdobi=$periodId")
-            ?: error("UIS academic calendar link missing")
         val timetable = find("/auth/katalog/rozvrhy_view.pl", "rozvrh_student=")
-            ?: error("UIS personal timetable link missing")
         return UisStudyLinks(calendar, timetable)
     }
 
@@ -266,6 +264,6 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     private class Page(val url: HttpUrl, val html: String)
 }
 
-internal data class UisStudyLinks(val calendar: HttpUrl, val timetable: HttpUrl)
+internal data class UisStudyLinks(val calendar: HttpUrl?, val timetable: HttpUrl?)
 
 enum class UisResult { DISCONNECTED, CONNECTING, CONNECTED, SECOND_FACTOR, INVALID_CREDENTIALS, EXPIRED, UNAVAILABLE, UNEXPECTED_RESPONSE }

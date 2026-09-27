@@ -1,6 +1,9 @@
 package com.kpyruy.takt.feature.settings
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -17,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kpyruy.takt.core.data.UniversityAccountRepository
+import com.kpyruy.takt.core.data.UisAutoSyncOutcome
 import com.kpyruy.takt.core.data.uis.UisResult
 import com.kpyruy.takt.core.ui.i18n.t
 import kotlinx.coroutines.launch
@@ -31,6 +35,8 @@ internal fun UisConnectionControls(
     val failure by repository.session.failure.collectAsStateWithLifecycle()
     val state by repository.session.state.collectAsStateWithLifecycle()
     val importProgress by repository.importProgress.collectAsStateWithLifecycle()
+    val preview by repository.syncPreview.collectAsStateWithLifecycle()
+    val lastCheck by repository.lastCheckOutcome.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
     if (state !in listOf(UisResult.DISCONNECTED, UisResult.CONNECTING)) Text(t(when (state) {
@@ -55,6 +61,9 @@ internal fun UisConnectionControls(
         Text(t("Кредити UIS: ${importProgress.earnedCredits} із ${importProgress.requiredCredits}"))
     }
     importProgress.error?.let { Text(t(it), color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
+    if (preview == null && lastCheck == UisAutoSyncOutcome.APPLIED && !importProgress.running) {
+        Text(t("Перевірку UIS завершено. Немає змін для перегляду."))
+    }
     if (importProgress.error != null && state == UisResult.CONNECTED) {
         OutlinedButton(onClick = { scope.launch { repository.retryImport() } }, modifier = Modifier.fillMaxWidth()) {
             Text(t("Повторити імпорт"))
@@ -75,9 +84,20 @@ internal fun UisConnectionControls(
                 scope.launch { repository.submitCode(entered) }
             }, enabled = code.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text(t("Підтвердити код")) }
         }
-        UisResult.CONNECTED -> OutlinedButton(onClick = {
-            scope.launch { repository.checkAndImport() }
-        }, modifier = Modifier.fillMaxWidth()) { Text(t("Синхронізувати UIS")) }
+        UisResult.CONNECTED -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { scope.launch { repository.checkProgressNow() } },
+                enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
+                Text(t("Перевірити прогрес UIS"))
+            }
+            OutlinedButton(onClick = { scope.launch { repository.checkTimetableNow() } },
+                enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
+                Text(t("Отримати розклад з UIS"))
+            }
+            OutlinedButton(onClick = { scope.launch { repository.checkAndImport() } },
+                enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
+                Text(t("Перевірити всі дані UIS"))
+            }
+        }
         else -> Button(onClick = onLogin, enabled = canLogin && !authenticating,
             modifier = Modifier.fillMaxWidth().testTag("uis-sign-in")) { Text(t("Увійти в UIS")) }
     }

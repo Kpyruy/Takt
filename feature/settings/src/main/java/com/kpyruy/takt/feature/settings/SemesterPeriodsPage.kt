@@ -62,6 +62,7 @@ internal fun SemesterPeriodsPage(
     settings: AppSettings,
     onBack: () -> Unit,
     onSave: suspend (Map<Int, SemesterPeriod>) -> Unit,
+    onReviewDocuments: (() -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
     val available = semesters.ifEmpty { listOf(1) }
@@ -114,6 +115,11 @@ internal fun SemesterPeriodsPage(
         ) {
             ScreenHeader(title = t("Періоди навчання"),
                 navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) } })
+            if (onReviewDocuments != null) {
+                TextButton(onClick = onReviewDocuments) {
+                    Text(t("Переглянути відмінності з Documents/Takt"))
+                }
+            }
             LazyRow(Modifier.fillMaxWidth(), state = semesterListState,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(available) { semester ->

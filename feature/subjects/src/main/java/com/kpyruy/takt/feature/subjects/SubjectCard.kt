@@ -25,7 +25,8 @@ fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earne
                     Text(course.title, Modifier.weight(1f), fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
                     Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
                 }
-                SmallText(progressLine)
+                SmallText(course.code + " · " + course.credits + t(" кредитів"))
+                if (progressLine.isNotBlank()) SmallText(progressLine)
                 if (maximum > 0) {
                     LinearProgressIndicator(gapSize = 0.dp, drawStopIndicator = {}, progress = { (earned / maximum).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(4.dp), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.outlineVariant)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

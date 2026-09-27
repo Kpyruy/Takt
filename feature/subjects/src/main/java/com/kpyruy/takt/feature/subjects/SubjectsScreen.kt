@@ -103,7 +103,7 @@ private fun SubjectProgressCard(
         next != null -> next.title + (next.dueDate?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
         course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> t("Результату ще немає") }
         tasks.isNotEmpty() -> t("Усі роботи здано")
-        else -> course.code + " · " + course.credits + t(" кредитів")
+        else -> ""
     }
     SubjectCard(course, progressLine, onClick, earned, maximum)
 }

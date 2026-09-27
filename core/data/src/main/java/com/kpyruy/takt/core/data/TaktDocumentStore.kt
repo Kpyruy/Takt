@@ -121,6 +121,34 @@ class TaktDocumentStore(
         }
     }
 
+    /** Read a stable candidate without changing local data or acknowledging a conflict. */
+    suspend fun readBackupForReview(): String = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            readBestBackup(requireRoot()) ?: error("У Documents/Takt немає даних")
+        }
+    }
+
+    suspend fun importSelectedFromDocuments(
+        reviewedRaw: String,
+        expectedLocalRaw: String,
+        fromBackup: Set<BackupSection>,
+    ) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            val current = readBestBackup(requireRoot()) ?: error("У Documents/Takt немає даних")
+            check(BackupPayloadCodec.decode(current) == BackupPayloadCodec.decode(reviewedRaw)) {
+                "Копія в Documents/Takt змінилась. Переглянь відмінності ще раз."
+            }
+            backupRepository.importSelectedJson(reviewedRaw, expectedLocalRaw, fromBackup)
+            val merged = backupRepository.exportJson()
+            if (sameData(current, merged)) {
+                rememberHash(current)
+                _status.value = DocumentSyncStatus.READY
+            } else {
+                _status.value = DocumentSyncStatus.CONFLICT
+            }
+        }
+    }
+
     suspend fun saveCurrentToDocuments() = mutex.withLock {
         withContext(Dispatchers.IO) {
             migrateLegacyMaterials()

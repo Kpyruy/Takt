@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
+import com.kpyruy.takt.core.data.BackupPayloadCodec
+import com.kpyruy.takt.core.data.BackupSection
 import com.kpyruy.takt.core.data.DocumentSyncStatus
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.data.StudyPlanRepository
@@ -69,17 +71,36 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
+    var backupReview by remember { mutableStateOf<BackupReviewState?>(null) }
     var showAppearance by remember { mutableStateOf(false) }
     var showLanguage by remember { mutableStateOf(false) }
     var showCalendar by remember { mutableStateOf(false) }
     var showTasks by remember { mutableStateOf(false) }
     var showPeriods by remember { mutableStateOf(false) }
     var showUniversityAccount by remember { mutableStateOf(false) }
+    var showUisAutoSync by remember { mutableStateOf(false) }
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
+    val uisPreview by universityAccountRepository.syncPreview.collectAsStateWithLifecycle()
+    val uisSession by universityAccountRepository.session.state.collectAsStateWithLifecycle()
+    val uisImport by universityAccountRepository.importProgress.collectAsStateWithLifecycle()
     val courses by remember(studyPlanRepository) { studyPlanRepository.observeCourses() }
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
     val unmigratedMaterials by documentStore.unmigratedMaterials.collectAsStateWithLifecycle()
+
+    fun reviewDocuments(initialSelection: Set<BackupSection> = emptySet()) {
+        scope.launch {
+            runCatching {
+                val sourceRaw = documentStore.readBackupForReview()
+                val localRaw = backupRepository.exportJson()
+                BackupPayloadCodec.decode(sourceRaw)
+                backupReview = BackupReviewState(localRaw, sourceRaw, BackupReviewSource.DOCUMENTS, initialSelection)
+            }.onFailure {
+                backupMessage = t("Помилка відновлення: ${it.message}")
+                showPeriods = false
+            }
+        }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -115,10 +136,12 @@ fun SettingsScreen(
                             ?: error(t("Не вдалося відкрити файл"))
                         stream.bufferedReader().use { it.readText() }
                     }
-                    backupRepository.importJson(raw)
+                    BackupPayloadCodec.decode(raw)
+                    val localRaw = backupRepository.exportJson()
+                    backupReview = BackupReviewState(localRaw, raw, BackupReviewSource.JSON_FILE)
                 }
                 backupMessage = if (result.isSuccess) {
-                    t("Резервну копію відновлено.")
+                    null
                 } else {
                     t("Помилка імпорту: ") +
                         (result.exceptionOrNull()?.message ?: t("невідома помилка"))
@@ -149,6 +172,20 @@ fun SettingsScreen(
                 }
             },
         )
+        return
+    }
+    backupReview?.let { review ->
+        BackupReviewPage(review = review, onBack = { backupReview = null }, onApply = { selected ->
+            if (review.source == BackupReviewSource.DOCUMENTS) {
+                documentStore.importSelectedFromDocuments(review.sourceRaw, review.localRaw, selected)
+            } else {
+                backupRepository.importSelectedJson(review.sourceRaw, review.localRaw, selected)
+            }
+            backupMessage = if (review.source == BackupReviewSource.DOCUMENTS &&
+                documentStore.status.value == DocumentSyncStatus.CONFLICT) {
+                t("Вибрані дані застосовано. Інші відмінності залишились.")
+            } else t("Вибрані дані застосовано.")
+        })
         return
     }
     if (showLanguage) {
@@ -193,6 +230,9 @@ fun SettingsScreen(
             settings = settings,
             onBack = { showPeriods = false },
             onSave = { periods -> settingsRepository.setSemesterPeriods(periods) },
+            onReviewDocuments = if (documentStore.isConnected) {
+                { reviewDocuments(setOf(BackupSection.PERIODS)) }
+            } else null,
         )
         return
     }
@@ -202,6 +242,12 @@ fun SettingsScreen(
             authenticate = authenticateDevice,
             onBack = { showUniversityAccount = false },
         )
+        return
+    }
+    if (showUisAutoSync) {
+        UisAutoSyncSettingsPage(settings.uisAutoSync,
+            onChange = { scope.launch { settingsRepository.setUisAutoSync(it) } },
+            onBack = { showUisAutoSync = false })
         return
     }
 
@@ -252,9 +298,25 @@ fun SettingsScreen(
         SettingsSectionTitle(t("Акаунт"))
         SettingsNavigationTile(
             title = t("Університетська система"),
-            subtitle = if (hasUniversityAccount) t("UIS · дані збережено") else t("Локальний режим"),
+            subtitle = when {
+                uisPreview != null -> t("UIS · є зміни для перегляду")
+                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t("UIS · потрібен код підтвердження")
+                uisSession in setOf(com.kpyruy.takt.core.data.uis.UisResult.INVALID_CREDENTIALS,
+                    com.kpyruy.takt.core.data.uis.UisResult.UNAVAILABLE,
+                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t("UIS · перевірка не вдалася")
+                uisImport.error != null -> t("UIS · перевірка не вдалася")
+                hasUniversityAccount -> t("UIS · дані збережено")
+                else -> t("Локальний режим")
+            },
             icon = Icons.Outlined.AccountCircle,
             onClick = { showUniversityAccount = true },
+        )
+        SettingsNavigationTile(
+            title = t("Автооновлення UIS"),
+            subtitle = t("Прогрес") + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
+                t("Розклад") + ": " + t(settings.uisAutoSync.timetable.label()),
+            icon = Icons.Outlined.DateRange,
+            onClick = { showUisAutoSync = true },
         )
 
         SettingsSectionTitle(t("Оцінювання"))
@@ -300,12 +362,9 @@ fun SettingsScreen(
                 Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t("Підключити Documents") else t("Змінити папку"))
             }
             if (documentStatus == DocumentSyncStatus.CONFLICT) {
-                Button(onClick = {
-                    scope.launch {
-                        backupMessage = runCatching { documentStore.restoreFromDocuments() }
-                            .fold({ t("Дані відновлено з Documents/Takt.") }, { t("Помилка відновлення: ${it.message}") })
-                    }
-                }, modifier = Modifier.fillMaxWidth()) { Text(t("Відновити з Documents/Takt")) }
+                Button(onClick = { reviewDocuments() }, modifier = Modifier.fillMaxWidth()) {
+                    Text(t("Переглянути відмінності з Documents/Takt"))
+                }
                 OutlinedButton(onClick = {
                     scope.launch {
                         backupMessage = runCatching { documentStore.saveCurrentToDocuments() }

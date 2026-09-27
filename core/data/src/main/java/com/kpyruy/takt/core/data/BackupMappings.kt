@@ -286,6 +286,11 @@ internal fun AppSettings.toBackup() = BackupSettings(
     language = language.name,
     courseNameLanguage = courseNameLanguage.name,
     ukrainianCourseNameFallback = ukrainianCourseNameFallback.name,
+    uisProgressFrequency = uisAutoSync.progress.name,
+    uisSubjectFrequency = uisAutoSync.subjects.name,
+    uisPeriodFrequency = uisAutoSync.periods.name,
+    uisTimetableFrequency = uisAutoSync.timetable.name,
+    uisApplyProgressAutomatically = uisAutoSync.applyProgressAutomatically,
 )
 
 internal fun BackupSettings.toModel() = AppSettings(
@@ -313,6 +318,20 @@ internal fun BackupSettings.toModel() = AppSettings(
         .getOrDefault(com.kpyruy.takt.core.model.CourseNameLanguage.ENGLISH)
         .takeIf { it != com.kpyruy.takt.core.model.CourseNameLanguage.FOLLOW_APP }
         ?: com.kpyruy.takt.core.model.CourseNameLanguage.ENGLISH,
+    uisAutoSync = com.kpyruy.takt.core.model.UisAutoSyncSettings(
+        progress = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisProgressFrequency) }
+            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.WEEKLY),
+        subjects = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisSubjectFrequency) }
+            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.MANUAL),
+        periods = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisPeriodFrequency) }
+            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.MANUAL),
+        timetable = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisTimetableFrequency) }
+            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.TEACHING_START)
+            .takeIf { it == com.kpyruy.takt.core.model.UisRefreshFrequency.MANUAL ||
+                it == com.kpyruy.takt.core.model.UisRefreshFrequency.TEACHING_START }
+            ?: com.kpyruy.takt.core.model.UisRefreshFrequency.TEACHING_START,
+        applyProgressAutomatically = uisApplyProgressAutomatically,
+    ),
 )
 
 internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->

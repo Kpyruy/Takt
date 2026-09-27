@@ -3,6 +3,8 @@ package com.kpyruy.takt.core.data
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.CourseNameLanguage
+import com.kpyruy.takt.core.model.UisAutoSyncSettings
+import com.kpyruy.takt.core.model.UisRefreshFrequency
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -25,6 +27,11 @@ object StoredSettingsCodec {
         language: String? = null,
         courseNameLanguage: String? = null,
         ukrainianCourseNameFallback: String? = null,
+        uisProgressFrequency: String? = null,
+        uisSubjectFrequency: String? = null,
+        uisPeriodFrequency: String? = null,
+        uisTimetableFrequency: String? = null,
+        uisApplyProgress: Boolean = true,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -48,6 +55,15 @@ object StoredSettingsCodec {
             courseNameLanguage = enumValueOrNull<CourseNameLanguage>(courseNameLanguage) ?: default.courseNameLanguage,
             ukrainianCourseNameFallback = enumValueOrNull<CourseNameLanguage>(ukrainianCourseNameFallback)
                 ?.takeIf { it != CourseNameLanguage.FOLLOW_APP } ?: default.ukrainianCourseNameFallback,
+            uisAutoSync = UisAutoSyncSettings(
+                progress = enumValueOrNull<UisRefreshFrequency>(uisProgressFrequency) ?: UisRefreshFrequency.WEEKLY,
+                subjects = enumValueOrNull<UisRefreshFrequency>(uisSubjectFrequency) ?: UisRefreshFrequency.MANUAL,
+                periods = enumValueOrNull<UisRefreshFrequency>(uisPeriodFrequency) ?: UisRefreshFrequency.MANUAL,
+                timetable = enumValueOrNull<UisRefreshFrequency>(uisTimetableFrequency)
+                    ?.takeIf { it == UisRefreshFrequency.MANUAL || it == UisRefreshFrequency.TEACHING_START }
+                    ?: UisRefreshFrequency.TEACHING_START,
+                applyProgressAutomatically = uisApplyProgress,
+            ),
         )
     }
 

@@ -23,7 +23,7 @@ data class BackupPayload(
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 6
+        const val CURRENT_VERSION = 7
     }
 }
 
@@ -181,6 +181,11 @@ data class BackupSettings(
     val language: String = "ENGLISH",
     val courseNameLanguage: String = "FOLLOW_APP",
     val ukrainianCourseNameFallback: String = "ENGLISH",
+    val uisProgressFrequency: String = "WEEKLY",
+    val uisSubjectFrequency: String = "MANUAL",
+    val uisPeriodFrequency: String = "MANUAL",
+    val uisTimetableFrequency: String = "TEACHING_START",
+    val uisApplyProgressAutomatically: Boolean = true,
 )
 
 @Serializable

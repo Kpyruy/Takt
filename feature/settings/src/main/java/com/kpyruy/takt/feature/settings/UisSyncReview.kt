@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kpyruy.takt.core.data.UniversityAccountRepository
+import com.kpyruy.takt.core.data.UisSyncSection
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.AppSettings
@@ -37,33 +38,36 @@ internal fun UisSyncReview(repository: UniversityAccountRepository) {
         .collectAsStateWithLifecycle(initialValue = AppSettings())
     val scope = rememberCoroutineScope()
     var confirmReplacement by remember { mutableStateOf(false) }
-    val progress = data.courses.mapNotNull { remote ->
+    val progress = if (UisSyncSection.PROGRESS in data.availableSections) data.courses.mapNotNull { remote ->
         data.localCourses.firstOrNull { it.code == remote.code }?.let { local ->
-            if (local.status != remote.status) local to remote else null
+            if (local.status != remote.status || local.passFailResult != remote.passFailResult) local to remote else null
         }
-    }
-    val metadata = data.courses.filter { remote ->
+    } else emptyList()
+    val metadata = if (UisSyncSection.SUBJECTS in data.availableSections) data.courses.filter { remote ->
         val local = data.localCourses.firstOrNull { it.code == remote.code }
         local == null || !sameSubject(local, remote)
-    }
-    val addedRules = data.rules.filter { remote -> data.localRules.none { sameRule(it, remote) } }
-    val addedEvents = data.oneOffEvents.filter { remote -> data.localOneOffEvents.none { sameEvent(it, remote) } }
-    val removedRules = data.localRules.filter { local -> data.rules.none { sameRule(it, local) } }
-    val removedEvents = data.localOneOffEvents.filter { local -> data.oneOffEvents.none { sameEvent(it, local) } }
+    } else emptyList()
+    val scheduleAvailable = UisSyncSection.TIMETABLE in data.availableSections
+    val addedRules = if (scheduleAvailable) data.rules.filter { remote -> data.localRules.none { sameRule(it, remote) } } else emptyList()
+    val addedEvents = if (scheduleAvailable) data.oneOffEvents.filter { remote -> data.localOneOffEvents.none { sameEvent(it, remote) } } else emptyList()
+    val removedRules = if (scheduleAvailable) data.localRules.filter { local -> data.rules.none { sameRule(it, local) } } else emptyList()
+    val removedEvents = if (scheduleAvailable) data.localOneOffEvents.filter { local -> data.oneOffEvents.none { sameEvent(it, local) } } else emptyList()
+    val remotePeriod = data.period
 
     SectionCard {
         Text(t("Порівняння з UIS"), style = MaterialTheme.typography.titleLarge)
         Text(t("Обери окремі зміни або залиш локальні дані."),
             color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (data.localPeriod != data.period) {
+        if (UisSyncSection.PERIODS in data.availableSections && remotePeriod != null && data.localPeriod != remotePeriod) {
             Text(t("Навчальний період"), style = MaterialTheme.typography.titleMedium)
             Text(t("Локально: ${data.localPeriod?.studyStart ?: "—"} – ${data.localPeriod?.studyEnd ?: "—"}; іспити ${data.localPeriod?.examStart ?: "—"} – ${data.localPeriod?.examEnd ?: "—"}"))
-            Text(t("UIS: ${data.period.studyStart} – ${data.period.studyEnd}; іспити ${data.period.examStart} – ${data.period.examEnd}"))
+            Text(t("UIS: ${remotePeriod.studyStart} – ${remotePeriod.studyEnd}; іспити ${remotePeriod.examStart} – ${remotePeriod.examEnd}"))
             OutlinedButton(onClick = { scope.launch { repository.applyPeriod() } }) {
                 Text(t("Оновити період"))
             }
         }
-        if (data.localEarnedCredits != data.earnedCredits || data.localRequiredCredits != data.requiredCredits) {
+        if (UisSyncSection.PROGRESS in data.availableSections &&
+            (data.localEarnedCredits != data.earnedCredits || data.localRequiredCredits != data.requiredCredits)) {
             Text(t("Кредити UIS"), style = MaterialTheme.typography.titleMedium)
             Text(t("Локально: ${data.localEarnedCredits ?: "—"} із ${data.localRequiredCredits ?: "—"}; UIS: ${data.earnedCredits ?: "—"} із ${data.requiredCredits ?: "—"}"))
             OutlinedButton(onClick = repository::applyCredits) { Text(t("Оновити кредити UIS")) }
@@ -77,8 +81,12 @@ internal fun UisSyncReview(repository: UniversityAccountRepository) {
                 Text("${remote.code} · ${local.title}")
                 Text("${statusLabel(local.status)} → ${statusLabel(remote.status)}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (local.passFailResult != remote.passFailResult) {
+                    Text("${local.passFailResult?.name ?: "—"} → ${remote.passFailResult?.name ?: "—"}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 TextButton(onClick = { scope.launch { repository.applyProgress(remote.id) } }) {
-                    Text(t("Оновити лише статус"))
+                    Text(t("Оновити прогрес предмета"))
                 }
             }
         }
@@ -115,8 +123,10 @@ internal fun UisSyncReview(repository: UniversityAccountRepository) {
             }
         }
         if (progress.isEmpty() && metadata.isEmpty() && addedRules.isEmpty() && addedEvents.isEmpty() &&
-            removedRules.isEmpty() && removedEvents.isEmpty() && data.localPeriod == data.period &&
-            data.localEarnedCredits == data.earnedCredits && data.localRequiredCredits == data.requiredCredits) {
+            removedRules.isEmpty() && removedEvents.isEmpty() &&
+            (UisSyncSection.PERIODS !in data.availableSections || data.localPeriod == remotePeriod) &&
+            (UisSyncSection.PROGRESS !in data.availableSections ||
+                data.localEarnedCredits == data.earnedCredits && data.localRequiredCredits == data.requiredCredits)) {
             Text(t("Дані збігаються"))
         }
         TextButton(onClick = repository::dismissPreview) { Text(t("Залишити локальні дані")) }

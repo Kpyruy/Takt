@@ -33,7 +33,7 @@ class UisClientTest {
             <tr><td></td><td><b>12/14/2026</b> - <b>02/13/2027</b></td><td>Exam period</td></tr>
             </table>
         """))
-        assertEquals("2026-09-21", client.readAcademicCalendar(links.calendar,
+        assertEquals("2026-09-21", client.readAcademicCalendar(links.calendar!!,
             java.time.LocalDate.of(2026, 9, 27)).studyStart.toString())
         server.enqueue(page("""
             <a href="/system/logout.pl">Logout</a>
@@ -50,7 +50,7 @@ class UisClientTest {
             <td><a href="syllabus.pl?predmet=101">Physics</a></td><td>Lecture</td><td>T-231</td>
             <td>Teacher</td><td>group</td><td>25</td></tr></tbody></table>
         """))
-        assertEquals(1, client.readTimetable(links.timetable).size)
+        assertEquals(1, client.readTimetable(links.timetable!!).size)
         repeat(7) { server.takeRequest() }
         val post = server.takeRequest()
         assertEquals("POST", post.method)

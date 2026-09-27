@@ -4,6 +4,8 @@ import android.content.Context
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.CourseNameLanguage
+import com.kpyruy.takt.core.model.UisAutoSyncSettings
+import com.kpyruy.takt.core.model.UisRefreshFrequency
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.CancellationDisplayStyle
@@ -72,6 +74,18 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(ukrainianCourseNameFallback = language)
     }
 
+    override suspend fun setUisAutoSync(settings: UisAutoSyncSettings) {
+        require(settings.timetable in setOf(UisRefreshFrequency.MANUAL, UisRefreshFrequency.TEACHING_START))
+        preferences.edit()
+            .putString(KEY_UIS_PROGRESS_FREQUENCY, settings.progress.name)
+            .putString(KEY_UIS_SUBJECT_FREQUENCY, settings.subjects.name)
+            .putString(KEY_UIS_PERIOD_FREQUENCY, settings.periods.name)
+            .putString(KEY_UIS_TIMETABLE_FREQUENCY, settings.timetable.name)
+            .putBoolean(KEY_UIS_APPLY_PROGRESS, settings.applyProgressAutomatically)
+            .apply()
+        state.value = state.value.copy(uisAutoSync = settings)
+    }
+
     override suspend fun setAppearance(
         themeMode: AppThemeMode,
         themeFamily: ThemeFamily,
@@ -128,6 +142,11 @@ class SharedPreferencesAppSettingsRepository(
         language = preferences.getString(KEY_LANGUAGE, null),
         courseNameLanguage = preferences.getString(KEY_COURSE_NAME_LANGUAGE, null),
         ukrainianCourseNameFallback = preferences.getString(KEY_UKRAINIAN_NAME_FALLBACK, null),
+        uisProgressFrequency = preferences.getString(KEY_UIS_PROGRESS_FREQUENCY, null),
+        uisSubjectFrequency = preferences.getString(KEY_UIS_SUBJECT_FREQUENCY, null),
+        uisPeriodFrequency = preferences.getString(KEY_UIS_PERIOD_FREQUENCY, null),
+        uisTimetableFrequency = preferences.getString(KEY_UIS_TIMETABLE_FREQUENCY, null),
+        uisApplyProgress = preferences.getBoolean(KEY_UIS_APPLY_PROGRESS, true),
     )
 
     private companion object {
@@ -145,5 +164,10 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_LANGUAGE = "language"
         const val KEY_COURSE_NAME_LANGUAGE = "course_name_language"
         const val KEY_UKRAINIAN_NAME_FALLBACK = "ukrainian_course_name_fallback"
+        const val KEY_UIS_PROGRESS_FREQUENCY = "uis_progress_frequency"
+        const val KEY_UIS_SUBJECT_FREQUENCY = "uis_subject_frequency"
+        const val KEY_UIS_PERIOD_FREQUENCY = "uis_period_frequency"
+        const val KEY_UIS_TIMETABLE_FREQUENCY = "uis_timetable_frequency"
+        const val KEY_UIS_APPLY_PROGRESS = "uis_apply_progress"
     }
 }

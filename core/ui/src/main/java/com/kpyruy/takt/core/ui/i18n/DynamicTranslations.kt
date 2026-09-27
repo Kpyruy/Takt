@@ -2,6 +2,12 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Templates use numbered placeholders so translated word order may differ from Ukrainian. */
 internal val dynamicTranslations = listOf(
+    DynamicTranslation("Познач, що взяти з __ARG0__. Непозначені дані залишаться на телефоні.", "Select what to take from __ARG0__. Unselected data stays on the phone.", "Vyber, čo prevziať z __ARG0__. Neoznačené údaje zostanú v telefóne."),
+    DynamicTranslation("Телефон: __ARG0__ · __ARG1__: __ARG2__", "Phone: __ARG0__ · __ARG1__: __ARG2__", "Telefón: __ARG0__ · __ARG1__: __ARG2__"),
+    DynamicTranslation("Оцінки: __ARG0__ → __ARG1__; задачі: __ARG2__ → __ARG3__", "Grades: __ARG0__ → __ARG1__; tasks: __ARG2__ → __ARG3__", "Známky: __ARG0__ → __ARG1__; úlohy: __ARG2__ → __ARG3__"),
+    DynamicTranslation("Нотатки: __ARG0__ → __ARG1__; матеріали: __ARG2__ → __ARG3__", "Notes: __ARG0__ → __ARG1__; materials: __ARG2__ → __ARG3__", "Poznámky: __ARG0__ → __ARG1__; materiály: __ARG2__ → __ARG3__"),
+    DynamicTranslation("Мова застосунку: __ARG0__ → __ARG1__", "App language: __ARG0__ → __ARG1__", "Jazyk aplikácie: __ARG0__ → __ARG1__"),
+    DynamicTranslation("Лише на телефоні: __ARG0__ · __ARG1__", "Phone only: __ARG0__ · __ARG1__", "Iba v telefóne: __ARG0__ · __ARG1__"),
     DynamicTranslation("Прогрес · __ARG0__ змін", "Progress · __ARG0__ changes", "Postup · __ARG0__ zmien"),
     DynamicTranslation("Предмети · __ARG0__ змін", "Courses · __ARG0__ changes", "Predmety · __ARG0__ zmien"),
     DynamicTranslation("Розклад · __ARG0__ нових, __ARG1__ лише локально", "Timetable · __ARG0__ new, __ARG1__ local only", "Rozvrh · __ARG0__ nových, __ARG1__ iba miestnych"),

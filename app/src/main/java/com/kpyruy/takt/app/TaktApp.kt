@@ -120,6 +120,7 @@ fun TaktApp(
     val haptics = rememberTaktHaptics()
     val snackbarHostState = remember { SnackbarHostState() }
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
+    val uisPreview by universityAccountRepository.syncPreview.collectAsStateWithLifecycle()
     val unmigratedMaterials by documentStore.unmigratedMaterials.collectAsStateWithLifecycle()
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) scope.launch {
@@ -161,6 +162,16 @@ fun TaktApp(
             val result = snackbarHostState.showSnackbar(
                 message = t("Не вдалося скопіювати $unmigratedMaterials старих матеріалів"),
                 actionLabel = t("Деталі"),
+                duration = SnackbarDuration.Indefinite,
+            )
+            if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
+        }
+    }
+    LaunchedEffect(uisPreview) {
+        if (uisPreview != null && currentRoute != SETTINGS_ROUTE) {
+            val result = snackbarHostState.showSnackbar(
+                message = t("UIS знайшов зміни для перегляду"),
+                actionLabel = t("Переглянути"),
                 duration = SnackbarDuration.Indefinite,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)

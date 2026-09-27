@@ -38,9 +38,13 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.core.ui.theme.taktWindowBackgroundColor
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.data.DocumentSyncStatus
+import com.kpyruy.takt.core.data.UisAutoSyncOutcome
 import com.kpyruy.takt.core.model.DeviceAuthenticationResult
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 class MainActivity : FragmentActivity() {
     private lateinit var deviceAuthenticator: DeviceAuthenticator
@@ -70,6 +74,27 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground) {
                 if (hasUniversityAccount && !taktApplication.deviceUnlocked && foreground && !deviceAuthenticator.isShowing) {
                     requestUnlock()
+                }
+            }
+            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding,
+                settings.uisAutoSync) {
+                if (hasUniversityAccount && taktApplication.deviceUnlocked && foreground && showOnboarding == false) {
+                    val repository = dataContainer.universityAccountRepository
+                    val outcome = try { repository.runAutoSyncIfDue() }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { UisAutoSyncOutcome.FAILED }
+                    if (outcome == UisAutoSyncOutcome.NEEDS_DEVICE_AUTH) {
+                        val result = suspendCancellableCoroutine<DeviceAuthenticationResult> { continuation ->
+                            authenticateForAccount(t("Перевірити UIS")) { value ->
+                                if (continuation.isActive) continuation.resume(value)
+                            }
+                        }
+                        if (result == DeviceAuthenticationResult.SUCCESS) {
+                            try { repository.runAutoSyncIfDue() }
+                            catch (cancelled: CancellationException) { throw cancelled }
+                            catch (_: Exception) { /* The next foreground check can retry. */ }
+                        }
+                    }
                 }
             }
 

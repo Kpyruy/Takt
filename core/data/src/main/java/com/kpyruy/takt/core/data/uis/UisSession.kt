@@ -47,7 +47,26 @@ class UisSession {
         check(mutableState.value == UisResult.CONNECTED)
         return withContext(Dispatchers.IO) {
             val links = current.readStudyLinks(studyId, periodId)
-            current.readAcademicCalendar(links.calendar) to current.readTimetable(links.timetable)
+            current.readAcademicCalendar(requireNotNull(links.calendar) { "UIS academic calendar link missing" }) to
+                current.readTimetable(requireNotNull(links.timetable) { "UIS personal timetable link missing" })
+        }
+    }
+
+    internal suspend fun readSelectedContext(
+        studyId: String,
+        periodId: String,
+        calendar: Boolean,
+        timetable: Boolean,
+    ): Pair<SemesterPeriod?, List<UisTimetableItem>?> {
+        if (!calendar && !timetable) return null to null
+        val current = client ?: error("UIS session is not connected")
+        check(mutableState.value == UisResult.CONNECTED)
+        return withContext(Dispatchers.IO) {
+            val links = current.readStudyLinks(studyId, periodId)
+            (if (calendar) current.readAcademicCalendar(
+                requireNotNull(links.calendar) { "UIS academic calendar link missing" }) else null) to
+                (if (timetable) current.readTimetable(
+                    requireNotNull(links.timetable) { "UIS personal timetable link missing" }) else null)
         }
     }
 
