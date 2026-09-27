@@ -4,7 +4,7 @@ import java.time.LocalDate
 
 enum class GradeItemType(val label: String) {
     TEST("Тест"),
-    MIDTERM("Модуль / проміжний тест"),
+    MIDTERM("Тест"), // Legacy backup value; new work uses TEST.
     LAB("Лабораторна"),
     SEMINAR("Семінар"),
     HOMEWORK("Домашня робота"),

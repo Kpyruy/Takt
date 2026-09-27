@@ -140,12 +140,33 @@ class TaktDocumentStore(
             }
             backupRepository.importSelectedJson(reviewedRaw, expectedLocalRaw, fromBackup)
             val merged = backupRepository.exportJson()
-            if (sameData(current, merged)) {
+            if (sameData(current, merged) && mainIsValid(requireRoot())) {
                 rememberHash(current)
-                _status.value = DocumentSyncStatus.READY
             } else {
-                _status.value = DocumentSyncStatus.CONFLICT
+                runCatching { writeBackup(requireRoot(), merged) }
+                    .onFailure {
+                        _status.value = DocumentSyncStatus.ERROR
+                        throw it
+                    }
             }
+            _status.value = DocumentSyncStatus.READY
+        }
+    }
+
+    suspend fun importSelectedFromFile(
+        reviewedRaw: String,
+        expectedLocalRaw: String,
+        fromBackup: Set<BackupSection>,
+    ) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            val root = requireRoot()
+            backupRepository.importSelectedJson(reviewedRaw, expectedLocalRaw, fromBackup)
+            runCatching { writeBackup(root, backupRepository.exportJson()) }
+                .onFailure {
+                    _status.value = DocumentSyncStatus.ERROR
+                    throw it
+                }
+            _status.value = DocumentSyncStatus.READY
         }
     }
 

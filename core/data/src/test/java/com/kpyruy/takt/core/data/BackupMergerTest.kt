@@ -39,6 +39,32 @@ class BackupMergerTest {
         assertEquals(null, merged.courses.single().passFailResult)
     }
 
+    @Test fun iconsCanComeFromFileWithoutChangingSubjectMetadata() {
+        val phone = local.copy(courses = local.courses.map { it.copy(iconKey = "School") })
+        val backup = file.copy(courses = file.courses.map { it.copy(iconKey = "Science") })
+        val merged = BackupMerger.merge(phone, backup, setOf(BackupSection.ICONS))
+        assertEquals("Science", merged.courses.single().iconKey)
+        assertEquals("Local Physics", merged.courses.single().title)
+        assertEquals(phone.gradeItems, merged.gradeItems)
+    }
+
+    @Test fun subjectImportKeepsPhoneIconUnlessIconsAreSelected() {
+        val phone = local.copy(courses = local.courses.map { it.copy(iconKey = "School") })
+        val backup = file.copy(courses = file.courses.map { it.copy(iconKey = "Science") })
+        assertEquals("School", BackupMerger.merge(phone, backup, setOf(BackupSection.SUBJECTS)).courses.single().iconKey)
+        assertEquals("Science", BackupMerger.merge(phone, backup,
+            setOf(BackupSection.SUBJECTS, BackupSection.ICONS)).courses.single().iconKey)
+    }
+
+    @Test fun newSubjectIconAlsoRequiresIconSelection() {
+        val backup = file.copy(courses = file.courses +
+            BackupCourse("new", "CHEM", "Chemistry", 4, 1, "enrolled", "COMPULSORY", iconKey = "Science"))
+        val subjects = BackupMerger.merge(local, backup, setOf(BackupSection.SUBJECTS))
+        assertEquals(null, subjects.courses.first { it.code == "CHEM" }.iconKey)
+        val withIcons = BackupMerger.merge(local, backup, setOf(BackupSection.SUBJECTS, BackupSection.ICONS))
+        assertEquals("Science", withIcons.courses.first { it.code == "CHEM" }.iconKey)
+    }
+
     @Test fun datesCanComeFromFileWithoutChangingOtherSettings() {
         val phone = local.copy(settings = BackupSettings(language = "ENGLISH",
             semesterPeriods = listOf(BackupSemesterPeriod(1, "2026-09-21", "2026-12-12"))))
@@ -63,5 +89,17 @@ class BackupMergerTest {
         }
         assertEquals(false, imported)
         assertEquals(true, result.isFailure)
+    }
+
+    @Test fun retryAfterDataAppliedDoesNotImportTwice() = runBlocking {
+        val alreadyMerged = BackupMerger.merge(local, file, setOf(BackupSection.SCHEDULE))
+        var importCount = 0
+        val repository = object : BackupRepository {
+            override suspend fun exportJson() = BackupPayloadCodec.encode(alreadyMerged)
+            override suspend fun importJson(raw: String) { importCount++ }
+        }
+        repository.importSelectedJson(BackupPayloadCodec.encode(file), BackupPayloadCodec.encode(local),
+            setOf(BackupSection.SCHEDULE))
+        assertEquals(0, importCount)
     }
 }

@@ -178,13 +178,13 @@ fun SettingsScreen(
         BackupReviewPage(review = review, onBack = { backupReview = null }, onApply = { selected ->
             if (review.source == BackupReviewSource.DOCUMENTS) {
                 documentStore.importSelectedFromDocuments(review.sourceRaw, review.localRaw, selected)
+            } else if (documentStore.isConnected) {
+                documentStore.importSelectedFromFile(review.sourceRaw, review.localRaw, selected)
             } else {
                 backupRepository.importSelectedJson(review.sourceRaw, review.localRaw, selected)
             }
-            backupMessage = if (review.source == BackupReviewSource.DOCUMENTS &&
-                documentStore.status.value == DocumentSyncStatus.CONFLICT) {
-                t("Вибрані дані застосовано. Інші відмінності залишились.")
-            } else t("Вибрані дані застосовано.")
+            backupMessage = if (documentStore.isConnected) t("Вибрані дані застосовано й збережено.")
+                else t("Вибрані дані застосовано.")
         })
         return
     }

@@ -81,7 +81,9 @@ fun AddGradeItemForm(
     showHeading: Boolean = true,
     onSave: (GradeItem) -> Unit,
 ) {
-    val effectiveType = initialItem?.type ?: initialType
+    val effectiveType = (initialItem?.type ?: initialType).let {
+        if (it == GradeItemType.MIDTERM) GradeItemType.TEST else it
+    }
     var title by remember(initialItem?.id, initialTitle, effectiveType) {
         mutableStateOf(
             initialItem?.title
@@ -153,7 +155,7 @@ fun AddGradeItemForm(
         }
 
         TaktDatePickerField(
-            label = t("Дата / дедлайн"),
+            label = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) t("Дата тесту") else t("Дедлайн / дата"),
             value = dueDate,
             onValueChange = {
                 if (dueDate != it) lessonId = null
@@ -328,7 +330,6 @@ private fun GradeTypeChips(
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
             GradeItemType.TEST to t("Тест"),
-            GradeItemType.MIDTERM to t("Модуль"),
             GradeItemType.LAB to t("Лаба"),
             GradeItemType.SEMINAR to t("Семінар"),
             GradeItemType.HOMEWORK to t("ДЗ"),

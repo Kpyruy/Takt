@@ -70,6 +70,13 @@ class HomeWorkPlannerTest {
         assertEquals("today", (entries.single() as HomeWorkEntry.Graded).value.id)
     }
 
+    @Test fun testFilterIncludesLegacyMidterms() {
+        val entries = HomeWorkPlanner.visible(emptyList(),
+            listOf(grade("legacy", GradeItemType.MIDTERM, monday)), monday,
+            HomeWorkFilter(types = setOf(GradeItemType.TEST)))
+        assertEquals("legacy", (entries.single() as HomeWorkEntry.Graded).value.id)
+    }
+
     private fun grade(id: String, type: GradeItemType, due: LocalDate) = GradeItem(
         id, "course", id, type, 0.0, 10.0, dueDate = due, completed = false,
     )

@@ -3,7 +3,7 @@ package com.kpyruy.takt.core.data
 import java.util.Locale
 
 /** Each selection names the source to take from a backup; unselected sections stay local. */
-enum class BackupSection { SUBJECTS, PROGRESS, SCHEDULE, PERIODS, MATERIALS, PREFERENCES }
+enum class BackupSection { SUBJECTS, ICONS, PROGRESS, SCHEDULE, PERIODS, MATERIALS, PREFERENCES }
 
 object BackupMerger {
     fun merge(local: BackupPayload, incoming: BackupPayload, fromBackup: Set<BackupSection>): BackupPayload {
@@ -18,14 +18,18 @@ object BackupMerger {
                     status = if (BackupSection.PROGRESS in fromBackup) source.status else old?.status ?: source.status,
                     passFailResult = if (BackupSection.PROGRESS in fromBackup || old == null) source.passFailResult
                         else old.passFailResult,
-                    iconKey = old?.iconKey ?: source.iconKey,
+                    iconKey = if (BackupSection.ICONS in fromBackup) source.iconKey else old?.iconKey,
                 )
             }
             imported + local.courses.filter { it.code.uppercase(Locale.ROOT) !in incomingByCode }
-        } else if (BackupSection.PROGRESS in fromBackup) {
+        } else if (BackupSection.PROGRESS in fromBackup || BackupSection.ICONS in fromBackup) {
             local.courses.map { old ->
                 val source = incomingByCode[old.code.uppercase(Locale.ROOT)]
-                if (source == null) old else old.copy(status = source.status, passFailResult = source.passFailResult)
+                if (source == null) old else old.copy(
+                    status = if (BackupSection.PROGRESS in fromBackup) source.status else old.status,
+                    passFailResult = if (BackupSection.PROGRESS in fromBackup) source.passFailResult else old.passFailResult,
+                    iconKey = if (BackupSection.ICONS in fromBackup) source.iconKey else old.iconKey,
+                )
             }
         } else local.courses
         val destinationByCode = courses.associateBy { it.code.uppercase(Locale.ROOT) }

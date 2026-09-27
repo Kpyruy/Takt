@@ -56,7 +56,9 @@ object HomeWorkPlanner {
             (filter.includeCompleted || !entry.completed ||
                 (entry.requiredForExam && !entry.meetsAdmissionRequirement)) &&
                 (filter.courseId == null || entry.courseId == filter.courseId) &&
-                (filter.types.isEmpty() || entry.type in filter.types) &&
+                (filter.types.isEmpty() || entry.type in filter.types ||
+                    (entry.type == GradeItemType.MIDTERM && GradeItemType.TEST in filter.types) ||
+                    (entry.type == GradeItemType.TEST && GradeItemType.MIDTERM in filter.types)) &&
                 when (val date = entry.dueDate) {
                     null -> filter.includeUndated
                     else -> when (filter.period) {

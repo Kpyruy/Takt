@@ -205,7 +205,7 @@ private fun HomeTaskFilterSheet(
                         shape = RoundedCornerShape(12.dp))
                     val types: List<Pair<GradeItemType?, String>> =
                         listOf(null to t("Завдання")) + GradeItemType.entries
-                            .filterNot { it == GradeItemType.EXAM }.map { it to t(it.label) }
+                            .filterNot { it == GradeItemType.EXAM || it == GradeItemType.MIDTERM }.map { it to t(it.label) }
                     types.forEach { (type, label) ->
                         val icon = when (type) {
                             null -> Icons.Outlined.TaskAlt
@@ -213,9 +213,11 @@ private fun HomeTaskFilterSheet(
                             GradeItemType.LAB -> Icons.Outlined.Science
                             else -> Icons.Outlined.Assignment
                         }
-                        FilterChip(selected = type in filter.types,
+                        val selected = type in filter.types ||
+                            (type == GradeItemType.TEST && GradeItemType.MIDTERM in filter.types)
+                        FilterChip(selected = selected,
                             onClick = {
-                                onChange(filter.copy(types = if (type in filter.types) filter.types - type
+                                onChange(filter.copy(types = if (selected) filter.types - type - GradeItemType.MIDTERM
                                     else filter.types + type))
                             }, label = { Text(label) },
                             leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },

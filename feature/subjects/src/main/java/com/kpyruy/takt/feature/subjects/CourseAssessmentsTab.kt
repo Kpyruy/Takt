@@ -138,7 +138,7 @@ internal fun CourseAssessmentsTab(
                         Text(t("Найближче"), style = MaterialTheme.typography.titleMedium)
                         upcoming.forEach { item ->
                             Text(
-                                item.title + t(" · до ") + item.maxPoints.displayNumber() + t(" б."),
+                                item.title + t(" · макс. ") + item.maxPoints.displayNumber() + t(" б."),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -182,18 +182,19 @@ internal fun CourseAssessmentsTab(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    gradeItems.sortedWith(
-                        compareBy<GradeItem> { it.completed }.thenBy { it.dueDate }
-                    ).forEachIndexed { index, item ->
-                        if (index > 0) HorizontalDivider()
-                        GradeItemRow(
-                            item = item,
-                            onEdit = { onEditGrade(item) },
-                            onDelete = { onDeleteGrade(item.id) },
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        gradeItems.sortedWith(
+                            compareBy<GradeItem> { it.completed }.thenBy { it.dueDate }
+                        ).forEach { item ->
+                            GradeItemRow(
+                                item = item,
+                                onEdit = { onEditGrade(item) },
+                                onDelete = { onDeleteGrade(item.id) },
+                            )
+                        }
                     }
                     if (scoredTasks.isNotEmpty()) {
-                        if (gradeItems.isNotEmpty()) HorizontalDivider()
+                        if (gradeItems.isNotEmpty()) HorizontalDivider(Modifier.padding(top = 8.dp))
                         Text(t("Завдання з балами"), style = MaterialTheme.typography.titleSmall)
                         scoredTasks.forEach { task ->
                             val maximum = task.maxPoints ?: return@forEach

@@ -58,7 +58,7 @@ internal fun CourseWorkGradeRow(item: GradeItem, onEdit: () -> Unit, onDelete: (
                 Text(buildList {
                     add(t(item.type.label))
                     item.durationMinutes?.let { add(t("$it хв")) }
-                    item.dueDate?.let { add(t("до ${it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))}")) }
+                    item.dueDate?.let { add(item.type.datePrefix() + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))) }
                     if (item.requiredForExam) add(t("для допуску"))
                     item.minimumPointsForExam?.let { add(t("мін. ${it.displayNumber()} б.")) }
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,

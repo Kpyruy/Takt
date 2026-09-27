@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -16,6 +18,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.BackupPayloadCodec
 import com.kpyruy.takt.core.data.BackupSection
+import com.kpyruy.takt.core.ui.components.CourseIcons
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.i18n.t
@@ -66,10 +70,15 @@ internal fun BackupReviewPage(
         ScreenHeader(title = t("Порівняння даних"), navigation = {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
         })
-        Text(t("Познач, що взяти з $sourceName. Непозначені дані залишаться на телефоні."),
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SectionCard {
+            Text(t("Обери джерело для кожної частини"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Позначено — взяти з файлу. Без позначки — залишити на телефоні."),
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("Наприклад: можна взяти розклад з файлу, а прогрес і предмети залишити з телефона."),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
 
-        BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, t("Предмети"),
+        BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, sourceName, t("Предмети"),
             t("Телефон: ${local.courses.size} · $sourceName: ${source.courses.size}")) {
             source.courses.filter { localByCode[it.code.uppercase(Locale.ROOT)]?.let { old ->
                 old.title != it.title || old.credits != it.credits || old.semester != it.semester
@@ -79,10 +88,33 @@ internal fun BackupReviewPage(
             local.courses.filter { it.code.uppercase(Locale.ROOT) !in sourceByCode }.take(4).forEach {
                 Text(t("Лише на телефоні: ${it.code} · ${it.title}"))
             }
-            Text(t("Предмети, яких немає у файлі, залишаться на телефоні."),
+            Text(t("Іконки предметів обираються окремо нижче. Предмети, яких немає у файлі, залишаться на телефоні."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BackupChoice(BackupSection.PROGRESS, selected, ::toggle, t("Прогрес"),
+        val changedIcons = source.courses.mapNotNull { file ->
+            val phone = localByCode[file.code.uppercase(Locale.ROOT)]
+            if (phone?.iconKey == file.iconKey) null else phone to file
+        }
+        BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t("Іконки предметів"),
+            t("Відрізняються: ") + changedIcons.size) {
+            if (changedIcons.isEmpty()) {
+                Text(t("Іконки однакові або відсутні в обох джерелах."),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            changedIcons.take(6).forEach { (phone, file) ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    BackupIcon(phone?.iconKey)
+                    Text("→", style = MaterialTheme.typography.titleMedium)
+                    BackupIcon(file.iconKey)
+                    Text("${file.code} · ${file.title}", modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Text(t("Ліворуч — телефон, праворуч — файл. Іконки можна взяти без заміни предметів чи прогресу."),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        BackupChoice(BackupSection.PROGRESS, selected, ::toggle, sourceName, t("Прогрес"),
             t("Оцінки: ${local.gradeItems.size} → ${source.gradeItems.size}; задачі: ${local.studyTasks.size} → ${source.studyTasks.size}")) {
             source.courses.mapNotNull { fileCourse ->
                 localByCode[fileCourse.code.uppercase(Locale.ROOT)]?.takeIf {
@@ -99,7 +131,7 @@ internal fun BackupReviewPage(
             Text(t("Статуси, оцінки й задачі оновляться лише для предметів з однаковим кодом."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, t("Розклад"),
+        BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, sourceName, t("Розклад"),
             t("Телефон: ${local.scheduleRules.size + local.oneOffEvents.size} · $sourceName: ${source.scheduleRules.size + source.oneOffEvents.size}")) {
             val localRules = local.scheduleRules.associateBy { it.id }
             val sourceRules = source.scheduleRules.associateBy { it.id }
@@ -116,7 +148,7 @@ internal fun BackupReviewPage(
             Text(t("Вибір розкладу замінить локальні заняття, зміни й відвідування."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BackupChoice(BackupSection.PERIODS, selected, ::toggle, t("Періоди навчання"),
+        BackupChoice(BackupSection.PERIODS, selected, ::toggle, sourceName, t("Періоди навчання"),
             t("Телефон: ${local.settings.semesterPeriods.size} · $sourceName: ${source.settings.semesterPeriods.size}")) {
             (local.settings.semesterPeriods.map { it.semester } + source.settings.semesterPeriods.map { it.semester })
                 .distinct().sorted().forEach { semester ->
@@ -129,17 +161,19 @@ internal fun BackupReviewPage(
                     }
                 }
         }
-        BackupChoice(BackupSection.MATERIALS, selected, ::toggle, t("Нотатки й матеріали"),
+        BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t("Нотатки й матеріали"),
             t("Нотатки: ${local.courseNotes.size} → ${source.courseNotes.size}; матеріали: ${local.examMaterials.size} → ${source.examMaterials.size}")) {
             Text(t("Нотатки й матеріали зіставляються за кодом предмета."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        BackupChoice(BackupSection.PREFERENCES, selected, ::toggle, t("Інші налаштування"),
+        BackupChoice(BackupSection.PREFERENCES, selected, ::toggle, sourceName, t("Інші налаштування"),
             t("Мова застосунку: ${local.settings.language} → ${source.settings.language}")) {
             Text(t("Мова, вигляд, фільтри й поточний семестр."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Text(t("Після застосування підключений сейф Documents/Takt оновиться автоматично."),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Button(onClick = { scope.launch {
             applying = true
             runCatching { onApply(selected) }.onSuccess { onBack() }
@@ -153,14 +187,31 @@ internal fun BackupReviewPage(
 
 @Composable
 private fun BackupChoice(section: BackupSection, selected: Set<BackupSection>, onToggle: (BackupSection) -> Unit,
-    title: String, summary: String, detail: @Composable () -> Unit) {
+    sourceName: String, title: String, summary: String, detail: @Composable () -> Unit) {
     SectionCard {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = section in selected, onCheckedChange = { onToggle(section) })
-            Text(title, style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.fillMaxWidth().clickable { onToggle(section) }, verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = section in selected, onCheckedChange = null)
+            Column {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(if (section in selected) t("Взяти з ") + sourceName else t("Залишити на телефоні"),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (section in selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         Text(summary, color = MaterialTheme.colorScheme.onSurfaceVariant)
         detail()
+    }
+}
+
+@Composable
+private fun BackupIcon(key: String?) {
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)) {
+        val icon = CourseIcons.find(key)
+        if (icon == null) Text("—", modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
+            style = MaterialTheme.typography.titleSmall)
+        else Icon(icon.vector, contentDescription = icon.label,
+            modifier = Modifier.padding(8.dp).size(20.dp))
     }
 }
 

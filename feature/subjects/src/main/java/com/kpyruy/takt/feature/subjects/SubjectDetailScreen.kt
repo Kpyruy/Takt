@@ -86,7 +86,6 @@ fun SubjectDetailScreen(
     val tasks by remember(studyContentRepository, courseId) { studyContentRepository.observeTasks(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val notes by remember(studyContentRepository, courseId) { studyContentRepository.observeNotes(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val examInfo by remember(examRepository, courseId) { examRepository.observeExamInfo(courseId) }.collectAsStateWithLifecycle(initialValue = null)
-    val examMaterials by remember(examRepository, courseId) { examRepository.observeMaterials(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val lifecycleOwner = LocalLifecycleOwner.current
     val today by androidx.compose.runtime.produceState(LocalDate.now(), lifecycleOwner) {
@@ -224,32 +223,17 @@ fun SubjectDetailScreen(
                 )
                 "exam" -> CourseExamTab(
                     courseId = courseId,
-                    courseCode = item.code,
-                    documentStore = documentStore,
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
                     tasks = tasks,
                     eligibility = eligibility,
                     examInfo = examInfo,
-                    materials = examMaterials,
-                    notes = notes,
-                    onNotes = { selectedTab = "notes" },
-                    onAddNote = { showAddNote = true },
                     onAdmission = { selectedTab = "tasks" },
                     onSaveExamInfo = { info ->
                         scope.launch {
                             examRepository.upsertExamInfo(info)
                             haptics.confirm()
                         }
-                    },
-                    onAddMaterial = { material ->
-                        scope.launch {
-                            examRepository.upsertMaterial(material)
-                            haptics.confirm()
-                        }
-                    },
-                    onDeleteMaterial = { material ->
-                        scope.launch { examRepository.deleteMaterial(material.id) }
                     },
                 )
                 "notes" -> CourseNotesTab(
