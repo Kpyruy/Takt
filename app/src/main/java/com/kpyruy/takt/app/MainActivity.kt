@@ -137,6 +137,7 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onStop() {
+        (application as TaktApplication).dataContainer.universityAccountRepository.session.disconnect()
         foreground = false
         if (::deviceAuthenticator.isInitialized && !deviceAuthenticator.isShowing) unlocked = false
         super.onStop()

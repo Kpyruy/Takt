@@ -206,7 +206,7 @@ internal fun FirstRunScreen(
                     1 -> {
                         Text(t("Як користуватися Takt?"), style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold)
-                        Text(t("Працюй повністю локально або збережи дані UIS для майбутнього підключення."),
+                        Text(t("Працюй локально або підключи UIS STU."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = !useUIS, onClick = {
@@ -225,7 +225,7 @@ internal fun FirstRunScreen(
                                 label = { Text("UIS") }, modifier = Modifier.testTag("onboarding-uis"))
                         }
                         if (useUIS) {
-                            Text(t("Вхід у UIS поки не виконується. Після збереження даних Takt проситиме захист телефона при кожному запуску."),
+                            Text(t("Після збереження даних UIS Takt проситиме біометрію або PIN телефона при кожному запуску."),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             UniversityAccountForm(universityAccountRepository, authenticateDevice)
                         }

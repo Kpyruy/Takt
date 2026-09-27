@@ -22,5 +22,8 @@ dependencies {
     implementation(libs.coroutines.core)
     implementation(libs.serialization.json)
     implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jsoup:jsoup:1.18.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation(libs.junit)
 }

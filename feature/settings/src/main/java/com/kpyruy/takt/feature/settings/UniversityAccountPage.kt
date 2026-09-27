@@ -55,7 +55,7 @@ fun UniversityAccountPage(
         })
         SectionCard {
             Text("UIS", style = MaterialTheme.typography.titleLarge)
-            Text(t("Збережи дані для майбутнього підключення. Вхід у UIS поки не виконується."),
+            Text(t("Підключення до UIS STU"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard {
@@ -142,6 +142,7 @@ fun UniversityAccountForm(
             }
         }, modifier = Modifier.fillMaxWidth()) { Text(t("Видалити UIS-акаунт")) }
     }
+    UisConnectionControls(repository, authenticate)
     message?.let { Text(it, style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant) }
 }

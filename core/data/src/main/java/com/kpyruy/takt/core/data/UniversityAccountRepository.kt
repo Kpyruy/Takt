@@ -15,10 +15,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 
-data class UniversityCredentials(val login: String, val password: String)
+class UniversityCredentials(val login: String, val password: String) {
+    override fun toString() = "UniversityCredentials([redacted])"
+}
 
 /** Credentials stay on this device and are never included in Takt's study-data backup. */
 class UniversityAccountRepository(context: Context) {
+    val session = com.kpyruy.takt.core.data.uis.UisSession()
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
     private val activeState = MutableStateFlow(preferences.contains(CIPHERTEXT))
@@ -26,6 +29,7 @@ class UniversityAccountRepository(context: Context) {
 
     /** Call only after a successful device authentication. */
     fun save(login: String, password: String) {
+        session.disconnect()
         val cleanLogin = login.trim()
         require(cleanLogin.isNotEmpty() && cleanLogin.length <= 254)
         require(password.isNotEmpty() && password.length <= 1024)
@@ -62,6 +66,7 @@ class UniversityAccountRepository(context: Context) {
 
     /** Call only after a successful device authentication. */
     fun remove() {
+        session.disconnect()
         check(preferences.edit().remove(CIPHERTEXT).remove(IV).commit()) { "Could not remove UIS credentials" }
         keyStore.deleteEntry(KEY_ALIAS)
         activeState.value = false

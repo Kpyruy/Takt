@@ -18,7 +18,7 @@ These screenshots use English example data on a Pixel 7 emulator. A new installa
 
 Download the signed APK from [Releases](https://github.com/Kpyruy/Takt/releases/latest). Takt supports Android 8.0 and newer. Back up `Documents/Takt` before replacing a debug build: a release APK has a different signing key and cannot update a debug installation in place.
 
-You can use Takt entirely offline. The optional UIS setup encrypts your login and password with a key held in Android Keystore and asks for your phone's biometric or screen lock when opening Takt. UIS sign-in and sync are not implemented yet; the credentials are not included in `Documents/Takt` backups.
+You can use Takt entirely offline. The optional UIS setup encrypts your login and password with a key held in Android Keystore and asks for your phone's biometric or screen lock when opening Takt. UIS sign-in is available from onboarding and Settings, with a verification-code step when UIS requires it. Sign-in requires a separate biometric or screen-lock confirmation. Sessions stay in memory and are cleared when Takt goes into the background; credentials and cookies are not included in `Documents/Takt` backups. Schedule and grade synchronization are not implemented yet.
 
 ## Modules
 
