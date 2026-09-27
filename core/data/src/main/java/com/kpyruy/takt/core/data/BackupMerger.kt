@@ -3,9 +3,45 @@ package com.kpyruy.takt.core.data
 import java.util.Locale
 
 /** Each selection names the source to take from a backup; unselected sections stay local. */
-enum class BackupSection { SUBJECTS, ICONS, PROGRESS, SCHEDULE, PERIODS, MATERIALS, PREFERENCES }
+enum class BackupSection {
+    SUBJECTS, ICONS, PROGRESS, SCHEDULE, PERIODS, MATERIALS,
+    LANGUAGE, APPEARANCE, CURRENT_SEMESTER, PREFERENCES,
+}
 
 object BackupMerger {
+    /** Only offer choices that would change the phone's data. */
+    fun changedSections(local: BackupPayload, incoming: BackupPayload): Set<BackupSection> {
+        val subjectsOnly = merge(local, incoming, setOf(BackupSection.SUBJECTS))
+        return BackupSection.entries.filterTo(mutableSetOf()) { section ->
+            !sameReviewData(merge(local, incoming, setOf(section)), local) ||
+                (section in setOf(BackupSection.ICONS, BackupSection.PROGRESS,
+                    BackupSection.SCHEDULE, BackupSection.MATERIALS) &&
+                    !sameReviewData(merge(local, incoming, setOf(BackupSection.SUBJECTS, section)), subjectsOnly))
+        }
+    }
+
+    private fun sameReviewData(a: BackupPayload, b: BackupPayload): Boolean {
+        fun <T> sameItems(left: List<T>, right: List<T>) =
+            left.size == right.size && left.groupingBy { it }.eachCount() == right.groupingBy { it }.eachCount()
+        fun normalizedSettings(value: BackupSettings) = value.copy(
+            semesterPeriods = value.semesterPeriods.sortedBy { it.semester },
+            homeWorkFilter = value.homeWorkFilter.copy(types = value.homeWorkFilter.types.sorted()),
+        )
+        return sameItems(a.courses, b.courses) &&
+            sameItems(a.scheduleRules, b.scheduleRules) &&
+            sameItems(a.oneOffEvents, b.oneOffEvents) &&
+            sameItems(a.lessonAbsences, b.lessonAbsences) &&
+            sameItems(a.scheduleExceptions, b.scheduleExceptions) &&
+            sameItems(a.gradeItems, b.gradeItems) &&
+            sameItems(a.gradeScales, b.gradeScales) &&
+            sameItems(a.gradeOverrides, b.gradeOverrides) &&
+            sameItems(a.studyTasks, b.studyTasks) &&
+            sameItems(a.courseNotes, b.courseNotes) &&
+            sameItems(a.examInfo, b.examInfo) &&
+            sameItems(a.examMaterials, b.examMaterials) &&
+            normalizedSettings(a.settings) == normalizedSettings(b.settings)
+    }
+
     fun merge(local: BackupPayload, incoming: BackupPayload, fromBackup: Set<BackupSection>): BackupPayload {
         if (fromBackup.isEmpty()) return local
         val localByCode = local.courses.associateBy { it.code.uppercase(Locale.ROOT) }
@@ -41,7 +77,35 @@ object BackupMerger {
         val progress = BackupSection.PROGRESS in fromBackup
         val schedule = BackupSection.SCHEDULE in fromBackup
         val materials = BackupSection.MATERIALS in fromBackup
-        val settings = if (BackupSection.PREFERENCES in fromBackup) incoming.settings else local.settings
+        val phoneSettings = local.settings
+        val fileSettings = incoming.settings
+        val other = BackupSection.PREFERENCES in fromBackup
+        val settings = phoneSettings.copy(
+            cancellationStyle = if (other) fileSettings.cancellationStyle else phoneSettings.cancellationStyle,
+            showHiddenLessons = if (other) fileSettings.showHiddenLessons else phoneSettings.showHiddenLessons,
+            parityOverride = if (other) fileSettings.parityOverride else phoneSettings.parityOverride,
+            weekLayout = if (other) fileSettings.weekLayout else phoneSettings.weekLayout,
+            homeWorkFilter = if (other) fileSettings.homeWorkFilter else phoneSettings.homeWorkFilter,
+            uisProgressFrequency = if (other) fileSettings.uisProgressFrequency else phoneSettings.uisProgressFrequency,
+            uisSubjectFrequency = if (other) fileSettings.uisSubjectFrequency else phoneSettings.uisSubjectFrequency,
+            uisPeriodFrequency = if (other) fileSettings.uisPeriodFrequency else phoneSettings.uisPeriodFrequency,
+            uisTimetableFrequency = if (other) fileSettings.uisTimetableFrequency else phoneSettings.uisTimetableFrequency,
+            uisApplyProgressAutomatically = if (other) fileSettings.uisApplyProgressAutomatically
+                else phoneSettings.uisApplyProgressAutomatically,
+            language = if (BackupSection.LANGUAGE in fromBackup) fileSettings.language else phoneSettings.language,
+            courseNameLanguage = if (BackupSection.LANGUAGE in fromBackup) fileSettings.courseNameLanguage
+                else phoneSettings.courseNameLanguage,
+            ukrainianCourseNameFallback = if (BackupSection.LANGUAGE in fromBackup)
+                fileSettings.ukrainianCourseNameFallback else phoneSettings.ukrainianCourseNameFallback,
+            themeMode = if (BackupSection.APPEARANCE in fromBackup) fileSettings.themeMode else phoneSettings.themeMode,
+            themeFamily = if (BackupSection.APPEARANCE in fromBackup) fileSettings.themeFamily else phoneSettings.themeFamily,
+            cardAppearance = if (BackupSection.APPEARANCE in fromBackup) fileSettings.cardAppearance
+                else phoneSettings.cardAppearance,
+            currentSemester = if (BackupSection.CURRENT_SEMESTER in fromBackup) fileSettings.currentSemester
+                else phoneSettings.currentSemester,
+            semesterPeriods = if (BackupSection.PERIODS in fromBackup) fileSettings.semesterPeriods
+                else phoneSettings.semesterPeriods,
+        )
         return local.copy(
             courses = courses,
             scheduleRules = if (schedule) incoming.scheduleRules.map { it.copy(courseId = mapped(it.courseId)) } else local.scheduleRules,
@@ -69,10 +133,7 @@ object BackupMerger {
             examMaterials = if (materials) local.examMaterials.filterNot { covered(it.courseId) } +
                 incoming.examMaterials.mapNotNull { item -> mapped(item.courseId)?.let { item.copy(courseId = it) } }
                 else local.examMaterials,
-            settings = settings.copy(
-                semesterPeriods = if (BackupSection.PERIODS in fromBackup) incoming.settings.semesterPeriods
-                    else local.settings.semesterPeriods,
-            ),
+            settings = settings,
             version = BackupPayload.CURRENT_VERSION,
         )
     }

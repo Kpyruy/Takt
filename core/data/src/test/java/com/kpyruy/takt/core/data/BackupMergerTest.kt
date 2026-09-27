@@ -76,6 +76,49 @@ class BackupMergerTest {
         assertEquals(phone.courses, merged.courses)
     }
 
+    @Test fun appearanceAndCurrentSemesterCanBeImportedIndependently() {
+        val phone = local.copy(settings = BackupSettings(language = "ENGLISH", themeMode = "DARK",
+            themeFamily = "BLUE", currentSemester = 1))
+        val backup = file.copy(settings = BackupSettings(language = "ENGLISH", themeMode = "LIGHT",
+            themeFamily = "PURPLE", currentSemester = 2))
+
+        val appearance = BackupMerger.merge(phone, backup, setOf(BackupSection.APPEARANCE))
+        assertEquals("LIGHT", appearance.settings.themeMode)
+        assertEquals("PURPLE", appearance.settings.themeFamily)
+        assertEquals(1, appearance.settings.currentSemester)
+
+        val semester = BackupMerger.merge(phone, backup, setOf(BackupSection.CURRENT_SEMESTER))
+        assertEquals("DARK", semester.settings.themeMode)
+        assertEquals(2, semester.settings.currentSemester)
+    }
+
+    @Test fun reviewOffersOnlySectionsThatCanChangeData() {
+        val phone = local.copy(settings = BackupSettings(language = "ENGLISH", themeFamily = "BLUE",
+            currentSemester = 1))
+        val backup = phone.copy(settings = phone.settings.copy(themeFamily = "GREEN", currentSemester = 2))
+        assertEquals(setOf(BackupSection.APPEARANCE, BackupSection.CURRENT_SEMESTER),
+            BackupMerger.changedSections(phone, backup))
+    }
+
+    @Test fun otherPreferencesDoNotOverrideLanguageAppearanceOrSemester() {
+        val phone = local.copy(settings = BackupSettings(language = "ENGLISH", themeMode = "DARK",
+            currentSemester = 1, showHiddenLessons = false))
+        val backup = file.copy(settings = BackupSettings(language = "SLOVAK", themeMode = "LIGHT",
+            currentSemester = 2, showHiddenLessons = true))
+        val merged = BackupMerger.merge(phone, backup, setOf(BackupSection.PREFERENCES))
+        assertEquals("ENGLISH", merged.settings.language)
+        assertEquals("DARK", merged.settings.themeMode)
+        assertEquals(1, merged.settings.currentSemester)
+        assertEquals(true, merged.settings.showHiddenLessons)
+    }
+
+    @Test fun reviewIgnoresStorageOrderWhenValuesMatch() {
+        val first = local.copy(courses = local.courses +
+            BackupCourse("second", "CHEM", "Chemistry", 4, 1, "enrolled", "COMPULSORY"))
+        val reordered = first.copy(courses = first.courses.reversed())
+        assertEquals(emptySet<BackupSection>(), BackupMerger.changedSections(first, reordered))
+    }
+
     @Test fun refusesSelectiveRestoreWhenPhoneChangedAfterPreview() = runBlocking {
         val reviewed = BackupPayloadCodec.encode(local)
         val changed = BackupPayloadCodec.encode(local.copy(courses = local.courses.map { it.copy(title = "Edited") }))

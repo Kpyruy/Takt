@@ -97,7 +97,7 @@ internal fun CourseOverviewTab(
         }
         Text(t("Під рукою"), style = MaterialTheme.typography.titleMedium)
         ResourceRow(t("Формули й конспекти"), t("Нотатки та матеріали предмета"), onNotes)
-        if (hasExam) ResourceRow(t("Підготовка до екзамену"), t("Дата, цільова оцінка й матеріали"), onExam)
+        if (hasExam) ResourceRow(t("Підготовка до екзамену"), t("Дата й цільова оцінка"), onExam)
         if (showFinalGrade && course.gradingType != CourseGradingType.PASS_FAIL) {
             ManualGradeSection(manualGrade, onManualGradeChange)
         }

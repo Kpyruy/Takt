@@ -112,16 +112,13 @@ internal fun CourseAssessmentsTab(
                                 projection.securedPoints.displayNumber() + t(" балів уже зафіксовано"),
                                 style = MaterialTheme.typography.titleLarge,
                             )
-                            val examAdded = gradeItems.any { it.type == GradeItemType.EXAM }
-                            Text(
-                                text = if (examAdded) {
+                            if (gradeItems.any { it.type == GradeItemType.EXAM }) {
+                                Text(
                                     t("Максимально можлива оцінка зараз: ") +
-                                        (projection.maximumPossibleLetter?.name ?: "—")
-                                } else {
-                                    t("Додай екзамен, щоб побачити максимальну можливу оцінку.")
-                                },
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                                        (projection.maximumPossibleLetter?.name ?: "—"),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         IconButton(onClick = { showLegend = true }) {
                             Icon(Icons.Default.Info, contentDescription = t("Шкала оцінювання"))
