@@ -2,7 +2,6 @@ package com.kpyruy.takt.feature.settings
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,7 +32,7 @@ internal fun UisConnectionControls(
     val state by repository.session.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
-    if (state != UisResult.DISCONNECTED) Text(t(when (state) {
+    if (state !in listOf(UisResult.DISCONNECTED, UisResult.CONNECTING)) Text(t(when (state) {
         UisResult.DISCONNECTED -> "UIS не підключено"
         UisResult.CONNECTING -> "Підключення до UIS…"
         UisResult.CONNECTED -> "Вхід у UIS виконано"
@@ -45,7 +44,10 @@ internal fun UisConnectionControls(
     }))
     failure?.let { Text(uisFailureMessage(it), color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
     when (state) {
-        UisResult.CONNECTING -> CircularProgressIndicator()
+        UisResult.CONNECTING -> {
+            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text(t("Увійти в UIS")) }
+            UisLoadingOverlay(onCancel = { repository.session.disconnect() })
+        }
         UisResult.SECOND_FACTOR -> {
             OutlinedTextField(value = code, onValueChange = { code = it.take(32) },
                 label = { Text(t("Код підтвердження")) }, singleLine = true,
@@ -62,7 +64,7 @@ internal fun UisConnectionControls(
         else -> Button(onClick = onLogin, enabled = canLogin && !authenticating,
             modifier = Modifier.fillMaxWidth().testTag("uis-sign-in")) { Text(t("Увійти в UIS")) }
     }
-    if (state in listOf(UisResult.CONNECTED, UisResult.SECOND_FACTOR, UisResult.CONNECTING)) {
+    if (state in listOf(UisResult.CONNECTED, UisResult.SECOND_FACTOR)) {
         TextButton(onClick = { code = ""; repository.session.disconnect() }, modifier = Modifier.fillMaxWidth()) {
             Text(t("Закрити сесію UIS"))
         }

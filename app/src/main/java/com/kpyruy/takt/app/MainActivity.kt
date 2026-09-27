@@ -10,6 +10,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -80,51 +81,53 @@ class MainActivity : FragmentActivity() {
                         isAppearanceLightNavigationBars = lightSystemBars
                     }
                 }
-                when {
-                    hasUniversityAccount && !unlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
-                    showOnboarding == true -> FirstRunScreen(
-                        settings = settings,
-                        universityAccountRepository = dataContainer.universityAccountRepository,
-                        authenticateDevice = ::authenticateForAccount,
-                        onFinish = { appearance -> scope.launch {
-                            dataContainer.settingsRepository.setAppearance(
-                                appearance.themeMode, appearance.themeFamily, appearance.cardAppearance)
-                            dataContainer.settingsRepository.setLanguage(appearance.language)
-                            dataContainer.firstRunRepository.complete()
-                            showOnboarding = false
-                        } },
-                        onRestore = { uri ->
-                            runCatching {
-                                when (dataContainer.documentStore.connect(uri)) {
-                                    DocumentSyncStatus.READY -> {
-                                        if (dataContainer.studyPlanRepository.observeCourses().first().isNotEmpty()) {
-                                            dataContainer.awaitRestoredPlanning()
-                                            dataContainer.firstRunRepository.complete()
-                                            showOnboarding = false
-                                            null
-                                        } else t("У копії немає предметів. Налаштуй Takt для себе.")
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    when {
+                        hasUniversityAccount && !unlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
+                        showOnboarding == true -> FirstRunScreen(
+                            settings = settings,
+                            universityAccountRepository = dataContainer.universityAccountRepository,
+                            authenticateDevice = ::authenticateForAccount,
+                            onFinish = { appearance -> scope.launch {
+                                dataContainer.settingsRepository.setAppearance(
+                                    appearance.themeMode, appearance.themeFamily, appearance.cardAppearance)
+                                dataContainer.settingsRepository.setLanguage(appearance.language)
+                                dataContainer.firstRunRepository.complete()
+                                showOnboarding = false
+                            } },
+                            onRestore = { uri ->
+                                runCatching {
+                                    when (dataContainer.documentStore.connect(uri)) {
+                                        DocumentSyncStatus.READY -> {
+                                            if (dataContainer.studyPlanRepository.observeCourses().first().isNotEmpty()) {
+                                                dataContainer.awaitRestoredPlanning()
+                                                dataContainer.firstRunRepository.complete()
+                                                showOnboarding = false
+                                                null
+                                            } else t("У копії немає предметів. Налаштуй Takt для себе.")
+                                        }
+                                        DocumentSyncStatus.CONFLICT -> t("Дані відрізняються. Перевір копію в налаштуваннях.")
+                                        else -> t("Не вдалося відновити дані")
                                     }
-                                    DocumentSyncStatus.CONFLICT -> t("Дані відрізняються. Перевір копію в налаштуваннях.")
-                                    else -> t("Не вдалося відновити дані")
-                                }
-                            }.getOrElse { it.message ?: t("Не вдалося відновити дані") }
-                        },
-                    )
-                    showOnboarding == false -> TaktApp(
-                        planningSnapshot = dataContainer.planningSnapshot,
-                        repository = dataContainer.studyPlanRepository,
-                        scheduleRepository = dataContainer.scheduleRepository,
-                        gradeRepository = dataContainer.gradeRepository,
-                        studyContentRepository = dataContainer.studyContentRepository,
-                        examRepository = dataContainer.examRepository,
-                        settingsRepository = dataContainer.settingsRepository,
-                        backupRepository = dataContainer.backupRepository,
-                        documentStore = dataContainer.documentStore,
-                        universityAccountRepository = dataContainer.universityAccountRepository,
-                        authenticateDevice = ::authenticateForAccount,
-                    )
-                    else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                                }.getOrElse { it.message ?: t("Не вдалося відновити дані") }
+                            },
+                        )
+                        showOnboarding == false -> TaktApp(
+                            planningSnapshot = dataContainer.planningSnapshot,
+                            repository = dataContainer.studyPlanRepository,
+                            scheduleRepository = dataContainer.scheduleRepository,
+                            gradeRepository = dataContainer.gradeRepository,
+                            studyContentRepository = dataContainer.studyContentRepository,
+                            examRepository = dataContainer.examRepository,
+                            settingsRepository = dataContainer.settingsRepository,
+                            backupRepository = dataContainer.backupRepository,
+                            documentStore = dataContainer.documentStore,
+                            universityAccountRepository = dataContainer.universityAccountRepository,
+                            authenticateDevice = ::authenticateForAccount,
+                        )
+                        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
             }
