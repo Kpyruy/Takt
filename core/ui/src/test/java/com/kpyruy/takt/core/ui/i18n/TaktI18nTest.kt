@@ -12,6 +12,7 @@ class TaktI18nTest {
 
     @Test fun chosenLanguageTranslatesStaticAndDynamicText() {
         TaktI18n.use(AppLanguage.ENGLISH)
+        assertEquals("Timetable", t("Розклад"))
         assertEquals("Class", t("Пара"))
         assertEquals("Lab", t("Лабораторна"))
         assertEquals("Mon", t("Пн"))
@@ -19,6 +20,7 @@ class TaktI18nTest {
         assertEquals("12 points earned, up to 8 still available", t("12 балів набрано, до 8 ще доступно"))
 
         TaktI18n.use(AppLanguage.SLOVAK)
+        assertEquals("Rozvrh", t("Розклад"))
         assertEquals("Skúška", t("Екзамен"))
         assertEquals("Cvičenie", t("Практика"))
         assertEquals("Po", t("Пн"))

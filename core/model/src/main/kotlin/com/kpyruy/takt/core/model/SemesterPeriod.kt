@@ -26,6 +26,9 @@ data class SemesterPeriod(
     fun allowsRecurringLesson(date: LocalDate): Boolean =
         if (studyStart != null && studyEnd != null) date >= studyStart && date <= studyEnd else true
 
+    fun containsExamDate(date: LocalDate): Boolean =
+        examStart != null && examEnd != null && date >= examStart && date <= examEnd
+
     fun assessmentPhase(date: LocalDate): AssessmentPhase = when (assessmentMode) {
         AssessmentPhaseMode.STUDY -> AssessmentPhase.STUDY
         AssessmentPhaseMode.EXAM -> AssessmentPhase.EXAM

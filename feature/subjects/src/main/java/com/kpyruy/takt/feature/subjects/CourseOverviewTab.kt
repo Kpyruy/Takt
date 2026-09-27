@@ -31,6 +31,7 @@ import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
@@ -49,6 +50,9 @@ internal fun CourseOverviewTab(
     gradeScale: GradeScale,
     tasks: List<StudyTask>,
     eligibility: ExamEligibility,
+    showFinalGrade: Boolean,
+    manualGrade: GradeLetter?,
+    onManualGradeChange: (GradeLetter?) -> Unit,
     onTaskCompleted: (StudyTask, Boolean) -> Unit,
     onEditTask: (StudyTask) -> Unit,
     onEditGrade: (GradeItem) -> Unit,
@@ -64,9 +68,9 @@ internal fun CourseOverviewTab(
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (hasExam) AdmissionProgressCard(eligibility)
         if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection)
-        else SubjectPanel {
+        else if (course.passFailResult != null) SubjectPanel {
             Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
-            Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> t("Результату ще немає") })
+            Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" })
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(t("Обов’язкові роботи"), style = MaterialTheme.typography.titleMedium)
@@ -94,6 +98,9 @@ internal fun CourseOverviewTab(
         Text(t("Під рукою"), style = MaterialTheme.typography.titleMedium)
         ResourceRow(t("Формули й конспекти"), t("Нотатки та матеріали предмета"), onNotes)
         if (hasExam) ResourceRow(t("Підготовка до екзамену"), t("Дата, цільова оцінка й матеріали"), onExam)
+        if (showFinalGrade && course.gradingType != CourseGradingType.PASS_FAIL) {
+            ManualGradeSection(manualGrade, onManualGradeChange)
+        }
         course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; ResourceRow(t("Програма предмета"), course.code) { runCatching { uriHandler.openUri(url) } } }
         Spacer(Modifier.height(12.dp))
     }

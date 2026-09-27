@@ -129,6 +129,10 @@ fun SubjectDetailScreen(
     }
 
     val assessmentPhase = settings.assessmentPhase(item, today, settings.effectiveCurrentSemester(allCourses))
+    val examPeriod = settings.semesterPeriods[
+        settings.academicSemester(item, settings.effectiveCurrentSemester(allCourses))
+    ]
+    val showFinalGrade = examPeriod?.containsExamDate(today) == true
     val tabs = if (item.gradingType != CourseGradingType.PASS_FAIL) {
         listOf("overview", "grades", "tasks", "exam", "notes")
     } else {
@@ -177,6 +181,11 @@ fun SubjectDetailScreen(
                     gradeScale = gradeScale,
                     tasks = tasks,
                     eligibility = eligibility,
+                    showFinalGrade = showFinalGrade,
+                    manualGrade = manualGrade,
+                    onManualGradeChange = { grade ->
+                        scope.launch { gradeRepository.setManualGrade(courseId, grade) }
+                    },
                     onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
                     onEditTask = { editingTask = it },
                     onEditGrade = { editingGrade = it },
@@ -196,9 +205,6 @@ fun SubjectDetailScreen(
                     onEditTask = { editingTask = it },
                     onDeleteGrade = { id -> scope.launch { gradeRepository.deleteItem(id) } },
                     onEditScale = { showScaleEditor = true },
-                    onManualGradeChange = { grade ->
-                        scope.launch { gradeRepository.setManualGrade(courseId, grade) }
-                    },
                 )
                 "tasks" -> CourseTasksTab(
                     tasks = tasks,
@@ -226,7 +232,9 @@ fun SubjectDetailScreen(
                     eligibility = eligibility,
                     examInfo = examInfo,
                     materials = examMaterials,
-                    manualGrade = manualGrade,
+                    notes = notes,
+                    onNotes = { selectedTab = "notes" },
+                    onAddNote = { showAddNote = true },
                     onAdmission = { selectedTab = "tasks" },
                     onSaveExamInfo = { info ->
                         scope.launch {
@@ -242,9 +250,6 @@ fun SubjectDetailScreen(
                     },
                     onDeleteMaterial = { material ->
                         scope.launch { examRepository.deleteMaterial(material.id) }
-                    },
-                    onManualGradeChange = { grade ->
-                        scope.launch { gradeRepository.setManualGrade(courseId, grade) }
                     },
                 )
                 "notes" -> CourseNotesTab(

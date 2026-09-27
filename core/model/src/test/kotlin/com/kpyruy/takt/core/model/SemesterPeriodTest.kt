@@ -29,6 +29,14 @@ class SemesterPeriodTest {
         assertEquals(AssessmentPhase.EXAM, period.assessmentPhase(LocalDate.of(2027, 2, 6)))
     }
 
+    @Test fun finalGradeControlOnlyAppearsInsideConfiguredExamDates() {
+        assertFalse(period.containsExamDate(LocalDate.of(2027, 1, 10)))
+        assertTrue(period.containsExamDate(LocalDate.of(2027, 1, 11)))
+        assertTrue(period.containsExamDate(LocalDate.of(2027, 2, 5)))
+        assertFalse(period.containsExamDate(LocalDate.of(2027, 2, 6)))
+        assertFalse(SemesterPeriod().containsExamDate(LocalDate.of(2027, 1, 11)))
+    }
+
     @Test fun manualPhaseWinsAndUnconfiguredTermPreservesLessons() {
         assertEquals(AssessmentPhase.EXAM, period.copy(assessmentMode = AssessmentPhaseMode.EXAM)
             .assessmentPhase(LocalDate.of(2026, 10, 1)))

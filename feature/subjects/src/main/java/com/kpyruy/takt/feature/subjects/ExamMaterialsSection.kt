@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ExamMaterial
+import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -46,6 +48,9 @@ internal fun ExamMaterialsSection(
     courseCode: String,
     documentStore: TaktDocumentStore,
     materials: List<ExamMaterial>,
+    notes: List<CourseNote>,
+    onNotes: () -> Unit,
+    onAddNote: () -> Unit,
     onAdd: (ExamMaterial) -> Unit,
     onDelete: (ExamMaterial) -> Unit,
 ) {
@@ -85,13 +90,24 @@ internal fun ExamMaterialsSection(
             Text(t("Підготовка"), style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = { adding = !adding }) { Text(if (adding) t("Скасувати") else t("Додати матеріал")) }
         }
-
-        if (materials.isEmpty()) {
-            Text(
-                t("Додай конспект, файл або посилання для підготовки."),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
+        TextButton(onClick = onAddNote) {
+            Icon(Icons.Default.Description, contentDescription = null)
+            Text(t("Додати конспект"))
+        }
+        notes.forEach { note ->
+            Row(Modifier.fillMaxWidth().clickable(onClick = onNotes).padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Description, contentDescription = null,
+                    modifier = Modifier.padding(end = 12.dp).size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                Column {
+                    Text(note.title, style = MaterialTheme.typography.titleSmall)
+                    if (note.content.isNotBlank()) Text(note.content, maxLines = 2,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        if (materials.isNotEmpty()) {
             materials.forEachIndexed { index, material ->
                 if (index > 0) HorizontalDivider()
                 Row(

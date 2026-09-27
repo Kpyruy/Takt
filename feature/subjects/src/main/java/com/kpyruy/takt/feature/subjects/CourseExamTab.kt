@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ExamEligibility
 import com.kpyruy.takt.core.model.ExamInfo
 import com.kpyruy.takt.core.model.ExamMaterial
+import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeLetter
@@ -64,11 +65,12 @@ internal fun CourseExamTab(
     eligibility: ExamEligibility,
     examInfo: ExamInfo?,
     materials: List<ExamMaterial>,
-    manualGrade: GradeLetter?,
+    notes: List<CourseNote>,
+    onNotes: () -> Unit,
+    onAddNote: () -> Unit,
     onSaveExamInfo: (ExamInfo) -> Unit,
     onAddMaterial: (ExamMaterial) -> Unit,
     onDeleteMaterial: (ExamMaterial) -> Unit,
-    onManualGradeChange: (GradeLetter?) -> Unit,
     onAdmission: () -> Unit,
 ) {
     var showEditor by remember { mutableStateOf(false) }
@@ -128,8 +130,8 @@ internal fun CourseExamTab(
         }
         CompactAdmission(eligibility, tasks.firstOrNull { it.requiredForExam && !it.meetsAdmissionRequirement }?.title, onAdmission)
         if (!examInfo?.notes.isNullOrBlank()) SmallText(examInfo!!.notes)
-        ExamMaterialsSection(courseId, courseCode, documentStore, materials, onAddMaterial, onDeleteMaterial)
-        ManualGradeSection(manualGrade, onManualGradeChange)
+        ExamMaterialsSection(courseId, courseCode, documentStore, materials, notes,
+            onNotes, onAddNote, onAddMaterial, onDeleteMaterial)
         Spacer(Modifier.height(12.dp))
     }
 

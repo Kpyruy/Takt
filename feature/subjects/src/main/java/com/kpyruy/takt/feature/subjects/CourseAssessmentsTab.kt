@@ -15,12 +15,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -62,7 +65,6 @@ internal fun CourseAssessmentsTab(
     onEditTask: (StudyTask) -> Unit,
     onDeleteGrade: (String) -> Unit,
     onEditScale: () -> Unit,
-    onManualGradeChange: (GradeLetter?) -> Unit,
 ) {
     var showLegend by remember { mutableStateOf(false) }
     val allGradedWork = gradeItems + tasks.mapNotNull { it.asScoredGradeItem() }
@@ -146,16 +148,17 @@ internal fun CourseAssessmentsTab(
 
             CourseGradingType.CONTINUOUS_LETTER -> SectionCard {
                 Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
-                if (summary.maxPoints > 0.0) {
+                if (summary.maxPoints > 0.0 && allGradedWork.any { it.completed }) {
                     Text(
                         summary.earnedPoints.displayNumber() + " / " + summary.maxPoints.displayNumber() +
                             " · " + summary.percentage.displayNumber() + "%",
                         style = MaterialTheme.typography.titleLarge,
                     )
-                    Text(
-                        t("Оцінка: ") + (summary.letter?.name ?: "—"),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(t("Оцінка: ") + (summary.letter?.name ?: "—"),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else if (manualGrade != null) {
+                    Text(t("Оцінка: ") + manualGrade.name,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     Text(t("Ще немає результатів"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -219,9 +222,6 @@ internal fun CourseAssessmentsTab(
             }
         }
 
-        if (displayType == CourseGradingType.CONTINUOUS_LETTER) {
-            ManualGradeSection(manualGrade = manualGrade, onManualGradeChange = onManualGradeChange)
-        }
     }
 
     if (showLegend) {
@@ -247,32 +247,32 @@ internal fun ManualGradeSection(
     manualGrade: GradeLetter?,
     onManualGradeChange: (GradeLetter?) -> Unit,
 ) {
+    var autoEnabled by remember(manualGrade) { mutableStateOf(manualGrade == null) }
+    var menuOpen by remember { mutableStateOf(false) }
     SectionCard {
-        Text(t("Підсумкова оцінка вручну"), style = MaterialTheme.typography.titleMedium)
-        Text(
-            t("Використовуй тільки коли підсумкова оцінка вже офіційно відома."),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        FilterChip(
-            selected = manualGrade == null,
-            onClick = { onManualGradeChange(null) },
-            label = { Text(t("Авто")) },
-        )
-        androidx.compose.foundation.lazy.LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(GradeLetter.entries.size) { index ->
-                val grade = GradeLetter.entries[index]
-                FilterChip(
-                    selected = manualGrade == grade,
-                    onClick = { onManualGradeChange(grade) },
-                    label = { Text(grade.name) },
-                )
-            }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(t("Підсумкова оцінка"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text(t("Авто"), style = MaterialTheme.typography.bodyMedium)
+            Switch(checked = autoEnabled, onCheckedChange = { enabled ->
+                autoEnabled = enabled
+                if (enabled) onManualGradeChange(null)
+            })
         }
-        if (manualGrade != null) {
-            Text(t("Вручну: ") + manualGrade.name, color = MaterialTheme.colorScheme.primary)
+        if (!autoEnabled) {
+            androidx.compose.foundation.layout.Box {
+                OutlinedButton(onClick = { menuOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(manualGrade?.name ?: t("Обрати оцінку"), Modifier.weight(1f))
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    GradeLetter.entries.forEach { grade ->
+                        DropdownMenuItem(text = { Text(grade.name) }, onClick = {
+                            menuOpen = false
+                            onManualGradeChange(grade)
+                        })
+                    }
+                }
+            }
         }
     }
 }

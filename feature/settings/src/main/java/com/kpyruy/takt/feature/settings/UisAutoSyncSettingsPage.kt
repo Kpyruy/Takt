@@ -1,7 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,13 +12,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,17 +47,11 @@ internal fun UisAutoSyncSettingsPage(
         ScreenHeader(title = t("Автооновлення UIS"), navigation = {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
         })
-        Text(t("Перевірка запускається, коли застосунок відкрито й розблоковано. Якщо UIS попросить код, введи його в налаштуваннях акаунта."),
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
         FrequencyChoice(t("Прогрес"), settings.progress,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
         SectionCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(t("Автоматично застосовувати прогрес"), style = MaterialTheme.typography.titleMedium)
-                    Text(t("Оновлювати статуси й кредити лише там, де локальні дані не змінювались після UIS. Конфлікти залишаться на перегляд."),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                Text(t("Автоматично застосовувати прогрес"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = settings.applyProgressAutomatically,
                     onCheckedChange = { onChange(settings.copy(applyProgressAutomatically = it)) })
             }
@@ -63,21 +64,27 @@ internal fun UisAutoSyncSettingsPage(
             listOf(UisRefreshFrequency.MANUAL, UisRefreshFrequency.TEACHING_START)) {
             onChange(settings.copy(timetable = it))
         }
-        Text(t("Зміни предметів, періодів і розкладу перевіряються автоматично, але застосовуються лише після твого вибору."),
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
 private fun FrequencyChoice(title: String, selected: UisRefreshFrequency,
     options: List<UisRefreshFrequency>, onSelected: (UisRefreshFrequency) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
     SectionCard {
         Text(title, style = MaterialTheme.typography.titleMedium)
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box {
+            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(t(selected.label()), Modifier.weight(1f))
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { value ->
-                FilterChip(selected = value == selected, onClick = { onSelected(value) },
-                    label = { Text(t(value.label())) })
+                DropdownMenuItem(text = { Text(t(value.label())) }, onClick = {
+                    expanded = false
+                    onSelected(value)
+                })
+            }
             }
         }
     }

@@ -3,12 +3,23 @@ package com.kpyruy.takt.feature.home
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Quiz
+import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -19,6 +30,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.*
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
+import com.kpyruy.takt.core.ui.components.SectionCard
 import java.time.LocalDate
 
 private val homeWorkFilterSaver = Saver<HomeWorkFilter, List<String>>(
@@ -138,19 +150,21 @@ private fun HomeTaskFilterSheet(
                 Text(t("Фільтри задач"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
                 IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити фільтри")) }
             }
-            Column {
-                Text(t("ПЕРІОД"), style = MaterialTheme.typography.labelSmall,
+            SectionCard {
+                Text(t("Період"), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(
-                        HomeWorkPeriod.SEVEN_DAYS to t("7 днів"),
-                        HomeWorkPeriod.FOURTEEN_DAYS to t("14 днів"),
-                        HomeWorkPeriod.ALL to t("Усі"),
-                        HomeWorkPeriod.CUSTOM to t("Свій період"),
-                    ).forEach { (period, label) ->
+                        Triple(HomeWorkPeriod.SEVEN_DAYS, t("7 днів"), Icons.Outlined.Today),
+                        Triple(HomeWorkPeriod.FOURTEEN_DAYS, t("14 днів"), Icons.Outlined.DateRange),
+                        Triple(HomeWorkPeriod.ALL, t("Усі"), Icons.Outlined.Event),
+                        Triple(HomeWorkPeriod.CUSTOM, t("Свій період"), Icons.Outlined.EditCalendar),
+                    ).forEach { (period, label, icon) ->
                         FilterChip(selected = filter.period == period,
                             onClick = { onChange(filter.copy(period = period)) },
-                            label = { Text(label) }, shape = RoundedCornerShape(12.dp))
+                            label = { Text(label) }, leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
+                            shape = RoundedCornerShape(12.dp))
                     }
                 }
                 if (filter.period == HomeWorkPeriod.CUSTOM) {
@@ -160,46 +174,78 @@ private fun HomeTaskFilterSheet(
                         { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
                 }
             }
-            Column {
-                Text(t("ПРЕДМЕТ"), style = MaterialTheme.typography.labelSmall,
+            SectionCard {
+                Text(t("Предмет"), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(selected = filter.courseId == null,
                         onClick = { onChange(filter.copy(courseId = null)) },
-                        label = { Text(t("Усі предмети")) }, shape = RoundedCornerShape(12.dp))
+                        label = { Text(t("Усі предмети")) },
+                        leadingIcon = { Icon(Icons.Outlined.School, null, Modifier.size(18.dp)) },
+                        shape = RoundedCornerShape(12.dp))
                     courses.forEach { course ->
                         FilterChip(selected = filter.courseId == course.id,
                             onClick = { onChange(filter.copy(courseId = course.id)) },
-                            label = { Text(course.code) }, shape = RoundedCornerShape(12.dp))
+                            label = { Text(course.code) },
+                            leadingIcon = { Icon(Icons.Outlined.School, null, Modifier.size(18.dp)) },
+                            shape = RoundedCornerShape(12.dp))
                     }
                 }
             }
-            Column {
-                Text(t("ТИП"), style = MaterialTheme.typography.labelSmall,
+            SectionCard {
+                Text(t("Тип задачі"), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(selected = filter.types.isEmpty(),
                         onClick = { onChange(filter.copy(types = emptySet())) },
-                        label = { Text(t("Усі типи")) }, shape = RoundedCornerShape(12.dp))
+                        label = { Text(t("Усі типи")) },
+                        leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp)) },
+                        shape = RoundedCornerShape(12.dp))
                     val types: List<Pair<GradeItemType?, String>> =
                         listOf(null to t("Завдання")) + GradeItemType.entries
                             .filterNot { it == GradeItemType.EXAM }.map { it to t(it.label) }
                     types.forEach { (type, label) ->
+                        val icon = when (type) {
+                            null -> Icons.Outlined.TaskAlt
+                            GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
+                            GradeItemType.LAB -> Icons.Outlined.Science
+                            else -> Icons.Outlined.Assignment
+                        }
                         FilterChip(selected = type in filter.types,
                             onClick = {
                                 onChange(filter.copy(types = if (type in filter.types) filter.types - type
                                     else filter.types + type))
-                            }, label = { Text(label) }, shape = RoundedCornerShape(12.dp))
+                            }, label = { Text(label) },
+                            leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
+                            shape = RoundedCornerShape(12.dp))
                     }
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(filter.includeUndated, onCheckedChange = { onChange(filter.copy(includeUndated = it)) })
-                Text(t("Показувати задачі без дати"))
+            SectionCard {
+                Text(t("Показувати"), style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(includeUndated = !filter.includeUndated)) },
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Event, null, Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary)
+                    Text(t("Показувати задачі без дати"), Modifier.weight(1f).padding(start = 12.dp))
+                    Checkbox(filter.includeUndated, onCheckedChange = null)
+                }
+                HorizontalDivider()
+                Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(includeCompleted = !filter.includeCompleted)) },
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CheckCircle, null, Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary)
+                    Text(t("Показувати виконані"), Modifier.weight(1f).padding(start = 12.dp))
+                    Checkbox(filter.includeCompleted, onCheckedChange = null)
+                }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(filter.includeCompleted, onCheckedChange = { onChange(filter.copy(includeCompleted = it)) })
-                Text(t("Показувати виконані"))
+            if (filter != HomeWorkFilter()) {
+                OutlinedButton(onClick = { onChange(HomeWorkFilter()) }, Modifier.fillMaxWidth()) {
+                    Text(t("Скинути фільтри задач"))
+                }
             }
             Button(onClick = onDismiss, Modifier.fillMaxWidth()) { Text(t("Готово")) }
         }

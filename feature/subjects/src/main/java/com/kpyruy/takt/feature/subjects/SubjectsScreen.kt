@@ -101,7 +101,7 @@ private fun SubjectProgressCard(
         course.status == CourseStatus.FULFILLED -> t("Предмет закрито")
         !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 робота до допуску") else t("${eligibility.requiredCount - eligibility.completedCount} робіт до допуску")
         next != null -> next.title + (next.dueDate?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
-        course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> t("Результату ще немає") }
+        course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" }
         tasks.isNotEmpty() -> t("Усі роботи здано")
         else -> ""
     }
