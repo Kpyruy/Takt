@@ -107,4 +107,25 @@ class UisClientTest {
         assertEquals(UisResult.UNAVAILABLE, client.login("student", "secret"))
         assertEquals(0, server.requestCount)
     }
+
+    @Test fun recognizesLogoutPathFromRealUisHtml() {
+        server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
+        server.enqueue(redirect("/auth/?lang=sk").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))
+        server.enqueue(page("""<a href="/auth/system/logout.pl?lang=sk" title="Odhlásenie">Exit</a>"""))
+        assertEquals(UisResult.CONNECTED, client.login("student", "password"))
+    }
+    @Test fun reportsHttpCodeAndStageWithoutResponseBody() {
+        server.enqueue(MockResponse().setResponseCode(503).setBody("private server data"))
+        assertEquals(UisResult.UNAVAILABLE, client.login("student", "secret"))
+        assertEquals(UisStage.LOGIN_FORM, client.failure?.stage)
+        assertEquals(UisFailureReason.HTTP, client.failure?.reason)
+        assertEquals(503, client.failure?.httpStatus)
+        assertFalse(client.failure.toString().contains("private"))
+    }
+    @Test fun malformedPreflightHasSpecificReason() {
+        server.enqueue(page(login)); server.enqueue(page("not json"))
+        assertEquals(UisResult.UNEXPECTED_RESPONSE, client.login("student", "secret"))
+        assertEquals(UisStage.PREFLIGHT, client.failure?.stage)
+        assertEquals(UisFailureReason.RESPONSE_FORMAT, client.failure?.reason)
+    }
 }

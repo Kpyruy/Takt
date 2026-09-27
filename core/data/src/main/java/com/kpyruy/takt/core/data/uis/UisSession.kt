@@ -12,6 +12,8 @@ class UisSession {
     private var client: UisClient? = null
     private val mutableState = MutableStateFlow(UisResult.DISCONNECTED)
     val state = mutableState.asStateFlow()
+    private val mutableFailure = MutableStateFlow<UisFailure?>(null)
+    val failure = mutableFailure.asStateFlow()
 
     suspend fun login(credentials: UniversityCredentials) {
         disconnect()
@@ -35,14 +37,17 @@ class UisSession {
     fun disconnect() {
         client?.close()
         client = null
+        mutableFailure.value = null
         mutableState.value = UisResult.DISCONNECTED
     }
 
     private suspend fun execute(current: UisClient, action: () -> UisResult) {
+        mutableFailure.value = null
         mutableState.value = UisResult.CONNECTING
         try {
             val result = withContext(Dispatchers.IO) { action() }
             if (client === current) {
+                mutableFailure.value = current.failure
                 mutableState.value = result
                 if (result !in listOf(UisResult.CONNECTED, UisResult.SECOND_FACTOR)) {
                     current.close()

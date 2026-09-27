@@ -1,6 +1,11 @@
 package com.kpyruy.takt.core.data.uis
 
 import java.io.IOException
+import java.net.UnknownHostException
+import java.net.SocketTimeoutException
+import java.io.InterruptedIOException
+import javax.net.ssl.SSLException
+import kotlinx.serialization.SerializationException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -20,6 +25,9 @@ import org.jsoup.nodes.Element
 
 /** Blocking, single-session client. Used only on Dispatchers.IO; never logs request data. */
 internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".toHttpUrl()) {
+    var failure: UisFailure? = null
+        private set
+    private var stage = UisStage.LOGIN_FORM
     private val closed = AtomicBoolean(false)
     private val activeCall = AtomicReference<Call?>(null)
     private val cookies = mutableListOf<Cookie>()
@@ -41,37 +49,41 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         }).build()
 
     fun login(login: String, password: String): UisResult = safely {
+        stage = UisStage.LOGIN_FORM
         cookies.clear(); challenge = null
         val page = exchange(origin.resolve("system/login.pl?lang=sk")!!)
-        val form = form(page) ?: return@safely UisResult.UNEXPECTED_RESPONSE
+        val form = form(page) ?: throw ProtocolFailure(UisFailureReason.LOGIN_FORM_MISSING)
         form.fields["credential_0"] = login
         form.fields["credential_1"] = password
         // UIS's own login page performs this preflight before submitting the form.
+        stage = UisStage.PREFLIGHT
         val preflight = exchange(origin.resolve("system/ajax_handler.pl")!!,
             mapOf("login" to login, "password" to password, "lang" to "sk"))
         val json = Json.parseToJsonElement(preflight.html).jsonObject
         if (json["error"]?.jsonPrimitive?.content?.let { it != "false" && it != "null" && it.isNotEmpty() } == true)
-            return@safely UisResult.INVALID_CREDENTIALS
+            return@safely rejectCredentials()
         when (json["need2FA"]?.jsonPrimitive?.content) {
             "true" -> {
                 form.fields["auth_id_hidden"] = json["authID"]?.jsonPrimitive?.content ?: "0"
                 form.fields["auth_2fa_type"] = json["type"]?.jsonPrimitive?.content
-                    ?: return@safely UisResult.UNEXPECTED_RESPONSE
+                    ?: throw ProtocolFailure(UisFailureReason.SECOND_FACTOR_CONFIGURATION)
                 challenge = form
                 UisResult.SECOND_FACTOR
             }
-            "false" -> classify(exchange(form.url, form.fields))
-            else -> UisResult.UNEXPECTED_RESPONSE
+            "false" -> { stage = UisStage.SIGN_IN; classify(exchange(form.url, form.fields)) }
+            else -> throw ProtocolFailure(UisFailureReason.RESPONSE_FORMAT)
         }
     }
 
     fun submitCode(code: String): UisResult = safely {
+        stage = UisStage.SECOND_FACTOR
         val pending = challenge ?: return@safely UisResult.EXPIRED
         pending.fields["credential_k"] = code.trim().replace(" ", "")
         classify(exchange(pending.url, pending.fields))
     }
 
     fun checkSession(): UisResult = safely {
+        stage = UisStage.SESSION_CHECK
         val page = exchange(origin.resolve("auth/?lang=sk")!!)
         if (isAuthenticated(page)) UisResult.CONNECTED else {
             cookies.clear(); challenge = null
@@ -94,12 +106,12 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         val doc = Jsoup.parse(page.html, page.url.toString())
         val code = doc.selectFirst("input[name=credential_k]:not([disabled])")
         if (code != null) {
-            challenge = form(page) ?: return UisResult.UNEXPECTED_RESPONSE
+            challenge = form(page) ?: throw ProtocolFailure(UisFailureReason.LOGIN_FORM_MISSING)
             return UisResult.SECOND_FACTOR
         }
         challenge = null
         return if (doc.selectFirst("input[name=credential_1]") != null)
-            UisResult.INVALID_CREDENTIALS else UisResult.UNEXPECTED_RESPONSE
+            rejectCredentials() else throw ProtocolFailure(UisFailureReason.SESSION_NOT_CONFIRMED)
     }
 
     private fun isAuthenticated(page: Page): Boolean {
@@ -109,7 +121,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         if (doc.selectFirst("input[name=credential_1]") != null) return false
         return doc.select("a[href]").any {
             page.url.resolve(it.attr("href"))?.let { url ->
-                sameOrigin(url) && url.encodedPath == "/system/logout.pl"
+                sameOrigin(url) && url.encodedPath in setOf("/auth/system/logout.pl", "/system/logout.pl")
             } == true
         }
     }
@@ -120,7 +132,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         val form: Element = input.closest("form") ?: return null
         if (!form.attr("method").equals("post", true)) return null
         val target = page.url.resolve(form.attr("action")) ?: return null
-        require(sameOrigin(target) && target.encodedPath == "/system/login.pl")
+        if (!sameOrigin(target) || target.encodedPath != "/system/login.pl") throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
         val fields = linkedMapOf<String, String>()
         form.select("input[type=hidden][name]:not([disabled])").forEach { fields[it.attr("name")] = it.attr("value") }
         fields["lang"] = "sk"
@@ -130,7 +142,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
 
     private fun exchange(url: HttpUrl, fields: Map<String, String>? = null): Page {
         if (closed.get()) throw IOException("Session closed")
-        require(sameOrigin(url))
+        if (!sameOrigin(url)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
         var request = Request.Builder().url(url).header("Accept-Language", "sk")
             .header("Cache-Control", "no-store")
             .apply { if (fields != null) {
@@ -146,27 +158,48 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
                 if (response.code in listOf(301, 302, 303)) {
                     val next = request.url.resolve(response.header("Location") ?: error("Missing redirect"))
                         ?: error("Invalid redirect")
-                    require(sameOrigin(next))
+                    if (!sameOrigin(next)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
                     request = Request.Builder().url(next).header("Accept-Language", "sk").build()
                 } else {
-                    if (response.code == 429 || response.code >= 500) throw IOException("UIS unavailable")
-                    require(response.isSuccessful)
+                    if (!response.isSuccessful) throw HttpFailure(response.code)
                     val body = response.body ?: error("Missing body")
                     // Bound memory even if the server returns an unexpected document.
                     val source = body.source()
                     source.request(2_000_001)
-                    require(source.buffer.size <= 2_000_000)
+                    if (source.buffer.size > 2_000_000) throw ProtocolFailure(UisFailureReason.RESPONSE_TOO_LARGE)
                     return Page(request.url, source.readUtf8())
                 }
             }
         }
-        error("Redirect limit")
+        throw ProtocolFailure(UisFailureReason.TOO_MANY_REDIRECTS)
     }
 
     private fun sameOrigin(url: HttpUrl) = url.scheme == origin.scheme && url.host == origin.host && url.port == origin.port
-    private fun safely(action: () -> UisResult): UisResult = try { action() }
-        catch (_: IOException) { UisResult.UNAVAILABLE }
-        catch (_: Exception) { challenge = null; UisResult.UNEXPECTED_RESPONSE }
+    private fun rejectCredentials(): UisResult {
+        failure = UisFailure(stage, UisFailureReason.CREDENTIALS_REJECTED)
+        return UisResult.INVALID_CREDENTIALS
+    }
+    private fun safely(action: () -> UisResult): UisResult {
+        failure = null
+        return try { action() }
+        catch (error: Exception) {
+            challenge = null
+            val reason = when (error) {
+                is UnknownHostException -> UisFailureReason.DNS
+                is SocketTimeoutException, is InterruptedIOException -> UisFailureReason.TIMEOUT
+                is SSLException -> UisFailureReason.TLS
+                is HttpFailure -> UisFailureReason.HTTP
+                is IOException -> UisFailureReason.CONNECTION
+                is ProtocolFailure -> error.reason
+                is SerializationException, is IllegalArgumentException -> UisFailureReason.RESPONSE_FORMAT
+                else -> UisFailureReason.UNKNOWN
+            }
+            failure = UisFailure(stage, reason, (error as? HttpFailure)?.status)
+            if (error is IOException || error is HttpFailure) UisResult.UNAVAILABLE else UisResult.UNEXPECTED_RESPONSE
+        }
+    }
+    private class HttpFailure(val status: Int) : Exception()
+    private class ProtocolFailure(val reason: UisFailureReason) : Exception()
     private class LoginForm(val url: HttpUrl, val fields: MutableMap<String, String>)
     private class Page(val url: HttpUrl, val html: String)
 }
