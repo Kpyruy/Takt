@@ -68,6 +68,7 @@ data class AppSettings(
     val homeWorkFilter: HomeWorkFilter = HomeWorkFilter(),
     val semesterPeriods: Map<Int, SemesterPeriod> = emptyMap(),
     val currentSemester: Int? = null,
+    val uisCurrentSemester: Int? = null,
     val language: AppLanguage = AppLanguage.ENGLISH,
     val courseNameLanguage: CourseNameLanguage = CourseNameLanguage.FOLLOW_APP,
     val ukrainianCourseNameFallback: CourseNameLanguage = CourseNameLanguage.ENGLISH,
@@ -87,6 +88,7 @@ data class AppSettings(
     }
     fun effectiveCurrentSemester(courses: List<Course>): Int? =
         currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }
+            ?: uisCurrentSemester
             ?: courses.filter { it.status == CourseStatus.ENROLLED }.maxOfOrNull { it.semester }
             ?: courses.filter { it.status != CourseStatus.FULFILLED && it.status != CourseStatus.NOT_NEEDED }
                 .minOfOrNull { it.semester }

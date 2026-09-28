@@ -6,6 +6,51 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class UisStudyPlanParserTest {
+    @Test fun selectedStudyTermParityAndYearDetermineCurrentSemester() {
+        val cases = mapOf(
+            (1 to 1) to 1,
+            (2 to 1) to 2,
+            (1 to 2) to 3,
+            (3 to 2) to 3,
+            (5 to 2) to 3,
+            (4 to 2) to 4,
+            (5 to 3) to 5,
+            (6 to 3) to 6,
+        )
+        cases.forEach { (termAndYear, semester) ->
+            val (term, year) = termAndYear
+            assertEquals("term $term, year $year", semester,
+                UisStudyPlanParser.parse(planWithStudy("MTF B-PIAR den [term $term, year $year]")).currentSemester)
+        }
+    }
+
+    @Test fun selectedStudyIsUsedInsteadOfAnotherStudyInSelector() {
+        val html = planWithStudy("MTF B-PIAR den [term 1, year 2]")
+            .replace("<option value=\"123\" selected>",
+                "<option value=\"987\">Other [term 6, year 3]</option><option value=\"123\" selected>")
+        assertEquals(3, UisStudyPlanParser.parse(html).currentSemester)
+    }
+
+    @Test fun visiblePlanHeadingIsUsedWhenSelectorHasNoTerm() {
+        val html = planWithStudy("Study")
+            .replace("<table id=\"tmtab_1\">",
+                "<table><tr><td></td><td><b>MTF B-PIAR den [term 5, year 3]</b></td><td></td></tr></table><table id=\"tmtab_1\">")
+        assertEquals(5, UisStudyPlanParser.parse(html).currentSemester)
+    }
+
+    @Test fun missingOrInvalidStudyTermLeavesSemesterForFallback() {
+        assertEquals(null, UisStudyPlanParser.parse(planWithStudy("MTF B-PIAR den")).currentSemester)
+        assertEquals(null, UisStudyPlanParser.parse(planWithStudy("MTF B-PIAR den [term 0, year 2]")).currentSemester)
+    }
+
+    private fun planWithStudy(studyLabel: String) = """
+        <form name="formular"><input name="obdobi" value="741" />
+          <select name="studium"><option value="123" selected>$studyLabel</option></select></form>
+        <table id="tmtab_1"><tr><td colspan="6">1st semester</td></tr>
+          <tr><td><a href="syllabus.pl?predmet=101">CODE_6B</a></td><td>Course</td>
+              <td>Exm</td><td>5</td><td>1x</td><td>ENROLLED</td></tr></table>
+    """.trimIndent()
+
     @Test fun readsCreditsSemestersAndCourseStatesFromUisTable() {
         val html = """
             <form name="formular"><input type="hidden" name="obdobi" value="741" />

@@ -206,6 +206,7 @@ class UniversityAccountRepository(
         return try {
             val plan = session.readStudyPlan()
             val courses = plan.toCourses()
+            settingsRepo.setUisCurrentSemester(plan.currentSemester)
             val existingCourses = study.observeCourses().first()
             if (applyAllowed && UisSyncSection.SUBJECTS in sections) {
                 val knownCodes = existingCourses.map { it.code.uppercase(java.util.Locale.ROOT) }.toSet()
@@ -222,7 +223,7 @@ class UniversityAccountRepository(
                 timetable = UisSyncSection.TIMETABLE in sections)
             val nextStudyStart = period?.studyStart
             val previousExamEnd = previousPeriod?.examEnd
-            val semester = if (nextStudyStart != null && previousExamEnd != null &&
+            val semester = plan.currentSemester ?: if (nextStudyStart != null && previousExamEnd != null &&
                 nextStudyStart > previousExamEnd && courses.any { it.semester == previousSemester + 1 }) {
                 previousSemester + 1
             } else previousSemester
@@ -343,6 +344,7 @@ class UniversityAccountRepository(
         try {
             val plan = session.readStudyPlan()
             val courses = plan.toCourses()
+            settingsRepository?.setUisCurrentSemester(plan.currentSemester)
             val (period, timetable) = session.readStudyContext(plan.studyId, plan.periodId)
             val localCourses = studyPlanRepository.observeCourses().first()
             val localRules = scheduleRepository?.observeRules()?.first().orEmpty()
@@ -586,6 +588,7 @@ class UniversityAccountRepository(
                 UisSyncSection.entries.forEach { edit.remove("uis_auto_last_${it.name}") }
             }
             check(edit.commit()) { "Could not save UIS credentials" }
+            if (!sameAccount) settingsRepository?.setUisCurrentSemester(null)
             activeState.value = true
             mutableImportProgress.value = if (sameAccount) mutableImportProgress.value.copy(
                 running = false, importedCourses = null, error = null,
@@ -621,6 +624,7 @@ class UniversityAccountRepository(
                 UisSyncSection.entries.forEach { remove("uis_auto_last_${it.name}") }
             }.commit()) { "Could not remove UIS credentials" }
         keyStore.deleteEntry(KEY_ALIAS)
+        settingsRepository?.setUisCurrentSemester(null)
         activeState.value = false
         mutableImportProgress.value = UisImportProgress()
     }

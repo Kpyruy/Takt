@@ -13,6 +13,7 @@ internal data class UisStudyPlan(
     val earnedCredits: Int?,
     val requiredCredits: Int?,
     val courses: List<UisCourse>,
+    val currentSemester: Int?,
 )
 
 internal data class UisCourse(
@@ -32,6 +33,8 @@ internal data class UisCourse(
 internal object UisStudyPlanParser {
     private val semesterPattern = Regex("""(\d{1,2})(?:st|nd|rd|th|\.|\s)\s*semester""", RegexOption.IGNORE_CASE)
     private val subjectPattern = Regex("""(?:[?;&]|^)predmet=(\d+)""")
+    private val studyTermPattern = Regex("""\[\s*term\s+(\d+)\s*,\s*year\s+(\d+)\s*]""",
+        RegexOption.IGNORE_CASE)
 
     fun slovakTitles(html: String): Map<String, String> {
         val table = Jsoup.parse(html).selectFirst("table#tmtab_1") ?: return emptyMap()
@@ -48,9 +51,18 @@ internal object UisStudyPlanParser {
         val doc = Jsoup.parse(html, "https://is.stuba.sk/auth/studijni/studijni_povinnosti.pl")
         val table = doc.selectFirst("table#tmtab_1") ?: error("UIS study plan table missing")
         val form = doc.selectFirst("form[name=formular]") ?: error("UIS study selector missing")
-        val studyId = form.selectFirst("select[name=studium] option[selected]")?.attr("value")
-            ?: form.selectFirst("select[name=studium] option")?.attr("value")
+        val selectedStudy = form.selectFirst("select[name=studium] option[selected]")
+            ?: form.selectFirst("select[name=studium] option")
             ?: error("UIS study ID missing")
+        val studyId = selectedStudy.attr("value")
+        val visiblePlanText = doc.body().clone().apply { select("select").remove() }.text()
+        val currentSemester = (studyTermPattern.find(selectedStudy.text())
+            ?: studyTermPattern.find(visiblePlanText))?.let { match ->
+            val term = match.groupValues[1].toIntOrNull()
+            val year = match.groupValues[2].toIntOrNull()
+            if (term == null || year == null || term <= 0 || year !in 1..15) null
+            else (year - 1) * 2 + (if (term % 2 == 1) 1 else 2)
+        }
         val periodId = form.selectFirst("input[name=obdobi]")?.attr("value")
             ?: error("UIS period ID missing")
         require(studyId.matches(Regex("\\d+")) && periodId.matches(Regex("\\d+")))
@@ -104,7 +116,8 @@ internal object UisStudyPlanParser {
                 byCode[code] = course
         }
         check(byCode.isNotEmpty()) { "UIS study plan has no recognized courses" }
-        return UisStudyPlan(studyId, periodId, creditNumbers.getOrNull(0), creditNumbers.getOrNull(1), byCode.values.toList())
+        return UisStudyPlan(studyId, periodId, creditNumbers.getOrNull(0), creditNumbers.getOrNull(1),
+            byCode.values.toList(), currentSemester)
     }
 
     private fun parseStatus(raw: String): CourseStatus? {

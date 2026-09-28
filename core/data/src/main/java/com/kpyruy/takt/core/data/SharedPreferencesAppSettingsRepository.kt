@@ -128,6 +128,15 @@ class SharedPreferencesAppSettingsRepository(
         state.value = state.value.copy(currentSemester = semester)
     }
 
+    override fun setUisCurrentSemester(semester: Int?) {
+        require(semester == null || semester > 0)
+        preferences.edit().apply {
+            if (semester == null) remove(KEY_UIS_CURRENT_SEMESTER)
+            else putInt(KEY_UIS_CURRENT_SEMESTER, semester)
+        }.apply()
+        state.value = state.value.copy(uisCurrentSemester = semester)
+    }
+
     private fun read(): AppSettings = StoredSettingsCodec.decode(
         cancellationStyle = preferences.getString(KEY_CANCELLATION_STYLE, null),
         showHiddenLessons = preferences.getBoolean(KEY_SHOW_HIDDEN, false),
@@ -139,6 +148,7 @@ class SharedPreferencesAppSettingsRepository(
         homeWorkFilter = preferences.getString(KEY_HOME_WORK_FILTER, null),
         semesterPeriods = preferences.getString(KEY_SEMESTER_PERIODS, null),
         currentSemester = preferences.getInt(KEY_CURRENT_SEMESTER, 0).toString(),
+        uisCurrentSemester = preferences.getInt(KEY_UIS_CURRENT_SEMESTER, 0).toString(),
         language = preferences.getString(KEY_LANGUAGE, null),
         courseNameLanguage = preferences.getString(KEY_COURSE_NAME_LANGUAGE, null),
         ukrainianCourseNameFallback = preferences.getString(KEY_UKRAINIAN_NAME_FALLBACK, null),
@@ -161,6 +171,7 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_HOME_WORK_FILTER = "home_work_filter"
         const val KEY_SEMESTER_PERIODS = "semester_periods"
         const val KEY_CURRENT_SEMESTER = "current_semester"
+        const val KEY_UIS_CURRENT_SEMESTER = "uis_current_semester"
         const val KEY_LANGUAGE = "language"
         const val KEY_COURSE_NAME_LANGUAGE = "course_name_language"
         const val KEY_UKRAINIAN_NAME_FALLBACK = "ukrainian_course_name_fallback"

@@ -83,6 +83,16 @@ class SemesterPeriodTest {
         assertEquals(3, older.semester)
     }
 
+    @Test fun detectedUisSemesterWinsOverEnrolledRetakeButManualSelectionWinsOverUis() {
+        val courses = listOf(
+            Course("retake", "OLD", "Retake", 5, 6, CourseStatus.ENROLLED),
+            Course("current", "NOW", "Current", 5, 3, CourseStatus.ENROLLED),
+        )
+        assertEquals(3, AppSettings(uisCurrentSemester = 3).effectiveCurrentSemester(courses))
+        assertEquals(6, AppSettings(uisCurrentSemester = 3, currentSemester = 6)
+            .effectiveCurrentSemester(courses))
+    }
+
     @Test fun activeRetakeUsesCurrentAcademicPeriod() {
         val retake = Course("retake", "OLD", "Retake", 5, 3, CourseStatus.ENROLLED)
         val previous = period.copy(studyEnd = LocalDate.of(2027, 2, 28),

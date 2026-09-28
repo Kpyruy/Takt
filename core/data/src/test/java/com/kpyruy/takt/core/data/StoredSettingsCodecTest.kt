@@ -19,6 +19,14 @@ class StoredSettingsCodecTest {
         assertEquals(null, StoredSettingsCodec.decode(null, false, null, currentSemester = "0").currentSemester)
         assertEquals(null, StoredSettingsCodec.decode(null, false, null, currentSemester = "oops").currentSemester)
     }
+    @Test fun storedUisSemesterIsDecodedIndependentlyOfManualSelection() {
+        val settings = StoredSettingsCodec.decode(null, false, null,
+            currentSemester = "5", uisCurrentSemester = "3")
+        assertEquals(5, settings.currentSemester)
+        assertEquals(3, settings.uisCurrentSemester)
+        assertEquals(null, StoredSettingsCodec.decode(null, false, null,
+            uisCurrentSemester = "0").uisCurrentSemester)
+    }
     @Test
     fun validStoredValues_areDecoded() {
         assertEquals(

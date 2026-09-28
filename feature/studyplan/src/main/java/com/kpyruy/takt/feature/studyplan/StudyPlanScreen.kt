@@ -189,6 +189,7 @@ fun StudyPlanScreen(
     if (selectingSemester) CurrentSemesterSheet(
         semesters = semesters.mapValues { (_, items) -> items.count { it.status == CourseStatus.ENROLLED } },
         currentSemester = currentSemester,
+        manualSemester = settings.currentSemester,
         onSelect = { selected -> scope.launch {
             settingsRepository.setCurrentSemester(selected)
             selectingSemester = false

@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.dp
 internal fun CurrentSemesterSheet(
     semesters: Map<Int, Int>,
     currentSemester: Int?,
-    onSelect: (Int) -> Unit,
+    manualSemester: Int?,
+    onSelect: (Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -44,8 +45,29 @@ internal fun CurrentSemesterSheet(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(t("Поточний семестр"), style = MaterialTheme.typography.headlineSmall)
+            Surface(
+                onClick = { onSelect(null) },
+                modifier = Modifier.fillMaxWidth().testTag("select-current-semester-auto"),
+                shape = MaterialTheme.shapes.medium,
+                color = if (manualSemester == null) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, if (manualSemester == null) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.outlineVariant),
+            ) {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t("Автоматично"), style = MaterialTheme.typography.titleSmall)
+                        currentSemester?.let { Text(t("$it семестр"), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
+                    if (manualSemester == null) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
+                        tint = MaterialTheme.colorScheme.primary)
+                }
+            }
             semesters.forEach { (semester, activeCourses) ->
-                val selected = semester == currentSemester
+                val selected = semester == manualSemester
                 Surface(
                     onClick = { onSelect(semester) },
                     modifier = Modifier.fillMaxWidth().testTag("select-current-semester-$semester"),

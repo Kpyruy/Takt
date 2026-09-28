@@ -19,6 +19,7 @@ class CurrentSemesterFlowTest {
         runBlocking {
             data.seedIfNeeded()
             data.settingsRepository.setCurrentSemester(null)
+            data.settingsRepository.setUisCurrentSemester(3)
         }
 
         compose.onAllNodes(hasText("Прогрес") and hasClickAction()).onLast().performClick()
@@ -32,5 +33,11 @@ class CurrentSemesterFlowTest {
         compose.onNodeWithTag("progress-screen").performScrollToIndex(3)
         compose.onNodeWithTag("semester-3-future").assertExists()
         compose.onNodeWithText("Поточний семестр · 5").assertExists()
+        compose.onNodeWithTag("progress-screen")
+            .performScrollToNode(hasTestTag("current-semester-selector"))
+        compose.onNodeWithTag("current-semester-selector").performClick()
+        compose.onNodeWithTag("select-current-semester-auto").performClick()
+        compose.waitUntil(5_000) { data.settingsRepository.settings.value.currentSemester == null }
+        compose.onNodeWithText("Поточний семестр · 3").assertExists()
     }
 }

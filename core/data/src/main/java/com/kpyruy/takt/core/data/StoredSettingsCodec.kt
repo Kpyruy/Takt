@@ -24,6 +24,7 @@ object StoredSettingsCodec {
         homeWorkFilter: String? = null,
         semesterPeriods: String? = null,
         currentSemester: String? = null,
+        uisCurrentSemester: String? = null,
         language: String? = null,
         courseNameLanguage: String? = null,
         ukrainianCourseNameFallback: String? = null,
@@ -51,6 +52,7 @@ object StoredSettingsCodec {
             homeWorkFilter = HomeWorkFilterCodec.decode(homeWorkFilter),
             semesterPeriods = SemesterPeriodsCodec.decode(semesterPeriods),
             currentSemester = currentSemester?.toIntOrNull()?.takeIf { it > 0 },
+            uisCurrentSemester = uisCurrentSemester?.toIntOrNull()?.takeIf { it > 0 },
             language = enumValueOrNull<AppLanguage>(language) ?: default.language,
             courseNameLanguage = enumValueOrNull<CourseNameLanguage>(courseNameLanguage) ?: default.courseNameLanguage,
             ukrainianCourseNameFallback = enumValueOrNull<CourseNameLanguage>(ukrainianCourseNameFallback)
