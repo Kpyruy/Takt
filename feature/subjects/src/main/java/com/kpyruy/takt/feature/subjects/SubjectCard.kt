@@ -15,25 +15,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.GradeLetter
-import java.time.format.DateTimeFormatter
+import com.kpyruy.takt.core.ui.components.CourseGradeBadge
 
 @Composable
 fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earned: Double = 0.0, maximum: Double = 0.0, scoreLabel: String = t("За семестр"), grade: GradeLetter? = course.officialGrade) {
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(Modifier.padding(vertical = 18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SubjectMonogram(course)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.Top) {
-                    Text(course.title, Modifier.weight(1f), fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
-                    if (grade != null) Column(horizontalAlignment = Alignment.End) {
-                        Text(grade.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                        course.fulfilledOn?.takeIf { course.officialGrade != null }?.let { Text(it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    } else Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
-                }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(course.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
                 SmallText(course.code + " · " + course.credits + t(" кредитів"))
                 if (progressLine.isNotBlank()) SmallText(progressLine)
-                if (maximum > 0) {
+                if (maximum > 0 && grade == null) {
                     LinearProgressIndicator(gapSize = 0.dp, drawStopIndicator = {}, progress = { (earned / maximum).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(4.dp), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.outlineVariant)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         SmallText(scoreLabel)
@@ -41,6 +35,8 @@ fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earne
                     }
                 }
             }
+            if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null })
+            else Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
