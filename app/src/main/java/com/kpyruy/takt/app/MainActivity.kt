@@ -49,6 +49,7 @@ import kotlin.coroutines.resume
 class MainActivity : FragmentActivity() {
     private lateinit var deviceAuthenticator: DeviceAuthenticator
     private var foreground by mutableStateOf(false)
+    private var appEntry by mutableStateOf(0)
     private var unlockMessage by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,8 +77,7 @@ class MainActivity : FragmentActivity() {
                     requestUnlock()
                 }
             }
-            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding,
-                settings.uisAutoSync) {
+            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding, appEntry) {
                 if (hasUniversityAccount && taktApplication.deviceUnlocked && foreground && showOnboarding == false) {
                     val repository = dataContainer.universityAccountRepository
                     val outcome = try { repository.runAutoSyncIfDue() }
@@ -161,6 +161,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onStart() {
         super.onStart()
+        appEntry++
         foreground = true
     }
 

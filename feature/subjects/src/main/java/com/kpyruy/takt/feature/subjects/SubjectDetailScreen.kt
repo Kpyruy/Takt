@@ -74,6 +74,7 @@ fun SubjectDetailScreen(
     studyContentRepository: StudyContentRepository,
     examRepository: ExamRepository,
     documentStore: TaktDocumentStore,
+    uisManaged: Boolean = false,
     courseId: String,
     onBack: () -> Unit,
     initialTab: String = "overview",
@@ -258,9 +259,10 @@ fun SubjectDetailScreen(
     if (showSettings) {
         CourseSettingsSheet(
             course = item,
+            uisManaged = uisManaged,
             onDismiss = { showSettings = false },
             onIcon = { showSettings = false; showIconPicker = true },
-            onStatus = { status -> scope.launch { repository.updateStatus(item.id, status) } },
+            onStatus = { status -> if (!uisManaged) scope.launch { repository.updateStatus(item.id, status) } },
             onGrading = { type -> scope.launch { repository.setGradingType(item.id, type) } },
             onResult = { result -> scope.launch { repository.setPassFailResult(item.id, result) } },
             onScale = { showSettings = false; showScaleEditor = true },

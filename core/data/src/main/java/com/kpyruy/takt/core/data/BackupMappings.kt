@@ -320,9 +320,9 @@ internal fun BackupSettings.toModel() = AppSettings(
         ?: com.kpyruy.takt.core.model.CourseNameLanguage.ENGLISH,
     uisAutoSync = com.kpyruy.takt.core.model.UisAutoSyncSettings(
         progress = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisProgressFrequency) }
-            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.WEEKLY),
+            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.EVERY_ENTRY),
         subjects = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisSubjectFrequency) }
-            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.MANUAL),
+            .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.EVERY_ENTRY),
         periods = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisPeriodFrequency) }
             .getOrDefault(com.kpyruy.takt.core.model.UisRefreshFrequency.MANUAL),
         timetable = runCatching { com.kpyruy.takt.core.model.UisRefreshFrequency.valueOf(uisTimetableFrequency) }

@@ -57,6 +57,7 @@ import com.kpyruy.takt.core.ui.components.CourseAvatar
 @Composable
 internal fun CourseSettingsSheet(
     course: Course,
+    uisManaged: Boolean = false,
     onDismiss: () -> Unit,
     onIcon: () -> Unit,
     onStatus: (CourseStatus) -> Unit,
@@ -92,6 +93,7 @@ internal fun CourseSettingsSheet(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SettingsLabel(t("СТАТУС ПРЕДМЕТА"))
                 Surface(onClick = { statusExpanded = !statusExpanded },
+                    enabled = !uisManaged,
                     modifier = Modifier.fillMaxWidth().testTag("settings-status-${course.status.name}"),
                     shape = RoundedCornerShape(15.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -100,12 +102,14 @@ internal fun CourseSettingsSheet(
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
                         Icon(statusIcon(course.status), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                         Text(statusText(course.status), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                        Icon(if (statusExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                        if (!uisManaged) Icon(if (statusExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                             if (statusExpanded) t("Згорнути статуси") else t("Змінити статус"),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-                AnimatedVisibility(statusExpanded) {
+                if (uisManaged) Text(t("Статус предмета визначає UIS"), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AnimatedVisibility(statusExpanded && !uisManaged) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         CourseStatus.entries.filter { it != course.status }.forEach { status ->
                             Surface(onClick = { onStatus(status); statusExpanded = false },

@@ -35,6 +35,7 @@ import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GlobalAddSheet(
+    allowCourseCreation: Boolean = true,
     onDismiss: () -> Unit,
     onCreate: (CreateItemType) -> Unit,
     onQuickAdd: () -> Unit,
@@ -53,7 +54,7 @@ fun GlobalAddSheet(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            val actions: List<CreateItemType?> = CreateItemType.entries + null
+            val actions: List<CreateItemType?> = CreateItemType.entries.filter { allowCourseCreation || it != CreateItemType.COURSE } + null
             actions.chunked(2).forEach { pair ->
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     pair.forEach { type ->

@@ -92,6 +92,7 @@ private fun FrequencyChoice(title: String, selected: UisRefreshFrequency,
 
 internal fun UisRefreshFrequency.label(): String = when (this) {
     UisRefreshFrequency.MANUAL -> "Вручну"
+    UisRefreshFrequency.EVERY_ENTRY -> "Кожен вхід"
     UisRefreshFrequency.DAILY -> "Щодня"
     UisRefreshFrequency.WEEKLY -> "Щотижня"
     UisRefreshFrequency.MONTHLY -> "Щомісяця"

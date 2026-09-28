@@ -56,8 +56,8 @@ object StoredSettingsCodec {
             ukrainianCourseNameFallback = enumValueOrNull<CourseNameLanguage>(ukrainianCourseNameFallback)
                 ?.takeIf { it != CourseNameLanguage.FOLLOW_APP } ?: default.ukrainianCourseNameFallback,
             uisAutoSync = UisAutoSyncSettings(
-                progress = enumValueOrNull<UisRefreshFrequency>(uisProgressFrequency) ?: UisRefreshFrequency.WEEKLY,
-                subjects = enumValueOrNull<UisRefreshFrequency>(uisSubjectFrequency) ?: UisRefreshFrequency.MANUAL,
+                progress = enumValueOrNull<UisRefreshFrequency>(uisProgressFrequency) ?: UisRefreshFrequency.EVERY_ENTRY,
+                subjects = enumValueOrNull<UisRefreshFrequency>(uisSubjectFrequency) ?: UisRefreshFrequency.EVERY_ENTRY,
                 periods = enumValueOrNull<UisRefreshFrequency>(uisPeriodFrequency) ?: UisRefreshFrequency.MANUAL,
                 timetable = enumValueOrNull<UisRefreshFrequency>(uisTimetableFrequency)
                     ?.takeIf { it == UisRefreshFrequency.MANUAL || it == UisRefreshFrequency.TEACHING_START }

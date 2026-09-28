@@ -63,6 +63,7 @@ fun HomeScreen(
     settingsRepository: AppSettingsRepository,
     onOpenSettings: () -> Unit,
     onAddCourse: () -> Unit,
+    allowCourseCreation: Boolean = true,
     onOpenCourse: (String) -> Unit,
     onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
@@ -143,8 +144,9 @@ fun HomeScreen(
         if (courses.isEmpty()) {
             SectionCard {
                 Text(t("Створи свій розклад"), style = MaterialTheme.typography.titleMedium)
-                Text(t("Спочатку додай предмет, потім пару."), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text(t("Додати предмет")) }
+                Text(t(if (allowCourseCreation) "Спочатку додай предмет, потім пару." else "Предмети завантажуються з UIS."),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (allowCourseCreation) Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text(t("Додати предмет")) }
             }
             Spacer(Modifier.height(22.dp))
         }

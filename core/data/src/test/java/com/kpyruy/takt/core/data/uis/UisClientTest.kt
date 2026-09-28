@@ -15,6 +15,43 @@ class UisClientTest {
     private fun page(body: String) = MockResponse().setBody(body)
     private fun redirect(path: String) = MockResponse().setResponseCode(302).setHeader("Location", path)
 
+    @Test fun findsSubjectByCodeThenLoadsItsTimetableOptions() {
+        server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
+        server.enqueue(redirect("/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))
+        server.enqueue(page(authenticated))
+        assertEquals(UisResult.CONNECTED, client.login("student", "password"))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <select name="rozvrh"><option value="6866">Old</option><option value="6867" selected>Current</option></select>
+        """))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <select name="predmet"><option value="0">All</option>
+            <option value="440870">TPAR_6B - Technical equipment</option></select>
+        """))
+        server.enqueue(page("""
+            <a href="/system/logout.pl">Logout</a>
+            <table id="tmtab_1"><tbody><tr><td>Tue</td><td>8.00</td><td>9.50</td>
+            <td><a href="syllabus.pl?predmet=440870">Technical equipment</a></td><td>Lecture</td>
+            <td>T-201</td><td>Teacher</td><td>group</td><td>25</td></tr>
+            <tr><td>Fri</td><td>13.00</td><td>18.50</td><td>Block class <sup>(7)</sup></td>
+            <td></td><td>T-aula</td><td>Teacher</td><td></td><td></td></tr></tbody></table>
+            <table><tr><td>(7)</td><td>Fri 2. 10. 2026 - <a href="syllabus.pl?predmet=440870">Technical equipment</a></td></tr></table>
+        """))
+        val options = client.readCourseLessons("TPAR_6B")
+        assertEquals(2, options.size)
+        assertEquals("440870", options[0].subjectId)
+        assertEquals(java.time.LocalDate.of(2026, 10, 2), options[1].date)
+        repeat(4) { server.takeRequest() }
+        assertEquals("/auth/katalog/rozvrhy_view.pl?lang=en", server.takeRequest().path)
+        val first = server.takeRequest()
+        assertTrue(first.body.readUtf8().contains("rozvrh=6867"))
+        val second = server.takeRequest()
+        val posted = second.body.readUtf8()
+        assertTrue(posted.contains("predmet=440870"))
+        assertTrue(posted.contains("format=list"))
+    }
+
     @Test fun discoversPersonalLinksAndRequestsListWithNotes() {
         server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
         server.enqueue(redirect("/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))

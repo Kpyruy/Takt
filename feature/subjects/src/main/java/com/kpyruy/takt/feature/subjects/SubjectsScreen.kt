@@ -49,6 +49,7 @@ fun SubjectsScreen(
     studyContentRepository: StudyContentRepository,
     onCourseClick: (String) -> Unit,
     onAddCourse: () -> Unit,
+    allowCourseCreation: Boolean = true,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val current = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
@@ -60,7 +61,7 @@ fun SubjectsScreen(
     }
     Column(Modifier.fillMaxSize().background(subjectBackground()).padding(horizontal = 20.dp, vertical = 18.dp)) {
         ScreenHeader(title = t("Предмети"), subtitle = t("${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні"),
-            action = { TextButton(onClick = onAddCourse) { Text(t("Додати")) } })
+            action = { if (allowCourseCreation) TextButton(onClick = onAddCourse) { Text(t("Додати")) } })
         OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
             placeholder = { Text(t("Знайти предмет"), fontSize = 12.sp, lineHeight = 16.sp) }, leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
             singleLine = true, shape = RoundedCornerShape(11.dp), textStyle = MaterialTheme.typography.bodySmall,
@@ -73,7 +74,7 @@ fun SubjectsScreen(
             if (visible.isEmpty()) item {
                 Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     SmallText(if (courses.isEmpty()) t("Тут будуть твої предмети") else t("Предметів не знайдено"))
-                    if (courses.isEmpty()) Button(onClick = onAddCourse) { Text(t("Додати перший предмет")) }
+                    if (courses.isEmpty() && allowCourseCreation) Button(onClick = onAddCourse) { Text(t("Додати перший предмет")) }
                 }
             }
         }

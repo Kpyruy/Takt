@@ -117,6 +117,7 @@ fun TaktApp(
     val showRootNavigation = Destination.entries.any { it.route == currentRoute }
     val courseIconKeys = remember(courses) { courses.associate { it.id to it.iconKey } }
     val scope = rememberCoroutineScope()
+    val uisAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val haptics = rememberTaktHaptics()
     val snackbarHostState = remember { SnackbarHostState() }
     val documentStatus by documentStore.status.collectAsStateWithLifecycle()
@@ -193,6 +194,7 @@ fun TaktApp(
         courseId: String? = null,
         draft: CreateItemDraft? = null,
     ) {
+        if (type == CreateItemType.COURSE && uisAccount) return
         showGlobalAdd = false
         showQuickAdd = false
         if (type.requiresCourse && courseId == null) {
@@ -285,6 +287,7 @@ fun TaktApp(
                     settingsRepository = settingsRepository,
                     onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                     onAddCourse = { startCreate(CreateItemType.COURSE) },
+                    allowCourseCreation = !uisAccount,
                     onOpenCourse = ::openCourse,
                     onOpenAssessment = { item ->
                         val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
@@ -313,6 +316,7 @@ fun TaktApp(
                     studyContentRepository = studyContentRepository,
                     onCourseClick = ::openCourse,
                     onAddCourse = { startCreate(CreateItemType.COURSE) },
+                    allowCourseCreation = !uisAccount,
                 )
             }
             composable(Destination.PLAN.route) {
@@ -348,6 +352,7 @@ fun TaktApp(
                     studyContentRepository = studyContentRepository,
                     examRepository = examRepository,
                     documentStore = documentStore,
+                    uisManaged = uisAccount,
                     courseId = courseId,
                     initialTab = entry.arguments?.getString("tab").orEmpty().takeIf { it in setOf("tasks", "grades") } ?: "overview",
                     onBack = { navController.popBackStack() },
@@ -383,6 +388,8 @@ fun TaktApp(
                         gradeRepository = gradeRepository,
                         studyContentRepository = studyContentRepository,
                         documentStore = documentStore,
+                        universityAccountRepository = universityAccountRepository,
+                        authenticateDevice = authenticateDevice,
                         onBack = {
                             pendingCreateDraft = null
                             navController.popBackStack()
@@ -401,6 +408,7 @@ fun TaktApp(
 
     if (showGlobalAdd) {
         GlobalAddSheet(
+            allowCourseCreation = !uisAccount,
             onDismiss = { showGlobalAdd = false },
             onCreate = { type -> startCreate(type) },
             onQuickAdd = {
@@ -413,6 +421,7 @@ fun TaktApp(
     if (showQuickAdd) {
         QuickAddSheet(
             courses = courses,
+            uisManaged = uisAccount,
             onDismiss = { showQuickAdd = false },
             onSaveTask = {
                 scope.launch {

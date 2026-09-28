@@ -15,6 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,12 @@ import com.kpyruy.takt.feature.subjects.AddGradeItemForm
 import com.kpyruy.takt.feature.subjects.AddNoteForm
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.UniversityAccountRepository
+import com.kpyruy.takt.core.model.DeviceAuthenticationResult
+import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
+import android.security.keystore.UserNotAuthenticatedException
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import com.kpyruy.takt.feature.subjects.AddTaskForm
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -49,11 +56,14 @@ fun CreateItemScreen(
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
     documentStore: TaktDocumentStore,
+    universityAccountRepository: UniversityAccountRepository? = null,
+    authenticateDevice: DeviceAuthenticationRequest? = null,
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val haptics = rememberTaktHaptics()
+    val uisAccount = universityAccountRepository?.hasAccount?.collectAsState()?.value == true
 
     Column(
         modifier = Modifier
@@ -80,7 +90,9 @@ fun CreateItemScreen(
         }
 
         when (type) {
-            CreateItemType.COURSE -> AddCourseForm(studyPlanRepository, onSaved)
+            CreateItemType.COURSE -> if (uisAccount) {
+                Text(t("Предмети додаються з UIS автоматично."))
+            } else AddCourseForm(studyPlanRepository, onSaved)
             CreateItemType.CLASS -> AddLessonForm(
                 courses = courses,
                 initialCourseId = courseId ?: draft?.courseId,
@@ -90,6 +102,29 @@ fun CreateItemScreen(
                 initialStartTime = draft?.startTime,
                 initialEndTime = draft?.endTime,
                 showHeading = false,
+                onLoadUisLessons = universityAccountRepository?.takeIf { uisAccount }?.let { account ->
+                    { course ->
+                        try {
+                            account.loadLessonOptions(course.code)
+                        } catch (error: UserNotAuthenticatedException) {
+                            val authenticate = authenticateDevice ?: throw error
+                            val result = suspendCancellableCoroutine<DeviceAuthenticationResult> { continuation ->
+                                authenticate(t("Отримати пари з UIS")) { value ->
+                                    if (continuation.isActive) continuation.resume(value)
+                                }
+                            }
+                            if (result != DeviceAuthenticationResult.SUCCESS) throw error
+                            account.loadLessonOptions(course.code)
+                        }
+                    }
+                },
+                onSaveOneOff = { event ->
+                    scope.launch {
+                        scheduleRepository.upsertOneOffEvent(event)
+                        haptics.confirm()
+                        onSaved()
+                    }
+                },
                 onSave = { rule ->
                     scope.launch {
                         scheduleRepository.upsertRule(rule)

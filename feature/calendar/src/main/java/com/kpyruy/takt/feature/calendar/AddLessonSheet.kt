@@ -13,17 +13,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.data.UisLessonOption
 import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.ui.components.LessonTypeSelector
 import com.kpyruy.takt.core.ui.components.CourseLinkSelector
@@ -31,9 +35,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ScheduleRecurrence
 import com.kpyruy.takt.core.model.ScheduleRule
+import com.kpyruy.takt.core.model.OneOffScheduleEvent
+import com.kpyruy.takt.core.model.OneOffScheduleEventType
 import com.kpyruy.takt.core.ui.components.TaktTimePickerField
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +81,8 @@ fun AddLessonForm(
     initialEndTime: LocalTime? = null,
     modifier: Modifier = Modifier,
     showHeading: Boolean = true,
+    onLoadUisLessons: (suspend (Course) -> List<UisLessonOption>)? = null,
+    onSaveOneOff: ((OneOffScheduleEvent) -> Unit)? = null,
     onSave: (ScheduleRule) -> Unit,
 ) {
     var linkedCourseId by remember(initialRule?.id, initialCourseId) { mutableStateOf(initialRule?.courseId ?: initialCourseId) }
@@ -96,6 +106,30 @@ fun AddLessonForm(
         mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
     }
     var showTimeError by remember { mutableStateOf(false) }
+    var uisLessons by remember { mutableStateOf<List<UisLessonOption>>(emptyList()) }
+    var uisLoading by remember { mutableStateOf(false) }
+    var uisLoadFailed by remember { mutableStateOf(false) }
+    var uisReload by remember { mutableStateOf(0) }
+    var chosenUisKey by remember { mutableStateOf<String?>(null) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    LaunchedEffect(linkedCourseId, uisReload) {
+        uisLessons = emptyList()
+        chosenUisKey = null
+        selectedDate = null
+        uisLoadFailed = false
+        val course = courses.firstOrNull { it.id == linkedCourseId } ?: return@LaunchedEffect
+        val load = onLoadUisLessons ?: return@LaunchedEffect
+        uisLoading = true
+        try {
+            uisLessons = load(course).distinctBy { listOf(it.day, it.start, it.end, it.room, it.lessonType, it.date) }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            uisLoadFailed = true
+        } finally {
+            uisLoading = false
+        }
+    }
 
     Column(
         modifier = modifier,
@@ -111,6 +145,45 @@ fun AddLessonForm(
         CourseLinkSelector(courses, linkedCourseId) { course ->
             if (title.isBlank() || title == courses.firstOrNull { it.id == linkedCourseId }?.title) title = course?.title.orEmpty()
             linkedCourseId = course?.id
+        }
+        if (onLoadUisLessons != null && linkedCourseId != null) {
+            Text(t("Пари з UIS"), style = MaterialTheme.typography.titleSmall)
+            when {
+                uisLoading -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CircularProgressIndicator(Modifier.padding(3.dp), strokeWidth = 2.dp)
+                    Text(t("Завантаження пар з UIS…"))
+                }
+                uisLoadFailed -> Column {
+                    Text(t("Не вдалося отримати пари з UIS. Перевір підключення в налаштуваннях."),
+                        color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { uisReload++ }) { Text(t("Спробувати знову")) }
+                }
+                uisLessons.isEmpty() -> Text(t("Для цього предмета немає повторюваних пар у розкладі UIS."),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else -> uisLessons.forEach { option ->
+                    Surface(onClick = {
+                        chosenUisKey = option.key
+                        day = option.day
+                        startTime = option.start
+                        endTime = option.end
+                        room = option.room.orEmpty()
+                        lessonType = option.lessonType
+                        selectedDate = option.date
+                        recurrence = ScheduleRecurrence.WEEKLY
+                        showTimeError = false
+                    }, modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        color = if (chosenUisKey == option.key) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("${option.date?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) ?: option.day.shortLabel()} · ${option.start}–${option.end}",
+                                style = MaterialTheme.typography.titleSmall)
+                            Text("${t(option.lessonType.label)}${if (option.date != null) " · ${t("Разове заняття")}" else ""}${option.room?.let { " · $it" }.orEmpty()}",
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
         }
         LessonTypeSelector(lessonType) { lessonType = it }
 
@@ -135,7 +208,7 @@ fun AddLessonForm(
             items(DayOfWeek.entries) { option ->
                 FilterChip(
                     selected = day == option,
-                    onClick = { day = option },
+                    onClick = { day = option; selectedDate = null; chosenUisKey = null },
                     label = { Text(option.shortLabel()) },
                 )
             }
@@ -165,8 +238,8 @@ fun AddLessonForm(
             )
         }
 
-        Text(t("Повторення"), style = MaterialTheme.typography.titleSmall)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(t(if (selectedDate == null) "Повторення" else "Разове заняття"), style = MaterialTheme.typography.titleSmall)
+        if (selectedDate == null) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
@@ -199,7 +272,14 @@ fun AddLessonForm(
                     return@Button
                 }
 
-                onSave(
+                if (selectedDate != null && onSaveOneOff != null) {
+                    onSaveOneOff(OneOffScheduleEvent(
+                        id = UUID.randomUUID().toString(), courseId = linkedCourseId, title = title.trim(),
+                        date = selectedDate!!, startTime = startTime, endTime = endTime,
+                        room = room.trim().ifBlank { null }, type = OneOffScheduleEventType.BLOCK_ACTION,
+                        lessonType = lessonType,
+                    ))
+                } else onSave(
                     ScheduleRule(
                         id = initialRule?.id ?: UUID.randomUUID().toString(),
                         courseId = linkedCourseId,

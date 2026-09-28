@@ -48,6 +48,7 @@ fun StudyPlanScreen(
     val plannedCredits = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED ||
         it.status == CourseStatus.ENROLLED || it.status == CourseStatus.PLANNED }.sumOf { it.credits } }
     val uisProgress by universityAccountRepository.importProgress.collectAsStateWithLifecycle()
+    val uisAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val officialCredits = uisProgress.earnedCredits != null && uisProgress.requiredCredits != null
     val displayedEarned = if (officialCredits) uisProgress.earnedCredits!! else earned
     val displayedTotal = if (officialCredits) uisProgress.requiredCredits!! else plannedCredits
@@ -71,9 +72,9 @@ fun StudyPlanScreen(
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ScreenHeader(title = t("Твій шлях"))
-            Text(t("Додай перший предмет, щоб бачити свій прогрес."),
+            Text(t(if (uisAccount) "Предмети завантажуються з UIS." else "Додай перший предмет, щоб бачити свій прогрес."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onAddCourse) { Text(t("Додати предмет")) }
+            if (!uisAccount) Button(onClick = onAddCourse) { Text(t("Додати предмет")) }
         }
         return
     }
@@ -174,8 +175,8 @@ fun StudyPlanScreen(
         }
     }
     courses.firstOrNull { it.id == editingCourseId }?.let { course ->
-        CourseStatusSheet(course, onStatus = { status ->
-            scope.launch { repository.updateStatus(course.id, status) }
+        CourseStatusSheet(course, uisManaged = uisAccount, onStatus = { status ->
+            if (!uisAccount) scope.launch { repository.updateStatus(course.id, status) }
             editingCourseId = null
         }, onIcon = { iconCourseId = course.id; editingCourseId = null }, onDismiss = { editingCourseId = null })
     }

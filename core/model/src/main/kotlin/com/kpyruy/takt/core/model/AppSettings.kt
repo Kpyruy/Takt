@@ -42,11 +42,11 @@ enum class AppLanguage {
 
 enum class CourseNameLanguage { FOLLOW_APP, ENGLISH, SLOVAK }
 
-enum class UisRefreshFrequency { MANUAL, DAILY, WEEKLY, MONTHLY, TEACHING_START }
+enum class UisRefreshFrequency { MANUAL, EVERY_ENTRY, DAILY, WEEKLY, MONTHLY, TEACHING_START }
 
 data class UisAutoSyncSettings(
-    val progress: UisRefreshFrequency = UisRefreshFrequency.WEEKLY,
-    val subjects: UisRefreshFrequency = UisRefreshFrequency.MANUAL,
+    val progress: UisRefreshFrequency = UisRefreshFrequency.EVERY_ENTRY,
+    val subjects: UisRefreshFrequency = UisRefreshFrequency.EVERY_ENTRY,
     val periods: UisRefreshFrequency = UisRefreshFrequency.MANUAL,
     val timetable: UisRefreshFrequency = UisRefreshFrequency.TEACHING_START,
     val applyProgressAutomatically: Boolean = true,

@@ -56,6 +56,7 @@ private enum class QuickAddType(private val ukrainianLabel: String) {
 @Composable
 fun QuickAddSheet(
     courses: List<Course>,
+    uisManaged: Boolean = false,
     onDismiss: () -> Unit,
     onSaveTask: (StudyTask) -> Unit,
     onSaveLesson: (ScheduleRule) -> Unit,
@@ -93,6 +94,10 @@ fun QuickAddSheet(
                     FilterChip(
                         selected = type == option,
                         onClick = {
+                            if (uisManaged && option == QuickAddType.CLASS) {
+                                onOpenFull(CreateItemDraft(type = CreateItemType.CLASS))
+                                return@FilterChip
+                            }
                             type = option
                             haptics.tick()
                             error = null

@@ -64,13 +64,16 @@ internal fun ProgressCourseRow(course: Course, onOpen: () -> Unit, onStatus: () 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun CourseStatusSheet(course: Course, onStatus: (CourseStatus) -> Unit, onIcon: () -> Unit, onDismiss: () -> Unit) {
+internal fun CourseStatusSheet(course: Course, uisManaged: Boolean = false, onStatus: (CourseStatus) -> Unit, onIcon: () -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(course.title, style = MaterialTheme.typography.headlineSmall)
-            Text(t("${course.semester} семестр · статус можна змінити будь-коли"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t(if (uisManaged) "${course.semester} семестр" else "${course.semester} семестр · статус можна змінити будь-коли"),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
-            CourseStatus.entries.forEach { status ->
+            if (uisManaged) Text(t("Статус предмета визначає UIS"), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!uisManaged) CourseStatus.entries.forEach { status ->
                 Surface(onClick = { onStatus(status) }, Modifier.fillMaxWidth().testTag("choose-status-${status.name}"),
                     color = if (status == course.status) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                     shape = RoundedCornerShape(12.dp)) {

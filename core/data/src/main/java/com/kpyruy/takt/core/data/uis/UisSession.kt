@@ -42,6 +42,12 @@ class UisSession {
         return withContext(Dispatchers.IO) { current.readStudyPlan() }
     }
 
+    internal suspend fun readCourseLessons(code: String): List<UisTimetableItem> {
+        val current = client ?: error("UIS session is not connected")
+        check(mutableState.value == UisResult.CONNECTED)
+        return withContext(Dispatchers.IO) { current.readCourseLessons(code) }
+    }
+
     internal suspend fun readStudyContext(studyId: String, periodId: String): Pair<SemesterPeriod, List<com.kpyruy.takt.core.data.uis.UisTimetableItem>> {
         val current = client ?: error("UIS session is not connected")
         check(mutableState.value == UisResult.CONNECTED)

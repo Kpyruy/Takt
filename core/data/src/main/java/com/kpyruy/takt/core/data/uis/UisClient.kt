@@ -151,6 +151,39 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return UisTimetableParser.parse(listPage.html)
     }
 
+    fun readCourseLessons(code: String): List<UisTimetableItem> {
+        require(code.isNotBlank() && code.length <= 32)
+        val base = origin.resolve("auth/katalog/rozvrhy_view.pl")!!
+        val criteria = exchange(base.newBuilder().addQueryParameter("lang", "en").build())
+        check(isAuthenticated(criteria)) { "UIS session expired while reading timetable criteria" }
+        val criteriaDoc = Jsoup.parse(criteria.html)
+        val available = criteriaDoc.select("select[name=rozvrh] option[value]")
+            .filter { it.attr("value").isNotBlank() && it.attr("value") != "0" }
+        val timetableId = (available.firstOrNull { it.hasAttr("selected") }
+            ?: available.singleOrNull())?.attr("value")
+            ?: criteriaDoc.selectFirst("input[name=rozvrh][value]")?.attr("value")
+            ?: error("UIS timetable period is not selected")
+        check(timetableId.all(Char::isDigit))
+        val directory = exchange(base, mapOf(
+            "z" to "1", "k" to "1", "f" to "0", "studijni_zpet" to "0",
+            "rozvrh" to timetableId, "indiv_mistnosti_ne" to "Back to Simple selection",
+            "garant" to "0", "ucitel" to "0", "predmet" to "0", "ustav" to "0",
+            "den" to "0", "stupen" to "0", "program" to "0", "obor" to "0",
+            "rocnik" to "0", "skupina" to "0", "format" to "html", "lang" to "en",
+        ), referer = criteria.url)
+        check(isAuthenticated(directory)) { "UIS session expired while reading course choices" }
+        val subjectId = UisCourseTimetableParser.subjectId(directory.html, code) ?: return emptyList()
+        val list = exchange(base, mapOf(
+            "z" to "1", "k" to "1", "f" to "0", "studijni_zpet" to "0",
+            "rozvrh" to timetableId, "mistnost" to "0", "garant" to "0",
+            "ucitel" to "0", "predmet" to subjectId, "ustav" to "0", "den" to "0",
+            "stupen" to "0", "program" to "0", "obor" to "0", "rocnik" to "0",
+            "skupina" to "0", "format" to "list", "zobraz" to "Display", "lang" to "en",
+        ), referer = directory.url)
+        check(isAuthenticated(list)) { "UIS session expired while reading course lessons" }
+        return UisTimetableParser.parse(list.html).filter { it.subjectId == subjectId }
+    }
+
     fun close() {
         closed.set(true)
         activeCall.get()?.cancel()

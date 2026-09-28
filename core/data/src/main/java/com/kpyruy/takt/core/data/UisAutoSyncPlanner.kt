@@ -25,6 +25,7 @@ object UisAutoSyncPlanner {
             val last = lastChecked[section]
             val shouldCheck = when (frequency) {
                 UisRefreshFrequency.MANUAL -> false
+                UisRefreshFrequency.EVERY_ENTRY -> true
                 UisRefreshFrequency.DAILY -> last == null || last.plusDays(1) <= today
                 UisRefreshFrequency.WEEKLY -> last == null || last.plusWeeks(1) <= today
                 UisRefreshFrequency.MONTHLY -> last == null || last.plusMonths(1) <= today

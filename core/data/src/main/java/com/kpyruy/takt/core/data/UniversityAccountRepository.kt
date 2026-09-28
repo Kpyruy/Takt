@@ -94,6 +94,20 @@ class UniversityAccountRepository(
     val lastCheckOutcome = mutableLastCheckOutcome.asStateFlow()
     private val mutablePreview = MutableStateFlow<UisSyncPreview?>(null)
     val syncPreview = mutablePreview.asStateFlow()
+
+    /** Call from an unlocked app. The UIS session and credentials never enter a backup. */
+    suspend fun loadLessonOptions(code: String): List<UisLessonOption> = autoMutex.withLock {
+        check(hasAccount.value) { "UIS account is not connected" }
+        if (session.state.value == UisResult.CONNECTED) session.check()
+        if (session.state.value != UisResult.CONNECTED) {
+            val credentials = readAfterAuthentication() ?: error("UIS credentials are unavailable")
+            session.login(credentials)
+        }
+        check(session.state.value == UisResult.CONNECTED) { "UIS login needs attention" }
+        session.readCourseLessons(code).map { item ->
+            UisLessonOption(item.key, item.day, item.start, item.end, item.room, item.lessonType, item.date)
+        }
+    }
     private var pendingSubjectByEventId: Map<String, String> = emptyMap()
     private var pendingAutoSections: Set<UisSyncSection>? = null
     private val autoMutex = Mutex()
@@ -192,6 +206,12 @@ class UniversityAccountRepository(
         return try {
             val plan = session.readStudyPlan()
             val courses = plan.toCourses()
+            val existingCourses = study.observeCourses().first()
+            if (applyAllowed && UisSyncSection.SUBJECTS in sections) {
+                val knownCodes = existingCourses.map { it.code.uppercase(java.util.Locale.ROOT) }.toSet()
+                val missing = courses.filter { it.code.uppercase(java.util.Locale.ROOT) !in knownCodes }
+                if (missing.isNotEmpty()) study.upsertImportedCourses(missing)
+            }
             val localBefore = study.observeCourses().first()
             val previousSemester = settingsRepo.settings.value.effectiveCurrentSemester(courses)
                 ?: courses.firstOrNull { it.status == CourseStatus.ENROLLED }?.semester
