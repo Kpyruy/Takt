@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.CourseNote
+import com.kpyruy.takt.core.model.NoteAttachment
 import kotlinx.coroutines.launch
 
 @Composable
@@ -52,7 +54,13 @@ fun CourseNoteCard(
             if (note.content.isNotBlank()) Text(note.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
             note.attachments.forEach { attachment ->
                 Row(modifier = Modifier.fillMaxWidth().clickable {
-                    scope.launch {
+                    if (attachment.isWebLink) {
+                        runCatching {
+                            val safe = NoteAttachment.webLink(attachment.uri)
+                            context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(safe.uri)))
+                        }
+                            .onFailure { Toast.makeText(context, t("Немає застосунку для відкриття посилання"), Toast.LENGTH_SHORT).show() }
+                    } else scope.launch {
                         val uri = documentStore.resolve(attachment.uri)
                         if (uri == null) Toast.makeText(context, t("Файл недоступний"), Toast.LENGTH_SHORT).show()
                         else runCatching {
@@ -63,7 +71,7 @@ fun CourseNoteCard(
                         }.onFailure { Toast.makeText(context, t("Немає застосунку для відкриття файла"), Toast.LENGTH_SHORT).show() }
                     }
                 }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Default.AttachFile, contentDescription = null)
+                    Icon(if (attachment.isWebLink) Icons.Default.Link else Icons.Default.AttachFile, contentDescription = null)
                     Text(attachment.name, color = MaterialTheme.colorScheme.primary)
                 }
             }

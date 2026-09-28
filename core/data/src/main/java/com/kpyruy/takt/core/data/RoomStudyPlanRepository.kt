@@ -7,6 +7,8 @@ import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.PassFailResult
+import com.kpyruy.takt.core.model.GradeLetter
+import java.time.LocalDate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import java.util.Locale
@@ -35,6 +37,8 @@ class RoomStudyPlanRepository(
                 iconKey = previous?.iconKey,
                 titleEn = course.titleEn ?: previous?.titleEn,
                 titleSk = course.titleSk ?: previous?.titleSk,
+                officialGrade = course.officialGrade?.name ?: previous?.officialGrade,
+                fulfilledOnEpochDay = course.fulfilledOn?.toEpochDay() ?: previous?.fulfilledOnEpochDay,
             )
         }
         dao.insertAll(imported)
@@ -102,6 +106,10 @@ class RoomStudyPlanRepository(
     ) {
         dao.updatePassFailResult(courseId, result?.name)
     }
+
+    override suspend fun setOfficialResult(courseId: String, grade: GradeLetter?, fulfilledOn: LocalDate?) {
+        dao.updateOfficialResult(courseId, grade?.name, fulfilledOn?.toEpochDay())
+    }
 }
 
 private fun com.kpyruy.takt.core.model.AppSettings.displayCourse(course: Course) =
@@ -124,4 +132,6 @@ private fun CourseEntity.toDomain() = Course(
     },
     titleEn = titleEn,
     titleSk = titleSk,
+    officialGrade = officialGrade?.let { runCatching { GradeLetter.valueOf(it) }.getOrNull() },
+    fulfilledOn = fulfilledOnEpochDay?.let(LocalDate::ofEpochDay),
 )

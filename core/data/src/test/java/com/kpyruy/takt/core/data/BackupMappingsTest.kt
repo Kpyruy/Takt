@@ -36,7 +36,8 @@ class BackupMappingsTest {
             id = "note", courseId = "DIVR_6B", title = "Materials", content = "",
             updatedAtEpochMillis = 42,
             attachmentsJson = NoteAttachmentCodec.encode(
-                listOf(com.kpyruy.takt.core.model.NoteAttachment("diagram.png", TaktMaterialReference.encode("DIVR_6B", "file.png"), "image/png"))
+                listOf(com.kpyruy.takt.core.model.NoteAttachment("diagram.png", TaktMaterialReference.encode("DIVR_6B", "file.png"), "image/png"),
+                    com.kpyruy.takt.core.model.NoteAttachment.webLink("https://example.com/notes", "Lecture notes"))
             ),
         )
         assertEquals(entity, entity.toBackup().toEntity())
@@ -56,6 +57,8 @@ class BackupMappingsTest {
             gradingType = "PASS_FAIL",
             passFailResult = "PASSED",
             iconKey = "Science",
+            officialGrade = "B",
+            fulfilledOnEpochDay = java.time.LocalDate.of(2026, 6, 8).toEpochDay(),
         )
 
         assertEquals(entity, entity.toBackup().toEntity())

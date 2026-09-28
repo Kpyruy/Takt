@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.data.StudyPlanRepository
+import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.UniversityAccountRepository
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.model.AppSettings
@@ -37,6 +38,7 @@ import com.kpyruy.takt.core.ui.components.TaktIconButton
 @Composable
 fun StudyPlanScreen(
     repository: StudyPlanRepository,
+    gradeRepository: GradeRepository,
     settingsRepository: AppSettingsRepository,
     universityAccountRepository: UniversityAccountRepository,
     onCourseClick: (String) -> Unit,
@@ -150,7 +152,7 @@ fun StudyPlanScreen(
         if (filter != 0) {
             val filtered = if (filter == 1) activeCourses else completedCourses
             items(filtered, key = { it.id }) { course ->
-                ProgressCourseRow(course, onOpen = { onCourseClick(course.id) }, onStatus = { editingCourseId = course.id })
+                ProgressCourseRow(course, gradeRepository, onOpen = { onCourseClick(course.id) }, onStatus = { editingCourseId = course.id })
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
             if (filtered.isEmpty()) item { Text(if (filter == 1) t("Активних предметів ще немає. Обери їх у плані.") else t("Зданих предметів ще немає."), style = MaterialTheme.typography.bodySmall) }
@@ -160,6 +162,7 @@ fun StudyPlanScreen(
                 SemesterSection(
                     semester = semester,
                     courses = semesterCourses,
+                    gradeRepository = gradeRepository,
                     isCurrent = semester == currentSemester,
                     expanded = semester in expandedSemesters,
                     onExpandedChange = { expanded -> expandedSemesters = if (expanded) expandedSemesters + semester else expandedSemesters - semester },

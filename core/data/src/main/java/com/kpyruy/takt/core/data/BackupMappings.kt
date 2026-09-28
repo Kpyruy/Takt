@@ -42,6 +42,8 @@ internal fun CourseEntity.toBackup() = BackupCourse(
     iconKey = iconKey,
     titleEn = titleEn,
     titleSk = titleSk,
+    officialGrade = officialGrade,
+    fulfilledOnEpochDay = fulfilledOnEpochDay,
 )
 
 internal fun BackupCourse.toEntity() = CourseEntity(
@@ -58,6 +60,8 @@ internal fun BackupCourse.toEntity() = CourseEntity(
     iconKey = iconKey,
     titleEn = titleEn,
     titleSk = titleSk,
+    officialGrade = officialGrade,
+    fulfilledOnEpochDay = fulfilledOnEpochDay,
 )
 
 internal fun ScheduleRuleEntity.toBackup() = BackupScheduleRule(

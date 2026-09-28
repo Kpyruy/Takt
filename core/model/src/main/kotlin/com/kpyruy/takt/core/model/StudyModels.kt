@@ -53,7 +53,22 @@ data class NoteAttachment(
     val name: String,
     val uri: String,
     val mimeType: String,
-)
+) {
+    val isWebLink: Boolean get() = mimeType == WEB_LINK_MIME
+
+    companion object {
+        const val WEB_LINK_MIME = "application/vnd.takt.web-link"
+
+        fun webLink(url: String, title: String = ""): NoteAttachment {
+            val cleanUrl = url.trim()
+            require(cleanUrl.none(Char::isWhitespace))
+            val parsed = java.net.URI(cleanUrl)
+            require(parsed.scheme?.lowercase() in setOf("http", "https") && !parsed.host.isNullOrBlank() &&
+                parsed.userInfo == null)
+            return NoteAttachment(title.trim().ifEmpty { parsed.host }, cleanUrl, WEB_LINK_MIME)
+        }
+    }
+}
 
 object StudyTaskPlanner {
     fun upcoming(

@@ -4,6 +4,8 @@ import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.PassFailResult
+import com.kpyruy.takt.core.model.GradeLetter
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
 interface StudyPlanRepository {
@@ -16,4 +18,5 @@ interface StudyPlanRepository {
     suspend fun updateStatus(courseId: String, status: CourseStatus)
     suspend fun setGradingType(courseId: String, gradingType: CourseGradingType)
     suspend fun setPassFailResult(courseId: String, result: PassFailResult?)
+    suspend fun setOfficialResult(courseId: String, grade: GradeLetter?, fulfilledOn: LocalDate?)
 }

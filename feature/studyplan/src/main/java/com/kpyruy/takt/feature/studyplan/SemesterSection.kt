@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.data.GradeRepository
 
 internal enum class SemesterState { COMPLETED, ACTIVE, FUTURE }
 
@@ -55,6 +56,7 @@ internal fun semesterState(courses: List<Course>, isCurrent: Boolean = false): S
 fun SemesterSection(
     semester: Int,
     courses: List<Course>,
+    gradeRepository: GradeRepository,
     isCurrent: Boolean,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
@@ -130,7 +132,7 @@ fun SemesterSection(
                     Text(t("${courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }} / ${courses.sumOf { it.credits }} кредитів"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     courses.forEach { course ->
                         HorizontalDivider(Modifier.padding(top = 8.dp), color = line)
-                        ProgressCourseRow(course, onOpen = { onCourseClick(course.id) }, onStatus = { onCourseStatus(course) })
+                        ProgressCourseRow(course, gradeRepository, onOpen = { onCourseClick(course.id) }, onStatus = { onCourseStatus(course) })
                     }
                 }
             }

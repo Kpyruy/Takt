@@ -41,6 +41,8 @@ data class Course(
     val iconKey: String? = null,
     val titleEn: String? = null,
     val titleSk: String? = null,
+    val officialGrade: GradeLetter? = null,
+    val fulfilledOn: java.time.LocalDate? = null,
 )
 
 fun List<Course>.activeCourseChoices(): List<Course> = filter { it.status == CourseStatus.ENROLLED }

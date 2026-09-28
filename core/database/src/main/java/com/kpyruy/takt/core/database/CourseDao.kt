@@ -35,6 +35,9 @@ interface CourseDao {
     @Query("UPDATE courses SET passFailResult = :result WHERE id = :courseId")
     suspend fun updatePassFailResult(courseId: String, result: String?)
 
+    @Query("UPDATE courses SET officialGrade = :grade, fulfilledOnEpochDay = :fulfilledOnEpochDay WHERE id = :courseId")
+    suspend fun updateOfficialResult(courseId: String, grade: String?, fulfilledOnEpochDay: Long?)
+
     @Query("UPDATE courses SET iconKey = :iconKey WHERE id = :courseId")
     suspend fun updateIcon(courseId: String, iconKey: String?)
 

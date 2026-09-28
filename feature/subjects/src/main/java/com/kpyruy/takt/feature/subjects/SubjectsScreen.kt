@@ -91,6 +91,7 @@ private fun SubjectProgressCard(
     val gradeItems by remember(gradeRepository, course.id) { gradeRepository.observeItems(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val gradeScale by remember(gradeRepository, course.id) { gradeRepository.observeScale(course.id) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
     val tasks by remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
+    val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }.collectAsStateWithLifecycle(initialValue = null)
 
     val coursework = CourseWork.scoredItems(tasks, gradeItems)
         .filterNot { it.type == GradeItemType.EXAM }
@@ -102,14 +103,14 @@ private fun SubjectProgressCard(
         gradeItems.filter { !it.completed && it.type != GradeItemType.EXAM }.map { it.title to it.dueDate })
         .minWithOrNull(compareBy<Pair<String, java.time.LocalDate?>> { it.second ?: java.time.LocalDate.MAX }.thenBy { it.first })
     val progressLine = when {
-        course.status == CourseStatus.FULFILLED -> t("Предмет закрито")
+        course.status == CourseStatus.FULFILLED -> ""
         !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 робота до допуску") else t("${eligibility.requiredCount - eligibility.completedCount} робіт до допуску")
         next != null -> next.first + (next.second?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
         course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" }
         CourseWork.allSubmitted(tasks, gradeItems) -> t("Усі роботи здано")
         else -> ""
     }
-    SubjectCard(course, progressLine, onClick, earned, maximum)
+    SubjectCard(course, progressLine, onClick, earned, maximum, grade = course.officialGrade ?: manualGrade)
 }
 
 private fun Double.compact(): String =

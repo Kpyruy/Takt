@@ -20,6 +20,11 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
+import com.kpyruy.takt.core.data.GradeRepository
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import java.time.format.DateTimeFormatter
 import com.kpyruy.takt.core.ui.components.CourseAvatar
 
 internal fun CourseStatus.title() = when (this) {
@@ -43,7 +48,10 @@ internal fun CourseStatus.icon(): ImageVector = when (this) {
 }
 
 @Composable
-internal fun ProgressCourseRow(course: Course, onOpen: () -> Unit, onStatus: () -> Unit) {
+internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository, onOpen: () -> Unit, onStatus: () -> Unit) {
+    val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }
+        .collectAsStateWithLifecycle(initialValue = null)
+    val grade = course.officialGrade ?: manualGrade
     Row(Modifier.fillMaxWidth().padding(vertical = 9.dp).testTag("progress-course-${course.id}"), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).clickable(onClick = onOpen).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             CourseAvatar(course)
@@ -52,12 +60,19 @@ internal fun ProgressCourseRow(course: Course, onOpen: () -> Unit, onStatus: () 
                 Text(t("${course.semester} семестр · ${course.credits} кр."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        if (grade != null) Column(horizontalAlignment = Alignment.End) {
+            Text(grade.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            course.fulfilledOn?.takeIf { course.officialGrade != null }?.let { Text(it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
         val color = course.status.tint()
-        TextButton(onClick = onStatus, modifier = Modifier.widthIn(max = 110.dp).heightIn(min = 48.dp).testTag("status-${course.id}")
+        TextButton(onClick = onStatus, modifier = Modifier.widthIn(max = if (grade == null) 110.dp else 48.dp).heightIn(min = 48.dp).testTag("status-${course.id}")
             .semantics { contentDescription = t("Змінити статус: ${course.title}"); stateDescription = course.status.title() }, contentPadding = PaddingValues(horizontal = 6.dp)) {
             Icon(course.status.icon(), null, Modifier.size(16.dp), tint = color)
-            Spacer(Modifier.width(5.dp))
-            Text(course.status.title(), style = MaterialTheme.typography.labelSmall, color = color)
+            if (grade == null) {
+                Spacer(Modifier.width(5.dp))
+                Text(course.status.title(), style = MaterialTheme.typography.labelSmall, color = color)
+            }
         }
     }
 }

@@ -2,6 +2,13 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for Slovak UI text. */
 internal val skTranslations: Map<String, String> = mapOf(
+    "Додати посилання" to "Pridať odkaz",
+    "Адреса посилання" to "Adresa odkazu",
+    "Назва (необов’язково)" to "Názov (voliteľné)",
+    "Вкажи коректне посилання https:// або http://" to "Zadajte platný odkaz https:// alebo http://",
+    "Немає застосунку для відкриття посилання" to "Odkaz sa nedá otvoriť v žiadnej aplikácii",
+    "Офіційна оцінка UIS" to "Oficiálna známka UIS",
+    "Дата складання" to "Dátum splnenia",
     "Акаунт" to "Účet",
     "Університетська система" to "Univerzitný systém",
     "UIS · дані збережено" to "UIS · údaje uložené",

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CancellationException
 import com.kpyruy.takt.core.data.uis.UisResult
 import com.kpyruy.takt.core.data.uis.UisStudyPlan
+import com.kpyruy.takt.core.data.uis.UisStudyResult
 import com.kpyruy.takt.core.data.uis.UisTimetableItem
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
@@ -205,7 +206,9 @@ class UniversityAccountRepository(
         mutableImportProgress.value = previous.copy(running = true, error = null)
         return try {
             val plan = session.readStudyPlan()
-            val courses = plan.toCourses()
+            val results = if (UisSyncSection.PROGRESS in sections) session.readStudyResults(plan.studyId, plan.periodId)
+                else emptyMap()
+            val courses = plan.toCourses(results)
             settingsRepo.setUisCurrentSemester(plan.currentSemester)
             val existingCourses = study.observeCourses().first()
             if (applyAllowed && UisSyncSection.SUBJECTS in sections) {
@@ -257,6 +260,7 @@ class UniversityAccountRepository(
                 courses.forEach { remote ->
                     localBefore.firstOrNull { it.code == remote.code }?.let { local ->
                         val localResult = local.passFailResult?.name ?: "none"
+                        study.setOfficialResult(local.id, remote.officialGrade, remote.fulfilledOn)
                         if (UisProgressAutoMerge.shouldApply(local.status.storageValue,
                                 remote.status.storageValue, baseline.statuses[remote.code],
                                 localResult.takeIf { remote.gradingType == com.kpyruy.takt.core.model.CourseGradingType.PASS_FAIL },
@@ -343,7 +347,7 @@ class UniversityAccountRepository(
         mutableImportProgress.value = UisImportProgress(running = true)
         try {
             val plan = session.readStudyPlan()
-            val courses = plan.toCourses()
+            val courses = plan.toCourses(session.readStudyResults(plan.studyId, plan.periodId))
             settingsRepository?.setUisCurrentSemester(plan.currentSemester)
             val (period, timetable) = session.readStudyContext(plan.studyId, plan.periodId)
             val localCourses = studyPlanRepository.observeCourses().first()
@@ -434,7 +438,8 @@ class UniversityAccountRepository(
         val remote = preview.courses.firstOrNull { it.id == courseId } ?: return
         val local = preview.localCourses.firstOrNull { it.code == remote.code }
         val selected = if (local == null) remote else remote.copy(
-            status = local.status, passFailResult = local.passFailResult)
+            status = local.status, passFailResult = local.passFailResult,
+            officialGrade = local.officialGrade, fulfilledOn = local.fulfilledOn)
         studyPlanRepository?.upsertImportedCourses(listOf(selected))
         if (local == null) updateBaselineProgress(remote.code, remote.status, remote.passFailResult)
         val subjectId = courseId.substringAfterLast(':')
@@ -456,6 +461,7 @@ class UniversityAccountRepository(
         val local = preview.localCourses.firstOrNull { it.code == remote.code }
         if (local == null) return
         studyPlanRepository?.updateStatus(local.id, remote.status)
+        studyPlanRepository?.setOfficialResult(local.id, remote.officialGrade, remote.fulfilledOn)
         if (remote.gradingType == com.kpyruy.takt.core.model.CourseGradingType.PASS_FAIL) {
             studyPlanRepository?.setPassFailResult(local.id, remote.passFailResult)
         }
@@ -665,7 +671,7 @@ class UniversityAccountRepository(
     }
 }
 
-private fun UisStudyPlan.toCourses(): List<Course> = courses.map { source ->
+private fun UisStudyPlan.toCourses(results: Map<String, UisStudyResult> = emptyMap()): List<Course> = courses.map { source ->
     Course(
         id = "uis:$studyId:${source.subjectId}",
         code = source.code,
@@ -680,6 +686,8 @@ private fun UisStudyPlan.toCourses(): List<Course> = courses.map { source ->
         gradingType = source.gradingType,
         passFailResult = if (source.gradingType == com.kpyruy.takt.core.model.CourseGradingType.PASS_FAIL &&
             source.status == CourseStatus.FULFILLED) PassFailResult.PASSED else null,
+        officialGrade = results[source.code]?.grade,
+        fulfilledOn = results[source.code]?.fulfilledOn,
     )
 }
 
@@ -687,7 +695,8 @@ private fun UisSyncPreview.hasRelevantDifferences(): Boolean {
     if (UisSyncSection.PROGRESS in availableSections &&
         (earnedCredits != localEarnedCredits || requiredCredits != localRequiredCredits ||
             courses.any { remote -> localCourses.firstOrNull { it.code == remote.code }?.let { local ->
-                local.status != remote.status || local.passFailResult != remote.passFailResult
+                local.status != remote.status || local.passFailResult != remote.passFailResult ||
+                    local.officialGrade != remote.officialGrade || local.fulfilledOn != remote.fulfilledOn
             } == true })) return true
     if (UisSyncSection.SUBJECTS in availableSections && courses.any { remote ->
             localCourses.firstOrNull { it.code == remote.code }?.let { local ->

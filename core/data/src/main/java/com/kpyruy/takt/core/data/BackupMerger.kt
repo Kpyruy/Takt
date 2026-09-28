@@ -54,6 +54,10 @@ object BackupMerger {
                     status = if (BackupSection.PROGRESS in fromBackup) source.status else old?.status ?: source.status,
                     passFailResult = if (BackupSection.PROGRESS in fromBackup || old == null) source.passFailResult
                         else old.passFailResult,
+                    officialGrade = if (BackupSection.PROGRESS in fromBackup || old == null) source.officialGrade
+                        else old.officialGrade,
+                    fulfilledOnEpochDay = if (BackupSection.PROGRESS in fromBackup || old == null) source.fulfilledOnEpochDay
+                        else old.fulfilledOnEpochDay,
                     iconKey = if (BackupSection.ICONS in fromBackup) source.iconKey else old?.iconKey,
                 )
             }
@@ -64,6 +68,8 @@ object BackupMerger {
                 if (source == null) old else old.copy(
                     status = if (BackupSection.PROGRESS in fromBackup) source.status else old.status,
                     passFailResult = if (BackupSection.PROGRESS in fromBackup) source.passFailResult else old.passFailResult,
+                    officialGrade = if (BackupSection.PROGRESS in fromBackup) source.officialGrade else old.officialGrade,
+                    fulfilledOnEpochDay = if (BackupSection.PROGRESS in fromBackup) source.fulfilledOnEpochDay else old.fulfilledOnEpochDay,
                     iconKey = if (BackupSection.ICONS in fromBackup) source.iconKey else old.iconKey,
                 )
             }

@@ -42,6 +42,12 @@ class UisSession {
         return withContext(Dispatchers.IO) { current.readStudyPlan() }
     }
 
+    internal suspend fun readStudyResults(studyId: String, periodId: String): Map<String, UisStudyResult> {
+        val current = client ?: error("UIS session is not connected")
+        check(mutableState.value == UisResult.CONNECTED)
+        return withContext(Dispatchers.IO) { current.readStudyResults(studyId, periodId) }
+    }
+
     internal suspend fun readCourseLessons(code: String): List<UisTimetableItem> {
         val current = client ?: error("UIS session is not connected")
         check(mutableState.value == UisResult.CONNECTED)

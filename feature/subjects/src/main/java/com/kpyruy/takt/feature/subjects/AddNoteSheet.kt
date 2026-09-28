@@ -18,6 +18,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -81,6 +84,10 @@ fun AddNoteForm(
     }
     var attachments by remember(initialNote?.id) { mutableStateOf(initialNote?.attachments.orEmpty()) }
     var attachmentError by remember { mutableStateOf<String?>(null) }
+    var showLinkDialog by remember { mutableStateOf(false) }
+    var linkUrl by remember { mutableStateOf("") }
+    var linkTitle by remember { mutableStateOf("") }
+    var linkError by remember { mutableStateOf(false) }
     var copyingFiles by remember { mutableStateOf(false) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val filesPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -112,6 +119,31 @@ fun AddNoteForm(
         }
     }
 
+    if (showLinkDialog) AlertDialog(
+        onDismissRequest = { showLinkDialog = false },
+        title = { Text(t("Додати посилання")) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(linkUrl, { linkUrl = it; linkError = false },
+                    label = { Text(t("Адреса посилання")) }, singleLine = true,
+                    isError = linkError, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(linkTitle, { linkTitle = it },
+                    label = { Text(t("Назва (необов’язково)")) }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth())
+                if (linkError) Text(t("Вкажи коректне посилання https:// або http://"),
+                    color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = { TextButton(onClick = {
+            runCatching { NoteAttachment.webLink(linkUrl, linkTitle) }
+                .onSuccess { attachment ->
+                    attachments = attachments + attachment
+                    linkUrl = ""; linkTitle = ""; linkError = false; showLinkDialog = false
+                }.onFailure { linkError = true }
+        }) { Text(t("Додати")) } },
+        dismissButton = { TextButton(onClick = { showLinkDialog = false }) { Text(t("Скасувати")) } },
+    )
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -138,7 +170,7 @@ fun AddNoteForm(
         )
         attachments.forEach { attachment ->
             androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.AttachFile, contentDescription = null)
+                Icon(if (attachment.isWebLink) Icons.Default.Link else Icons.Default.AttachFile, contentDescription = null)
                 Text(attachment.name, modifier = Modifier.weight(1f))
                 IconButton(onClick = { attachments = attachments - attachment }) {
                     Icon(Icons.Default.Close, contentDescription = t("Прибрати вкладення"))
@@ -150,6 +182,10 @@ fun AddNoteForm(
         }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.AttachFile, contentDescription = null)
             Text(t("Додати фото або файл"))
+        }
+        OutlinedButton(onClick = { showLinkDialog = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.Link, contentDescription = null)
+            Text(t("Додати посилання"))
         }
         attachmentError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (copyingFiles) Text(t("Копіювання файлів…"), color = MaterialTheme.colorScheme.onSurfaceVariant)

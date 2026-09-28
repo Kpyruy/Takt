@@ -40,7 +40,8 @@ internal fun UisSyncReview(repository: UniversityAccountRepository) {
     var confirmReplacement by remember { mutableStateOf(false) }
     val progress = if (UisSyncSection.PROGRESS in data.availableSections) data.courses.mapNotNull { remote ->
         data.localCourses.firstOrNull { it.code == remote.code }?.let { local ->
-            if (local.status != remote.status || local.passFailResult != remote.passFailResult) local to remote else null
+            if (local.status != remote.status || local.passFailResult != remote.passFailResult ||
+                local.officialGrade != remote.officialGrade || local.fulfilledOn != remote.fulfilledOn) local to remote else null
         }
     } else emptyList()
     val metadata = if (UisSyncSection.SUBJECTS in data.availableSections) data.courses.filter { remote ->
@@ -79,10 +80,16 @@ internal fun UisSyncReview(repository: UniversityAccountRepository) {
             }
             progress.forEach { (local, remote) ->
                 Text("${remote.code} · ${local.title}")
-                Text("${statusLabel(local.status)} → ${statusLabel(remote.status)}",
+                if (local.status != remote.status) Text("${statusLabel(local.status)} → ${statusLabel(remote.status)}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (local.passFailResult != remote.passFailResult) {
                     Text("${local.passFailResult?.name ?: "—"} → ${remote.passFailResult?.name ?: "—"}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (local.officialGrade != remote.officialGrade || local.fulfilledOn != remote.fulfilledOn) {
+                    Text(t("Офіційна оцінка UIS") + ": ${local.officialGrade?.name ?: "—"} → ${remote.officialGrade?.name ?: "—"}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (local.fulfilledOn != remote.fulfilledOn) Text(t("Дата складання") + ": ${local.fulfilledOn ?: "—"} → ${remote.fulfilledOn ?: "—"}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(onClick = { scope.launch { repository.applyProgress(remote.id) } }) {

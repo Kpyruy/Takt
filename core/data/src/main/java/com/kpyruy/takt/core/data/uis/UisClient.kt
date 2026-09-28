@@ -105,6 +105,14 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         })
     }
 
+    fun readStudyResults(studyId: String, periodId: String): Map<String, UisStudyResult> {
+        require(studyId.all(Char::isDigit) && periodId.all(Char::isDigit))
+        val page = exchange(origin.resolve(
+            "auth/student/pruchod_studiem.pl?studium=$studyId;obdobi=$periodId;vyber=podrobne_vybrane_obdobi;lang=en")!!)
+        check(isAuthenticated(page)) { "UIS session expired while reading study results" }
+        return UisStudyResultsParser.parse(page.html)
+    }
+
     fun readStudyLinks(studyId: String, periodId: String): UisStudyLinks {
         require(studyId.all(Char::isDigit) && periodId.all(Char::isDigit))
         val page = exchange(origin.resolve("auth/student/moje_studium.pl?_m=3110;studium=$studyId;obdobi=$periodId;lang=en")!!)

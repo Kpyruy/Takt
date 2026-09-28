@@ -319,6 +319,7 @@ fun TaktApp(
             composable(Destination.PLAN.route) {
                 StudyPlanScreen(
                     repository = repository,
+                    gradeRepository = gradeRepository,
                     settingsRepository = settingsRepository,
                     universityAccountRepository = universityAccountRepository,
                     onCourseClick = ::openCourse,

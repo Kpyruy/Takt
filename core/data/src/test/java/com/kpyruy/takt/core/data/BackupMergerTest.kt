@@ -32,6 +32,17 @@ class BackupMergerTest {
         assertEquals("local", merged.gradeItems.single().courseId)
     }
 
+    @Test fun officialGradeAndDateBelongToProgressSection() {
+        val phone = local.copy(courses = local.courses.map { it.copy(officialGrade = "C", fulfilledOnEpochDay = 10) })
+        val backup = file.copy(courses = file.courses.map { it.copy(officialGrade = "B", fulfilledOnEpochDay = 20) })
+        val subjects = BackupMerger.merge(phone, backup, setOf(BackupSection.SUBJECTS)).courses.single()
+        assertEquals("C", subjects.officialGrade)
+        assertEquals(10L, subjects.fulfilledOnEpochDay)
+        val progress = BackupMerger.merge(phone, backup, setOf(BackupSection.PROGRESS)).courses.single()
+        assertEquals("B", progress.officialGrade)
+        assertEquals(20L, progress.fulfilledOnEpochDay)
+    }
+
     @Test fun subjectsOnlyDoesNotRestoreFileResultOverEmptyLocalResult() {
         val phone = local.copy(courses = local.courses.map { it.copy(passFailResult = null) })
         val backup = file.copy(courses = file.courses.map { it.copy(passFailResult = "PASSED") })
