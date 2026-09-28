@@ -297,7 +297,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     uisApplyProgressAutomatically = uisAutoSync.applyProgressAutomatically,
 )
 
-internal fun BackupSettings.toModel() = AppSettings(
+internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null) = AppSettings(
     cancellationStyle = runCatching { CancellationDisplayStyle.valueOf(cancellationStyle) }
         .getOrDefault(CancellationDisplayStyle.STRIKETHROUGH),
     showHiddenLessons = showHiddenLessons,
@@ -314,6 +314,7 @@ internal fun BackupSettings.toModel() = AppSettings(
     homeWorkFilter = homeWorkFilter.toModel(),
     semesterPeriods = semesterPeriods.toModel(),
     currentSemester = currentSemester?.takeIf { it > 0 },
+    uisCurrentSemester = localUisCurrentSemester,
     language = runCatching { com.kpyruy.takt.core.model.AppLanguage.valueOf(language) }
         .getOrDefault(com.kpyruy.takt.core.model.AppLanguage.ENGLISH),
     courseNameLanguage = runCatching { com.kpyruy.takt.core.model.CourseNameLanguage.valueOf(courseNameLanguage) }

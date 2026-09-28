@@ -30,6 +30,17 @@ class BackupMappingsTest {
         assertEquals(settings, settings.toBackup().toModel())
     }
 
+    @Test fun importingSettingsKeepsLocalUisSemesterAheadOfRetake() {
+        val courses = listOf(
+            com.kpyruy.takt.core.model.Course("retake", "OLD", "Retake", 5, 6,
+                com.kpyruy.takt.core.model.CourseStatus.ENROLLED),
+            com.kpyruy.takt.core.model.Course("current", "NOW", "Current", 5, 3,
+                com.kpyruy.takt.core.model.CourseStatus.ENROLLED),
+        )
+        assertEquals(3, BackupSettings().toModel(localUisCurrentSemester = 3)
+            .effectiveCurrentSemester(courses))
+    }
+
     @Test
     fun noteAttachments_surviveBackupMapping() {
         val entity = com.kpyruy.takt.core.database.CourseNoteEntity(

@@ -67,7 +67,8 @@ class RoomBackupRepository(
             examDao.upsertMaterials(payload.examMaterials.map { it.toEntity() })
         }
 
-        val settings = payload.settings.toModel()
+        // The UIS-detected term is local state, so a Documents restore must not erase it.
+        val settings = payload.settings.toModel(settingsRepository.settings.value.uisCurrentSemester)
         settingsRepository.setCancellationStyle(settings.cancellationStyle)
         settingsRepository.setShowHiddenLessons(settings.showHiddenLessons)
         settingsRepository.setParityOverride(settings.parityOverride)
@@ -78,7 +79,7 @@ class RoomBackupRepository(
         settingsRepository.setHomeWorkFilter(settings.homeWorkFilter)
         settingsRepository.setSemesterPeriods(settings.semesterPeriods)
         settingsRepository.setCurrentSemester(settings.currentSemester)
-        settingsRepository.setUisCurrentSemester(null)
+        settingsRepository.setUisCurrentSemester(settings.uisCurrentSemester)
         settingsRepository.setLanguage(settings.language)
         settingsRepository.setCourseNameLanguage(settings.courseNameLanguage)
         settingsRepository.setUkrainianCourseNameFallback(settings.ukrainianCourseNameFallback)
