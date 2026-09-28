@@ -55,7 +55,7 @@ class AdmissionFormTest {
         compose.runOnIdle { assertEquals(45, saved?.durationMinutes) }
     }
 
-    @Test fun ordinaryTaskCanRequireMinimumPoints() {
+    @Test fun newOrdinaryTaskHasNoSecondPointEntry() {
         var saved: StudyTask? = null
         compose.setContent {
             MaterialTheme { AddTaskForm(courseId = "FYZI_6B", onSave = { saved = it }) }
@@ -63,18 +63,28 @@ class AdmissionFormTest {
 
         compose.onNode(hasText("Назва") and hasSetTextAction()).performTextInput("Lab report")
         compose.onNodeWithText("Потрібно для допуску до екзамену").performClick()
-        compose.onNode(hasText("Максимум") and hasSetTextAction()).performTextInput("10")
-        compose.onNode(hasText("Отримано") and hasSetTextAction()).performTextInput("4")
-        compose.onNode(hasText("Мінімум балів для допуску") and hasSetTextAction()).performTextInput("5")
+        compose.onNodeWithText("Бали (необов’язково)").assertDoesNotExist()
+        compose.onNodeWithText("Максимум").assertDoesNotExist()
         compose.onNodeWithText("Зберегти").performClick()
 
         compose.runOnIdle {
-            assertEquals(4.0, saved?.earnedPoints)
-            assertEquals(10.0, saved?.maxPoints)
-            assertEquals(5.0, saved?.minimumPointsForExam)
+            assertEquals(null, saved?.earnedPoints)
+            assertEquals(null, saved?.maxPoints)
             assertTrue(saved!!.requiredForExam)
-            assertTrue(saved!!.completed)
+            assertFalse(saved!!.completed)
             assertFalse(saved!!.meetsAdmissionRequirement)
         }
+    }
+
+    @Test fun legacyScoredTaskKeepsEditablePoints() {
+        val task = StudyTask("legacy", "FYZI_6B", "Lab report", null, null, true,
+            earnedPoints = 4.0, maxPoints = 10.0, minimumPointsForExam = 5.0)
+        var saved: StudyTask? = null
+        compose.setContent {
+            MaterialTheme { AddTaskForm(courseId = "FYZI_6B", initialTask = task, onSave = { saved = it }) }
+        }
+        compose.onNodeWithText("Максимум").assertExists()
+        compose.onNodeWithText("Оновити").performClick()
+        compose.runOnIdle { assertEquals(10.0, saved?.maxPoints) }
     }
 }

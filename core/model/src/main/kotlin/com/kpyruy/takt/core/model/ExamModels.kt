@@ -42,7 +42,8 @@ object ExamEligibilityCalculator {
         tasks: List<StudyTask>,
         assessments: List<GradeItem>,
     ): ExamEligibility {
-        val requiredTasks = tasks.filter { it.requiredForExam }
+        val requiredTasks = CourseWork.tasksNotRepresentedByAssessments(tasks, assessments.filter { it.requiredForExam })
+            .filter { it.requiredForExam }
         val requiredAssessments = assessments.filter { it.requiredForExam }
         val requiredCount = requiredTasks.size + requiredAssessments.size
         val completedCount =

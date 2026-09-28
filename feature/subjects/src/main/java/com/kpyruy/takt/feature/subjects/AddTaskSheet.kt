@@ -136,39 +136,41 @@ fun AddTaskForm(
             Text(t("Потрібно для допуску до екзамену"))
         }
 
-        Text(t("Бали (необов’язково)"), style = MaterialTheme.typography.titleSmall)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(
-                value = earnedText,
-                onValueChange = { earnedText = it; error = null },
-                label = { Text(t("Отримано")) },
-                enabled = maxText.isNotBlank(),
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                isError = error != null,
-            )
-            OutlinedTextField(
-                value = maxText,
-                onValueChange = {
-                    maxText = it
-                    if (it.isBlank()) { earnedText = ""; minimumText = "" }
-                    error = null
-                },
-                label = { Text(t("Максимум")) },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                isError = error != null,
-            )
-        }
-        if (requiredForExam && maxText.isNotBlank()) {
-            OutlinedTextField(
-                value = minimumText,
-                onValueChange = { minimumText = it; error = null },
-                label = { Text(t("Мінімум балів для допуску")) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = error != null,
-            )
+        if (initialTask?.maxPoints != null) {
+            Text(t("Бали (раніше створене завдання)"), style = MaterialTheme.typography.titleSmall)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = earnedText,
+                    onValueChange = { earnedText = it; error = null },
+                    label = { Text(t("Отримано")) },
+                    enabled = maxText.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    isError = error != null,
+                )
+                OutlinedTextField(
+                    value = maxText,
+                    onValueChange = {
+                        maxText = it
+                        if (it.isBlank()) { earnedText = ""; minimumText = "" }
+                        error = null
+                    },
+                    label = { Text(t("Максимум")) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    isError = error != null,
+                )
+            }
+            if (requiredForExam && maxText.isNotBlank()) {
+                OutlinedTextField(
+                    value = minimumText,
+                    onValueChange = { minimumText = it; error = null },
+                    label = { Text(t("Мінімум балів для допуску")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = error != null,
+                )
+            }
         }
 
         error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }

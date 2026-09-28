@@ -37,7 +37,7 @@ import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.StudyTask
-import com.kpyruy.takt.core.model.asScoredGradeItem
+import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.ui.components.SectionCard
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -59,7 +59,7 @@ internal fun CourseOverviewTab(
     onNotes: () -> Unit,
     onExam: () -> Unit,
 ) {
-    val allGradedWork = gradeItems + tasks.mapNotNull { it.asScoredGradeItem() }
+    val allGradedWork = CourseWork.scoredItems(tasks, gradeItems)
     val projection = GradeProjection.calculate(allGradedWork, gradeScale)
     val currentGrade = if (course.gradingType == CourseGradingType.CONTINUOUS_LETTER &&
         (manualGrade != null || allGradedWork.any { it.completed })) {

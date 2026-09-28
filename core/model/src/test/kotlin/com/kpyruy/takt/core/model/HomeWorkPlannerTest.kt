@@ -70,6 +70,40 @@ class HomeWorkPlannerTest {
         assertEquals("today", (entries.single() as HomeWorkEntry.Graded).value.id)
     }
 
+    @Test fun overdueUnfinishedWorkIsSeparateFromFourteenDayWindow() {
+        val oldTask = StudyTask("old-task", "course", "Old task", null, monday.minusDays(30), false)
+        val oldTest = grade("old-test", GradeItemType.TEST, monday.minusDays(20))
+        val finished = grade("finished", GradeItemType.TEST, monday.minusDays(1)).copy(completed = true)
+        val current = grade("current", GradeItemType.TEST, monday.plusDays(1))
+        val filter = HomeWorkFilter()
+
+        assertEquals(listOf("old-task", "old-test"),
+            HomeWorkPlanner.overdue(listOf(oldTask), listOf(oldTest, finished, current), monday, filter)
+                .map { if (it is HomeWorkEntry.Task) it.value.id else (it as HomeWorkEntry.Graded).value.id })
+        assertEquals(listOf("current"), HomeWorkPlanner.visible(listOf(oldTask),
+            listOf(oldTest, finished, current), monday, filter)
+            .map { (it as HomeWorkEntry.Graded).value.id })
+    }
+
+    @Test fun overdueRespectsSubjectAndTypeButNotPeriod() {
+        val task = StudyTask("task", "course", "Old task", null, monday.minusDays(1), false)
+        val test = grade("test", GradeItemType.TEST, monday.minusDays(1)).copy(courseId = "other")
+        val filter = HomeWorkFilter(courseId = "course", types = setOf(null))
+
+        assertEquals(listOf(HomeWorkEntry.Task(task)),
+            HomeWorkPlanner.overdue(listOf(task), listOf(test), monday, filter))
+    }
+
+    @Test fun matchingLegacyScoredTaskDoesNotDuplicateAssessmentInHomeList() {
+        val task = StudyTask("task", "course", "Weekly test", null, monday, false,
+            maxPoints = 10.0)
+        val test = grade("grade", GradeItemType.TEST, monday).copy(title = "Weekly test")
+
+        val entries = HomeWorkPlanner.visible(listOf(task), listOf(test), monday, HomeWorkFilter())
+
+        assertEquals(listOf(HomeWorkEntry.Graded(test)), entries)
+    }
+
     @Test fun testFilterIncludesLegacyMidterms() {
         val entries = HomeWorkPlanner.visible(emptyList(),
             listOf(grade("legacy", GradeItemType.MIDTERM, monday)), monday,

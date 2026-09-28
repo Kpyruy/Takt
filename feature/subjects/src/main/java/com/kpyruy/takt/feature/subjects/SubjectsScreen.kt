@@ -39,7 +39,7 @@ import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
-import com.kpyruy.takt.core.model.asScoredGradeItem
+import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 
 @Composable
@@ -92,18 +92,21 @@ private fun SubjectProgressCard(
     val gradeScale by remember(gradeRepository, course.id) { gradeRepository.observeScale(course.id) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
     val tasks by remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val coursework = (gradeItems + tasks.mapNotNull { it.asScoredGradeItem() })
+    val coursework = CourseWork.scoredItems(tasks, gradeItems)
         .filterNot { it.type == GradeItemType.EXAM }
     val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
     val maximum = coursework.sumOf { it.maxPoints }
     val eligibility = ExamEligibilityCalculator.calculate(tasks, gradeItems)
-    val next = tasks.filterNot { it.completed }.sortedBy { it.dueDate ?: java.time.LocalDate.MAX }.firstOrNull()
+    val next = (CourseWork.tasksNotRepresentedByAssessments(tasks, gradeItems)
+        .filterNot { it.completed }.map { it.title to it.dueDate } +
+        gradeItems.filter { !it.completed && it.type != GradeItemType.EXAM }.map { it.title to it.dueDate })
+        .minWithOrNull(compareBy<Pair<String, java.time.LocalDate?>> { it.second ?: java.time.LocalDate.MAX }.thenBy { it.first })
     val progressLine = when {
         course.status == CourseStatus.FULFILLED -> t("Предмет закрито")
         !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 робота до допуску") else t("${eligibility.requiredCount - eligibility.completedCount} робіт до допуску")
-        next != null -> next.title + (next.dueDate?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
+        next != null -> next.first + (next.second?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
         course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" }
-        tasks.isNotEmpty() -> t("Усі роботи здано")
+        CourseWork.allSubmitted(tasks, gradeItems) -> t("Усі роботи здано")
         else -> ""
     }
     SubjectCard(course, progressLine, onClick, earned, maximum)

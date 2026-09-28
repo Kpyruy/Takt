@@ -45,7 +45,7 @@ import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.StudyTask
-import com.kpyruy.takt.core.model.asScoredGradeItem
+import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import java.time.format.DateTimeFormatter
@@ -64,7 +64,7 @@ internal fun CourseExamTab(
 ) {
     var showEditor by remember { mutableStateOf(false) }
     var target by rememberSaveable { mutableStateOf(GradeLetter.A) }
-    val allGradedWork = remember(gradeItems, tasks) { gradeItems + tasks.mapNotNull { it.asScoredGradeItem() } }
+    val allGradedWork = remember(gradeItems, tasks) { CourseWork.scoredItems(tasks, gradeItems) }
     val projection = remember(allGradedWork, gradeScale) { GradeProjection.calculate(allGradedWork, gradeScale) }
     val coursework = allGradedWork.filterNot { it.type == GradeItemType.EXAM }
     val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }

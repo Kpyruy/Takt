@@ -43,22 +43,28 @@ data class HomeWorkFilter(
 )
 
 object HomeWorkPlanner {
+    fun overdue(
+        tasks: List<StudyTask>,
+        assessments: List<GradeItem>,
+        today: LocalDate,
+        filter: HomeWorkFilter,
+    ): List<HomeWorkEntry> = entries(tasks, assessments)
+        .filter { entry ->
+            entry.dueDate?.isBefore(today) == true &&
+                (!entry.completed || (entry.requiredForExam && !entry.meetsAdmissionRequirement)) &&
+                matchesCourseAndType(entry, filter)
+        }.sortedWith(entryOrder)
+
     fun visible(
         tasks: List<StudyTask>,
         assessments: List<GradeItem>,
         today: LocalDate,
         filter: HomeWorkFilter,
     ): List<HomeWorkEntry> {
-        return buildList {
-            tasks.forEach { add(HomeWorkEntry.Task(it)) }
-            CourseWork.actionable(assessments).forEach { add(HomeWorkEntry.Graded(it)) }
-        }.filter { entry ->
+        return entries(tasks, assessments).filter { entry ->
             (filter.includeCompleted || !entry.completed ||
                 (entry.requiredForExam && !entry.meetsAdmissionRequirement)) &&
-                (filter.courseId == null || entry.courseId == filter.courseId) &&
-                (filter.types.isEmpty() || entry.type in filter.types ||
-                    (entry.type == GradeItemType.MIDTERM && GradeItemType.TEST in filter.types) ||
-                    (entry.type == GradeItemType.TEST && GradeItemType.MIDTERM in filter.types)) &&
+                matchesCourseAndType(entry, filter) &&
                 when (val date = entry.dueDate) {
                     null -> filter.includeUndated
                     else -> when (filter.period) {
@@ -70,7 +76,21 @@ object HomeWorkPlanner {
                                 (filter.toDate == null || date <= filter.toDate)
                     }
                 }
-        }.sortedWith(compareBy<HomeWorkEntry> { it.dueDate ?: LocalDate.MAX }
-            .thenBy { if (it is HomeWorkEntry.Task) it.value.title else (it as HomeWorkEntry.Graded).value.title })
+        }.sortedWith(entryOrder)
     }
+
+    private fun entries(tasks: List<StudyTask>, assessments: List<GradeItem>) = buildList {
+        CourseWork.tasksNotRepresentedByAssessments(tasks, assessments)
+            .forEach { add(HomeWorkEntry.Task(it)) }
+        CourseWork.actionable(assessments).forEach { add(HomeWorkEntry.Graded(it)) }
+    }
+
+    private fun matchesCourseAndType(entry: HomeWorkEntry, filter: HomeWorkFilter) =
+        (filter.courseId == null || entry.courseId == filter.courseId) &&
+            (filter.types.isEmpty() || entry.type in filter.types ||
+                (entry.type == GradeItemType.MIDTERM && GradeItemType.TEST in filter.types) ||
+                (entry.type == GradeItemType.TEST && GradeItemType.MIDTERM in filter.types))
+
+    private val entryOrder = compareBy<HomeWorkEntry> { it.dueDate ?: LocalDate.MAX }
+        .thenBy { if (it is HomeWorkEntry.Task) it.value.title else (it as HomeWorkEntry.Graded).value.title }
 }

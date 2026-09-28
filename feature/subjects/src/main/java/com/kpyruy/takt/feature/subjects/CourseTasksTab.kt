@@ -4,19 +4,27 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ExamEligibility
+import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -34,8 +42,10 @@ internal fun CourseTasksTab(
     onDeleteGrade: (GradeItem) -> Unit,
     onAddGrade: () -> Unit,
 ) {
+    var addMenuOpen by remember { mutableStateOf(false) }
     val work = buildList {
-        tasks.forEach { add(CourseWorkEntry.Task(it)) }
+        CourseWork.tasksNotRepresentedByAssessments(tasks, gradeItems)
+            .forEach { add(CourseWorkEntry.Task(it)) }
         gradeItems.forEach { add(CourseWorkEntry.Graded(it)) }
     }.sortedWith(compareBy<CourseWorkEntry> { it.completed }
         .thenByDescending { it.requiredForExam }
@@ -67,13 +77,21 @@ internal fun CourseTasksTab(
                 }
             }
         }
-        OutlinedButton(onClick = onAddTask, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Text(t("Додати завдання"))
-        }
-        OutlinedButton(onClick = onAddGrade, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Text(t("Додати оцінювану роботу"))
+        Box(Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { addMenuOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Text(t("Додати роботу"))
+            }
+            DropdownMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
+                DropdownMenuItem(text = { Text(t("Завдання без балів")) }, onClick = {
+                    addMenuOpen = false
+                    onAddTask()
+                })
+                DropdownMenuItem(text = { Text(t("Оцінювана робота з балами")) }, onClick = {
+                    addMenuOpen = false
+                    onAddGrade()
+                })
+            }
         }
     }
 }

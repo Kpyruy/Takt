@@ -77,6 +77,10 @@ internal fun HomeTasksSection(
     val entries = remember(tasks, assessments, today, filter) {
         HomeWorkPlanner.visible(tasks, assessments, today, filter)
     }
+    val overdue = remember(tasks, assessments, today, filter) {
+        HomeWorkPlanner.overdue(tasks, assessments, today, filter)
+    }
+    val upcoming = remember(entries, overdue) { entries.filterNot { it in overdue } }
     val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
     val courseCodes = remember(courses) { courses.associate { it.id to it.code } }
     val filterCourses = remember(courses, tasks, assessments) {
@@ -88,7 +92,7 @@ internal fun HomeTasksSection(
     Column(Modifier.fillMaxWidth().testTag("home-tasks-section")) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(t("Задачі"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            Text(entries.size.toString(), Modifier.testTag("home-tasks-count"),
+            Text((overdue.size + upcoming.size).toString(), Modifier.testTag("home-tasks-count"),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = { showFilters = true }, modifier = Modifier.testTag("home-tasks-filter")) {
@@ -98,11 +102,17 @@ internal fun HomeTasksSection(
         Text(periodSummary(filter), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
-        if (entries.isEmpty()) {
+        if (overdue.isEmpty() && upcoming.isEmpty()) {
             Text(t("За цим фільтром задач немає"), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            entries.forEach { entry ->
+            if (overdue.isNotEmpty()) {
+                Text(t("Прострочені · ${overdue.size}"),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("home-overdue-heading"))
+            }
+            (overdue + upcoming).forEach { entry ->
                 when (entry) {
                     is HomeWorkEntry.Task -> HomeTaskRow(entry.value,
                         courseCodes[entry.courseId] ?: courseTitles[entry.courseId] ?: entry.courseId) {
