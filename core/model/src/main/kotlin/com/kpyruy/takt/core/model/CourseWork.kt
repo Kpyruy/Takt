@@ -1,7 +1,7 @@
 package com.kpyruy.takt.core.model
 
 object CourseWork {
-    /** Graded work belongs in the task list; exams keep their dedicated screen. */
+    /** The home task feed omits exams, which are presented separately there. */
     fun actionable(items: List<GradeItem>): List<GradeItem> =
         items.filterNot { it.type == GradeItemType.EXAM }
 

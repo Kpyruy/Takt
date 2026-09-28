@@ -83,7 +83,7 @@ class PulseFlowTest {
         compose.onNodeWithTag("semester-3-active").assertExists()
         capture("progress")
         compose.onNode(hasText("Допуск з Fyzika") and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Завдання") and isSelected()).assertExists()
+        compose.onNode(hasText("Задачі") and isSelected()).assertExists()
         compose.onNodeWithText("Лабораторна №2").assertExists()
         // Completion changes admission, not semester points.
         compose.onNodeWithContentDescription("Виконано: Лабораторна №2").performScrollTo().performClick()
@@ -98,9 +98,9 @@ class PulseFlowTest {
         }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Допуск з Technické prostriedky automatizovaného riadenia").fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasText("Допуск з Technické prostriedky automatizovaného riadenia") and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Бали") and isSelected()).assertExists()
+        compose.onNode(hasText("Задачі") and isSelected()).assertExists()
         back()
-        // A grade-only admission blocker opens grade entry instead of an empty task list.
+        // A grade-only admission blocker opens the unified task and assessment list.
         runBlocking {
             data.studyContentRepository.setTaskCompleted("review-later", true)
             data.gradeRepository.upsertItem(GradeItem("review-physics-required", courseId, "Допусковий тест", GradeItemType.TEST, 0.0, 10.0, completed = false, requiredForExam = true))
@@ -109,7 +109,7 @@ class PulseFlowTest {
         compose.onNode(hasText("Fyzika") and hasClickAction()).performScrollTo().performClick()
         compose.onNode(hasText("Екзамен") and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithTag("exam-admission").performScrollTo().performClick()
-        compose.onNode(hasText("Бали") and isSelected()).assertExists()
+        compose.onNode(hasText("Задачі") and isSelected()).assertExists()
         back()
         clickRoot("Сьогодні")
         compose.onNodeWithContentDescription("Додати").performClick()

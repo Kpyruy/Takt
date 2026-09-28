@@ -102,7 +102,7 @@ fun SubjectDetailScreen(
     val haptics = rememberTaktHaptics()
     var showIconPicker by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
-    var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
+    var selectedTab by rememberSaveable { mutableStateOf(if (initialTab == "grades") "tasks" else initialTab) }
     var showAddGrade by remember { mutableStateOf(false) }
     var editingGrade by remember { mutableStateOf<GradeItem?>(null) }
     var showScaleEditor by remember { mutableStateOf(false) }
@@ -134,13 +134,13 @@ fun SubjectDetailScreen(
     ]
     val showFinalGrade = examPeriod?.containsExamDate(today) == true
     val tabs = if (item.gradingType != CourseGradingType.PASS_FAIL) {
-        listOf("overview", "grades", "tasks", "exam", "notes")
+        listOf("overview", "tasks", "exam", "notes")
     } else {
-        listOf("overview", "grades", "tasks", "notes")
+        listOf("overview", "tasks", "notes")
     }
 
     LaunchedEffect(tabs) {
-        if (selectedTab !in tabs) selectedTab = "overview"
+        if (selectedTab !in tabs) selectedTab = if (selectedTab == "grades") "tasks" else "overview"
     }
 
     Column(
@@ -191,20 +191,6 @@ fun SubjectDetailScreen(
                     onEditGrade = { editingGrade = it },
                     onNotes = { selectedTab = "notes" },
                     onExam = { selectedTab = "exam" },
-                )
-                "grades" -> CourseAssessmentsTab(
-                    course = item,
-                    phase = assessmentPhase,
-                    gradeItems = gradeItems,
-                    tasks = tasks,
-                    gradeScale = gradeScale,
-                    eligibility = eligibility,
-                    manualGrade = manualGrade,
-                    onAddGrade = { showAddGrade = true },
-                    onEditGrade = { editingGrade = it },
-                    onEditTask = { editingTask = it },
-                    onDeleteGrade = { id -> scope.launch { gradeRepository.deleteItem(id) } },
-                    onEditScale = { showScaleEditor = true },
                 )
                 "tasks" -> CourseTasksTab(
                     tasks = tasks,
@@ -346,7 +332,6 @@ fun SubjectDetailScreen(
 }
 
 private fun subjectTabLabel(tab: String): String = when (tab) {
-    "grades" -> t("Бали")
     "tasks" -> t("Задачі")
     "exam" -> t("Екзамен")
     "notes" -> t("Нотатки")

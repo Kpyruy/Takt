@@ -134,7 +134,7 @@ class HomeAssessmentDeadlineTest {
         }
     }
 
-    @Test fun examDeadlineStillOpensGrades() {
+    @Test fun examDeadlineOpensCourseTasks() {
         val repository = (compose.activity.application as TaktApplication).dataContainer.gradeRepository
         val id = "calendar-exam-route"
         runBlocking {
@@ -147,7 +147,8 @@ class HomeAssessmentDeadlineTest {
         try {
             compose.onNodeWithText("Календар").performClick()
             compose.onNodeWithTag("calendar-assessment-$id").assertIsDisplayed().performClick()
-            compose.onNodeWithText("Бали").assertIsSelected()
+            compose.onNodeWithText("Задачі").assertIsSelected()
+            compose.onNodeWithTag("course-work-$id").assertIsDisplayed()
         } finally {
             runBlocking { repository.deleteItem(id) }
         }

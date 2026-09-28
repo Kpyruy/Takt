@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeItem
@@ -42,9 +44,10 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit) {
     val icon = when (item.type) {
         GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
         GradeItemType.LAB -> Icons.Outlined.Science
+        GradeItemType.EXAM -> Icons.Outlined.School
         else -> Icons.Outlined.Assignment
     }
-    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+    Surface(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("course-work-${item.id}"), shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top,

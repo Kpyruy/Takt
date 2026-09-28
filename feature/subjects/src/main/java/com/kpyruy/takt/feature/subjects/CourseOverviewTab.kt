@@ -61,13 +61,17 @@ internal fun CourseOverviewTab(
 ) {
     val allGradedWork = gradeItems + tasks.mapNotNull { it.asScoredGradeItem() }
     val projection = GradeProjection.calculate(allGradedWork, gradeScale)
+    val currentGrade = if (course.gradingType == CourseGradingType.CONTINUOUS_LETTER &&
+        (manualGrade != null || allGradedWork.any { it.completed })) {
+        GradeSummary.calculate(allGradedWork, gradeScale, manualGrade).letter
+    } else null
     val requiredTasks = tasks.filter { it.requiredForExam }.sortedBy { it.completed }
     val requiredGrades = gradeItems.filter { it.requiredForExam }.sortedBy { it.completed }
     val hasExam = course.gradingType != CourseGradingType.PASS_FAIL &&
         (phase == AssessmentPhase.EXAM || gradeItems.any { it.type == GradeItemType.EXAM })
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (hasExam) AdmissionProgressCard(eligibility)
-        if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection)
+        if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection, currentGrade)
         else if (course.passFailResult != null) SubjectPanel {
             Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
             Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" })

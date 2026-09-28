@@ -12,7 +12,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
-import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.feature.calendar.ScheduleEventEditor
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -290,8 +289,7 @@ fun TaktApp(
                     allowCourseCreation = !uisAccount,
                     onOpenCourse = ::openCourse,
                     onOpenAssessment = { item ->
-                        val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
-                        navController.navigate("subject/${Uri.encode(item.courseId)}?tab=$tab")
+                        navController.navigate("subject/${Uri.encode(item.courseId)}?tab=tasks")
                     },
                     onEventLongClick = { actionEvent = it },
                 )
@@ -302,8 +300,7 @@ fun TaktApp(
                     studyContentRepository = studyContentRepository,
                     onOpenCourse = ::openCourse,
                     onOpenAssessment = { item ->
-                        val tab = if (item.type == GradeItemType.EXAM) "grades" else "tasks"
-                        navController.navigate("subject/${Uri.encode(item.courseId)}?tab=$tab")
+                        navController.navigate("subject/${Uri.encode(item.courseId)}?tab=tasks")
                     },
                     onEventLongClick = { actionEvent = it },
                     settingsRepository = settingsRepository,
@@ -354,7 +351,11 @@ fun TaktApp(
                     documentStore = documentStore,
                     uisManaged = uisAccount,
                     courseId = courseId,
-                    initialTab = entry.arguments?.getString("tab").orEmpty().takeIf { it in setOf("tasks", "grades") } ?: "overview",
+                    initialTab = when (entry.arguments?.getString("tab")) {
+                        "tasks", "grades" -> "tasks"
+                        "exam" -> "exam"
+                        else -> "overview"
+                    },
                     onBack = { navController.popBackStack() },
                 )
             }
