@@ -2,7 +2,7 @@
 
 Takt is an offline-first Android study planner for university schedules, grades, deadlines, and study progress.
 
-Version 0.1.0 is an early release. Takt is built with Kotlin and Jetpack Compose, and its schedule, grades, and study plan are separate modules.
+Version 0.2.0 is an early release. Takt is built with Kotlin and Jetpack Compose, and its schedule, grades, and study plan are separate modules.
 
 ## Screenshots
 
@@ -18,7 +18,7 @@ These screenshots use English example data on a Pixel 7 emulator. A new installa
 
 Download the signed APK from [Releases](https://github.com/Kpyruy/Takt/releases/latest). Takt supports Android 8.0 and newer. Back up `Documents/Takt` before replacing a debug build: a release APK has a different signing key and cannot update a debug installation in place.
 
-You can use Takt entirely offline. The optional UIS setup encrypts your login and password with a key held in Android Keystore and asks for your phone's biometric or screen lock when opening Takt. UIS sign-in is available from onboarding and Settings, with a verification-code step when UIS requires it. Saved fields are filled after biometric or screen-lock confirmation. One sign-in action saves and uses the currently entered credentials; changing the UIS account keeps the same local study data. Passwords are hidden by default and can be revealed with the eye button. Sign-in failures show a sanitized reason and stage. Sessions stay in memory and are cleared when Takt goes into the background; credentials and cookies are not included in `Documents/Takt` backups. Schedule and grade synchronization are not implemented yet.
+You can use Takt entirely offline. Optional STU UIS integration can import your study plan, subjects, progress, grades, academic periods, and timetable. Progress and subjects refresh on each app entry by default; refresh timing for each section can be changed in Settings. UIS sign-in is available from onboarding and Settings, with a verification-code step when UIS requires it. Your login and password are encrypted with a key held in Android Keystore, and Takt asks for your phone's biometric or screen lock when opening the connected app. Sessions stay in memory and are cleared when Takt goes into the background; credentials and cookies are not included in `Documents/Takt` backups.
 
 ## Modules
 
