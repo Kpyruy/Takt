@@ -70,6 +70,7 @@ class MainActivity : FragmentActivity() {
                 showOnboarding = dataContainer.firstRunRepository.shouldShow()
             }
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
+            val releaseState by taktApplication.appReleaseRepository.state.collectAsStateWithLifecycle()
             val hasUniversityAccount by dataContainer.universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
             SideEffect { TaktI18n.use(settings.language) }
             LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground) {
@@ -95,6 +96,13 @@ class MainActivity : FragmentActivity() {
                             catch (_: Exception) { /* The next foreground check can retry. */ }
                         }
                     }
+                }
+            }
+
+            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground,
+                showOnboarding, appEntry, releaseState.automaticChecks) {
+                if ((!hasUniversityAccount || taktApplication.deviceUnlocked) && foreground && showOnboarding == false) {
+                    taktApplication.appReleaseRepository.check()
                 }
             }
 
@@ -149,6 +157,7 @@ class MainActivity : FragmentActivity() {
                             documentStore = dataContainer.documentStore,
                             universityAccountRepository = dataContainer.universityAccountRepository,
                             authenticateDevice = ::authenticateForAccount,
+                            appReleaseRepository = taktApplication.appReleaseRepository,
                         )
                         else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()

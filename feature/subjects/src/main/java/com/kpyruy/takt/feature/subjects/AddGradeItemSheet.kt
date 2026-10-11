@@ -111,6 +111,8 @@ fun AddGradeItemForm(
     var requiredForExam by rememberSaveable(initialItem?.id) {
         mutableStateOf(initialItem?.requiredForExam ?: false)
     }
+    var contributesToGrade by rememberSaveable(initialItem?.id) { mutableStateOf(initialItem?.contributesToGrade ?: true) }
+    var awaitingResult by rememberSaveable(initialItem?.id) { mutableStateOf(initialItem?.isAwaitingResult ?: false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     val lessonOptions = rememberGradeLessonOptions(scheduleRepository, settingsRepository, courseId, dueDate)
     val selectedLessonId = if (lessonOptions.isEmpty()) lessonId else {
@@ -204,15 +206,31 @@ fun AddGradeItemForm(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(if (type == GradeItemType.EXAM) t("Екзамен складено") else t("Результат уже відомий"))
+                Text(t("Результат уже відомий"))
             }
             Switch(
                 checked = completed,
                 onCheckedChange = {
                     completed = it
+                    if (it) awaitingResult = false
                     if (!it) earnedText = "0"
                 },
             )
+        }
+
+        if (!completed) {
+            Row(Modifier.fillMaxWidth().toggleable(value = awaitingResult, role = Role.Checkbox,
+                onValueChange = { awaitingResult = it }), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Checkbox(awaitingResult, onCheckedChange = null)
+                Text(t("Роботу здано, очікую оцінку"))
+            }
+        }
+        Row(Modifier.fillMaxWidth().toggleable(value = contributesToGrade, role = Role.Checkbox,
+            onValueChange = { contributesToGrade = it }), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Checkbox(contributesToGrade, onCheckedChange = null)
+            Text(t("Бали входять у підсумкову оцінку"))
         }
 
         if (type != GradeItemType.EXAM) {
@@ -310,6 +328,8 @@ fun AddGradeItemForm(
                             minimumPointsForExam = minimum,
                             lessonId = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) selectedLessonId else null,
                             durationMinutes = duration,
+                            contributesToGrade = contributesToGrade,
+                            awaitingResult = awaitingResult && !completed,
                         )
                     )
                 }

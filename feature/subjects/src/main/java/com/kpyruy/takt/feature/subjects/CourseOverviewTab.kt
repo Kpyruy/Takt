@@ -105,7 +105,7 @@ internal fun CourseOverviewTab(
             requiredGrades.forEach { grade ->
                 Row(Modifier.fillMaxWidth().clickable { onEditGrade(grade) }.padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(if (grade.meetsAdmissionRequirement) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (grade.meetsAdmissionRequirement) t("Зараховано") else if (grade.completed) t("Поріг балів не виконано") else t("Додати результат")) }
+                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (grade.meetsAdmissionRequirement) t("Зараховано") else if (grade.completed) t("Поріг балів не виконано") else if (grade.isAwaitingResult) t("Очікую оцінку") else t("Додати результат")) }
                 }
                 HorizontalDivider()
             }

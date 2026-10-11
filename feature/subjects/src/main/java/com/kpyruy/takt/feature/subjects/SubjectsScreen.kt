@@ -100,7 +100,7 @@ private fun SubjectProgressCard(
     val eligibility = ExamEligibilityCalculator.calculate(tasks, gradeItems)
     val next = (CourseWork.tasksNotRepresentedByAssessments(tasks, gradeItems)
         .filterNot { it.completed }.map { it.title to it.dueDate } +
-        gradeItems.filter { !it.completed && it.type != GradeItemType.EXAM }.map { it.title to it.dueDate })
+        gradeItems.filter { !it.isSubmitted && it.type != GradeItemType.EXAM }.map { it.title to it.dueDate })
         .minWithOrNull(compareBy<Pair<String, java.time.LocalDate?>> { it.second ?: java.time.LocalDate.MAX }.thenBy { it.first })
     val progressLine = when {
         course.status == CourseStatus.FULFILLED -> ""

@@ -48,6 +48,8 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                     item.durationMinutes?.let { add(t("$it хв")) }
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (item.isAwaitingResult) Text(t("Очікую оцінку"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!item.contributesToGrade) Text(t("Не входить у підсумок"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (item.requiredForExam) {
                     val threshold = item.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty()
                     Text(t("Для допуску$threshold"), style = MaterialTheme.typography.labelSmall,
@@ -69,7 +71,7 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                         today.plusDays(1) -> t("Завтра")
                         else -> date.format(DateTimeFormatter.ofPattern("dd.MM"))
                     }, style = MaterialTheme.typography.labelSmall,
-                        color = if (date <= today) MaterialTheme.colorScheme.error
+                        color = if (!item.isSubmitted && date <= today) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

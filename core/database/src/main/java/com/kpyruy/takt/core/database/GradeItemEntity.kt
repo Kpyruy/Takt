@@ -21,4 +21,8 @@ data class GradeItemEntity(
     val minimumPointsForExam: Double? = null,
     val lessonId: String? = null,
     val durationMinutes: Int? = null,
+    @ColumnInfo(defaultValue = "1")
+    val contributesToGrade: Boolean = true,
+    @ColumnInfo(defaultValue = "0")
+    val awaitingResult: Boolean = false,
 )

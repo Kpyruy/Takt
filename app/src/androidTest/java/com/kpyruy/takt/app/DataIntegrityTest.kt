@@ -65,7 +65,7 @@ class DataIntegrityTest {
         assertEquals(remote.id, repository.observeCourse("local").first()?.id)
     }
 
-    @Test fun shippedSchema16MigratesTo17WithPersonalDataAndIdentityTables() = runBlocking {
+    @Test fun shippedSchema16MigratesToLatestWithPersonalDataAndIdentityTables() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val name = "takt-migration-test-${System.nanoTime()}.db"
         val schema = org.json.JSONObject(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().context.assets.open("com.kpyruy.takt.core.database.TaktDatabase/16.json").bufferedReader().use { it.readText() })
@@ -83,7 +83,7 @@ class DataIntegrityTest {
             old.version = 16
         }
         val migrated = Room.databaseBuilder(context, TaktDatabase::class.java, name)
-            .addMigrations(TaktDatabase.MIGRATION_16_17).build()
+            .addMigrations(TaktDatabase.MIGRATION_16_17, TaktDatabase.MIGRATION_17_18).build()
         try {
             assertEquals("local", migrated.courseDao().getAllSnapshot().single().id)
             assertEquals("Personal", migrated.studyContentDao().getNotesSnapshot().single().content)

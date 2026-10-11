@@ -28,6 +28,8 @@ data class GradeItem(
     val minimumPointsForExam: Double? = null,
     val lessonId: String? = null,
     val durationMinutes: Int? = null,
+    val contributesToGrade: Boolean = true,
+    val awaitingResult: Boolean = false,
 ) {
     init {
         require(maxPoints > 0.0) { "maxPoints must be positive" }
@@ -39,8 +41,12 @@ data class GradeItem(
         require(durationMinutes == null || durationMinutes > 0) { "durationMinutes must be positive" }
     }
 
+    val isAwaitingResult: Boolean get() = awaitingResult && !completed
+    val isSubmitted: Boolean get() = completed || awaitingResult
+    fun isOverdue(today: LocalDate): Boolean = !isSubmitted && dueDate?.isBefore(today) == true
+
     val meetsAdmissionRequirement: Boolean
-        get() = completed && (minimumPointsForExam == null || earnedPoints >= minimumPointsForExam)
+        get() = isSubmitted && (minimumPointsForExam == null || (completed && earnedPoints >= minimumPointsForExam))
 }
 
 data class GradeSummary(
@@ -55,8 +61,9 @@ data class GradeSummary(
             scale: GradeScale,
             manualLetter: GradeLetter? = null,
         ): GradeSummary {
-            val earned = items.sumOf { it.earnedPoints }
-            val max = items.sumOf { it.maxPoints }
+            val graded = items.filter { it.contributesToGrade }
+            val earned = graded.filter { it.completed }.sumOf { it.earnedPoints }
+            val max = graded.sumOf { it.maxPoints }
             if (max <= 0.0) {
                 return GradeSummary(
                     earnedPoints = 0.0,
@@ -91,7 +98,8 @@ data class GradeProjection(
             items: List<GradeItem>,
             scale: GradeScale,
         ): GradeProjection {
-            if (items.isEmpty()) {
+            val graded = items.filter { it.contributesToGrade }
+            if (graded.isEmpty()) {
                 return GradeProjection(
                     securedPoints = 0.0,
                     totalPoints = 0.0,
@@ -103,9 +111,9 @@ data class GradeProjection(
                 )
             }
 
-            val total = items.sumOf { it.maxPoints }
-            val secured = items.filter { it.completed }.sumOf { it.earnedPoints }
-            val unfinished = items.filterNot { it.completed }
+            val total = graded.sumOf { it.maxPoints }
+            val secured = graded.filter { it.completed }.sumOf { it.earnedPoints }
+            val unfinished = graded.filterNot { it.completed }
             val maximum = secured + unfinished.sumOf { it.maxPoints }
             val exam = unfinished.firstOrNull { it.type == GradeItemType.EXAM }
             val examRemaining = exam?.maxPoints ?: 0.0

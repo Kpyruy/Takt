@@ -96,7 +96,7 @@ internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolea
 
 @Composable
 internal fun CourseworkProgressCard(gradeItems: List<GradeItem>, projection: GradeProjection, currentGrade: GradeLetter? = null) {
-    val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
+    val coursework = gradeItems.filter { it.contributesToGrade && it.type != GradeItemType.EXAM }
     val earned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
     val maximum = coursework.sumOf { it.maxPoints }
     SubjectPanel {
@@ -116,11 +116,11 @@ internal fun CourseworkProgressCard(gradeItems: List<GradeItem>, projection: Gra
 
 @Composable
 internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradeProjection, manualGrade: GradeLetter?) {
-    val exams = gradeItems.filter { it.type == GradeItemType.EXAM }
-    val coursework = gradeItems.filterNot { it.type == GradeItemType.EXAM }
+    val exams = gradeItems.filter { it.contributesToGrade && it.type == GradeItemType.EXAM }
+    val coursework = gradeItems.filter { it.contributesToGrade && it.type != GradeItemType.EXAM }
     val courseworkEarned = coursework.filter { it.completed }.sumOf { it.earnedPoints }
     val courseworkMaximum = coursework.sumOf { it.maxPoints }
-    val pending = gradeItems.any { !it.completed }
+    val pending = gradeItems.any { it.contributesToGrade && !it.completed }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         MetricCard(label = t("Набрано за семестр"), value = courseworkEarned.displayNumber() + " / " + courseworkMaximum.displayNumber(), modifier = Modifier.weight(1f))
         MetricCard(label = t("Ще на екзамені"), value = if (exams.isEmpty()) "—" else projection.examRemainingPoints.displayNumber(), modifier = Modifier.weight(1f))
