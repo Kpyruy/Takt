@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Templates use numbered placeholders so translated word order may differ from Ukrainian. */
 internal val dynamicTranslations = listOf(
+    DynamicTranslation("__ARG0__ поки недосяжна", "__ARG0__ is currently unattainable", "__ARG0__ momentálne nie je dosiahnuteľné"),
     DynamicTranslation("Познач, що взяти з __ARG0__. Непозначені дані залишаться на телефоні.", "Select what to take from __ARG0__. Unselected data stays on the phone.", "Vyber, čo prevziať z __ARG0__. Neoznačené údaje zostanú v telefóne."),
     DynamicTranslation("Телефон: __ARG0__ · __ARG1__: __ARG2__", "Phone: __ARG0__ · __ARG1__: __ARG2__", "Telefón: __ARG0__ · __ARG1__: __ARG2__"),
     DynamicTranslation("Оцінки: __ARG0__ → __ARG1__; задачі: __ARG2__ → __ARG3__", "Grades: __ARG0__ → __ARG1__; tasks: __ARG2__ → __ARG3__", "Známky: __ARG0__ → __ARG1__; úlohy: __ARG2__ → __ARG3__"),

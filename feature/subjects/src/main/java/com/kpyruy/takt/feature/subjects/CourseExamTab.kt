@@ -95,12 +95,18 @@ internal fun CourseExamTab(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(t("Цільова оцінка"), style = MaterialTheme.typography.titleMedium)
                 Surface(shape = RoundedCornerShape(7.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                    Text(t("${target.name} · від ${threshold.displayNumber()}%"), Modifier.padding(horizontal = 8.dp, vertical = 5.dp), fontSize = 11.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Text(t("${target.name} · від ${threshold.displayNumber()}%"), Modifier.padding(horizontal = 8.dp, vertical = 5.dp), fontSize = 12.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.primary)
                 }
             }
-            Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(needed?.displayNumber() ?: "—", fontSize = 37.sp, lineHeight = 48.sp, fontWeight = FontWeight.SemiBold)
-                SmallText(if (needed != null) t("із ${projection.examRemainingPoints.displayNumber()} балів на екзамені") else if (projection.examRemainingPoints > 0) t("Ціль недосяжна") else t("Немає незавершеного екзамену"), Modifier.padding(bottom = 7.dp).weight(1f))
+            if (needed == null && projection.examRemainingPoints > 0) {
+                Text(t("${target.name} поки недосяжна"), Modifier.padding(vertical = 8.dp),
+                    fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold)
+                SmallText(t("Навіть максимальних балів недостатньо."))
+            } else {
+                Row(Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(needed?.displayNumber() ?: "—", fontSize = 37.sp, lineHeight = 48.sp, fontWeight = FontWeight.SemiBold)
+                    SmallText(if (needed != null) t("із ${projection.examRemainingPoints.displayNumber()} балів на екзамені") else t("Немає незавершеного екзамену"), Modifier.padding(bottom = 7.dp).weight(1f))
+                }
             }
             SmallText(if (needed == null) t("Розрахунок за поточною шкалою оцінювання.")
                 else t("${projection.securedPoints.displayNumber()} набрано") + (if (pendingOther > 0) t(" + до ${pendingOther.displayNumber()} за інші роботи") else t(" за семестр")) + t(" + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}"))

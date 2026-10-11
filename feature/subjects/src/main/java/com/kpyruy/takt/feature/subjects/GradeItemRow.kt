@@ -36,11 +36,18 @@ import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.format.DateTimeFormatter
+import java.time.LocalDate
+import androidx.compose.ui.graphics.compositeOver
+import com.kpyruy.takt.core.ui.theme.readableAccentColor
 
 @Composable
-fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, today: LocalDate = LocalDate.now()) {
     var menuOpen by remember { mutableStateOf(false) }
     val accent = taktSubjectColor(item.courseId)
+    val overdue = !item.completed && item.dueDate?.isBefore(today) == true
+    val background = MaterialTheme.colorScheme.surfaceContainerHigh
+    val accentText = readableAccentColor(accent, background)
+    val pointsText = readableAccentColor(accent, accent.copy(alpha = .16f).compositeOver(background))
     val icon = when (item.type) {
         GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
         GradeItemType.LAB -> Icons.Outlined.Science
@@ -58,8 +65,8 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit) {
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold, maxLines = 2)
-                    Text(t(item.type.label), style = MaterialTheme.typography.labelMedium, color = accent)
+                        fontWeight = FontWeight.SemiBold, maxLines = 2, color = MaterialTheme.colorScheme.onSurface)
+                    Text(t(item.type.label), style = MaterialTheme.typography.labelMedium, color = accentText)
                 }
                 IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(40.dp)) {
                     Icon(Icons.Default.MoreVert, contentDescription = t("Дії оцінювання"))
@@ -81,17 +88,18 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
                 Text(when {
+                    overdue -> overdueLabel(item.dueDate!!, today)
                     item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Поріг не виконано")
                     item.completed -> t("Результат записано")
                     else -> t("Очікується")
                 }, style = MaterialTheme.typography.labelMedium,
-                    color = if (item.completed && item.requiredForExam && !item.meetsAdmissionRequirement)
+                    color = if (overdue || (item.completed && item.requiredForExam && !item.meetsAdmissionRequirement))
                         MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                 Surface(shape = RoundedCornerShape(9.dp), color = accent.copy(alpha = 0.16f)) {
                     Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t("б.")}"
                         else "${t("Макс.")} ${item.maxPoints.displayNumber()} ${t("б.")}",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelLarge, color = accent)
+                        style = MaterialTheme.typography.labelLarge, color = pointsText)
                 }
             }
         }

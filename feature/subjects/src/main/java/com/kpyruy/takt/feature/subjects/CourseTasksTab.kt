@@ -34,6 +34,7 @@ internal fun CourseTasksTab(
     tasks: List<StudyTask>,
     gradeItems: List<GradeItem>,
     eligibility: ExamEligibility,
+    today: java.time.LocalDate,
     onCompletedChange: (StudyTask, Boolean) -> Unit,
     onEdit: (StudyTask) -> Unit,
     onDelete: (StudyTask) -> Unit,
@@ -55,7 +56,7 @@ internal fun CourseTasksTab(
         modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AdmissionProgressCard(eligibility)
+        AdmissionProgressCard(eligibility, compact = true)
         if (work.isEmpty()) {
             SectionCard { Text(t("Поки немає задач."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
@@ -64,6 +65,7 @@ internal fun CourseTasksTab(
                     is CourseWorkEntry.Task -> SectionCard {
                         StudyTaskRow(
                             task = entry.value,
+                            today = today,
                             onCompletedChange = { completed -> onCompletedChange(entry.value, completed) },
                             onEdit = { onEdit(entry.value) },
                             onDelete = { onDelete(entry.value) },
@@ -71,6 +73,7 @@ internal fun CourseTasksTab(
                     }
                     is CourseWorkEntry.Graded -> GradeItemRow(
                         item = entry.value,
+                        today = today,
                         onEdit = { onEditGrade(entry.value) },
                         onDelete = { onDeleteGrade(entry.value) },
                     )

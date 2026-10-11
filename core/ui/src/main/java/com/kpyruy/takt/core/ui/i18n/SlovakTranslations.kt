@@ -2,6 +2,8 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for Slovak UI text. */
 internal val skTranslations: Map<String, String> = mapOf(
+    "Навіть максимальних балів недостатньо." to "Nestačí ani maximálny počet bodov.",
+    "Прострочено" to "Po termíne",
     "Додати посилання" to "Pridať odkaz",
     "Адреса посилання" to "Adresa odkazu",
     "Назва (необов’язково)" to "Názov (voliteľné)",

@@ -3,6 +3,7 @@ package com.kpyruy.takt.feature.subjects
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,7 +42,38 @@ import com.kpyruy.takt.core.ui.components.MetricCard
 import com.kpyruy.takt.core.ui.components.SectionCard
 
 @Composable
-internal fun AdmissionProgressCard(eligibility: ExamEligibility) {
+internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolean = false) {
+    if (compact) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().testTag("course-admission-progress"),
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(t("Допуск до екзамену"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Text(if (eligibility.requiredCount > 0) "${eligibility.completedCount} / ${eligibility.requiredCount}" else "—",
+                        style = MaterialTheme.typography.labelMedium)
+                }
+                if (eligibility.requiredCount > 0) {
+                    LinearProgressIndicator(
+                        progress = { (eligibility.completedCount.toFloat() / eligibility.requiredCount).coerceIn(0f, 1f) },
+                        gapSize = 0.dp, drawStopIndicator = {},
+                        modifier = Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(7.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primaryContainer,
+                    )
+                } else {
+                    Text(t("Вимоги не позначено"), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        return
+    }
     val hasRequirements = eligibility.requiredCount > 0
     val complete = hasRequirements && eligibility.eligible
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -54,7 +86,7 @@ internal fun AdmissionProgressCard(eligibility: ExamEligibility) {
         contentColor = when { !hasRequirements -> MaterialTheme.colorScheme.onSurfaceVariant; complete -> MaterialTheme.colorScheme.onPrimaryContainer; else -> warningText },
     ) {
         Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(t("ДОПУСК ДО ЕКЗАМЕНУ"), fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(t("ДОПУСК ДО ЕКЗАМЕНУ"), fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
             Text(when { !hasRequirements -> t("Вимоги не позначено"); complete -> t("Умови допуску виконано"); else -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("Залишилась 1 робота") else t("Залишилось ${eligibility.requiredCount - eligibility.completedCount} робіт") }, fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold)
             Text(if (hasRequirements) t("${eligibility.completedCount} з ${eligibility.requiredCount} обов’язкових уже виконано.") else t("Додай обов’язкові роботи в «Задачах»."), fontSize = 12.sp, lineHeight = 16.sp)
             if (hasRequirements) LinearProgressIndicator(gapSize = 0.dp, drawStopIndicator = {}, progress = { (eligibility.completedCount.toFloat() / eligibility.requiredCount).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(5.dp), color = if (complete) MaterialTheme.colorScheme.primary else warningText, trackColor = warningText.copy(alpha = .2f))
@@ -70,7 +102,7 @@ internal fun CourseworkProgressCard(gradeItems: List<GradeItem>, projection: Gra
     SubjectPanel {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             SmallText(t("Набрано за семестр"))
-            if (maximum > 0) Text("${(earned / maximum * 100).toInt()}%", fontSize = 11.sp, lineHeight = 14.sp, color = MaterialTheme.colorScheme.primary)
+            if (maximum > 0) Text("${(earned / maximum * 100).toInt()}%", fontSize = 12.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.primary)
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(earned.displayNumber(), fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold)
@@ -145,7 +177,7 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
         if (available > 0) Box(Modifier.weight(available.toFloat()).height(9.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = .35f)))
         if (unavailable > 0) Box(Modifier.weight(unavailable.toFloat()).height(9.dp).background(MaterialTheme.colorScheme.outlineVariant))
     }
-    Text(t("${secured.displayNumber()} набрано   ·   ${available.displayNumber()} доступно   ·   ${unavailable.displayNumber()} втрачено"), fontSize = 10.sp, lineHeight = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(t("${secured.displayNumber()} набрано   ·   ${available.displayNumber()} доступно   ·   ${unavailable.displayNumber()} втрачено"), fontSize = 12.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     SmallText(if (pending) t("Це потенціал, а не отримана оцінка.") else t("Оцінку розраховано з завершених робіт."))
 }
 
@@ -158,7 +190,7 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
             Text("${eligibility.completedCount}/${eligibility.requiredCount}", fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
             Column(Modifier.weight(1f)) {
                 Text(if(eligibility.requiredCount == 0) t("Вимоги не позначено") else if(complete) t("Умови допуску виконано") else if (eligibility.requiredCount - eligibility.completedCount == 1) t("Ще одна робота до допуску") else t("Ще ${eligibility.requiredCount - eligibility.completedCount} робіт до допуску"), fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
-                if(next != null) Text(next, fontSize = 11.sp, lineHeight = 14.sp)
+                if(next != null) Text(next, fontSize = 12.sp, lineHeight = 18.sp)
             }
             Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
         }

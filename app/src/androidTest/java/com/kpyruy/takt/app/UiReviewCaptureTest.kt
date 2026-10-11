@@ -3,9 +3,10 @@ package com.kpyruy.takt.app
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
-import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.*
@@ -49,6 +50,7 @@ class UiReviewCaptureTest {
             data.examRepository.upsertExamInfo(ExamInfo("review", "exam", LocalDate.of(2026, 12, 18), LocalTime.of(9,0), LocalTime.of(11,0), "B-214"))
             data.settingsRepository.setLanguage(AppLanguage.UKRAINIAN)
         }
+        val approved = InstrumentationRegistry.getArguments().getString("approvedUiReview") == "true"
         var capture by mutableStateOf("exam")
         compose.setContent {
             TaktI18n.use(AppLanguage.UKRAINIAN)
@@ -57,7 +59,7 @@ class UiReviewCaptureTest {
             TaktTheme(AppSettings(themeMode = mode, themeFamily = family, language = AppLanguage.UKRAINIAN)) {
                 val scheme = MaterialTheme.colorScheme
                 val types = MaterialTheme.typography
-                val activity = LocalContext.current as android.app.Activity
+                val activity = checkNotNull(LocalActivity.current)
                 val view = LocalView.current
                 SideEffect {
                     androidx.core.view.WindowCompat.getInsetsController(activity.window, view).apply {
@@ -70,15 +72,23 @@ class UiReviewCaptureTest {
                     typography = if (capture.contains("readable")) types.copy(bodySmall = types.bodySmall.copy(fontSize = 13.sp, lineHeight = 19.sp), labelSmall = types.labelSmall.copy(fontSize = 12.sp, lineHeight = 18.sp), labelMedium = types.labelMedium.copy(fontSize = 13.sp, lineHeight = 19.sp)) else types,
                 ) { key(capture) {
                     Box(Modifier.fillMaxSize().background(scheme.background).statusBarsPadding().navigationBarsPadding()) {
+                        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                         SubjectDetailScreen(data.studyPlanRepository, data.gradeRepository, data.scheduleRepository,
                             data.settingsRepository, data.studyContentRepository, data.examRepository, data.documentStore,
                             courseId = "review", onBack = {}, initialTab = if (capture.contains("exam")) "exam" else "tasks")
+                        }
                     }
                 }
             }
             }
         }
-        listOf("exam", "tasks", "tasks-warm", "tasks-warm-readable", "tasks-dark", "exam-warm", "exam-warm-readable").forEach { name ->
+        val screens = if (approved) listOf("tasks", "tasks-warm", "tasks-dark", "exam", "exam-unreachable")
+            else listOf("exam", "tasks", "tasks-warm", "tasks-warm-readable", "tasks-dark", "exam-warm", "exam-warm-readable")
+        screens.forEach { name ->
+            if (name == "exam-unreachable") runBlocking {
+                data.gradeRepository.upsertItem(GradeItem("overdue", "review", "Здати протокол експерименту", GradeItemType.LAB, 0.0, 10.0,
+                    dueDate = date.minusDays(1), completed = true, requiredForExam = true, minimumPointsForExam = 5.0))
+            }
             compose.runOnIdle { capture = name }
             compose.waitForIdle()
             // Wait for lifecycle-backed Room flows to supply the content.
@@ -89,7 +99,7 @@ class UiReviewCaptureTest {
             // Semantics can settle before SurfaceFlinger presents the new frame.
             android.os.SystemClock.sleep(350)
             val bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
-            context.openFileOutput("review-before-$name.png", 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            context.openFileOutput(if (approved) "approved-$name.png" else "review-before-$name.png", 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             bitmap.recycle()
         }
     }

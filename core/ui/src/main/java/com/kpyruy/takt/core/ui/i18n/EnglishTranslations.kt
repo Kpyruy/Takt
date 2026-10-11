@@ -2,6 +2,8 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for English UI text. */
 internal val enTranslations: Map<String, String> = mapOf(
+    "Навіть максимальних балів недостатньо." to "Even the maximum points are insufficient.",
+    "Прострочено" to "Overdue",
     "Додати посилання" to "Add link",
     "Адреса посилання" to "Link URL",
     "Назва (необов’язково)" to "Name (optional)",

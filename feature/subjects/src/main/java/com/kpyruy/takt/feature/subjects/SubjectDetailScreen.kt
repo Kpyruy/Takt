@@ -197,6 +197,7 @@ fun SubjectDetailScreen(
                     onExam = { selectedTab = "exam" },
                 )
                 "tasks" -> CourseTasksTab(
+                    today = today,
                     tasks = tasks,
                     gradeItems = gradeItems,
                     eligibility = eligibility,
