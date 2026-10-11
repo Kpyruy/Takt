@@ -29,8 +29,8 @@ internal val TaktTypography = Typography(
     titleLarge = type(20, 27, FontWeight.SemiBold),
     titleMedium = type(15, 20, FontWeight.SemiBold),
     titleSmall = type(14, 19, FontWeight.SemiBold),
-    bodyLarge = type(16, 24), bodyMedium = type(13, 19), bodySmall = type(12, 18),
+    bodyLarge = type(16, 24), bodyMedium = type(13, 19), bodySmall = type(13, 19),
     labelLarge = type(14, 20, FontWeight.Medium),
-    labelMedium = type(12, 18, FontWeight.Medium),
-    labelSmall = type(10, 14, FontWeight.Medium),
+    labelMedium = type(13, 19, FontWeight.Medium),
+    labelSmall = type(12, 18, FontWeight.Medium),
 )

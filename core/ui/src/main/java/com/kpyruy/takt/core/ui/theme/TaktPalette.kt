@@ -41,7 +41,7 @@ private fun palette(
         surface = Color(0xFFFFFFFF),
         surfaceVariant = Color(0xFFEDF2FF),
         onSurface = Color(0xFF1B283D),
-        onSurfaceVariant = Color(0xFF68768B),
+        onSurfaceVariant = Color(0xFF58677C),
         onBackground = Color(0xFF1B283D),
         outline = Color(0xFF718096),
         outlineVariant = Color(0xFFE5EAF2),
@@ -132,7 +132,7 @@ internal fun paletteFor(family: ThemeFamily): TaktPalette = when (family) {
         ),
     )
     ThemeFamily.WARM -> palette(
-        primary = Color(0xFFC65A2E),
+        primary = Color(0xFFAE4724),
         secondary = Color(0xFF9B6A19),
         tertiary = Color(0xFF8B4D72),
         darkPrimary = Color(0xFFF4A17E),

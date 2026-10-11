@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SwipeCompletionBox
 import java.time.format.DateTimeFormatter
+import java.time.LocalDate
 
 @Composable
 fun StudyTaskRow(
@@ -37,7 +38,9 @@ fun StudyTaskRow(
     onCompletedChange: (Boolean) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    today: LocalDate = LocalDate.now(),
 ) {
+    val overdue = !task.completed && task.dueDate?.isBefore(today) == true
     var menuOpen by remember { mutableStateOf(false) }
     val containerColor by animateColorAsState(
         targetValue = if (task.completed) {
@@ -68,8 +71,12 @@ fun StudyTaskRow(
                         textDecoration = if (task.completed) TextDecoration.LineThrough else null,
                         maxLines = 2,
                     )
+                    if (overdue) {
+                        Text(overdueLabel(task.dueDate!!, today), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error)
+                    }
                     val supporting = buildList {
-                        task.dueDate?.let {
+                        task.dueDate?.takeUnless { overdue }?.let {
                             add(t("до ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                         }
                         if (task.requiredForExam) add(t("потрібно для допуску"))

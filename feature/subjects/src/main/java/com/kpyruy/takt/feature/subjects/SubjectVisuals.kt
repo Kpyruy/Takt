@@ -32,5 +32,5 @@ import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 }
 
 @Composable internal fun SmallText(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier, fontSize = 12.sp, lineHeight = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(text, modifier, fontSize = 13.sp, lineHeight = 19.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
