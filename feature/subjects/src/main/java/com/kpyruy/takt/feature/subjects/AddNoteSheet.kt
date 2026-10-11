@@ -29,6 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -76,18 +78,18 @@ fun AddNoteForm(
     showHeading: Boolean = true,
     onSave: (CourseNote) -> Unit,
 ) {
-    var title by remember(initialNote?.id, initialTitle) {
+    var title by rememberSaveable(initialNote?.id, initialTitle) {
         mutableStateOf(initialNote?.title ?: initialTitle)
     }
-    var content by remember(initialNote?.id, initialContent) {
+    var content by rememberSaveable(initialNote?.id, initialContent) {
         mutableStateOf(initialNote?.content ?: initialContent)
     }
-    var attachments by remember(initialNote?.id) { mutableStateOf(initialNote?.attachments.orEmpty()) }
-    var attachmentError by remember { mutableStateOf<String?>(null) }
-    var showLinkDialog by remember { mutableStateOf(false) }
-    var linkUrl by remember { mutableStateOf("") }
-    var linkTitle by remember { mutableStateOf("") }
-    var linkError by remember { mutableStateOf(false) }
+    var attachments by rememberSaveable(initialNote?.id, stateSaver = noteAttachmentListSaver) { mutableStateOf(initialNote?.attachments.orEmpty()) }
+    var attachmentError by rememberSaveable { mutableStateOf<String?>(null) }
+    var showLinkDialog by rememberSaveable { mutableStateOf(false) }
+    var linkUrl by rememberSaveable { mutableStateOf("") }
+    var linkTitle by rememberSaveable { mutableStateOf("") }
+    var linkError by rememberSaveable { mutableStateOf(false) }
     var copyingFiles by remember { mutableStateOf(false) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val filesPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -209,3 +211,9 @@ fun AddNoteForm(
         }
     }
 }
+
+// Save completed attachment references only; file copying itself remains a live operation.
+private val noteAttachmentListSaver = listSaver<List<NoteAttachment>, String>(
+    save = { attachments -> attachments.flatMap { listOf(it.name, it.uri, it.mimeType) } },
+    restore = { values -> values.chunked(3).map { NoteAttachment(it[0], it[1], it[2]) } },
+)

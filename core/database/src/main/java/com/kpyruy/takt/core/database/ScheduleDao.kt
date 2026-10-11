@@ -88,4 +88,10 @@ interface ScheduleDao {
 
     @Query("SELECT COUNT(*) FROM schedule_one_off")
     suspend fun countOneOffEvents(): Int
+    @Query("UPDATE schedule_rules SET courseId = :newId WHERE courseId = :oldId")
+    suspend fun remapRules(oldId: String, newId: String)
+
+    @Query("UPDATE schedule_one_off SET courseId = :newId WHERE courseId = :oldId")
+    suspend fun remapOneOffEvents(oldId: String, newId: String)
+
 }

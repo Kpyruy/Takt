@@ -36,17 +36,18 @@ class TaktDataContainer(context: Context) {
             TaktDatabase.MIGRATION_13_14,
             TaktDatabase.MIGRATION_14_15,
             TaktDatabase.MIGRATION_15_16,
+            TaktDatabase.MIGRATION_16_17,
         )
         .build()
 
     val settingsRepository: AppSettingsRepository = SharedPreferencesAppSettingsRepository(context)
-    val studyPlanRepository: StudyPlanRepository = RoomStudyPlanRepository(database.courseDao(), settingsRepository)
-    val scheduleRepository: ScheduleRepository = RoomScheduleRepository(database.scheduleDao())
-    val gradeRepository: GradeRepository = RoomGradeRepository(database.gradeDao())
+    val studyPlanRepository: StudyPlanRepository = RoomStudyPlanRepository(database, settingsRepository)
+    val scheduleRepository: ScheduleRepository = RoomScheduleRepository(database)
+    val gradeRepository: GradeRepository = RoomGradeRepository(database)
     val studyContentRepository: StudyContentRepository =
-        RoomStudyContentRepository(database.studyContentDao())
+        RoomStudyContentRepository(database)
     val examRepository: ExamRepository =
-        RoomExamRepository(database.examDao())
+        RoomExamRepository(database)
     val universityAccountRepository = UniversityAccountRepository(context, studyPlanRepository,
         scheduleRepository, settingsRepository)
     val planningSnapshot: StateFlow<PlanningSnapshot?> = observePlanningSnapshot(

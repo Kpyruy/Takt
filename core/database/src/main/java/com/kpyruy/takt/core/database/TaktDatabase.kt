@@ -9,6 +9,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         LessonAbsenceEntity::class,
         CourseEntity::class,
+        CourseIdAliasEntity::class,
+        CourseImportDecisionEntity::class,
         ScheduleRuleEntity::class,
         OneOffScheduleEventEntity::class,
         ScheduleExceptionEntity::class,
@@ -20,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExamInfoEntity::class,
         ExamMaterialEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -31,6 +33,13 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS course_id_aliases (oldId TEXT NOT NULL PRIMARY KEY, courseId TEXT NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS course_import_decisions (courseId TEXT NOT NULL PRIMARY KEY)")
+            }
+        }
+
         val MIGRATION_15_16 = object : Migration(15, 16) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE courses ADD COLUMN officialGrade TEXT")

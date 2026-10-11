@@ -11,10 +11,10 @@ interface StudyContentDao {
     @Query("SELECT * FROM study_tasks ORDER BY completed, dueDateEpochDay, title")
     fun observeAllTasks(): Flow<List<StudyTaskEntity>>
 
-    @Query("SELECT * FROM study_tasks WHERE courseId = :courseId ORDER BY completed, dueDateEpochDay, title")
+    @Query("SELECT * FROM study_tasks WHERE (courseId = :courseId OR courseId = (SELECT courseId FROM course_id_aliases WHERE oldId = :courseId)) ORDER BY completed, dueDateEpochDay, title")
     fun observeTasks(courseId: String): Flow<List<StudyTaskEntity>>
 
-    @Query("SELECT * FROM course_notes WHERE courseId = :courseId ORDER BY updatedAtEpochMillis DESC")
+    @Query("SELECT * FROM course_notes WHERE (courseId = :courseId OR courseId = (SELECT courseId FROM course_id_aliases WHERE oldId = :courseId)) ORDER BY updatedAtEpochMillis DESC")
     fun observeNotes(courseId: String): Flow<List<CourseNoteEntity>>
 
     @Query("SELECT * FROM study_tasks ORDER BY completed, dueDateEpochDay, title")
@@ -49,4 +49,10 @@ interface StudyContentDao {
 
     @Query("DELETE FROM course_notes")
     suspend fun deleteAllNotes()
+    @Query("UPDATE study_tasks SET courseId = :newId WHERE courseId = :oldId")
+    suspend fun remapTasks(oldId: String, newId: String)
+
+    @Query("UPDATE course_notes SET courseId = :newId WHERE courseId = :oldId")
+    suspend fun remapNotes(oldId: String, newId: String)
+
 }

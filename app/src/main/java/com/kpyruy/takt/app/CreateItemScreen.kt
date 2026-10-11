@@ -43,6 +43,7 @@ import kotlin.coroutines.resume
 import com.kpyruy.takt.feature.subjects.AddTaskForm
 import java.time.LocalDate
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 
 @Composable
 fun CreateItemScreen(
@@ -61,7 +62,8 @@ fun CreateItemScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
+    // Saving may resume from a Room transaction; navigation and feedback belong on Main.
+    val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
     val haptics = rememberTaktHaptics()
     val uisAccount = universityAccountRepository?.hasAccount?.collectAsState()?.value == true
 

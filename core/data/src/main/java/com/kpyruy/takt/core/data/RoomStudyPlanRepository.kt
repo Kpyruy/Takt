@@ -1,6 +1,9 @@
 package com.kpyruy.takt.core.data
 
-import com.kpyruy.takt.core.database.CourseDao
+import androidx.room.withTransaction
+import com.kpyruy.takt.core.database.TaktDatabase
+import com.kpyruy.takt.core.database.CourseImportDecisionEntity
+import com.kpyruy.takt.core.database.CourseIdAliasEntity
 import com.kpyruy.takt.core.database.CourseEntity
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseGradingType
@@ -15,35 +18,105 @@ import java.util.Locale
 import java.util.UUID
 
 class RoomStudyPlanRepository(
-    private val dao: CourseDao,
+    private val database: TaktDatabase,
     private val settingsRepository: AppSettingsRepository? = null,
 ) : StudyPlanRepository {
-    override suspend fun upsertImportedCourses(courses: List<Course>): Int {
-        val existing = dao.getAllSnapshot().associateBy { it.code.uppercase(Locale.ROOT) }
-        val imported = courses.distinctBy { it.code.uppercase(Locale.ROOT) }.map { course ->
-            val previous = existing[course.code.uppercase(Locale.ROOT)]
-            CourseEntity(
-                id = previous?.id ?: course.id,
-                code = course.code,
-                title = course.title,
-                credits = course.credits,
-                semester = course.semester,
-                status = course.status.storageValue,
-                requirementType = course.requirementType.name,
-                syllabusUrl = course.syllabusUrl,
-                gradingType = course.gradingType.name,
-                passFailResult = if (course.gradingType == CourseGradingType.PASS_FAIL)
-                    course.passFailResult?.name else previous?.passFailResult,
-                iconKey = previous?.iconKey,
-                titleEn = course.titleEn ?: previous?.titleEn,
-                titleSk = course.titleSk ?: previous?.titleSk,
-                officialGrade = course.officialGrade?.name ?: previous?.officialGrade,
-                fulfilledOnEpochDay = course.fulfilledOn?.toEpochDay() ?: previous?.fulfilledOnEpochDay,
-            )
+    private val dao = database.courseDao()
+    override suspend fun upsertImportedCourses(courses: List<Course>, selectedLocalIds: Map<String, String>): Int {
+        courses.forEach { if (!isCanonicalUisCourseId(it.id)) throw InvalidUisCourseId(it.code) }
+        require(courses.map { it.id }.distinct().size == courses.size) { "Повторні ID предметів UIS. Повтори імпорт." }
+        require(courses.map { it.code.uppercase(Locale.ROOT) }.distinct().size == courses.size) {
+            "UIS повернув неоднозначні коди предметів. Повтори імпорт."
         }
-        dao.insertAll(imported)
-        return imported.size
+        return database.withTransaction {
+            val existing = dao.getAllSnapshot()
+            val decisions = dao.getImportDecisionsSnapshot().map { it.courseId }.toSet()
+            val adoptedTargets = dao.getAliasesSnapshot().map { it.courseId }.toSet() + decisions
+            val imports = courses.map { course ->
+                val target = existing.firstOrNull { it.id == course.id }
+                val candidates = existing.filter { it.code.equals(course.code, true) &&
+                    (!it.id.startsWith("uis:") || it.id.substringBeforeLast(':') == course.id.substringBeforeLast(':')) }
+                val chosen = selectedLocalIds[course.id]?.let { selected ->
+                    candidates.firstOrNull { it.id == selected }
+                        ?: error("Обраний предмет більше не доступний для ${course.code}. Повтори перевірку.")
+                }
+                val offline = candidates.filter { it.id != course.id }
+                val source = chosen ?: when {
+                    target != null && target.id in adoptedTargets -> target
+                    candidates.size > 1 -> throw AmbiguousUisCourse(course.code, candidates.map { it.toDomain() })
+                    offline.size == 1 -> offline.single()
+                    else -> target
+                }
+                Triple(course, source, target)
+            }
+            imports.forEach { (course, previous, target) ->
+                if (previous != null && previous.id != course.id) migrateReferences(previous.id, course.id)
+                dao.insertAll(listOf(CourseEntity(
+                    id = course.id,
+                    code = course.code,
+                    title = course.title,
+                    credits = course.credits,
+                    semester = course.semester,
+                    status = course.status.storageValue,
+                    requirementType = course.requirementType.name,
+                    syllabusUrl = course.syllabusUrl,
+                    gradingType = course.gradingType.name,
+                    passFailResult = course.passFailResult?.name ?: previous?.passFailResult ?: target?.passFailResult,
+                    iconKey = previous?.iconKey ?: target?.iconKey,
+                    titleEn = course.titleEn ?: previous?.titleEn ?: target?.titleEn,
+                    titleSk = course.titleSk ?: previous?.titleSk ?: target?.titleSk,
+                    officialGrade = course.officialGrade?.name ?: previous?.officialGrade ?: target?.officialGrade,
+                    fulfilledOnEpochDay = course.fulfilledOn?.toEpochDay() ?: previous?.fulfilledOnEpochDay ?: target?.fulfilledOnEpochDay,
+                )))
+                if (course.id in selectedLocalIds || previous?.id in decisions) {
+                    dao.upsertImportDecisions(listOf(CourseImportDecisionEntity(course.id)))
+                    if (previous != null && previous.id != course.id) dao.deleteImportDecision(previous.id)
+                }
+                if (previous != null && previous.id != course.id) {
+                    dao.remapAliases(previous.id, course.id)
+                    dao.upsertAliases(listOf(CourseIdAliasEntity(previous.id, course.id)))
+                    dao.deleteById(previous.id)
+                }
+            }
+            imports.size
+        }
     }
+
+    private suspend fun migrateReferences(oldId: String, newId: String) {
+        val grade = database.gradeDao()
+        val exam = database.examDao()
+        // Single-course settings cannot be combined without choosing which personal value to retain.
+        // Reject conflicting values before touching dependencies; the enclosing transaction preserves both courses.
+        val scales = grade.getScalesSnapshot()
+        val oldScale = scales.firstOrNull { it.courseId == oldId }
+        val newScale = scales.firstOrNull { it.courseId == newId }
+        require(oldScale == null || newScale == null || oldScale.copy(courseId = newId) == newScale) {
+            "Предмет уже має іншу шкалу оцінювання. Узгодь шкали перед імпортом UIS."
+        }
+        val overrides = grade.getOverridesSnapshot()
+        val oldOverride = overrides.firstOrNull { it.courseId == oldId }
+        val newOverride = overrides.firstOrNull { it.courseId == newId }
+        require(oldOverride == null || newOverride == null || oldOverride.grade == newOverride.grade) {
+            "Предмет уже має інший ручний підсумок. Узгодь підсумки перед імпортом UIS."
+        }
+        val exams = exam.getExamInfoSnapshot()
+        val oldExam = exams.firstOrNull { it.courseId == oldId }
+        val newExam = exams.firstOrNull { it.courseId == newId }
+        require(oldExam == null || newExam == null || oldExam.copy(courseId = newId) == newExam) {
+            "Предмет уже має інші дані екзамену. Узгодь дані перед імпортом UIS."
+        }
+        database.scheduleDao().remapRules(oldId, newId)
+        database.scheduleDao().remapOneOffEvents(oldId, newId)
+        database.studyContentDao().remapTasks(oldId, newId)
+        database.studyContentDao().remapNotes(oldId, newId)
+        grade.remapItems(oldId, newId)
+        exam.remapMaterials(oldId, newId)
+        oldScale?.let { grade.upsertScale(it.copy(courseId = newId)); grade.deleteScale(oldId) }
+        oldOverride?.let { grade.upsertOverride(it.copy(courseId = newId)); grade.deleteOverride(oldId) }
+        oldExam?.let { exam.upsertExamInfo(it.copy(courseId = newId)); exam.deleteExamInfo(oldId) }
+    }
+
+    override suspend fun importedCourseChoices(): Set<String> = dao.getImportDecisionsSnapshot().map { it.courseId }.toSet()
 
     override suspend fun addCourse(title: String, code: String, credits: Int, semester: Int): String {
         val cleanTitle = title.trim()
@@ -108,7 +181,12 @@ class RoomStudyPlanRepository(
     }
 
     override suspend fun setOfficialResult(courseId: String, grade: GradeLetter?, fulfilledOn: LocalDate?) {
-        dao.updateOfficialResult(courseId, grade?.name, fulfilledOn?.toEpochDay())
+        database.withTransaction {
+            val resolvedId = dao.getAliasesSnapshot().firstOrNull { it.oldId == courseId }?.courseId ?: courseId
+            val existing = dao.getAllSnapshot().firstOrNull { it.id == resolvedId } ?: return@withTransaction
+            dao.updateOfficialResult(courseId, grade?.name ?: existing.officialGrade,
+                fulfilledOn?.toEpochDay() ?: existing.fulfilledOnEpochDay)
+        }
     }
 }
 

@@ -21,7 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,28 +66,28 @@ fun AddTaskForm(
     showHeading: Boolean = true,
     onSave: (StudyTask) -> Unit,
 ) {
-    var title by remember(initialTask?.id, initialTitle) {
+    var title by rememberSaveable(initialTask?.id, initialTitle) {
         mutableStateOf(initialTask?.title ?: initialTitle)
     }
-    var description by remember(initialTask?.id, initialDescription) {
+    var description by rememberSaveable(initialTask?.id, initialDescription) {
         mutableStateOf(initialTask?.description ?: initialDescription)
     }
-    var dueDate by remember(initialTask?.id, initialDueDate) {
+    var dueDate by rememberSaveable(initialTask?.id, initialDueDate) {
         mutableStateOf(initialTask?.dueDate ?: initialDueDate)
     }
-    var requiredForExam by remember(initialTask?.id, initialRequiredForExam) {
+    var requiredForExam by rememberSaveable(initialTask?.id, initialRequiredForExam) {
         mutableStateOf(initialTask?.requiredForExam ?: initialRequiredForExam)
     }
-    var earnedText by remember(initialTask?.id) {
+    var earnedText by rememberSaveable(initialTask?.id) {
         mutableStateOf(initialTask?.earnedPoints?.toTaskPointText().orEmpty())
     }
-    var maxText by remember(initialTask?.id) {
+    var maxText by rememberSaveable(initialTask?.id) {
         mutableStateOf(initialTask?.maxPoints?.toTaskPointText().orEmpty())
     }
-    var minimumText by remember(initialTask?.id) {
+    var minimumText by rememberSaveable(initialTask?.id) {
         mutableStateOf(initialTask?.minimumPointsForExam?.toTaskPointText().orEmpty())
     }
-    var error by remember(initialTask?.id) { mutableStateOf<String?>(null) }
+    var error by rememberSaveable(initialTask?.id) { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier,

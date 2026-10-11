@@ -1,6 +1,8 @@
 package com.kpyruy.takt.core.data
 
-import com.kpyruy.takt.core.database.GradeDao
+import androidx.room.withTransaction
+import com.kpyruy.takt.core.database.TaktDatabase
+
 import com.kpyruy.takt.core.database.GradeItemEntity
 import com.kpyruy.takt.core.database.GradeOverrideEntity
 import com.kpyruy.takt.core.database.GradeScaleEntity
@@ -13,8 +15,9 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.map
 
 class RoomGradeRepository(
-    private val dao: GradeDao,
+    private val database: TaktDatabase,
 ) : GradeRepository {
+    private val dao = database.gradeDao()
     override fun observeItems(courseId: String) =
         dao.observeItems(courseId).map { items -> items.map { it.toDomain() } }
 
@@ -33,7 +36,9 @@ class RoomGradeRepository(
         }
 
     override suspend fun upsertItem(item: GradeItem) {
-        dao.upsertItem(item.toEntity())
+        database.withTransaction {
+            dao.upsertItem(item.copy(courseId = database.resolveCourseId(item.courseId)).toEntity())
+        }
     }
 
     override suspend fun deleteItem(id: String) {
@@ -42,23 +47,26 @@ class RoomGradeRepository(
 
     override suspend fun setScale(courseId: String, scale: GradeScale) {
         val minimums = scale.bands.associate { it.grade to it.minimumPercentage }
-        dao.upsertScale(
-            GradeScaleEntity(
-                courseId = courseId,
-                aMin = minimums.getValue(GradeLetter.A),
-                bMin = minimums.getValue(GradeLetter.B),
-                cMin = minimums.getValue(GradeLetter.C),
-                dMin = minimums.getValue(GradeLetter.D),
-                eMin = minimums.getValue(GradeLetter.E),
+        database.withTransaction {
+            val resolvedId = database.resolveCourseId(courseId)
+            dao.upsertScale(
+                GradeScaleEntity(
+                    courseId = resolvedId,
+                    aMin = minimums.getValue(GradeLetter.A),
+                    bMin = minimums.getValue(GradeLetter.B),
+                    cMin = minimums.getValue(GradeLetter.C),
+                    dMin = minimums.getValue(GradeLetter.D),
+                    eMin = minimums.getValue(GradeLetter.E),
+                )
             )
-        )
+        }
     }
 
     override suspend fun setManualGrade(courseId: String, grade: GradeLetter?) {
-        if (grade == null) {
-            dao.deleteOverride(courseId)
-        } else {
-            dao.upsertOverride(GradeOverrideEntity(courseId = courseId, grade = grade.name))
+        database.withTransaction {
+            val resolvedId = database.resolveCourseId(courseId)
+            if (grade == null) dao.deleteOverride(resolvedId)
+            else dao.upsertOverride(GradeOverrideEntity(courseId = resolvedId, grade = grade.name))
         }
     }
 }

@@ -14,6 +14,8 @@ class RoomBackupRepository(
             BackupPayload(
                 lessonAbsences = database.scheduleDao().getAbsencesSnapshot().map { it.toBackup() },
                 courses = database.courseDao().getAllSnapshot().map { it.toBackup() },
+                courseIdAliases = database.courseDao().getAliasesSnapshot().map { BackupCourseIdAlias(it.oldId, it.courseId) },
+                courseImportDecisions = database.courseDao().getImportDecisionsSnapshot().map { it.courseId },
                 scheduleRules = database.scheduleDao().getRulesSnapshot().map { it.toBackup() },
                 oneOffEvents = database.scheduleDao().getOneOffEventsSnapshot().map { it.toBackup() },
                 scheduleExceptions = database.scheduleDao().getExceptionsSnapshot().map { it.toBackup() },
@@ -51,9 +53,13 @@ class RoomBackupRepository(
             scheduleDao.deleteAllExceptions()
             scheduleDao.deleteAllOneOffEvents()
             scheduleDao.deleteAllRules()
+            courseDao.deleteAllImportDecisions()
+            courseDao.deleteAllAliases()
             courseDao.deleteAll()
 
             courseDao.insertAll(payload.courses.map { it.toEntity() })
+            courseDao.upsertAliases(payload.courseIdAliases.map { com.kpyruy.takt.core.database.CourseIdAliasEntity(it.oldId, it.courseId) })
+            courseDao.upsertImportDecisions(payload.courseImportDecisions.map { com.kpyruy.takt.core.database.CourseImportDecisionEntity(it) })
             scheduleDao.upsertAbsences(payload.lessonAbsences.map { it.toEntity() })
             scheduleDao.upsertRules(payload.scheduleRules.map { it.toEntity() })
             scheduleDao.upsertOneOffEvents(payload.oneOffEvents.map { it.toEntity() })

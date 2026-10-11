@@ -1,6 +1,8 @@
 package com.kpyruy.takt.core.data
 
-import com.kpyruy.takt.core.database.ExamDao
+import androidx.room.withTransaction
+import com.kpyruy.takt.core.database.TaktDatabase
+
 import com.kpyruy.takt.core.database.ExamInfoEntity
 import com.kpyruy.takt.core.database.ExamMaterialEntity
 import com.kpyruy.takt.core.model.ExamInfo
@@ -10,8 +12,9 @@ import java.time.LocalTime
 import kotlinx.coroutines.flow.map
 
 class RoomExamRepository(
-    private val dao: ExamDao,
+    private val database: TaktDatabase,
 ) : ExamRepository {
+    private val dao = database.examDao()
     override fun observeExamInfo(courseId: String) =
         dao.observeExamInfo(courseId).map { it?.toDomain() }
 
@@ -19,11 +22,15 @@ class RoomExamRepository(
         dao.observeMaterials(courseId).map { items -> items.map { it.toDomain() } }
 
     override suspend fun upsertExamInfo(info: ExamInfo) {
-        dao.upsertExamInfo(info.toEntity())
+        database.withTransaction {
+            dao.upsertExamInfo(info.copy(courseId = database.resolveCourseId(info.courseId)).toEntity())
+        }
     }
 
     override suspend fun upsertMaterial(material: ExamMaterial) {
-        dao.upsertMaterial(material.toEntity())
+        database.withTransaction {
+            dao.upsertMaterial(material.copy(courseId = database.resolveCourseId(material.courseId)).toEntity())
+        }
     }
 
     override suspend fun deleteMaterial(id: String) {

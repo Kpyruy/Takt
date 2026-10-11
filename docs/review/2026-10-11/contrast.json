@@ -1,0 +1,44 @@
+[
+  {
+    "name": "gray before",
+    "foreground": "68768B",
+    "background": "F6F8FC",
+    "ratio": 4.34
+  },
+  {
+    "name": "gray proposal",
+    "foreground": "58677C",
+    "background": "F6F8FC",
+    "ratio": 5.42
+  },
+  {
+    "name": "warm before",
+    "foreground": "FFFFFF",
+    "background": "C65A2E",
+    "ratio": 4.28
+  },
+  {
+    "name": "warm proposal",
+    "foreground": "FFFFFF",
+    "background": "AE4724",
+    "ratio": 5.64
+  },
+  {
+    "name": "dark text",
+    "foreground": "AFBBCD",
+    "background": "202C3C",
+    "ratio": 7.27
+  },
+  {
+    "name": "blue label",
+    "foreground": "345DD2",
+    "background": "EAF0FF",
+    "ratio": 5.05
+  },
+  {
+    "name": "warm label proposal",
+    "foreground": "AE4724",
+    "background": "FBEDE7",
+    "ratio": 4.93
+  }
+]

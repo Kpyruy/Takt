@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.data.uis
 
+import com.kpyruy.takt.core.data.InvalidUisCourseId
 import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseRequirementType
 import com.kpyruy.takt.core.model.CourseStatus
@@ -32,7 +33,7 @@ internal data class UisCourse(
 /** Reads only course rows from the selected study; UIS's other tables are not course data. */
 internal object UisStudyPlanParser {
     private val semesterPattern = Regex("""(\d{1,2})(?:st|nd|rd|th|\.|\s)\s*semester""", RegexOption.IGNORE_CASE)
-    private val subjectPattern = Regex("""(?:[?;&]|^)predmet=(\d+)""")
+    private val subjectPattern = Regex("""(?:[?;&]|^)predmet=([1-9]\d*)(?=[;&]|$)""")
     private val studyTermPattern = Regex("""\[\s*term\s+(\d+)\s*,\s*year\s+(\d+)\s*]""",
         RegexOption.IGNORE_CASE)
 
@@ -90,11 +91,11 @@ internal object UisStudyPlanParser {
                     cells[0].text().contains("voliteľné predmety", ignoreCase = true)) electiveSection = true
             }
             if (cells.size != 6 || semester == 0) return@forEach
-            val link = cells[0].selectFirst("a[href*=predmet=]") ?: return@forEach
-            val subjectId = subjectPattern.find(link.attr("href"))?.groupValues?.get(1) ?: return@forEach
-            val code = link.text().trim().uppercase(Locale.ROOT)
+            val code = cells[0].text().trim().uppercase(Locale.ROOT)
             val credits = cells[3].text().trim().toIntOrNull() ?: return@forEach
             if (!code.matches(Regex("[A-Z0-9_.-]{2,32}")) || credits !in 0..60) return@forEach
+            val link = cells[0].selectFirst("a[href*=predmet=]") ?: throw InvalidUisCourseId(code)
+            val subjectId = subjectPattern.find(link.attr("href"))?.groupValues?.get(1) ?: throw InvalidUisCourseId(code)
             val title = cells[1].text().trim().takeIf { it.isNotEmpty() } ?: return@forEach
             val state = parseStatus(cells[5].text()) ?: error("Unknown UIS course status for $code")
             val className = row.className()

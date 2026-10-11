@@ -9,6 +9,8 @@ import kotlinx.serialization.json.jsonObject
 data class BackupPayload(
     val version: Int = CURRENT_VERSION,
     val courses: List<BackupCourse> = emptyList(),
+    val courseIdAliases: List<BackupCourseIdAlias> = emptyList(),
+    val courseImportDecisions: List<String> = emptyList(),
     val scheduleRules: List<BackupScheduleRule> = emptyList(),
     val oneOffEvents: List<BackupOneOffEvent> = emptyList(),
     val lessonAbsences: List<BackupLessonAbsence> = emptyList(),
@@ -23,9 +25,12 @@ data class BackupPayload(
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 7
+        const val CURRENT_VERSION = 8
     }
 }
+
+@Serializable
+data class BackupCourseIdAlias(val oldId: String, val courseId: String)
 
 @Serializable
 data class BackupLessonAbsence(val eventId: String, val dateEpochDay: Long, val isOneOff: Boolean)
@@ -226,6 +231,16 @@ object BackupPayloadCodec {
         val payload = json.decodeFromJsonElement<BackupPayload>(document)
         require(payload.version in 1..BackupPayload.CURRENT_VERSION) {
             "Unsupported Takt backup version: ${payload.version}"
+        }
+        val courseIds = payload.courses.map { it.id }.toSet()
+        require(payload.courses.size == courseIds.size) { "Backup contains duplicate course IDs" }
+        require(payload.courseIdAliases.map { it.oldId }.distinct().size == payload.courseIdAliases.size &&
+            payload.courseIdAliases.all { it.oldId.isNotBlank() && it.oldId !in courseIds && it.courseId in courseIds }) {
+            "Backup contains invalid course redirects"
+        }
+        require(payload.courseImportDecisions.distinct().size == payload.courseImportDecisions.size &&
+            payload.courseImportDecisions.all { it in courseIds && isCanonicalUisCourseId(it) }) {
+            "Backup contains invalid UIS import choices"
         }
         return payload
     }
