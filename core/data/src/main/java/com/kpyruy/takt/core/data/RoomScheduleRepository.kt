@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.data
 
+import androidx.room.withTransaction
+import com.kpyruy.takt.core.database.TaktDatabase
 import com.kpyruy.takt.core.database.LessonAbsenceEntity
 import com.kpyruy.takt.core.model.LessonAbsence
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
@@ -21,7 +23,8 @@ import java.time.LocalTime
 import kotlinx.coroutines.flow.map
 
 class RoomScheduleRepository(
-    private val dao: ScheduleDao,
+    private val database: TaktDatabase,
+    private val dao: ScheduleDao = database.scheduleDao(),
 ) : ScheduleRepository {
     override fun observeAbsences() = dao.observeAbsences().map { items -> items.map { LessonAbsence(it.eventId, LocalDate.ofEpochDay(it.dateEpochDay), it.isOneOff) } }
 
@@ -39,20 +42,63 @@ class RoomScheduleRepository(
     override fun observeExceptions() =
         dao.observeExceptions().map { items -> items.map { it.toDomain() } }
 
+    override suspend fun replaceSchedule(rules: List<ScheduleRule>, events: List<OneOffScheduleEvent>) {
+        require(rules.map { it.id }.distinct().size == rules.size && events.map { it.id }.distinct().size == events.size) {
+            "UIS повернув заняття з повторними ідентифікаторами. Повтори перевірку."
+        }
+        require(rules.all { it.id.isNotBlank() && it.title.isNotBlank() && it.startTime < it.endTime } &&
+            events.all { it.id.isNotBlank() && it.title.isNotBlank() && it.startTime < it.endTime }) {
+            "UIS повернув некоректний розклад. Повтори перевірку."
+        }
+        val newRules = rules.map { it.toEntity() }
+        val newEvents = events.map { it.toEntity() }
+        database.withTransaction {
+            val courseIds = database.courseDao().getAllSnapshot().map { it.id }.toSet()
+            val aliases = database.courseDao().getAliasesSnapshot().associate { it.oldId to it.courseId }
+            val preparedRules = newRules.map { it.copy(courseId = it.courseId?.let { id -> aliases[id] ?: id }) }
+            val preparedEvents = newEvents.map { it.copy(courseId = it.courseId?.let { id -> aliases[id] ?: id }) }
+            require((preparedRules.mapNotNull { it.courseId } + preparedEvents.mapNotNull { it.courseId }).all { it in courseIds }) {
+                "Спочатку імпортуй відповідні предмети UIS, потім повтори заміну розкладу."
+            }
+            dao.deleteAllExceptions()
+            dao.deleteAllAbsences()
+            dao.deleteAllRules()
+            dao.deleteAllOneOffEvents()
+            dao.upsertRules(preparedRules)
+            dao.upsertOneOffEvents(preparedEvents)
+        }
+    }
+
     override suspend fun upsertRule(rule: ScheduleRule) {
-        dao.upsertRule(rule.toEntity())
+        database.withTransaction {
+            val actualId = rule.courseId?.let { database.resolveCourseId(it) }
+            dao.upsertRule(rule.copy(courseId = actualId).toEntity())
+        }
     }
 
     override suspend fun upsertRules(rules: List<ScheduleRule>) {
-        dao.upsertRules(rules.map { it.toEntity() })
+        database.withTransaction {
+            val prepared = rules.map { item ->
+                item.copy(courseId = item.courseId?.let { database.resolveCourseId(it) }).toEntity()
+            }
+            dao.upsertRules(prepared)
+        }
     }
 
     override suspend fun upsertOneOffEvent(event: OneOffScheduleEvent) {
-        dao.upsertOneOffEvent(event.toEntity())
+        database.withTransaction {
+            val actualId = event.courseId?.let { database.resolveCourseId(it) }
+            dao.upsertOneOffEvent(event.copy(courseId = actualId).toEntity())
+        }
     }
 
     override suspend fun upsertOneOffEvents(events: List<OneOffScheduleEvent>) {
-        dao.upsertOneOffEvents(events.map { it.toEntity() })
+        database.withTransaction {
+            val prepared = events.map { item ->
+                item.copy(courseId = item.courseId?.let { database.resolveCourseId(it) }).toEntity()
+            }
+            dao.upsertOneOffEvents(prepared)
+        }
     }
 
     override suspend fun deleteOneOffEvent(id: String) {

@@ -8,10 +8,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ExamDao {
-    @Query("SELECT * FROM exam_info WHERE courseId = :courseId LIMIT 1")
+    @Query("SELECT * FROM exam_info WHERE (courseId = :courseId OR courseId = (SELECT courseId FROM course_id_aliases WHERE oldId = :courseId)) LIMIT 1")
     fun observeExamInfo(courseId: String): Flow<ExamInfoEntity?>
 
-    @Query("SELECT * FROM exam_materials WHERE courseId = :courseId ORDER BY title")
+    @Query("SELECT * FROM exam_materials WHERE (courseId = :courseId OR courseId = (SELECT courseId FROM course_id_aliases WHERE oldId = :courseId)) ORDER BY title")
     fun observeMaterials(courseId: String): Flow<List<ExamMaterialEntity>>
 
     @Query("SELECT * FROM exam_info ORDER BY courseId")
@@ -40,4 +40,9 @@ interface ExamDao {
 
     @Query("DELETE FROM exam_materials")
     suspend fun deleteAllMaterials()
+    @Query("UPDATE exam_materials SET courseId = :newId WHERE courseId = :oldId")
+    suspend fun remapMaterials(oldId: String, newId: String)
+
+    @Query("DELETE FROM exam_info WHERE courseId = :courseId")
+    suspend fun deleteExamInfo(courseId: String)
 }

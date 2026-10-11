@@ -103,13 +103,17 @@ fun SubjectDetailScreen(
     var showIconPicker by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableStateOf(if (initialTab == "grades") "tasks" else initialTab) }
-    var showAddGrade by remember { mutableStateOf(false) }
-    var editingGrade by remember { mutableStateOf<GradeItem?>(null) }
+    // The navigation entry owns editor state; canonical UIS adoption can change courseId mid-draft.
+    var showAddGrade by rememberSaveable { mutableStateOf(false) }
+    var editingGradeId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingGrade = gradeItems.firstOrNull { it.id == editingGradeId }
     var showScaleEditor by remember { mutableStateOf(false) }
-    var showAddTask by remember { mutableStateOf(false) }
-    var editingTask by remember { mutableStateOf<StudyTask?>(null) }
-    var showAddNote by remember { mutableStateOf(false) }
-    var editingNote by remember { mutableStateOf<CourseNote?>(null) }
+    var showAddTask by rememberSaveable { mutableStateOf(false) }
+    var editingTaskId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingTask = tasks.firstOrNull { it.id == editingTaskId }
+    var showAddNote by rememberSaveable { mutableStateOf(false) }
+    var editingNoteId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingNote = notes.firstOrNull { it.id == editingNoteId }
 
     BackHandler(enabled = selectedTab == "exam") { selectedTab = "overview" }
     val item = course
@@ -187,8 +191,8 @@ fun SubjectDetailScreen(
                         scope.launch { gradeRepository.setManualGrade(courseId, grade) }
                     },
                     onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
-                    onEditTask = { editingTask = it },
-                    onEditGrade = { editingGrade = it },
+                    onEditTask = { editingTaskId = it.id },
+                    onEditGrade = { editingGradeId = it.id },
                     onNotes = { selectedTab = "notes" },
                     onExam = { selectedTab = "exam" },
                 )
@@ -199,12 +203,12 @@ fun SubjectDetailScreen(
                     onCompletedChange = { task, completed ->
                         scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
                     },
-                    onEdit = { editingTask = it },
+                    onEdit = { editingTaskId = it.id },
                     onDelete = { task ->
                         scope.launch { studyContentRepository.deleteTask(task.id) }
                     },
                     onAddTask = { showAddTask = true },
-                    onEditGrade = { editingGrade = it },
+                    onEditGrade = { editingGradeId = it.id },
                     onDeleteGrade = { grade -> scope.launch { gradeRepository.deleteItem(grade.id) } },
                     onAddGrade = { showAddGrade = true },
                 )
@@ -226,7 +230,7 @@ fun SubjectDetailScreen(
                 "notes" -> CourseNotesTab(
                     notes = notes,
                     documentStore = documentStore,
-                    onEdit = { editingNote = it },
+                    onEdit = { editingNoteId = it.id },
                     onDelete = { note ->
                         scope.launch { studyContentRepository.deleteNote(note.id) }
                     },
@@ -263,14 +267,14 @@ fun SubjectDetailScreen(
             initialItem = editingGrade,
             onDismiss = {
                 showAddGrade = false
-                editingGrade = null
+                editingGradeId = null
             },
             onSave = { gradeItem ->
                 scope.launch {
                     gradeRepository.upsertItem(gradeItem)
                     haptics.confirm()
                     showAddGrade = false
-                    editingGrade = null
+                    editingGradeId = null
                 }
             },
         )
@@ -296,14 +300,14 @@ fun SubjectDetailScreen(
             initialTask = editingTask,
             onDismiss = {
                 showAddTask = false
-                editingTask = null
+                editingTaskId = null
             },
             onSave = { task ->
                 scope.launch {
                     studyContentRepository.upsertTask(task)
                     haptics.confirm()
                     showAddTask = false
-                    editingTask = null
+                    editingTaskId = null
                 }
             },
         )
@@ -317,14 +321,14 @@ fun SubjectDetailScreen(
             initialNote = editingNote,
             onDismiss = {
                 showAddNote = false
-                editingNote = null
+                editingNoteId = null
             },
             onSave = { note ->
                 scope.launch {
                     studyContentRepository.upsertNote(note)
                     haptics.confirm()
                     showAddNote = false
-                    editingNote = null
+                    editingNoteId = null
                 }
             },
         )

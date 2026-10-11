@@ -342,6 +342,10 @@ fun TaktApp(
                 arguments = listOf(navArgument("courseId") { type = NavType.StringType }, navArgument("tab") { type = NavType.StringType; defaultValue = "overview" }),
             ) { entry ->
                 val courseId = entry.arguments?.getString("courseId").orEmpty()
+                val resolvedCourse by remember(repository, courseId) { repository.observeCourse(courseId) }
+                    .collectAsStateWithLifecycle(initialValue = null)
+                val resolvedId = resolvedCourse?.id ?: courseId
+                // Keep this entry's saved tab and open draft; old route arguments resolve through durable aliases.
                 SubjectDetailScreen(
                     repository = repository,
                     gradeRepository = gradeRepository,
@@ -351,7 +355,7 @@ fun TaktApp(
                     examRepository = examRepository,
                     documentStore = documentStore,
                     uisManaged = uisAccount,
-                    courseId = courseId,
+                    courseId = resolvedId,
                     initialTab = when (entry.arguments?.getString("tab")) {
                         "tasks", "grades" -> "tasks"
                         "exam" -> "exam"
@@ -374,7 +378,11 @@ fun TaktApp(
                 val type = runCatching {
                     CreateItemType.valueOf(entry.arguments?.getString("type").orEmpty())
                 }.getOrNull()
-                val courseId = entry.arguments?.getString("courseId")
+                val requestedCourseId = entry.arguments?.getString("courseId")
+                val resolvedCourse by remember(repository, requestedCourseId) {
+                    requestedCourseId?.let(repository::observeCourse) ?: kotlinx.coroutines.flow.flowOf(null)
+                }.collectAsStateWithLifecycle(initialValue = null)
+                val courseId = resolvedCourse?.id ?: requestedCourseId
 
                 if (type != null) {
                     CreateItemScreen(
@@ -383,7 +391,9 @@ fun TaktApp(
                         courseId = courseId,
                         draft = pendingCreateDraft?.takeIf { draft ->
                             draft.type == type &&
-                                (draft.courseId == null || draft.courseId == courseId)
+                                (draft.courseId == null || draft.courseId == requestedCourseId || draft.courseId == courseId)
+                        }?.let { draft ->
+                            if (draft.courseId == requestedCourseId && courseId != null) draft.copy(courseId = courseId) else draft
                         },
                         scheduleRepository = scheduleRepository,
                         settingsRepository = settingsRepository,

@@ -49,6 +49,8 @@ data class UisImportProgress(
     val error: String? = null,
 )
 
+data class UisSyncActionState(val running: Boolean = false, val message: String? = null, val error: String? = null)
+
 data class UisSyncPreview(
     val courses: List<Course>,
     val localCourses: List<Course>,
@@ -64,6 +66,7 @@ data class UisSyncPreview(
     val localEarnedCredits: Int?,
     val localRequiredCredits: Int?,
     val availableSections: Set<UisSyncSection> = UisSyncSection.entries.toSet(),
+    val associatedCourseIds: Set<String> = emptySet(),
 )
 
 enum class UisAutoSyncOutcome { NOT_DUE, NEEDS_DEVICE_AUTH, SECOND_FACTOR, REVIEW_READY, APPLIED, FAILED }
@@ -95,6 +98,27 @@ class UniversityAccountRepository(
     val lastCheckOutcome = mutableLastCheckOutcome.asStateFlow()
     private val mutablePreview = MutableStateFlow<UisSyncPreview?>(null)
     val syncPreview = mutablePreview.asStateFlow()
+    private val mutableSyncAction = MutableStateFlow(UisSyncActionState())
+    val syncAction = mutableSyncAction.asStateFlow()
+    private val actionMutex = Mutex()
+    private var retryAction: Pair<String, suspend () -> Unit>? = null
+    suspend fun retrySyncAction() { retryAction?.let { performPreviewAction(it.first, it.second) } }
+
+    private suspend fun performPreviewAction(success: String, action: suspend () -> Unit) {
+        if (!actionMutex.tryLock()) return
+        mutableSyncAction.value = UisSyncActionState(running = true)
+        retryAction = success to action
+        try {
+            action()
+            retryAction = null
+            mutableSyncAction.value = UisSyncActionState(message = success)
+        } catch (cancelled: CancellationException) {
+            mutableSyncAction.value = UisSyncActionState()
+            throw cancelled
+        } catch (error: Exception) {
+            mutableSyncAction.value = UisSyncActionState(error = error.message ?: "Не вдалося зберегти зміни UIS. Повтори перевірку.")
+        } finally { actionMutex.unlock() }
+    }
 
     /** Call from an unlocked app. The UIS session and credentials never enter a backup. */
     suspend fun loadLessonOptions(code: String): List<UisLessonOption> = autoMutex.withLock {
@@ -210,11 +234,12 @@ class UniversityAccountRepository(
                 else emptyMap()
             val courses = plan.toCourses(results)
             settingsRepo.setUisCurrentSemester(plan.currentSemester)
-            val existingCourses = study.observeCourses().first()
-            if (applyAllowed && UisSyncSection.SUBJECTS in sections) {
-                val knownCodes = existingCourses.map { it.code.uppercase(java.util.Locale.ROOT) }.toSet()
-                val missing = courses.filter { it.code.uppercase(java.util.Locale.ROOT) !in knownCodes }
-                if (missing.isNotEmpty()) study.upsertImportedCourses(missing)
+            if (applyAllowed && (UisSyncSection.SUBJECTS in sections ||
+                UisSyncSection.PROGRESS in sections && settingsRepo.settings.value.uisAutoSync.applyProgressAutomatically)) {
+                val localForImport = study.observeCourses().first()
+                val prepared = prepareAutomaticCourseImports(courses, localForImport, UisSyncSection.SUBJECTS in sections)
+                try { study.upsertImportedCourses(prepared) }
+                catch (_: AmbiguousUisCourse) { /* Keep all local records and offer explicit selection in review. */ }
             }
             val localBefore = study.observeCourses().first()
             val previousSemester = settingsRepo.settings.value.effectiveCurrentSemester(courses)
@@ -232,7 +257,7 @@ class UniversityAccountRepository(
             } else previousSemester
             val localPeriod = settingsRepo.settings.value.semesterPeriods[semester]
             val ids = courses.mapNotNull { course ->
-                localBefore.firstOrNull { it.code == course.code }?.id?.let { course.code to it }
+                localBefore.matchingUisCourse(course)?.id?.let { course.code to it }
             }.toMap()
             val bySubject = plan.courses.mapNotNull { source ->
                 ids[source.code]?.let { source.subjectId to it }
@@ -258,7 +283,7 @@ class UniversityAccountRepository(
             if (applyAllowed && UisSyncSection.PROGRESS in sections &&
                 settingsRepo.settings.value.uisAutoSync.applyProgressAutomatically) {
                 courses.forEach { remote ->
-                    localBefore.firstOrNull { it.code == remote.code }?.let { local ->
+                    localBefore.matchingUisCourse(remote)?.let { local ->
                         val localResult = local.passFailResult?.name ?: "none"
                         study.setOfficialResult(local.id, remote.officialGrade, remote.fulfilledOn)
                         if (UisProgressAutoMerge.shouldApply(local.status.storageValue,
@@ -297,7 +322,7 @@ class UniversityAccountRepository(
                 }
             } else if (UisSyncSection.PROGRESS in sections) {
                 courses.forEach { remote ->
-                    localBefore.firstOrNull { it.code == remote.code }?.takeIf { it.status == remote.status }
+                    localBefore.matchingUisCourse(remote)?.takeIf { it.status == remote.status }
                         ?.let {
                             nextStatuses[remote.code] = remote.status.storageValue
                             if (it.passFailResult == remote.passFailResult) {
@@ -320,8 +345,10 @@ class UniversityAccountRepository(
             mutableImportProgress.value = UisImportProgress(
                 earnedCredits = preferences.getInt(EARNED_CREDITS, -1).takeIf { it >= 0 },
                 requiredCredits = preferences.getInt(REQUIRED_CREDITS, -1).takeIf { it >= 0 })
-            val changed = review.hasRelevantDifferences()
-            mutablePreview.value = review.takeIf { changed }
+            mutablePreview.value = review
+            refreshLocalPreview()
+            val changed = mutablePreview.value?.hasRelevantDifferences() == true
+            if (!changed) mutablePreview.value = null
             (if (changed) UisAutoSyncOutcome.REVIEW_READY else UisAutoSyncOutcome.APPLIED)
                 .also { mutableLastCheckOutcome.value = it }
         } catch (cancelled: CancellationException) {
@@ -329,7 +356,7 @@ class UniversityAccountRepository(
             throw cancelled
         } catch (error: Exception) {
             mutableImportProgress.value = previous.copy(running = false,
-                error = "Не вдалося автоматично перевірити UIS. Спробуй вручну.")
+                error = if (error is InvalidUisCourseId) error.message else "Не вдалося автоматично перевірити UIS. Спробуй вручну.")
             UisAutoSyncOutcome.FAILED.also { mutableLastCheckOutcome.value = it }
         }
     }
@@ -358,10 +385,10 @@ class UniversityAccountRepository(
                 ?: courses.maxOfOrNull { it.semester } ?: 1
             val localPeriod = settingsRepository?.settings?.value?.semesterPeriods?.get(semester)
             val first = !preferences.getBoolean(INITIAL_IMPORT_DONE, false)
-            val importCourses = first && localCourses.isEmpty()
+            val importCourses = first
             val ids = courses.mapNotNull { course ->
-                (localCourses.firstOrNull { it.code == course.code }?.id
-                    ?: course.id.takeIf { importCourses })?.let { course.code to it }
+                (course.id.takeIf { importCourses }
+                    ?: localCourses.matchingUisCourse(course)?.id)?.let { course.code to it }
             }.toMap()
             val bySubject = plan.courses.mapNotNull { source ->
                 ids[source.code]?.let { source.subjectId to it }
@@ -381,10 +408,17 @@ class UniversityAccountRepository(
                     item.subjectId?.let(bySubject::get), item.title, item.date!!, item.start, item.end,
                     item.room, OneOffScheduleEventType.BLOCK_ACTION, item.lessonType)
             }
-            val count = if (importCourses) studyPlanRepository.upsertImportedCourses(courses) else 0
-            if (first && localRules.isEmpty() && localOneOffs.isEmpty()) {
-                scheduleRepository?.upsertRules(rules)
-                scheduleRepository?.upsertOneOffEvents(oneOffs)
+            val count = if (importCourses) {
+                try { studyPlanRepository.upsertImportedCourses(courses) }
+                catch (_: AmbiguousUisCourse) { 0 }
+            } else 0
+            val importedIds = studyPlanRepository.observeCourses().first().map { it.id }.toSet()
+            val preparedRules = rules.map { it.copy(courseId = it.courseId?.takeIf(importedIds::contains)) }
+            val preparedOneOffs = oneOffs.map { it.copy(courseId = it.courseId?.takeIf(importedIds::contains)) }
+            if (first && localRules.isEmpty() && localOneOffs.isEmpty() &&
+                (preparedRules.map { it.id to it.courseId } + preparedOneOffs.map { it.id to it.courseId })
+                    .all { (id, courseId) -> pendingSubjectByEventId[id] == null || courseId != null }) {
+                scheduleRepository?.replaceSchedule(preparedRules, preparedOneOffs)
             }
             if (first && (localPeriod == null || localPeriod.isEmpty)) {
                 val current = settingsRepository?.settings?.value?.semesterPeriods.orEmpty()
@@ -395,7 +429,7 @@ class UniversityAccountRepository(
             val known = baseline.statuses.toMutableMap()
             val knownResults = baseline.passFailResults.toMutableMap()
             courses.forEach { remote ->
-                val local = if (count > 0) remote else localCourses.firstOrNull { it.code == remote.code }
+                val local = if (count > 0) remote else localCourses.matchingUisCourse(remote)
                 if (local?.status == remote.status) known[remote.code] = remote.status.storageValue
                 if (local?.passFailResult == remote.passFailResult) {
                     knownResults[remote.code] = remote.passFailResult?.name ?: "none"
@@ -425,6 +459,7 @@ class UniversityAccountRepository(
             throw cancelled
         } catch (error: Exception) {
             mutableImportProgress.value = previous.copy(running = false, error = when (error) {
+                is InvalidUisCourseId -> error.message
                 is IOException -> "Не вдалося завантажити дані UIS. Перевір з’єднання."
                 is IllegalStateException, is IllegalArgumentException -> "Не вдалося розпізнати навчальний план, календар або розклад UIS."
                 else -> "Не вдалося імпортувати дані UIS."
@@ -432,39 +467,22 @@ class UniversityAccountRepository(
         }
     }
 
-    suspend fun applyCourse(courseId: String) {
-        val preview = mutablePreview.value ?: return
-        if (UisSyncSection.SUBJECTS !in preview.availableSections) return
-        val remote = preview.courses.firstOrNull { it.id == courseId } ?: return
-        val local = preview.localCourses.firstOrNull { it.code == remote.code }
-        val selected = if (local == null) remote else remote.copy(
-            status = local.status, passFailResult = local.passFailResult,
-            officialGrade = local.officialGrade, fulfilledOn = local.fulfilledOn)
-        studyPlanRepository?.upsertImportedCourses(listOf(selected))
-        if (local == null) updateBaselineProgress(remote.code, remote.status, remote.passFailResult)
-        val subjectId = courseId.substringAfterLast(':')
-        mutablePreview.value = preview.copy(
-            rules = preview.rules.map { rule ->
-                if (pendingSubjectByEventId[rule.id] == subjectId) rule.copy(courseId = courseId) else rule
-            },
-            oneOffEvents = preview.oneOffEvents.map { event ->
-                if (pendingSubjectByEventId[event.id] == subjectId) event.copy(courseId = courseId) else event
-            },
-        )
+    suspend fun applyCourse(courseId: String, selectedLocalId: String? = null) = performPreviewAction("Предмет оновлено") {
+        val preview = mutablePreview.value ?: return@performPreviewAction
+        val remote = preview.courses.firstOrNull { it.id == courseId } ?: return@performPreviewAction
+        studyPlanRepository?.upsertImportedCourses(listOf(remote),
+            selectedLocalId?.let { mapOf(courseId to it) }.orEmpty())
+        updateBaselineProgress(remote.code, remote.status, remote.passFailResult)
         refreshLocalPreview()
     }
 
-    suspend fun applyProgress(courseId: String) {
-        val preview = mutablePreview.value ?: return
-        if (UisSyncSection.PROGRESS !in preview.availableSections) return
-        val remote = preview.courses.firstOrNull { it.id == courseId } ?: return
-        val local = preview.localCourses.firstOrNull { it.code == remote.code }
-        if (local == null) return
-        studyPlanRepository?.updateStatus(local.id, remote.status)
-        studyPlanRepository?.setOfficialResult(local.id, remote.officialGrade, remote.fulfilledOn)
-        if (remote.gradingType == com.kpyruy.takt.core.model.CourseGradingType.PASS_FAIL) {
-            studyPlanRepository?.setPassFailResult(local.id, remote.passFailResult)
-        }
+    suspend fun applyProgress(courseId: String) = performPreviewAction("Прогрес оновлено") {
+        val preview = mutablePreview.value ?: return@performPreviewAction
+        if (UisSyncSection.PROGRESS !in preview.availableSections) return@performPreviewAction
+        val remote = preview.courses.firstOrNull { it.id == courseId } ?: return@performPreviewAction
+        if (preview.localCourses.matchingUisCourse(remote) == null) return@performPreviewAction
+        studyPlanRepository?.upsertImportedCourses(listOf(remote))
+        studyPlanRepository?.setOfficialResult(remote.id, remote.officialGrade, remote.fulfilledOn)
         updateBaselineProgress(remote.code, remote.status, remote.passFailResult)
         refreshLocalPreview()
     }
@@ -496,40 +514,79 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun addRule(id: String) {
-        if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return
-        mutablePreview.value?.rules?.firstOrNull { it.id == id }?.let { scheduleRepository?.upsertRule(it) }
+    suspend fun addRule(id: String) = performPreviewAction("Заняття додано") {
+        if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return@performPreviewAction
+        refreshLocalPreview()
+        mutablePreview.value?.rules?.firstOrNull { it.id == id }?.let {
+            validateTimetableLinks(listOf(it.id to it.courseId))
+            scheduleRepository?.upsertRule(it)
+        }
         refreshLocalPreview()
     }
 
-    suspend fun addOneOff(id: String) {
-        if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return
-        mutablePreview.value?.oneOffEvents?.firstOrNull { it.id == id }?.let { scheduleRepository?.upsertOneOffEvent(it) }
+    suspend fun addOneOff(id: String) = performPreviewAction("Заняття додано") {
+        if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return@performPreviewAction
+        refreshLocalPreview()
+        mutablePreview.value?.oneOffEvents?.firstOrNull { it.id == id }?.let {
+            validateTimetableLinks(listOf(it.id to it.courseId))
+            scheduleRepository?.upsertOneOffEvent(it)
+        }
         refreshLocalPreview()
     }
 
-    suspend fun replaceSchedule() {
-        val preview = mutablePreview.value ?: return
-        if (UisSyncSection.TIMETABLE !in preview.availableSections) return
-        val schedule = scheduleRepository ?: return
-        schedule.observeExceptions().first().forEach { schedule.deleteException(it.id) }
-        schedule.observeRules().first().forEach { schedule.deleteRule(it.id) }
-        schedule.observeOneOffEvents().first().forEach { schedule.deleteOneOffEvent(it.id) }
-        schedule.upsertRules(preview.rules)
-        schedule.upsertOneOffEvents(preview.oneOffEvents)
+    suspend fun replaceSchedule() = performPreviewAction("Розклад UIS збережено") {
         refreshLocalPreview()
+        val preview = mutablePreview.value ?: return@performPreviewAction
+        if (UisSyncSection.TIMETABLE !in preview.availableSections) return@performPreviewAction
+        val schedule = scheduleRepository ?: return@performPreviewAction
+        validateTimetableLinks(preview.rules.map { it.id to it.courseId } + preview.oneOffEvents.map { it.id to it.courseId })
+        schedule.replaceSchedule(preview.rules, preview.oneOffEvents)
+        refreshLocalPreview()
+    }
+
+    private suspend fun validateTimetableLinks(events: List<Pair<String, String?>>) {
+        val ids = studyPlanRepository?.observeCourses()?.first().orEmpty().map { it.id }.toSet()
+        events.forEach { (id, courseId) ->
+            val subjectId = pendingSubjectByEventId[id]
+            val remote = mutablePreview.value?.courses?.firstOrNull { it.id.substringAfterLast(':') == subjectId }
+            val code = remote?.code
+            require((subjectId == null || remote != null && courseId == remote.id) && (courseId == null || courseId in ids)) {
+                "Спочатку імпортуй предмет ${code ?: subjectId.orEmpty()} з UIS, потім повтори додавання розкладу."
+            }
+        }
     }
 
     fun dismissPreview() {
+        if (mutableSyncAction.value.running) return
         mutablePreview.value = null
+        mutableSyncAction.value = UisSyncActionState()
         pendingSubjectByEventId = emptyMap()
         mutableLastCheckOutcome.value = null
     }
 
     private suspend fun refreshLocalPreview() {
         val current = mutablePreview.value ?: return
+        val local = studyPlanRepository?.observeCourses()?.first().orEmpty()
+        val canonicalBySubject = current.courses.associateBy { it.id.substringAfterLast(':') }
+        suspend fun resolve(eventId: String, previousId: String?): String? {
+            pendingSubjectByEventId[eventId]?.let { subject ->
+                canonicalBySubject[subject]?.let { remote ->
+                    return local.matchingUisCourse(remote)?.id
+                }
+                return null
+            }
+            return previousId?.let { studyPlanRepository?.observeCourse(it)?.first()?.id }
+        }
         mutablePreview.value = current.copy(
-            localCourses = studyPlanRepository?.observeCourses()?.first().orEmpty(),
+            localCourses = local,
+            associatedCourseIds = studyPlanRepository?.importedCourseChoices().orEmpty(),
+            courses = current.courses.map { remote ->
+                val existing = local.matchingUisCourse(remote)
+                remote.copy(officialGrade = remote.officialGrade ?: existing?.officialGrade,
+                    fulfilledOn = remote.fulfilledOn ?: existing?.fulfilledOn)
+            },
+            rules = current.rules.map { it.copy(courseId = resolve(it.id, it.courseId)) },
+            oneOffEvents = current.oneOffEvents.map { it.copy(courseId = resolve(it.id, it.courseId)) },
             localPeriod = settingsRepository?.settings?.value?.semesterPeriods?.get(current.semester),
             localRules = scheduleRepository?.observeRules()?.first().orEmpty(),
             localOneOffEvents = scheduleRepository?.observeOneOffEvents()?.first().orEmpty(),
@@ -692,15 +749,17 @@ private fun UisStudyPlan.toCourses(results: Map<String, UisStudyResult> = emptyM
 }
 
 private fun UisSyncPreview.hasRelevantDifferences(): Boolean {
+    // ID adoption remains reviewable even when only progress/timetable was fetched.
+    if (courses.any { remote -> remote.id !in associatedCourseIds && localCourses.filter { it.matchesUisCourse(remote) }.any { it.id != remote.id } }) return true
     if (UisSyncSection.PROGRESS in availableSections &&
         (earnedCredits != localEarnedCredits || requiredCredits != localRequiredCredits ||
-            courses.any { remote -> localCourses.firstOrNull { it.code == remote.code }?.let { local ->
+            courses.any { remote -> localCourses.matchingUisCourse(remote)?.let { local ->
                 local.status != remote.status || local.passFailResult != remote.passFailResult ||
-                    local.officialGrade != remote.officialGrade || local.fulfilledOn != remote.fulfilledOn
+                    local.officialGrade != (remote.officialGrade ?: local.officialGrade) || local.fulfilledOn != (remote.fulfilledOn ?: local.fulfilledOn)
             } == true })) return true
     if (UisSyncSection.SUBJECTS in availableSections && courses.any { remote ->
-            localCourses.firstOrNull { it.code == remote.code }?.let { local ->
-                local.titleEn != remote.titleEn || local.titleSk != remote.titleSk ||
+            localCourses.matchingUisCourse(remote)?.let { local ->
+                local.id != remote.id || local.titleEn != remote.titleEn || local.titleSk != remote.titleSk ||
                     local.credits != remote.credits || local.semester != remote.semester ||
                     local.gradingType != remote.gradingType || local.requirementType != remote.requirementType
             } ?: true

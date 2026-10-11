@@ -1,7 +1,9 @@
 package com.kpyruy.takt.core.data
 
+import androidx.room.withTransaction
+import com.kpyruy.takt.core.database.TaktDatabase
+
 import com.kpyruy.takt.core.database.CourseNoteEntity
-import com.kpyruy.takt.core.database.StudyContentDao
 import com.kpyruy.takt.core.database.StudyTaskEntity
 import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.StudyTask
@@ -9,8 +11,9 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.map
 
 class RoomStudyContentRepository(
-    private val dao: StudyContentDao,
+    private val database: TaktDatabase,
 ) : StudyContentRepository {
+    private val dao = database.studyContentDao()
     override fun observeAllTasks() =
         dao.observeAllTasks().map { items -> items.map { it.toDomain() } }
 
@@ -21,7 +24,9 @@ class RoomStudyContentRepository(
         dao.observeNotes(courseId).map { items -> items.map { it.toDomain() } }
 
     override suspend fun upsertTask(task: StudyTask) {
-        dao.upsertTask(task.toEntity())
+        database.withTransaction {
+            dao.upsertTask(task.copy(courseId = database.resolveCourseId(task.courseId)).toEntity())
+        }
     }
 
     override suspend fun setTaskCompleted(id: String, completed: Boolean) {
@@ -33,7 +38,9 @@ class RoomStudyContentRepository(
     }
 
     override suspend fun upsertNote(note: CourseNote) {
-        dao.upsertNote(note.toEntity())
+        database.withTransaction {
+            dao.upsertNote(note.copy(courseId = database.resolveCourseId(note.courseId)).toEntity())
+        }
     }
 
     override suspend fun deleteNote(id: String) {

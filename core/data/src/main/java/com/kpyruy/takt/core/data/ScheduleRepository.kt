@@ -13,6 +13,8 @@ interface ScheduleRepository {
     fun observeRules(): Flow<List<ScheduleRule>>
     fun observeOneOffEvents(): Flow<List<OneOffScheduleEvent>>
     fun observeExceptions(): Flow<List<ScheduleException>>
+    /** Replaces rules/events and clears their exceptions/absence marks atomically. */
+    suspend fun replaceSchedule(rules: List<ScheduleRule>, events: List<OneOffScheduleEvent>)
     suspend fun upsertRule(rule: ScheduleRule)
     suspend fun upsertRules(rules: List<ScheduleRule>)
     suspend fun upsertOneOffEvent(event: OneOffScheduleEvent)

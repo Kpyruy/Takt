@@ -25,7 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,34 +84,34 @@ fun AddGradeItemForm(
     val effectiveType = (initialItem?.type ?: initialType).let {
         if (it == GradeItemType.MIDTERM) GradeItemType.TEST else it
     }
-    var title by remember(initialItem?.id, initialTitle, effectiveType) {
+    var title by rememberSaveable(initialItem?.id, initialTitle, effectiveType) {
         mutableStateOf(
             initialItem?.title
                 ?: initialTitle.ifBlank { if (effectiveType == GradeItemType.EXAM) t("Екзамен") else "" }
         )
     }
-    var earnedText by remember(initialItem?.id) {
+    var earnedText by rememberSaveable(initialItem?.id) {
         mutableStateOf(initialItem?.earnedPoints?.toEditableNumber() ?: "0")
     }
-    var maxText by remember(initialItem?.id) {
+    var maxText by rememberSaveable(initialItem?.id) {
         mutableStateOf(initialItem?.maxPoints?.toEditableNumber().orEmpty())
     }
-    var minimumText by remember(initialItem?.id) {
+    var minimumText by rememberSaveable(initialItem?.id) {
         mutableStateOf(initialItem?.minimumPointsForExam?.toEditableNumber().orEmpty())
     }
-    var durationText by remember(initialItem?.id) {
+    var durationText by rememberSaveable(initialItem?.id) {
         mutableStateOf(initialItem?.durationMinutes?.toString().orEmpty())
     }
-    var type by remember(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
-    var dueDate by remember(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
-    var lessonId by remember(initialItem?.id) { mutableStateOf(initialItem?.lessonId) }
-    var completed by remember(initialItem?.id, effectiveType) {
+    var type by rememberSaveable(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
+    var dueDate by rememberSaveable(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
+    var lessonId by rememberSaveable(initialItem?.id) { mutableStateOf(initialItem?.lessonId) }
+    var completed by rememberSaveable(initialItem?.id, effectiveType) {
         mutableStateOf(initialItem?.completed ?: false)
     }
-    var requiredForExam by remember(initialItem?.id) {
+    var requiredForExam by rememberSaveable(initialItem?.id) {
         mutableStateOf(initialItem?.requiredForExam ?: false)
     }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
     val lessonOptions = rememberGradeLessonOptions(scheduleRepository, settingsRepository, courseId, dueDate)
     val selectedLessonId = if (lessonOptions.isEmpty()) lessonId else {
         lessonId?.takeIf { selected -> lessonOptions.any { it.id == selected } }
