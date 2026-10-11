@@ -44,7 +44,7 @@ import com.kpyruy.takt.core.ui.theme.readableAccentColor
 fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, today: LocalDate = LocalDate.now()) {
     var menuOpen by remember { mutableStateOf(false) }
     val accent = taktSubjectColor(item.courseId)
-    val overdue = !item.completed && item.dueDate?.isBefore(today) == true
+    val overdue = item.isOverdue(today)
     val background = MaterialTheme.colorScheme.surfaceContainerHigh
     val accentText = readableAccentColor(accent, background)
     val pointsText = readableAccentColor(accent, accent.copy(alpha = .16f).compositeOver(background))
@@ -82,12 +82,14 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                     AssessmentDetailChip(item.type.datePrefix() + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                 }
                 item.durationMinutes?.let { AssessmentDetailChip(t("$it хв")) }
+                if (!item.contributesToGrade) AssessmentDetailChip(t("Не входить у підсумок"))
                 if (item.requiredForExam) AssessmentDetailChip(t("Для допуску"))
                 item.minimumPointsForExam?.let { AssessmentDetailChip(t("Мінімум ") + it.displayNumber() + t(" б.")) }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
                 Text(when {
+                    item.isAwaitingResult -> t("Очікую оцінку")
                     overdue -> overdueLabel(item.dueDate!!, today)
                     item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Поріг не виконано")
                     item.completed -> t("Результат записано")

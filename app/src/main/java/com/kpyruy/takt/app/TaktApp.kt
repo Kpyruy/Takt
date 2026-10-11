@@ -46,6 +46,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kpyruy.takt.core.data.AppReleaseRepository
+import com.kpyruy.takt.feature.settings.AppUpdatePrompt
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
 import com.kpyruy.takt.core.data.TaktDocumentStore
@@ -100,7 +102,9 @@ fun TaktApp(
     documentStore: TaktDocumentStore,
     universityAccountRepository: UniversityAccountRepository,
     authenticateDevice: DeviceAuthenticationRequest,
+    appReleaseRepository: AppReleaseRepository,
 ) {
+    val releaseState by appReleaseRepository.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val snapshotState = planningSnapshot.collectAsStateWithLifecycle()
     val availableCourses by remember(snapshotState) {
@@ -242,6 +246,12 @@ fun TaktApp(
         )
     }
 
+    if (currentRoute != SETTINGS_ROUTE) {
+        releaseState.promptUpdate?.let { release ->
+            AppUpdatePrompt(release = release, onDismiss = appReleaseRepository::dismissUpdate)
+        }
+    }
+
     CompositionLocalProvider(LocalCourseIconKeys provides courseIconKeys) {
     actionEvent?.let { event ->
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
@@ -334,6 +344,7 @@ fun TaktApp(
                     studyPlanRepository = repository,
                     universityAccountRepository = universityAccountRepository,
                     authenticateDevice = authenticateDevice,
+                    appReleaseRepository = appReleaseRepository,
                     onBack = { navController.popBackStack() },
                 )
             }

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kpyruy.takt.core.data.AppReleaseRepository
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.BackupRepository
 import com.kpyruy.takt.core.data.BackupPayloadCodec
@@ -65,6 +67,7 @@ fun SettingsScreen(
     studyPlanRepository: StudyPlanRepository,
     universityAccountRepository: UniversityAccountRepository,
     authenticateDevice: DeviceAuthenticationRequest,
+    appReleaseRepository: AppReleaseRepository,
     onBack: () -> Unit,
 ) {
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
@@ -79,6 +82,8 @@ fun SettingsScreen(
     var showPeriods by remember { mutableStateOf(false) }
     var showUniversityAccount by remember { mutableStateOf(false) }
     var showUisAutoSync by remember { mutableStateOf(false) }
+    var showAppUpdates by remember { mutableStateOf(false) }
+    val releaseState by appReleaseRepository.state.collectAsStateWithLifecycle()
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val uisPreview by universityAccountRepository.syncPreview.collectAsStateWithLifecycle()
     val uisSession by universityAccountRepository.session.state.collectAsStateWithLifecycle()
@@ -161,6 +166,10 @@ fun SettingsScreen(
         }
     }
 
+    if (showAppUpdates) {
+        AppUpdatesPage(appReleaseRepository, onBack = { showAppUpdates = false })
+        return
+    }
     if (showAppearance) {
         AppearanceSettingsPage(
             settings = settings,
@@ -334,6 +343,13 @@ fun SettingsScreen(
             Text(t("FX · нижче 56%"), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+
+        SettingsNavigationTile(
+            title = t("Оновлення додатка"),
+            subtitle = if (releaseState.availableUpdate != null) t("Доступне оновлення") else "Takt " + releaseState.installedVersion,
+            icon = Icons.Outlined.SystemUpdate,
+            onClick = { showAppUpdates = true },
+        )
 
         SettingsSectionTitle(t("Дані"))
         SectionCard {

@@ -10,6 +10,7 @@ sealed interface HomeWorkEntry {
     val completed: Boolean
     val requiredForExam: Boolean
     val meetsAdmissionRequirement: Boolean
+    val awaitingResult: Boolean get() = false
     val type: GradeItemType?
 
     data class Task(val value: StudyTask) : HomeWorkEntry {
@@ -28,6 +29,7 @@ sealed interface HomeWorkEntry {
         override val requiredForExam get() = value.requiredForExam
         override val meetsAdmissionRequirement get() = value.meetsAdmissionRequirement
         override val type get() = value.type
+        override val awaitingResult get() = value.isAwaitingResult
     }
 }
 
@@ -50,7 +52,7 @@ object HomeWorkPlanner {
         filter: HomeWorkFilter,
     ): List<HomeWorkEntry> = entries(tasks, assessments)
         .filter { entry ->
-            entry.dueDate?.isBefore(today) == true &&
+            !entry.awaitingResult && entry.dueDate?.isBefore(today) == true &&
                 (!entry.completed || (entry.requiredForExam && !entry.meetsAdmissionRequirement)) &&
                 matchesCourseAndType(entry, filter)
         }.sortedWith(entryOrder)
@@ -62,8 +64,8 @@ object HomeWorkPlanner {
         filter: HomeWorkFilter,
     ): List<HomeWorkEntry> {
         return entries(tasks, assessments).filter { entry ->
-            (filter.includeCompleted || !entry.completed ||
-                (entry.requiredForExam && !entry.meetsAdmissionRequirement)) &&
+            (filter.includeCompleted || (!entry.awaitingResult && (!entry.completed ||
+                (entry.requiredForExam && !entry.meetsAdmissionRequirement)))) &&
                 matchesCourseAndType(entry, filter) &&
                 when (val date = entry.dueDate) {
                     null -> filter.includeUndated

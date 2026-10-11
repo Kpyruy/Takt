@@ -111,7 +111,7 @@ fun HomeScreen(
     val deadlines = remember(tasks, selectedDate) {
         tasks.filter { it.dueDate == selectedDate && (!it.completed || (it.requiredForExam && !it.meetsAdmissionRequirement)) }
     }
-    val assessmentDeadlines = remember(assessments, selectedDate) { assessments.filter { it.dueDate == selectedDate } }
+    val assessmentDeadlines = remember(assessments, selectedDate) { assessments.filter { it.dueDate == selectedDate && !it.isAwaitingResult } }
     val locale = TaktI18n.locale
     val time = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val weekday = remember(locale) { DateTimeFormatter.ofPattern("EEEE", locale) }
@@ -152,7 +152,7 @@ fun HomeScreen(
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(t("Твій день"), style = MaterialTheme.typography.labelLarge)
-            Text(t("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.completed }}"), style = MaterialTheme.typography.bodySmall, color = muted)
+            Text(t("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.isSubmitted }}"), style = MaterialTheme.typography.bodySmall, color = muted)
         }
         Spacer(Modifier.height(23.dp))
         if (events.isEmpty()) {

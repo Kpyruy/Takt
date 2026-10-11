@@ -22,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExamInfoEntity::class,
         ExamMaterialEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -33,6 +33,13 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE grade_items ADD COLUMN contributesToGrade INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE grade_items ADD COLUMN awaitingResult INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         val MIGRATION_16_17 = object : Migration(16, 17) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS course_id_aliases (oldId TEXT NOT NULL PRIMARY KEY, courseId TEXT NOT NULL)")

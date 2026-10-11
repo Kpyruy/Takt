@@ -89,7 +89,7 @@ internal fun CourseExamTab(
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ExamMetric(t("За семестр"), earned.displayNumber(), "/ ${maximum.displayNumber()}", Modifier.weight(1f))
-            ExamMetric(t("Доступно на екзамені"), if (gradeItems.any { it.type == GradeItemType.EXAM }) projection.examRemainingPoints.displayNumber() else "—", t("балів"), Modifier.weight(1f))
+            ExamMetric(t("Доступно на екзамені"), if (allGradedWork.any { it.type == GradeItemType.EXAM }) projection.examRemainingPoints.displayNumber() else "—", t("балів"), Modifier.weight(1f))
         }
         SubjectPanel {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +132,7 @@ internal fun CourseExamTab(
         EditExamInfoSheet(
             courseId = courseId,
             initial = examInfo,
-            gradeItems = allGradedWork,
+            gradeItems = gradeItems,
             onDismiss = { showEditor = false },
             onSave = {
                 onSaveExamInfo(it)

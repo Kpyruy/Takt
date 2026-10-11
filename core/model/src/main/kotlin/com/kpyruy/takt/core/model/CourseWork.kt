@@ -5,7 +5,7 @@ import java.time.LocalDate
 object CourseWork {
     /** Explicit assessments take precedence over matching legacy scored tasks. */
     fun scoredItems(tasks: List<StudyTask>, assessments: List<GradeItem>): List<GradeItem> =
-        assessments + tasksNotRepresentedByAssessments(tasks, assessments).mapNotNull { it.asScoredGradeItem() }
+        assessments.filter { it.contributesToGrade } + tasksNotRepresentedByAssessments(tasks, assessments).mapNotNull { it.asScoredGradeItem() }
 
     fun tasksNotRepresentedByAssessments(
         tasks: List<StudyTask>,
@@ -36,7 +36,7 @@ object CourseWork {
     fun allSubmitted(tasks: List<StudyTask>, assessments: List<GradeItem>): Boolean =
         (tasks.isNotEmpty() || assessments.isNotEmpty()) &&
             tasksNotRepresentedByAssessments(tasks, assessments).all { it.completed } &&
-            assessments.all { it.completed }
+            assessments.all { it.isSubmitted }
 
     /** The home task feed omits exams, which are presented separately there. */
     fun actionable(items: List<GradeItem>): List<GradeItem> =

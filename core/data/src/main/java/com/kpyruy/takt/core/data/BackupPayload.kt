@@ -25,7 +25,7 @@ data class BackupPayload(
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 8
+        const val CURRENT_VERSION = 9
     }
 }
 
@@ -107,6 +107,8 @@ data class BackupGradeItem(
     val minimumPointsForExam: Double? = null,
     val lessonId: String? = null,
     val durationMinutes: Int? = null,
+    val contributesToGrade: Boolean = true,
+    val awaitingResult: Boolean = false,
 )
 
 @Serializable
