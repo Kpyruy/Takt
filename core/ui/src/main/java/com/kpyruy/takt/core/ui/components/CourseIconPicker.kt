@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.outlined.Search
@@ -35,15 +36,15 @@ fun CourseIconPicker(selectedKey: String?, onSelect: (String?) -> Unit, onDismis
             (it.label.contains(query, true) || t(it.label).contains(query, true) || it.key.contains(query, true))
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxWidth().fillMaxHeight(.88f).padding(horizontal = 12.dp),
-            shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
+        Surface(Modifier.fillMaxWidth().fillMaxHeight(.88f).padding(horizontal = 12.dp).glassSurface(RoundedCornerShape(24.dp)),
+            shape = RoundedCornerShape(24.dp), color = Color.Transparent) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(t("Іконка предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                 IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити іконки")) }
             }
             Text(t("${CourseIcons.all.size} іконок · обери свою"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            TaktTextField(query, { query = it }, Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 placeholder = { Text(t("Пошук іконки")) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(listOf("Усі") + CourseIcons.all.map { it.category }.distinct()) { name ->
@@ -57,9 +58,9 @@ fun CourseIconPicker(selectedKey: String?, onSelect: (String?) -> Unit, onDismis
                 items(icons, key = { it.key }) { option ->
                     val chosen = option.key == selectedKey
                     Surface(onClick = { onSelect(option.key) },
-                        modifier = Modifier.testTag("course-icon-${option.key}").semantics { selected = chosen; contentDescription = t(option.label) },
+                        modifier = Modifier.glassSurface(RoundedCornerShape(12.dp), if (chosen) MaterialTheme.colorScheme.primaryContainer else Color.Unspecified).testTag("course-icon-${option.key}").semantics { selected = chosen; contentDescription = t(option.label) },
                         shape = RoundedCornerShape(12.dp),
-                        color = if (chosen) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        color = Color.Transparent,
                         border = BorderStroke(1.dp, if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
                         Column(Modifier.padding(8.dp).heightIn(min = 62.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(option.vector, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)

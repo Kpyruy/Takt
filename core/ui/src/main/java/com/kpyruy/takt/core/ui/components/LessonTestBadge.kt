@@ -15,15 +15,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun LessonTestBadge(compact: Boolean = false, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.testTag("lesson-test-badge"),
+        modifier = modifier.glassSurface(MaterialTheme.shapes.extraSmall, MaterialTheme.colorScheme.primaryContainer).testTag("lesson-test-badge"),
         shape = MaterialTheme.shapes.extraSmall,
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
         Row(Modifier.padding(horizontal = if (compact) 5.dp else 7.dp, vertical = 4.dp),

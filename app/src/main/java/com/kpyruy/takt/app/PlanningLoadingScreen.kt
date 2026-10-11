@@ -37,7 +37,7 @@ internal fun PlanningLoadingScreen() {
     ).value
     val placeholder = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = opacity)
     Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+        Modifier.fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {

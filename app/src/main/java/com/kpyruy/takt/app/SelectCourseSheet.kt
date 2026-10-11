@@ -18,6 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.clickable
+import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -60,12 +62,7 @@ fun SelectCourseSheet(
                 )
             }
             ordered.forEach { course ->
-                Surface(
-                    onClick = { onSelected(course) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .55f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                ) {
+                GlassSurface(Modifier.fillMaxWidth().clickable { onSelected(course) }) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -74,7 +71,7 @@ fun SelectCourseSheet(
                         CourseAvatar(course)
                         Column(Modifier.weight(1f)) {
                             Text(course.title, style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(7.dp))
+                            Spacer(Modifier.height(4.dp))
                             Text(
                                 t("${course.code} · ${course.credits} кр. · семестр ${course.semester}"),
                                 style = MaterialTheme.typography.bodySmall,

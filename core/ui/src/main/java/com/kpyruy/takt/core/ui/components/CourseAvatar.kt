@@ -23,8 +23,8 @@ val LocalCourseIconKeys = staticCompositionLocalOf<Map<String, String?>> { empty
 fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
     val color = taktSubjectColor(course.id)
     val icon = CourseIcons.find(course.iconKey)
-    Box(modifier.size(42.dp).background(color.copy(alpha = .12f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-        if (icon != null) Icon(icon.vector, icon.label, Modifier.size(24.dp), tint = color)
+    Box(modifier.size(46.dp).glassSurface(RoundedCornerShape(13.dp), color), contentAlignment = Alignment.Center) {
+        if (icon != null) Icon(icon.vector, icon.label, Modifier.size(26.dp), tint = color)
         else Text(course.code.substringBefore("_").take(2), color = color, fontSize = 14.sp, lineHeight = 18.sp,
             fontWeight = FontWeight.SemiBold, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
     }

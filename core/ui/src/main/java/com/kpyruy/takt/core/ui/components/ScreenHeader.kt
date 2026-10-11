@@ -41,8 +41,8 @@ fun ScreenHeader(
             subtitle?.let {
                 Text(
                     text = it,
-                    modifier = Modifier.padding(top = 7.dp),
-                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

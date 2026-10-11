@@ -30,6 +30,7 @@ class FirstRunScreenTest {
                 onRestore = { null },
             )
         }
+        compose.onNodeWithText("Почати локально").performClick()
         compose.onNodeWithText("Твій Takt").assertExists()
         compose.onNodeWithTag("onboarding-color-PURPLE").performScrollTo().performClick()
         compose.onNodeWithTag("onboarding-primary").performClick()

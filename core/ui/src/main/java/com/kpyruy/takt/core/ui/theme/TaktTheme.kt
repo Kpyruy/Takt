@@ -10,7 +10,9 @@ import androidx.compose.ui.graphics.toArgb
 import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
+import com.kpyruy.takt.core.model.ThemeFamily
 
+val LocalTaktThemeFamily = staticCompositionLocalOf { ThemeFamily.BLUE }
 val LocalTaktCardAppearance = staticCompositionLocalOf { CardAppearance.ELEVATED }
 val LocalTaktSubjectColors = staticCompositionLocalOf<List<Color>> { emptyList() }
 
@@ -24,6 +26,7 @@ fun TaktTheme(
 
     CompositionLocalProvider(
         LocalTaktCardAppearance provides settings.cardAppearance,
+        LocalTaktThemeFamily provides settings.themeFamily,
         LocalTaktSubjectColors provides if (darkTheme) palette.subjectColorsDark else palette.subjectColorsLight,
     ) {
         MaterialTheme(

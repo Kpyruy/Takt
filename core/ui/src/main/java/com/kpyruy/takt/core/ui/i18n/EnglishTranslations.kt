@@ -2,6 +2,18 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for English UI text. */
 internal val enTranslations: Map<String, String> = mapOf(
+    "Твої дані захищено" to "Your data is protected",
+    "Використати блокування екрана" to "Use screen lock",
+    "Навчання у твоєму ритмі" to "Study at your own pace",
+    "Розклад на кожен день" to "Your daily timetable",
+    "Усі пари, аудиторії та зміни в одному місці" to "Classes, rooms and changes in one place",
+    "Задачі та допуск" to "Tasks and exam eligibility",
+    "Контроль завдань, дедлайнів і допуску до сесії" to "Track tasks, deadlines and exam eligibility",
+    "Оцінки й прогрес" to "Grades and progress",
+    "Усі оцінки та твій академічний прогрес" to "Your grades and academic progress",
+    "Підключити UIS STU" to "Connect UIS STU",
+    "Почати локально" to "Start locally",
+    "Твої навчальні дані залишаються на пристрої." to "Your study data stays on this device.",
     "Очікую оцінку" to "Awaiting grade",
     "Не входить у підсумок" to "Excluded from the final grade",
     "Бали входять у підсумкову оцінку" to "Points count toward the final grade",

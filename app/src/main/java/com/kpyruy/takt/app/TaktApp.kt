@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -258,8 +259,7 @@ fun TaktApp(
     }
     Scaffold(
         snackbarHost = { if (currentRoute != SETTINGS_ROUTE) SnackbarHost(snackbarHostState) },
-        containerColor = if (currentRoute == Destination.HOME.route || currentRoute == Destination.PLAN.route)
-            MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         bottomBar = {
             if (showRootNavigation) {
                 TaktBottomNavigation(

@@ -5,6 +5,9 @@ import com.kpyruy.takt.core.ui.i18n.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
@@ -70,17 +73,16 @@ fun CreateItemScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ScreenHeader(
             title = type.label,
-            subtitle = t("Повна форма"),
+            subtitle = courses.firstOrNull { it.id == courseId }?.title,
             navigation = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = t("Назад"))
-                }
+                TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onBack)
             },
         )
 

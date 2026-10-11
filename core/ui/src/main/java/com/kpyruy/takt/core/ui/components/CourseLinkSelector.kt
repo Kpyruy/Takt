@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.activeCourseChoices
@@ -17,10 +20,12 @@ fun CourseLinkSelector(courses: List<Course>, selectedId: String?, onChange: (Co
     Column {
         Text(t("Предмет"), style = MaterialTheme.typography.titleSmall)
         Box {
-            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(20.dp)),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = .55f)), shape = RoundedCornerShape(20.dp)) {
                 Text(courses.firstOrNull { it.id == selectedId }?.title ?: t("Без прив’язки до предмета"))
             }
-            DropdownMenu(expanded, onDismissRequest = { expanded = false }, modifier = Modifier.heightIn(max = 320.dp)) {
+            DropdownMenu(expanded, onDismissRequest = { expanded = false }, modifier = Modifier.heightIn(max = 320.dp).glassSurface(RoundedCornerShape(20.dp)), containerColor = Color.Transparent) {
                 DropdownMenuItem(text = { Text(t("Без прив’язки")) }, onClick = { onChange(null); expanded = false })
                 if (activeCourses.isEmpty()) {
                     Text(

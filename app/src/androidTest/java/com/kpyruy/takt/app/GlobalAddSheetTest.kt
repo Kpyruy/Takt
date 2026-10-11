@@ -20,6 +20,16 @@ class GlobalAddSheetTest {
             }
         }
 
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("glassCapture") == "true") {
+            compose.waitForIdle()
+            val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+            android.os.SystemClock.sleep(350)
+            val image = instrumentation.uiAutomation.takeScreenshot()
+            instrumentation.targetContext.openFileOutput("glass-add-menu.png", 0).use {
+                image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+            image.recycle()
+        }
         compose.onNodeWithText("Предмет").assertIsDisplayed()
         compose.onNodeWithText("Тест").assertIsDisplayed().performClick()
         compose.onNodeWithText("Нагадування").assertIsDisplayed()

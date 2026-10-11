@@ -2,6 +2,18 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for Slovak UI text. */
 internal val skTranslations: Map<String, String> = mapOf(
+    "Твої дані захищено" to "Tvoje údaje sú chránené",
+    "Використати блокування екрана" to "Použiť zámok obrazovky",
+    "Навчання у твоєму ритмі" to "Štúdium v tvojom rytme",
+    "Розклад на кожен день" to "Rozvrh na každý deň",
+    "Усі пари, аудиторії та зміни в одному місці" to "Všetky hodiny, miestnosti a zmeny na jednom mieste",
+    "Задачі та допуск" to "Úlohy a pripustenie ku skúške",
+    "Контроль завдань, дедлайнів і допуску до сесії" to "Prehľad úloh, termínov a pripustenia ku skúškam",
+    "Оцінки й прогрес" to "Známky a pokrok",
+    "Усі оцінки та твій академічний прогрес" to "Tvoje známky a študijný pokrok",
+    "Підключити UIS STU" to "Pripojiť UIS STU",
+    "Почати локально" to "Začať lokálne",
+    "Твої навчальні дані залишаються на пристрої." to "Tvoje študijné údaje zostávajú v zariadení.",
     "Очікую оцінку" to "Čakám na hodnotenie",
     "Не входить у підсумок" to "Nezapočítava sa do výsledného hodnotenia",
     "Бали входять у підсумкову оцінку" to "Body sa započítavajú do výsledného hodnotenia",

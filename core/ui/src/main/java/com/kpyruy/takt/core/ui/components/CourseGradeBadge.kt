@@ -26,11 +26,11 @@ private val gradeDateFormat = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
 @Composable
 fun CourseGradeBadge(grade: GradeLetter, fulfilledOn: LocalDate?, modifier: Modifier = Modifier) {
-    val color = MaterialTheme.colorScheme.tertiary
+    val color = MaterialTheme.colorScheme.primary
     Column(modifier.widthIn(min = 72.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(38.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(11.dp)),
+        Box(Modifier.size(42.dp).glassSurface(RoundedCornerShape(11.dp), MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center) {
-            Text(grade.name, color = color, fontSize = 19.sp, lineHeight = 23.sp, fontWeight = FontWeight.SemiBold,
+            Text(grade.name, color = color, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold,
                 style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
         }
         if (fulfilledOn != null) {

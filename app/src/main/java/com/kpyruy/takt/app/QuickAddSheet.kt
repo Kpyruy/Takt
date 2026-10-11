@@ -13,12 +13,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -133,7 +133,7 @@ fun QuickAddSheet(
                 }
                 com.kpyruy.takt.core.ui.components.LessonTypeSelector(lessonType) { lessonType = it }
             }
-            OutlinedTextField(
+            TaktTextField(
                 value = title,
                 onValueChange = {
                     title = it
@@ -184,7 +184,7 @@ fun QuickAddSheet(
                     )
                 }
 
-                QuickAddType.NOTE -> OutlinedTextField(
+                QuickAddType.NOTE -> TaktTextField(
                     value = details,
                     onValueChange = { details = it },
                     label = { Text(t("Текст")) },
@@ -197,19 +197,19 @@ fun QuickAddSheet(
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
-            Button(
+            TaktPrimaryButton(
                 onClick = {
                     if (title.isBlank()) {
                         error = t("Введіть назву.")
-                        return@Button
+                        return@TaktPrimaryButton
                     }
                     if (needsCourse && courseId == null) {
                         error = t("Оберіть предмет.")
-                        return@Button
+                        return@TaktPrimaryButton
                     }
                     if (courseId != null && activeCourses.none { it.id == courseId }) {
                         error = t("Цей предмет уже не активний. Оберіть активний предмет.")
-                        return@Button
+                        return@TaktPrimaryButton
                     }
 
                     when (type) {
@@ -228,7 +228,7 @@ fun QuickAddSheet(
                         QuickAddType.CLASS -> {
                             if (endTime <= startTime) {
                                 error = t("Кінець має бути пізніше початку.")
-                                return@Button
+                                return@TaktPrimaryButton
                             }
                             onSaveLesson(
                                 ScheduleRule(
@@ -248,7 +248,7 @@ fun QuickAddSheet(
                         QuickAddType.NOTE -> {
                             if (details.isBlank()) {
                                 error = t("Додайте текст нотатки.")
-                                return@Button
+                                return@TaktPrimaryButton
                             }
                             onSaveNote(
                                 CourseNote(

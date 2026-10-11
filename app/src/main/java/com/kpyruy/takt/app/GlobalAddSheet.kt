@@ -24,6 +24,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.ui.graphics.Color
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -48,37 +56,41 @@ fun GlobalAddSheet(
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(t("Додати"), style = MaterialTheme.typography.headlineSmall)
-            Text(
-                t("Оберіть тип елемента"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            val actions: List<CreateItemType?> = CreateItemType.entries.filter { allowCourseCreation || it != CreateItemType.COURSE } + null
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(t("Додати"), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
+                TaktIconButton(Icons.Outlined.Close, t("Закрити"), onDismiss)
+            }
+            val actions = CreateItemType.entries.filter { allowCourseCreation || it != CreateItemType.COURSE }
             actions.chunked(2).forEach { pair ->
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     pair.forEach { type ->
-                        Surface(
-                            onClick = {
-                                haptics.tick()
-                                if (type == null) onQuickAdd() else onCreate(type)
-                            },
-                            modifier = Modifier.weight(1f).heightIn(min = 76.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Icon(type.icon(), contentDescription = null,
-                                    modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
-                                Text(type?.label ?: t("Швидко"), style = MaterialTheme.typography.labelLarge,
-                                    maxLines = 1)
+                        val tint = type.actionTint()
+                        GlassSurface(Modifier.weight(1f).clickable {
+                            haptics.tick()
+                            onCreate(type)
+                        }) {
+                            Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Box(Modifier.size(42.dp).glassSurface(tint = tint.copy(alpha = .16f)),
+                                    contentAlignment = Alignment.Center) {
+                                    Icon(type.icon(), null, Modifier.size(24.dp), tint = tint)
+                                }
+                                Text(type.label, style = MaterialTheme.typography.titleSmall, maxLines = 2)
                             }
                         }
                     }
+                }
+            }
+            GlassSurface(Modifier.fillMaxWidth().clickable { haptics.tick(); onQuickAdd() }) {
+                Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.size(42.dp).glassSurface(tint = MaterialTheme.colorScheme.primary.copy(alpha = .15f)),
+                        contentAlignment = Alignment.Center) {
+                        Icon(Icons.Outlined.Bolt, null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(t("Швидке додавання"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -95,4 +107,13 @@ private fun CreateItemType?.icon(): ImageVector = when (this) {
     CreateItemType.EVENT -> Icons.Outlined.Event
     CreateItemType.REMINDER -> Icons.Outlined.Notifications
     null -> Icons.Outlined.Bolt
+}
+
+private fun CreateItemType.actionTint(): Color = when (this) {
+    CreateItemType.COURSE, CreateItemType.NOTE -> Color(0xFF168265)
+    CreateItemType.CLASS, CreateItemType.EVENT -> Color(0xFF2672E8)
+    CreateItemType.TASK -> Color(0xFFC27A22)
+    CreateItemType.TEST -> Color(0xFF7948C7)
+    CreateItemType.EXAM -> Color(0xFFCA4747)
+    CreateItemType.REMINDER -> Color(0xFFB5881F)
 }

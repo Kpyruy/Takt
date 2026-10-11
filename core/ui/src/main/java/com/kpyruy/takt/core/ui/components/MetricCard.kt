@@ -20,7 +20,7 @@ fun MetricCard(
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall,
         )
         supporting?.let {
             Text(

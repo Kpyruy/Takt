@@ -5,9 +5,9 @@ import com.kpyruy.takt.core.ui.i18n.t
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,18 +38,18 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
     val parsedSemester = semester.toIntOrNull()
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        OutlinedTextField(title, { title = it; error = null }, label = { Text(t("Назва предмета")) },
+        TaktTextField(title, { title = it; error = null }, label = { Text(t("Назва предмета")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-title"))
-        OutlinedTextField(code, { code = it; error = null }, label = { Text(t("Код предмета")) },
+        TaktTextField(code, { code = it; error = null }, label = { Text(t("Код предмета")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-code"))
-        OutlinedTextField(credits, { credits = it.filter(Char::isDigit); error = null },
+        TaktTextField(credits, { credits = it.filter(Char::isDigit); error = null },
             label = { Text(t("Кредити")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-credits"))
-        OutlinedTextField(semester, { semester = it.filter(Char::isDigit); error = null },
+        TaktTextField(semester, { semester = it.filter(Char::isDigit); error = null },
             label = { Text(t("Семестр")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-semester"))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        Button(
+        TaktPrimaryButton(
             onClick = {
                 saving = true
                 scope.launch {

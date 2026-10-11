@@ -10,6 +10,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -48,12 +59,13 @@ fun TaktDatePickerField(
         ?.toEpochMilli()
     val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
 
-    OutlinedTextField(
+    TaktTextField(
         value = value?.format(taktDateFormatter).orEmpty(),
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
         placeholder = { Text(t("Оберіть дату")) },
+        trailingIcon = { Icon(Icons.Outlined.CalendarMonth, null) },
         modifier = modifier
             .clickable { showPicker = true }
             .pointerInput(Unit) {
@@ -68,9 +80,12 @@ fun TaktDatePickerField(
 
     if (showPicker) {
         DatePickerDialog(
+            modifier = Modifier.glassSurface(RoundedCornerShape(28.dp)),
+            shape = RoundedCornerShape(28.dp),
+            colors = DatePickerDefaults.colors(containerColor = Color.Transparent),
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(
+                TaktPrimaryButton(
                     onClick = {
                         state.selectedDateMillis?.let { millis ->
                             onValueChange(LocalDate.ofEpochDay(millis / 86_400_000L))
@@ -87,7 +102,7 @@ fun TaktDatePickerField(
                 }
             },
         ) {
-            DatePicker(state = state)
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color.Transparent))
         }
     }
 }
@@ -107,11 +122,12 @@ fun TaktTimePickerField(
         is24Hour = true,
     )
 
-    OutlinedTextField(
+    TaktTextField(
         value = value.format(taktTimeFormatter),
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
+        trailingIcon = { Icon(Icons.Outlined.Schedule, null) },
         modifier = modifier
             .clickable { showPicker = true }
             .pointerInput(Unit) {
@@ -126,9 +142,13 @@ fun TaktTimePickerField(
 
     if (showPicker) {
         AlertDialog(
+            modifier = Modifier.glassSurface(RoundedCornerShape(28.dp)),
+            shape = RoundedCornerShape(28.dp),
+            containerColor = Color.Transparent,
+            title = { Text(label) },
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                TextButton(
+                TaktPrimaryButton(
                     onClick = {
                         onValueChange(LocalTime.of(state.hour, state.minute))
                         showPicker = false
@@ -144,7 +164,11 @@ fun TaktTimePickerField(
             },
             text = {
                 Column {
-                    TimePicker(state = state)
+                    TimePicker(state = state, colors = TimePickerDefaults.colors(
+                        containerColor = Color.Transparent,
+                        clockDialColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .45f),
+                        timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = .40f),
+                    ))
                 }
             },
         )

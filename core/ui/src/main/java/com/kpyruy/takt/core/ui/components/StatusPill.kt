@@ -3,7 +3,7 @@ package com.kpyruy.takt.core.ui.components
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,16 +17,8 @@ fun StatusPill(
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
     contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(999.dp),
-        color = containerColor,
-        contentColor = contentColor,
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            style = MaterialTheme.typography.labelMedium,
-        )
+    Box(modifier.glassSurface(RoundedCornerShape(999.dp), containerColor)) {
+        Text(text, Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+            color = contentColor, style = MaterialTheme.typography.labelSmall)
     }
 }

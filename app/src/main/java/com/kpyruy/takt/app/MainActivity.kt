@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktGlassBackground
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -114,7 +115,7 @@ class MainActivity : FragmentActivity() {
                         isAppearanceLightNavigationBars = lightSystemBars
                     }
                 }
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                TaktGlassBackground(modifier = Modifier.fillMaxSize()) {
                     when {
                         hasUniversityAccount && !taktApplication.deviceUnlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
                         showOnboarding == true -> FirstRunScreen(
@@ -212,17 +213,3 @@ class MainActivity : FragmentActivity() {
     }
 }
 
-@androidx.compose.runtime.Composable
-private fun DeviceLockScreen(message: String?, onUnlock: () -> Unit) {
-    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Icon(Icons.Outlined.Lock, null, tint = MaterialTheme.colorScheme.primary)
-            Text(t("Takt заблоковано"), style = MaterialTheme.typography.headlineMedium)
-            Text(t("Підтвердь особу через захист телефона, щоб відкрити свої дані."),
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Button(onClick = onUnlock) { Text(t("Розблокувати")) }
-        }
-    }
-}

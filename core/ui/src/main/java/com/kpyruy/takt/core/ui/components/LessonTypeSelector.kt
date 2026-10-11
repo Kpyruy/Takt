@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.LessonType
 
@@ -19,7 +20,9 @@ fun LessonTypeSelector(value: LessonType, onChange: (LessonType) -> Unit) {
         Text(t("Тип заняття"), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(LessonType.entries) { type ->
-                FilterChip(selected = type == value, onClick = { onChange(type) }, label = { Text(t(type.label)) },
+                FilterChip(modifier = Modifier.glassSurface(MaterialTheme.shapes.small, if (type == value) MaterialTheme.colorScheme.primaryContainer else Color.Unspecified),
+                    colors = FilterChipDefaults.filterChipColors(containerColor = Color.Transparent, selectedContainerColor = Color.Transparent),
+                    selected = type == value, onClick = { onChange(type) }, label = { Text(t(type.label)) },
                     leadingIcon = if (type == LessonType.UNSPECIFIED) null else ({ LessonTypeIcon(type) }))
             }
         }

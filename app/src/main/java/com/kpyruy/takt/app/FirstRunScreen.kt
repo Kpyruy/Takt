@@ -34,7 +34,7 @@ import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Today
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -66,6 +66,9 @@ import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.ui.theme.TaktTheme
+import com.kpyruy.takt.core.ui.components.TaktGlassBackground
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
 import com.kpyruy.takt.feature.settings.AppearanceLivePreview
@@ -94,7 +97,7 @@ internal fun FirstRunScreen(
     var draft by remember { mutableStateOf(settings) }
     SideEffect { TaktI18n.use(draft.language) }
     val tourPages = remember(TaktI18n.language) { localizedTourPages() }
-    var step by rememberSaveable { mutableIntStateOf(0) }
+    var step by rememberSaveable { mutableIntStateOf(-1) }
     var tourIndex by rememberSaveable { mutableIntStateOf(0) }
     var restoreMessage by remember { mutableStateOf<String?>(null) }
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
@@ -104,19 +107,28 @@ internal fun FirstRunScreen(
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) scope.launch { restoreMessage = onRestore(uri) }
     }
-    BackHandler(step != 0) {
+    BackHandler(step > -1) {
         if (step == 3 && tourIndex > 0) tourIndex-- else step--
     }
 
     TaktTheme(draft) {
+        if (step == -1) {
+            TaktWelcomeScreen(
+                onConnect = { useUIS = true; step = 0 },
+                onLocal = { useUIS = false; step = 0 },
+            )
+            return@TaktTheme
+        }
+        TaktGlassBackground {
         Scaffold(
+            containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
             bottomBar = {
-                Surface(shadowElevation = 10.dp) {
+                GlassSurface {
                     Column(Modifier.fillMaxWidth().navigationBarsPadding()
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Button(
+                        TaktPrimaryButton(
                             onClick = {
                                 when (step) {
                                     0 -> step = 1
@@ -267,6 +279,7 @@ internal fun FirstRunScreen(
                 }
             }
         }
+    }
     }
 }
 
