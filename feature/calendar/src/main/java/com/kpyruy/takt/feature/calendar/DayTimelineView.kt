@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -78,9 +78,9 @@ fun DayTimelineView(
     val ordered = events.sortedWith(compareBy<ResolvedScheduleEvent> { it.startTime }.thenBy { it.endTime })
     if (ordered.isEmpty()) return
 
-    val rangeStartHour = minOf(9, ordered.minOf { it.startTime.hour })
+    val rangeStartHour = ordered.minOf { it.startTime.hour }
     val latestMinute = ordered.maxOf { it.endTime.hour * 60 + it.endTime.minute }
-    val rangeEndHour = maxOf(15, ceil(latestMinute / 60.0).toInt()).coerceAtMost(24)
+    val rangeEndHour = maxOf(rangeStartHour + 1, ceil(latestMinute / 60.0).toInt()).coerceAtMost(24)
     val rangeStart = LocalTime.of(rangeStartHour, 0)
     val rangeMinutes = (rangeEndHour - rangeStartHour) * 60L
     val totalHeight = timelineHourHeight * (rangeEndHour - rangeStartHour)
@@ -224,7 +224,7 @@ private fun TimelineEventBlock(
 
     Surface(
         modifier = modifier.alpha(if (dimmed || cancelled || event.isAbsent) 0.6f else 1f).semantics { contentDescription = "${event.title}, ${t(event.lessonType.label)}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", ${t("тест")}" else ""}" }.lessonInteraction(onClick, onLongClick),
-        shape = RoundedCornerShape(7.dp),
+        shape = RoundedCornerShape(16.dp),
         color = if (dimmed) MaterialTheme.colorScheme.surfaceContainerLow
             else lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),
     ) {

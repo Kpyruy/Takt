@@ -27,7 +27,7 @@ fun TaktPrimaryButton(
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(percent = 50)
     val scheme = MaterialTheme.colorScheme
     val primary = if (scheme.background.luminance() < .3f) lerp(scheme.primary, scheme.primaryContainer, .72f) else scheme.primary
     // The top edge reflects light while the lower body retains contrast for white labels.

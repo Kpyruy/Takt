@@ -29,6 +29,13 @@ import com.kpyruy.takt.core.model.LessonType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.material.icons.outlined.ChevronRight
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
+import com.kpyruy.takt.core.ui.components.CourseAvatar
+import com.kpyruy.takt.core.ui.components.StatusPill
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.components.TaktIconButton
@@ -120,119 +127,93 @@ fun HomeScreen(
     val accent = MaterialTheme.colorScheme.primary
 
     Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
-            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(selectedDate.dayOfMonth.toString(), Modifier.testTag("home-date-number"), fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-2).sp)
-            Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(selectedDate.format(weekday).replaceFirstChar { it.uppercase() },
-                    fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.65).sp)
-                Text(selectedDate.format(month).replaceFirstChar { it.uppercase() } +
-                    t(" · ${selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())} тиждень"),
-                    style = MaterialTheme.typography.bodySmall, color = muted)
+                Text(t("Сьогодні"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text(selectedDate.format(weekday).replaceFirstChar { it.uppercase() } + ", " +
+                    selectedDate.format(DateTimeFormatter.ofPattern("d MMMM", locale)),
+                    style = MaterialTheme.typography.bodyLarge, color = muted)
             }
             TaktIconButton(Icons.Outlined.Settings, t("Налаштування"), onClick = onOpenSettings)
         }
-        Spacer(Modifier.height(24.dp))
-        key(today) {
-            HomeWeekStrip(selected = selectedDate, onSelect = { selectedDate = it })
-        }
+        Spacer(Modifier.height(16.dp))
+        key(today) { HomeWeekStrip(selected = selectedDate, onSelect = { selectedDate = it }) }
         Spacer(Modifier.height(22.dp))
         if (courses.isEmpty()) {
             SectionCard {
                 Text(t("Створи свій розклад"), style = MaterialTheme.typography.titleMedium)
-                Text(t(if (allowCourseCreation) "Спочатку додай предмет, потім пару." else "Предмети завантажуються з UIS."),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t(if (allowCourseCreation) "Спочатку додай предмет, потім пару." else "Предмети завантажуються з UIS."), color = muted)
                 if (allowCourseCreation) Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text(t("Додати предмет")) }
             }
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(16.dp))
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(t("Твій день"), style = MaterialTheme.typography.labelLarge)
-            Text(t("Пар: ${events.size} · Дедлайнів: ${deadlines.size + assessmentDeadlines.count { !it.isSubmitted }}"), style = MaterialTheme.typography.bodySmall, color = muted)
-        }
-        Spacer(Modifier.height(23.dp))
-        if (events.isEmpty()) {
-            Text(t("Пар на цей день немає"), style = MaterialTheme.typography.bodyMedium, color = muted)
-            Spacer(Modifier.height(20.dp))
-        }
-        events.forEachIndexed { index, event ->
-            val visual = HomeLessonVisual.forEvent(event, selectedDate, today, now, next?.id)
-            val active = visual.active
-            val cancelled = event.status == ScheduleEventStatus.CANCELLED
-            val subjectColor = taktSubjectColor(event.courseId ?: event.title)
-            val contentAlpha = if (visual.muted) 0.5f else 1f
-            val status = when(event.status) {
-                ScheduleEventStatus.CANCELLED -> t("Скасовано")
-                ScheduleEventStatus.MOVED -> t("Перенесено")
-                ScheduleEventStatus.ONE_OFF -> t("Разова подія")
-                ScheduleEventStatus.NORMAL -> null
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(event.startTime.format(time), Modifier.width(timeWidth).alpha(contentAlpha),
-                    style = MaterialTheme.typography.bodySmall, color = if (active) accent else muted)
-                Row(Modifier.weight(1f).height(IntrinsicSize.Min).testTag("home-lesson-${event.id}")
-                    .clip(RoundedCornerShape(topEnd = 13.dp, bottomEnd = 13.dp))
-                    .background(if (active) accent.copy(alpha = 0.09f) else Color.Transparent)
-                    .lessonInteraction({ event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) }, { onEventLongClick(event) })) {
-                    Box(Modifier.width(2.dp).fillMaxHeight().background(subjectColor))
-                    Column(Modifier.weight(1f).padding(13.dp).alpha(contentAlpha)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CourseInlineIcon(event.courseId)
-                            Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
+        Text(t("Твій день"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        if (events.isEmpty()) Text(t("Пар на цей день немає"), style = MaterialTheme.typography.bodyMedium, color = muted)
+        Column(Modifier.drawBehind {
+            if (events.isNotEmpty()) drawLine(accent.copy(alpha = .24f),
+                Offset(timeWidth.toPx() + 4.dp.toPx(), 20.dp.toPx()),
+                Offset(timeWidth.toPx() + 4.dp.toPx(), size.height - 20.dp.toPx()), strokeWidth = 1.dp.toPx())
+        }) {
+            events.forEachIndexed { index, event ->
+                val visual = HomeLessonVisual.forEvent(event, selectedDate, today, now, next?.id)
+                val active = visual.active
+                val cancelled = event.status == ScheduleEventStatus.CANCELLED
+                val subjectColor = taktSubjectColor(event.courseId ?: event.title)
+                val course = courses.firstOrNull { it.id == event.courseId }
+                val status = when (event.status) {
+                    ScheduleEventStatus.CANCELLED -> t("Скасовано")
+                    ScheduleEventStatus.MOVED -> t("Перенесено")
+                    ScheduleEventStatus.ONE_OFF -> t("Разова подія")
+                    ScheduleEventStatus.NORMAL -> null
+                }
+                Row(Modifier.fillMaxWidth().drawBehind {
+                    drawCircle(if (active) accent else subjectColor, 3.5.dp.toPx(),
+                        Offset(timeWidth.toPx() + 4.dp.toPx(), size.height / 2f))
+                }, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(event.startTime.format(time), Modifier.width(timeWidth), style = MaterialTheme.typography.bodySmall,
+                        color = if (active) accent else muted)
+                    Row(Modifier.weight(1f).testTag("home-lesson-${event.id}")
+                        .glassSurface(RoundedCornerShape(18.dp), if (active) accent.copy(alpha = .12f) else Color.Unspecified)
+                        .lessonInteraction({ event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) }, { onEventLongClick(event) })
+                        .padding(8.dp).alpha(if (visual.muted) .85f else 1f),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (course != null) CourseAvatar(course, Modifier.size(40.dp))
+                        else Box(Modifier.size(42.dp).glassSurface(tint = subjectColor), contentAlignment = Alignment.Center) { LessonTypeIcon(event.lessonType) }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(event.title, style = MaterialTheme.typography.titleMedium,
                                 textDecoration = if (cancelled && settings.cancellationStyle == CancellationDisplayStyle.STRIKETHROUGH) TextDecoration.LineThrough else null)
-                            if (CourseWork.hasTestOnLesson(event, events, assessmentDeadlines)) {
-                                LessonTestBadge(compact = true)
-                            }
-                            if (active) {
-                                val minutes = Duration.between(now, event.startTime).toMinutes()
-                                Text(if (minutes > 0) t("$minutes хв") else t("Зараз"),
-                                    Modifier.testTag("home-active-${event.id}"), style = MaterialTheme.typography.labelSmall, color = accent)
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            LessonTypeIcon(event.lessonType)
-                            Text(listOfNotNull(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t), event.room, status, if (!active) t("до ${event.endTime.format(time)}") else null).joinToString(" · "),
+                            Text(listOfNotNull(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t), event.room,
+                                status, t("до ${event.endTime.format(time)}")).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall, color = muted)
+                            if (event.isAbsent) Text(t("Пропущено"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                         }
-                        if (event.isAbsent) {
-                            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Icon(Icons.Outlined.PersonOff, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.error)
-                                Text(t("Пропущено"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                        if (CourseWork.hasTestOnLesson(event, events, assessmentDeadlines)) LessonTestBadge(compact = true)
                         if (active) {
-                            Spacer(Modifier.height(13.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(t("До ${event.endTime.format(time)}"), style = MaterialTheme.typography.bodySmall)
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(17.dp))
-                            }
-                        }
+                            val minutes = Duration.between(now, event.startTime).toMinutes()
+                            Text(if (minutes > 0) t("$minutes хв") else t("Зараз"),
+                                Modifier.testTag("home-active-${event.id}").glassSurface(RoundedCornerShape(50), accent.copy(alpha = .18f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall, color = accent)
+                        } else Icon(Icons.Outlined.ChevronRight, null, Modifier.size(18.dp), tint = muted)
                     }
                 }
-            }
-            Spacer(Modifier.height(13.dp))
-            val following = events.getOrNull(index + 1)
-            if (active && following != null) {
-                val minutes = Duration.between(event.endTime, following.startTime).toMinutes()
-                if (minutes > 0) {
-                    Text(t("Перерва") + " · " + formatDurationMinutes(minutes),
-                        Modifier.padding(start = 55.dp, bottom = 14.dp), style = MaterialTheme.typography.bodySmall, color = muted)
-                }
+                val following = events.getOrNull(index + 1)
+                val minutes = following?.let { Duration.between(event.endTime, it.startTime).toMinutes() } ?: 0
+                if (minutes > 0) Text(t("Перерва") + " · " + formatDurationMinutes(minutes),
+                    Modifier.padding(start = timeWidth + 12.dp, top = 4.dp, bottom = 4.dp),
+                    style = MaterialTheme.typography.bodySmall, color = muted)
+                else Spacer(Modifier.height(9.dp))
             }
         }
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(18.dp))
         HomeTasksSection(tasks, assessments, courses, today,
             savedFilter = settings.homeWorkFilter,
             onFilterChange = { filter -> scope.launch { settingsRepository.setHomeWorkFilter(filter) } },
-            onTaskCompleted = { task, completed ->
-                scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
-            }, onOpenAssessment = onOpenAssessment)
+            onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
+            onOpenAssessment = onOpenAssessment)
         Spacer(Modifier.height(76.dp))
     }
 }
@@ -257,19 +238,19 @@ private fun HomeWeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
         modifier = Modifier.fillMaxWidth().testTag("home-week-strip"),
     ) { page ->
         val week = anchorWeek.plusWeeks((page - centerPage).toLong())
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(7) { day ->
                 val date = week.plusDays(day.toLong())
                 val active = date == selected
-                Column(Modifier.weight(1f).testTag("home-day-${date.toEpochDay()}").clip(RoundedCornerShape(12.dp))
-                    .background(if (active) MaterialTheme.colorScheme.primary else Color.Transparent)
+                Column(Modifier.weight(1f).testTag("home-day-${date.toEpochDay()}")
+                    .glassSurface(RoundedCornerShape(14.dp), if (active) MaterialTheme.colorScheme.primaryContainer else Color.Unspecified)
                     .selectable(active, role = Role.Tab) { onSelect(date) }.padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(date.format(weekday).uppercase(), fontSize = 10.sp, lineHeight = 13.sp,
-                        color = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
-                    Text(date.dayOfMonth.toString(), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
-                        color = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+                    Text(date.dayOfMonth.toString(), modifier = if (active) Modifier.testTag("home-date-number") else Modifier, fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold,
+                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                 }
             }
         }

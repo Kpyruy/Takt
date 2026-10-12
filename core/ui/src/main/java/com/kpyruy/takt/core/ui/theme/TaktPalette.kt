@@ -91,12 +91,12 @@ internal fun paletteFor(family: ThemeFamily): TaktPalette = when (family) {
         darkSecondary = Color(0xFF94D3C5),
         darkTertiary = Color(0xFFC7A9FF),
         subjectsLight = listOf(
-            Color(0xFF677ACF), Color(0xFF619E8C), Color(0xFF8874B3),
-            Color(0xFFC58B4C), Color(0xFFBE7096), Color(0xFF619E8C),
+            Color(0xFF4D8E77), Color(0xFF619E8C), Color(0xFFB78C44),
+            Color(0xFF4E8ECB), Color(0xFFB88B43), Color(0xFF619E8C),
         ),
         subjectsDark = listOf(
-            Color(0xFF7AB6FF), Color(0xFF61D6C6), Color(0xFFB69CFF),
-            Color(0xFFFFC761), Color(0xFFFF92C5), Color(0xFF69D5A3),
+            Color(0xFF85D0B5), Color(0xFF61D6C6), Color(0xFFE9C17E),
+            Color(0xFF8CBEF6), Color(0xFFE9C17E), Color(0xFF69D5A3),
         ),
     )
     ThemeFamily.GREEN -> palette(

@@ -22,6 +22,15 @@ android {
         versionCode = 2
         versionName = "0.2.0"
         testInstrumentationRunner = "com.kpyruy.takt.app.TaktTestRunner"
+        manifestPlaceholders["appLabel"] = "Takt"
+    }
+
+    buildTypes.create("glassPreview") {
+        initWith(buildTypes.getByName("debug"))
+        applicationIdSuffix = ".glass"
+        versionNameSuffix = "+glass.preview"
+        manifestPlaceholders["appLabel"] = "Takt Glass"
+        matchingFallbacks += listOf("debug")
     }
 
     compileOptions {

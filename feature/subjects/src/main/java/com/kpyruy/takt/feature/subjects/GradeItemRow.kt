@@ -39,6 +39,17 @@ import java.time.format.DateTimeFormatter
 import java.time.LocalDate
 import androidx.compose.ui.graphics.compositeOver
 import com.kpyruy.takt.core.ui.theme.readableAccentColor
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ErrorOutline
 
 @Composable
 fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, today: LocalDate = LocalDate.now()) {
@@ -47,20 +58,19 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
     val overdue = item.isOverdue(today)
     val background = MaterialTheme.colorScheme.surfaceContainerHigh
     val accentText = readableAccentColor(accent, background)
-    val pointsText = readableAccentColor(accent, accent.copy(alpha = .16f).compositeOver(background))
     val icon = when (item.type) {
         GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
         GradeItemType.LAB -> Icons.Outlined.Science
         GradeItemType.EXAM -> Icons.Outlined.School
         else -> Icons.Outlined.Assignment
     }
-    Surface(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("course-work-${item.id}"), shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+    GlassSurface(modifier = Modifier.fillMaxWidth().testTag("course-work-${item.id}").clickable(onClick = onEdit),
+        shape = RoundedCornerShape(22.dp)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Surface(shape = RoundedCornerShape(12.dp), color = accent.copy(alpha = 0.16f)) {
-                    Icon(icon, contentDescription = null, tint = accent,
+                    Icon(icon, contentDescription = null, tint = accentText,
                         modifier = Modifier.padding(10.dp).size(22.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -79,40 +89,41 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
             FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 item.dueDate?.let {
-                    AssessmentDetailChip(item.type.datePrefix() + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                    AssessmentDetailChip(item.type.datePrefix() + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), Icons.Outlined.CalendarMonth)
                 }
-                item.durationMinutes?.let { AssessmentDetailChip(t("$it хв")) }
-                if (!item.contributesToGrade) AssessmentDetailChip(t("Не входить у підсумок"))
-                if (item.requiredForExam) AssessmentDetailChip(t("Для допуску"))
-                item.minimumPointsForExam?.let { AssessmentDetailChip(t("Мінімум ") + it.displayNumber() + t(" б.")) }
+                item.durationMinutes?.let { AssessmentDetailChip(t("$it хв"), Icons.Outlined.Schedule) }
+                AssessmentDetailChip(if (item.contributesToGrade) t("Входить у підсумок") else t("Не входить у підсумок"), Icons.Outlined.Description)
+                if (item.requiredForExam) AssessmentDetailChip(t("Для допуску"), Icons.Outlined.Lock)
+                item.minimumPointsForExam?.let { AssessmentDetailChip(t("Мінімум ") + it.displayNumber() + t(" б."), Icons.Outlined.BarChart) }
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (item.completed) Icons.Outlined.CheckCircle else if (overdue) Icons.Outlined.ErrorOutline else Icons.Outlined.Schedule,
+                    null, Modifier.size(18.dp), tint = if (overdue) MaterialTheme.colorScheme.error else accentText)
                 Text(when {
                     item.isAwaitingResult -> t("Очікую оцінку")
                     overdue -> overdueLabel(item.dueDate!!, today)
                     item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Поріг не виконано")
                     item.completed -> t("Результат записано")
                     else -> t("Очікується")
-                }, style = MaterialTheme.typography.labelMedium,
+                }, modifier = Modifier.weight(1f).padding(start = 7.dp), style = MaterialTheme.typography.labelMedium,
                     color = if (overdue || (item.completed && item.requiredForExam && !item.meetsAdmissionRequirement))
                         MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-                Surface(shape = RoundedCornerShape(9.dp), color = accent.copy(alpha = 0.16f)) {
-                    Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t("б.")}"
+                Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t("б.")}"
                         else "${t("Макс.")} ${item.maxPoints.displayNumber()} ${t("б.")}",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelLarge, color = pointsText)
-                }
+                        style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun AssessmentDetailChip(label: String) {
-    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surface) {
-        Text(label, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            style = MaterialTheme.typography.labelSmall,
+internal fun AssessmentDetailChip(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(Modifier.glassSurface(RoundedCornerShape(50)).padding(horizontal = 9.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Icon(icon, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

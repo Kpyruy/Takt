@@ -41,6 +41,7 @@ class SchedulePolishTest {
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Fyzika · prednáška").fetchSemanticsNodes().isNotEmpty() }
         lesson().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Налаштування предмета").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Налаштування предмета").assertExists().performClick()
         compose.onNodeWithText("ОЦІНЮВАННЯ").assertIsDisplayed()
         capture("settings")
@@ -73,6 +74,7 @@ class SchedulePolishTest {
         capture("home")
         root("Календар")
         lesson().performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Налаштування предмета").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Налаштування предмета").assertExists()
         back()
         lesson().performScrollTo().performTouchInput { longClick(durationMillis = 1000) }
@@ -85,6 +87,7 @@ class SchedulePolishTest {
         // Check week list tap/hold and centred time layout visually.
         compose.onNode(hasText("Тиждень") and hasClickAction()).performClick()
         lesson().performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Налаштування предмета").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Налаштування предмета").assertExists()
         back()
         // Calendar preserves its mode on reentry.
@@ -94,16 +97,27 @@ class SchedulePolishTest {
         lesson().performTouchInput { longClick() }
         compose.onNodeWithText("Зняти позначку пропуску").assertExists()
         back()
+        compose.onNodeWithContentDescription("Вибрати вигляд тижня").performClick()
         compose.onNode(hasText("Таймтейбл") and hasClickAction()).performClick()
         lesson().performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Налаштування предмета").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Налаштування предмета").assertExists()
         back()
-        compose.onNode(hasText("Таймтейбл") and hasClickAction()).assertIsSelected()
+        org.junit.Assert.assertEquals(com.kpyruy.takt.core.model.WeekLayout.TIMETABLE,
+            (compose.activity.application as TaktApplication).dataContainer.settingsRepository.settings.value.weekLayout)
         lesson().performScrollTo().performTouchInput { longClick() }
         compose.onNodeWithText("Зняти позначку пропуску").assertExists()
         back()
         compose.onNode(hasText("Місяць") and hasClickAction()).performClick()
-        lesson().performScrollTo().performClick()
+        lesson().performScrollTo()
+        compose.waitForIdle()
+        android.os.SystemClock.sleep(600)
+        lesson().performClick()
+        capture("month-after-tap")
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.openFileOutput("month-after-tap-tree.txt", 0).use {
+            it.write(compose.onRoot(useUnmergedTree = true).printToString().toByteArray())
+        }
+        compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Налаштування предмета").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription("Налаштування предмета").assertExists()
         back()
         compose.onNode(hasText("Місяць") and hasClickAction()).assertIsSelected()

@@ -19,6 +19,14 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 
 @Composable
 internal fun CourseNotesTab(
@@ -45,9 +53,14 @@ internal fun CourseNotesTab(
                 )
             }
         }
-        OutlinedButton(onClick = onAddNote, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Text(t("Додати нотатку"))
+        GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onAddNote), shape = RoundedCornerShape(20.dp)) {
+            Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(t("Додати нотатку"), color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }

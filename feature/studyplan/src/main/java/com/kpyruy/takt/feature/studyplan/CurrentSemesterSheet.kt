@@ -19,11 +19,25 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.ui.components.TaktFullSheet
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,60 +48,57 @@ internal fun CurrentSemesterSheet(
     onSelect: (Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-    ) {
+    var selected by remember(manualSemester) { mutableStateOf(manualSemester) }
+    TaktFullSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).padding(bottom = 28.dp),
+                .padding(horizontal = 20.dp).padding(bottom = 28.dp).selectableGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(t("Поточний семестр"), style = MaterialTheme.typography.headlineSmall)
-            Surface(
-                onClick = { onSelect(null) },
-                modifier = Modifier.fillMaxWidth().testTag("select-current-semester-auto"),
-                shape = MaterialTheme.shapes.medium,
-                color = if (manualSemester == null) MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, if (manualSemester == null) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outlineVariant),
+            GlassSurface(
+                modifier = Modifier.fillMaxWidth().testTag("select-current-semester-auto").selectable(selected == null, role = Role.RadioButton, onClick = { selected = null }),
+                shape = RoundedCornerShape(18.dp),
+                tint = if (selected == null) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Unspecified,
             ) {
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = selected == null, onClick = null)
                     Column(Modifier.weight(1f)) {
                         Text(t("Автоматично"), style = MaterialTheme.typography.titleSmall)
                         currentSemester?.let { Text(t("$it семестр"), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
-                    if (manualSemester == null) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
+                    if (selected == null) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
                         tint = MaterialTheme.colorScheme.primary)
                 }
             }
-            semesters.forEach { (semester, activeCourses) ->
-                val selected = semester == manualSemester
-                Surface(
-                    onClick = { onSelect(semester) },
-                    modifier = Modifier.fillMaxWidth().testTag("select-current-semester-$semester"),
-                    shape = MaterialTheme.shapes.medium,
-                    color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+            semesters.toSortedMap().forEach { (semester, activeCourses) ->
+                val isSelected = semester == selected
+                GlassSurface(
+                    modifier = Modifier.fillMaxWidth().testTag("select-current-semester-$semester").selectable(isSelected, role = Role.RadioButton, onClick = { selected = semester }),
+                    shape = RoundedCornerShape(18.dp),
+                    tint = if (isSelected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Unspecified,
                 ) {
                     Row(Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = isSelected, onClick = null)
                         Column(Modifier.weight(1f)) {
-                            Text(t("$semester семестр"), style = MaterialTheme.typography.titleSmall)
+                            Text(t("$semester семестр · ${if (semester % 2 == 1) "зимовий" else "літній"}"), style = MaterialTheme.typography.titleSmall)
                             if (activeCourses > 0) Text(activeCoursesLabel(activeCourses),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (selected) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
+                        if (isSelected) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }
+            }
+            Spacer(Modifier.height(10.dp))
+            TaktPrimaryButton(onClick = { onSelect(selected) }, modifier = Modifier.fillMaxWidth()) {
+                Text(t("Застосувати"))
             }
         }
     }

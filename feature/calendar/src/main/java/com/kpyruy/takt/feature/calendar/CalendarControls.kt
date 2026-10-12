@@ -39,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.kpyruy.takt.core.ui.components.glassSurface
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -70,9 +72,8 @@ internal fun CalendarViewTabs(
     val scrollable = LocalDensity.current.fontScale > 1.15f || LocalConfiguration.current.screenWidthDp < 360
     Row(
         modifier = modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.outlineVariant)
+            .height(48.dp)
+            .glassSurface(RoundedCornerShape(24.dp))
             .then(if (scrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier)
             .selectableGroup()
             .padding(3.dp),
@@ -82,9 +83,8 @@ internal fun CalendarViewTabs(
             val selected = index == selectedIndex
             Box(
                 modifier = (if (scrollable) Modifier.widthIn(min = 108.dp) else Modifier.weight(1f))
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.outlineVariant)
+                    .height(42.dp)
+                    .then(if (selected) Modifier.glassSurface(RoundedCornerShape(21.dp), MaterialTheme.colorScheme.primaryContainer) else Modifier)
                     .testTag("calendar-view-${viewKeys[index]}")
                     .semantics { this.selected = selected }
                     .combinedClickable(
@@ -169,11 +169,7 @@ internal fun CalendarPeriodArrows(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onPrevious, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.ChevronLeft, contentDescription = t("Попередній період"))
-        }
-        IconButton(onClick = onNext, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.ChevronRight, contentDescription = t("Наступний період"))
-        }
+        TaktIconButton(Icons.Default.ChevronLeft, t("Попередній період"), onPrevious, Modifier.size(40.dp))
+        TaktIconButton(Icons.Default.ChevronRight, t("Наступний період"), onNext, Modifier.size(40.dp))
     }
 }

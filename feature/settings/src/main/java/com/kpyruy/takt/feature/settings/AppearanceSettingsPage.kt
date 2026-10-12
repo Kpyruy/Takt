@@ -24,13 +24,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.outlined.MenuBook
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +64,7 @@ internal fun AppearanceSettingsPage(
         draft.themeFamily != settings.themeFamily || draft.cardAppearance != settings.cardAppearance
 
     Scaffold(
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             Surface(shadowElevation = 10.dp) {
@@ -80,10 +84,9 @@ internal fun AppearanceSettingsPage(
             ScreenHeader(
                 title = t("Твій вигляд"),
                 navigation = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
+                    TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
                 },
             )
-            SettingsSectionTitle(t("Так це виглядатиме"))
             AppearanceLivePreview(draft)
             SettingsSectionTitle(t("Освітлення"))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -122,7 +125,7 @@ internal fun AppearanceSettingsPage(
                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                     ) {
                         Row(
-                            Modifier.fillMaxWidth().heightIn(min = 62.dp).padding(horizontal = 16.dp, vertical = 10.dp),
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
@@ -142,6 +145,7 @@ internal fun AppearanceSettingsPage(
                 listOf(
                     CardAppearance.ELEVATED to t("Підняті"),
                     CardAppearance.TONAL_FILLED to t("Заливка"),
+                    CardAppearance.GLASS to t("Скло"),
                 ).forEach { (appearance, label) ->
                     CardStyleOption(
                         settings = draft,
@@ -159,42 +163,23 @@ internal fun AppearanceSettingsPage(
 @Composable
 fun AppearanceLivePreview(settings: AppSettings) {
     TaktTheme(settings) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        ) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(t("ПРИКЛАД"), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Text(t("Твій день"), style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                SectionCard {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(4.dp, 54.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
-                        Column {
-                            Text("09:00 — 10:30", style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            Text(t("Твоя перша пара"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                            Text(t("Лекція · ауд. 302"), style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        com.kpyruy.takt.core.ui.components.TaktGlassBackground(Modifier.fillMaxWidth().height(120.dp)) {
+            SectionCard(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    com.kpyruy.takt.core.ui.components.GlassSurface(Modifier.size(54.dp), tint = MaterialTheme.colorScheme.secondaryContainer) {
+                        Box(Modifier.size(54.dp), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.MenuBook, null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.secondary)
                         }
                     }
-                }
-                SectionCard {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.size(28.dp).background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
-                            contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(16.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text(t("Твоя перша пара"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                            Text(t("ПРИКЛАД"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
-                        Column {
-                            Text(t("Підготувати конспект"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(t("Твій предмет · завтра"), style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        Text("09:00–10:30 · " + t("Лекція · ауд. 302"), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("Підготувати конспект") + " · " + t("завтра"), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

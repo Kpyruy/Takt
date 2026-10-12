@@ -4,6 +4,7 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
@@ -35,12 +37,15 @@ import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.ExamEligibilityCalculator
 import com.kpyruy.takt.core.model.GradeItemType
-import com.kpyruy.takt.core.model.GradeProjection
-import com.kpyruy.takt.core.model.GradeScale
-import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.ui.components.ScreenHeader
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.TaktTextField
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun SubjectsScreen(
@@ -54,20 +59,52 @@ fun SubjectsScreen(
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val current = remember(courses) { courses.filter { it.status == CourseStatus.ENROLLED } }
     var query by rememberSaveable { mutableStateOf("") }
-    var filter by rememberSaveable { mutableIntStateOf(0) }
+    var filter by rememberSaveable { mutableIntStateOf(1) }
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var filtersOpen by rememberSaveable { mutableStateOf(false) }
+    var semesterOpen by remember { mutableStateOf(false) }
+    var selectedSemester by rememberSaveable { mutableStateOf<Int?>(null) }
+    // Null means an explicit choice of all semesters, distinct from the initial auto view.
+    var allSemesters by rememberSaveable { mutableStateOf(false) }
+    val semester = if (allSemesters) null else selectedSemester ?: current.map { it.semester }.distinct().singleOrNull()
     val visible = courses.filter { course ->
         (when (filter) { 0 -> course.status == CourseStatus.ENROLLED; 2 -> course.status == CourseStatus.FULFILLED; else -> true }) &&
+            (semester == null || course.semester == semester) &&
             (course.title.contains(query, true) || course.code.contains(query, true))
     }
-    Column(Modifier.fillMaxSize().background(subjectBackground()).padding(horizontal = 20.dp, vertical = 18.dp)) {
-        ScreenHeader(title = t("Предмети"), subtitle = t("${current.map { it.semester }.distinct().singleOrNull()?.let { "$it семестр · " }.orEmpty()}${current.size} активні"),
-            action = { if (allowCourseCreation) TextButton(onClick = onAddCourse) { Text(t("Додати")) } })
-        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-            placeholder = { Text(t("Знайти предмет"), fontSize = 12.sp, lineHeight = 16.sp) }, leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
-            singleLine = true, shape = RoundedCornerShape(11.dp), textStyle = MaterialTheme.typography.bodySmall,
-            colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant))
-        TaktUnderlineTabs(labels = listOf(t("Активні · ${current.size}"), t("Усі"), t("Закриті")), selectedIndex = filter, onSelected = { filter = it })
-        LazyColumn(contentPadding = PaddingValues(bottom = 80.dp)) {
+    Box(Modifier.fillMaxSize()) {
+      Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 16.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(t("Предмети"), Modifier.weight(1f), fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
+            TaktIconButton(Icons.Default.Search, t("Знайти предмет"), onClick = { searchOpen = !searchOpen })
+            TaktIconButton(Icons.Default.Settings, t("Фільтри предметів"), onClick = { filtersOpen = !filtersOpen })
+        }
+        Box(Modifier.padding(top = 12.dp, bottom = 14.dp)) {
+            GlassSurface(Modifier.clickable { semesterOpen = true }, shape = RoundedCornerShape(50)) {
+                Row(Modifier.padding(horizontal = 17.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(if (semester != null) t("$semester семестр · ${if (semester % 2 == 1) "зимовий" else "літній"}") else t("Усі семестри"),
+                        style = MaterialTheme.typography.titleMedium)
+                    Icon(Icons.Default.ExpandMore, t("Обрати семестр"))
+                }
+            }
+            DropdownMenu(expanded = semesterOpen, onDismissRequest = { semesterOpen = false }) {
+                DropdownMenuItem(text = { Text(t("Усі семестри")) }, onClick = { selectedSemester = null; allSemesters = true; semesterOpen = false })
+                courses.map { it.semester }.distinct().sorted().forEach { number ->
+                    DropdownMenuItem(text = { Text(t("$number семестр")) }, onClick = { selectedSemester = number; allSemesters = false; semesterOpen = false })
+                }
+            }
+        }
+        if (searchOpen) {
+            TaktTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(t("Знайти предмет")) }, leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true)
+            Spacer(Modifier.height(12.dp))
+        }
+        if (filtersOpen) {
+            TaktUnderlineTabs(labels = listOf(t("Активні · ${current.size}"), t("Усі"), t("Закриті")), selectedIndex = filter, onSelected = { filter = it })
+            Spacer(Modifier.height(12.dp))
+        }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
             items(visible, key = { it.id }) { course ->
                 SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
             }
@@ -78,6 +115,9 @@ fun SubjectsScreen(
                 }
             }
         }
+      }
+      if (allowCourseCreation) TaktIconButton(Icons.Default.Add, t("Додати предмет"), onClick = onAddCourse,
+          modifier = Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 20.dp))
     }
 }
 
@@ -89,7 +129,6 @@ private fun SubjectProgressCard(
     onClick: () -> Unit,
 ) {
     val gradeItems by remember(gradeRepository, course.id) { gradeRepository.observeItems(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val gradeScale by remember(gradeRepository, course.id) { gradeRepository.observeScale(course.id) }.collectAsStateWithLifecycle(initialValue = GradeScale.default())
     val tasks by remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }.collectAsStateWithLifecycle(initialValue = null)
 

@@ -34,6 +34,10 @@ import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.TaktIconButton
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
+import androidx.compose.material.icons.filled.School
+import androidx.compose.foundation.clickable
 
 @Composable
 fun StudyPlanScreen(
@@ -60,7 +64,7 @@ fun StudyPlanScreen(
     val completedSemesters = remember(semesters, currentSemester) {
         semesters.count { (semester, items) -> semesterState(items, semester == currentSemester) == SemesterState.COMPLETED }
     }
-    var expandedSemesters by rememberSaveable { mutableStateOf(emptySet<Int>()) }
+    var expandedSemesters by rememberSaveable(currentSemester) { mutableStateOf(currentSemester?.let(::setOf) ?: emptySet()) }
     var filter by rememberSaveable { mutableIntStateOf(0) }
     var editingCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     var iconCourseId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -71,7 +75,7 @@ fun StudyPlanScreen(
     var selectingSemester by remember { mutableStateOf(false) }
 
     if (courses.isEmpty()) {
-        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+        Column(Modifier.fillMaxSize()
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ScreenHeader(title = t("Твій шлях"))
             Text(t(if (uisAccount) "Предмети завантажуються з UIS." else "Додай перший предмет, щоб бачити свій прогрес."),
@@ -82,13 +86,13 @@ fun StudyPlanScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).testTag("progress-screen"),
+        modifier = Modifier.fillMaxSize().testTag("progress-screen"),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 96.dp),
     ) {
         item {
             ScreenHeader(
                 title = t("Твій шлях"),
-                subtitle = t("${courses.size} предметів у плані"),
+                subtitle = t("Навчальний план"),
                 action = {
                     Box {
                         TaktIconButton(
@@ -109,20 +113,17 @@ fun StudyPlanScreen(
                     }
                 },
             )
-            Spacer(Modifier.height(18.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.height(12.dp))
+            GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(23.dp)) {
+              Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+              Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                     Text(displayedEarned.toString(), style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.9).sp))
                     Text(t(" / $displayedTotal кредитів"), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (!largeText) Text(
-                    t("$completedSemesters із ${semesters.size} завершено"),
-                    Modifier.background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(7.dp)).padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                if (!largeText) CurrentSemesterControl(currentSemester) { selectingSemester = true }
             }
-            if (largeText) Text(t("$completedSemesters із ${semesters.size} семестрів завершено"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            if (largeText) CurrentSemesterControl(currentSemester) { selectingSemester = true }
             LinearProgressIndicator(
                 progress = { if (displayedTotal > 0) (displayedEarned / displayedTotal.toFloat()).coerceIn(0f, 1f) else 0f },
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(5.dp),
@@ -130,30 +131,21 @@ fun StudyPlanScreen(
                 drawStopIndicator = {},
                 trackColor = MaterialTheme.colorScheme.outlineVariant,
             )
-            Spacer(Modifier.height(14.dp))
-            Surface(onClick = { selectingSemester = true },
-                modifier = Modifier.fillMaxWidth().testTag("current-semester-selector"),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer) {
-                Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    Icon(Icons.Default.Schedule, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
-                    Text(t("Поточний семестр · ${currentSemester ?: "—"}"), Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                    Icon(Icons.Default.ExpandMore, t("Обрати семестр"), Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary)
-                }
+            Text(t("$completedSemesters із ${semesters.size} семестрів завершено"),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+              }
             }
             Spacer(Modifier.height(16.dp))
-            TaktUnderlineTabs(listOf(t("План"), t("Активні · ${activeCourses.size}"), t("Здані · ${completedCourses.size}")), filter, { filter = it })
+            TaktSegmentedTabs(listOf(t("План"), t("Активні"), t("Здані")), filter, { filter = it })
             Spacer(Modifier.height(12.dp))
         }
         if (filter != 0) {
             val filtered = if (filter == 1) activeCourses else completedCourses
             items(filtered, key = { it.id }) { course ->
-                ProgressCourseRow(course, gradeRepository, onOpen = { onCourseClick(course.id) }, onStatus = { editingCourseId = course.id })
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+                    ProgressCourseRow(course, gradeRepository, onOpen = { onCourseClick(course.id) }, onStatus = { editingCourseId = course.id })
+                }
+                Spacer(Modifier.height(8.dp))
             }
             if (filtered.isEmpty()) item { Text(if (filter == 1) t("Активних предметів ще немає. Обери їх у плані.") else t("Зданих предметів ще немає."), style = MaterialTheme.typography.bodySmall) }
         }
@@ -171,11 +163,7 @@ fun StudyPlanScreen(
                 )
             }
         }
-        item {
-            Text(t(if (officialCredits) "Кредити UIS: $displayedEarned із $displayedTotal."
-                else "Зараховано $earned із $plannedCredits кредитів у плані."),
-                Modifier.padding(top = 2.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        item { Spacer(Modifier.height(8.dp)) }
     }
     courses.firstOrNull { it.id == editingCourseId }?.let { course ->
         CourseStatusSheet(course, uisManaged = uisAccount, onStatus = { status ->
@@ -200,4 +188,18 @@ fun StudyPlanScreen(
         onDismiss = { selectingSemester = false },
     )
 
+}
+
+@Composable
+private fun CurrentSemesterControl(semester: Int?, onClick: () -> Unit) {
+    GlassSurface(Modifier.heightIn(min = 48.dp).testTag("current-semester-selector").clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+        Row(Modifier.padding(horizontal = 9.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Icon(Icons.Default.School, null, Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
+            Text(t("Поточний семестр · ${semester ?: "—"}"), style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.ExpandMore, t("Обрати семестр"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
 }

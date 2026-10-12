@@ -40,24 +40,19 @@ import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.GradeProjection
 import com.kpyruy.takt.core.ui.components.MetricCard
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import androidx.compose.material.icons.filled.School
 
 @Composable
 internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolean = false) {
     if (compact) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().testTag("course-admission-progress"),
-            shape = RoundedCornerShape(18.dp),
-            color = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(t("Допуск до екзамену"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                    Text(if (eligibility.requiredCount > 0) "${eligibility.completedCount} / ${eligibility.requiredCount}" else "—",
-                        style = MaterialTheme.typography.labelMedium)
-                }
+        GlassSurface(modifier = Modifier.fillMaxWidth().testTag("course-admission-progress"),
+            shape = RoundedCornerShape(22.dp)) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Icon(Icons.Default.School, null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(t("Допуск до екзамену"), style = MaterialTheme.typography.titleMedium)
                 if (eligibility.requiredCount > 0) {
                     LinearProgressIndicator(
                         progress = { (eligibility.completedCount.toFloat() / eligibility.requiredCount).coerceIn(0f, 1f) },
@@ -70,6 +65,10 @@ internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolea
                     Text(t("Вимоги не позначено"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                    if (eligibility.requiredCount > 0) SmallText(t("Виконайте всі обов’язкові вимоги для допуску."))
+                }
+                Text(if (eligibility.requiredCount > 0) "${eligibility.completedCount} / ${eligibility.requiredCount}" else "—",
+                    style = MaterialTheme.typography.titleMedium)
             }
         }
         return
@@ -185,7 +184,8 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
     val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
     val complete = eligibility.eligible
     val color = if (complete) MaterialTheme.colorScheme.primary else if (dark) Color(0xFFEFC78F) else Color(0xFF986023)
-    Surface(Modifier.fillMaxWidth().testTag("exam-admission").clickable(onClick = onClick), shape = RoundedCornerShape(13.dp), color = if(complete) MaterialTheme.colorScheme.primaryContainer else if(dark) Color(0xFF463A2A) else Color(0xFFFFF2DF), contentColor = color) {
+    GlassSurface(Modifier.fillMaxWidth().testTag("exam-admission").clickable(onClick = onClick), shape = RoundedCornerShape(20.dp),
+        tint = if (complete) MaterialTheme.colorScheme.primaryContainer else if (dark) Color(0xFF77582B) else Color(0xFFFFDCA9)) {
         Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("${eligibility.completedCount}/${eligibility.requiredCount}", fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
             Column(Modifier.weight(1f)) {

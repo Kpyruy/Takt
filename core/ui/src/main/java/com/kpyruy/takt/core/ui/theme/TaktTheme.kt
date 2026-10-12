@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -11,6 +12,7 @@ import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppThemeMode
 import com.kpyruy.takt.core.model.CardAppearance
 import com.kpyruy.takt.core.model.ThemeFamily
+import com.kpyruy.takt.core.ui.i18n.TaktNativeLocale
 
 val LocalTaktThemeFamily = staticCompositionLocalOf { ThemeFamily.BLUE }
 val LocalTaktCardAppearance = staticCompositionLocalOf { CardAppearance.ELEVATED }
@@ -25,6 +27,7 @@ fun TaktTheme(
     val palette = paletteFor(settings.themeFamily)
 
     CompositionLocalProvider(
+        LocalContentColor provides if (darkTheme) palette.dark.onSurface else palette.light.onSurface,
         LocalTaktCardAppearance provides settings.cardAppearance,
         LocalTaktThemeFamily provides settings.themeFamily,
         LocalTaktSubjectColors provides if (darkTheme) palette.subjectColorsDark else palette.subjectColorsLight,
@@ -33,7 +36,7 @@ fun TaktTheme(
             colorScheme = if (darkTheme) palette.dark else palette.light,
             typography = TaktTypography,
             shapes = TaktShapes,
-            content = content,
+            content = { TaktNativeLocale(content) },
         )
     }
 }

@@ -16,6 +16,7 @@ enum class ParityOverride {
 }
 
 enum class CardAppearance {
+    GLASS,
     ELEVATED,
     TONAL_FILLED,
 }
@@ -61,7 +62,7 @@ data class AppSettings(
     val cancellationStyle: CancellationDisplayStyle = CancellationDisplayStyle.STRIKETHROUGH,
     val showHiddenLessons: Boolean = false,
     val parityOverride: ParityOverride = ParityOverride.AUTO,
-    val cardAppearance: CardAppearance = CardAppearance.ELEVATED,
+    val cardAppearance: CardAppearance = CardAppearance.GLASS,
     val themeFamily: ThemeFamily = ThemeFamily.BLUE,
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val weekLayout: WeekLayout = WeekLayout.TIMETABLE,

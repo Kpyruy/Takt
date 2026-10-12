@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.*
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import java.time.LocalDate
 
 private val homeWorkFilterSaver = Saver<HomeWorkFilter, List<String>>(
@@ -91,7 +92,7 @@ internal fun HomeTasksSection(
 
     Column(Modifier.fillMaxWidth().testTag("home-tasks-section")) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Задачі"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text(t("Найближчі роботи"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             Text((overdue.size + upcoming.size).toString(), Modifier.testTag("home-tasks-count"),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(8.dp))
@@ -99,30 +100,29 @@ internal fun HomeTasksSection(
                 Icon(Icons.Outlined.Tune, t("Фільтри задач"))
             }
         }
-        Text(periodSummary(filter), style = MaterialTheme.typography.bodySmall,
+        if (filter.period != HomeWorkPeriod.FOURTEEN_DAYS || filter.courseId != null) Text(periodSummary(filter), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         if (overdue.isEmpty() && upcoming.isEmpty()) {
             Text(t("За цим фільтром задач немає"), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            if (overdue.isNotEmpty()) {
-                Text(t("Прострочені · ${overdue.size}"),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.testTag("home-overdue-heading"))
-            }
-            (overdue + upcoming).forEach { entry ->
+            val renderEntry: @Composable (HomeWorkEntry) -> Unit = { entry ->
                 when (entry) {
-                    is HomeWorkEntry.Task -> HomeTaskRow(entry.value,
-                        courseCodes[entry.courseId] ?: courseTitles[entry.courseId] ?: entry.courseId) {
+                    is HomeWorkEntry.Task -> HomeTaskRow(entry.value, courseTitles[entry.courseId] ?: entry.courseId) {
                         onTaskCompleted(entry.value, it)
                     }
-                    is HomeWorkEntry.Graded -> HomeAssessmentRow(entry.value,
-                        courseCodes[entry.courseId] ?: entry.courseId) {
+                    is HomeWorkEntry.Graded -> HomeAssessmentRow(entry.value, courseTitles[entry.courseId] ?: entry.courseId) {
                         onOpenAssessment(entry.value)
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+            }
+            upcoming.forEach { renderEntry(it) }
+            if (overdue.isNotEmpty()) {
+                Text(t("Прострочені · ${overdue.size}"), style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("home-overdue-heading").padding(vertical = 6.dp))
+                overdue.forEach { renderEntry(it) }
             }
         }
     }
@@ -150,9 +150,7 @@ private fun HomeTaskFilterSheet(
     onChange: (HomeWorkFilter) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+    TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {

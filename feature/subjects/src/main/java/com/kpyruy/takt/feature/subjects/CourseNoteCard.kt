@@ -34,6 +34,20 @@ import com.kpyruy.takt.core.data.TaktDocumentStore
 import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.NoteAttachment
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.platform.LocalDensity
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
 
 @Composable
 fun CourseNoteCard(
@@ -45,55 +59,85 @@ fun CourseNoteCard(
     var menuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(note.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-            if (note.content.isNotBlank()) Text(note.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            note.attachments.forEach { attachment ->
-                Row(modifier = Modifier.fillMaxWidth().clickable {
-                    if (attachment.isWebLink) {
-                        runCatching {
-                            val safe = NoteAttachment.webLink(attachment.uri)
-                            context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(safe.uri)))
+    val updatedDate = remember(note.updatedAtEpochMillis) {
+        Instant.ofEpochMilli(note.updatedAtEpochMillis).atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+    }
+    val fontScale = LocalDensity.current.fontScale
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Box(Modifier.size(44.dp).glassSurface(RoundedCornerShape(13.dp), MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Description, null, Modifier.size(25.dp), tint = MaterialTheme.colorScheme.primary)
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    if (maxWidth >= 220.dp && fontScale <= 1.2f) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Top) {
+                            Text(note.title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold, maxLines = 2)
+                            SmallText(updatedDate)
                         }
-                            .onFailure { Toast.makeText(context, t("Немає застосунку для відкриття посилання"), Toast.LENGTH_SHORT).show() }
-                    } else scope.launch {
-                        val uri = documentStore.resolve(attachment.uri)
-                        if (uri == null) Toast.makeText(context, t("Файл недоступний"), Toast.LENGTH_SHORT).show()
-                        else runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(uri, attachment.mimeType)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            })
-                        }.onFailure { Toast.makeText(context, t("Немає застосунку для відкриття файла"), Toast.LENGTH_SHORT).show() }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(note.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, maxLines = 2)
+                            SmallText(updatedDate)
+                        }
                     }
-                }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(if (attachment.isWebLink) Icons.Default.Link else Icons.Default.AttachFile, contentDescription = null)
-                    Text(attachment.name, color = MaterialTheme.colorScheme.primary)
                 }
+                if (note.content.isNotBlank()) Text(note.content, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = { menuOpen = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = t("Дії нотатки"))
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(t("Редагувати")) },
+                    onClick = {
+                        menuOpen = false
+                        onEdit()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(t("Видалити")) },
+                    onClick = {
+                        menuOpen = false
+                        onDelete()
+                    },
+                )
             }
         }
-        IconButton(onClick = { menuOpen = true }) {
-            Icon(Icons.Default.MoreVert, contentDescription = t("Дії нотатки"))
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            DropdownMenuItem(
-                text = { Text(t("Редагувати")) },
-                onClick = {
-                    menuOpen = false
-                    onEdit()
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(t("Видалити")) },
-                onClick = {
-                    menuOpen = false
-                    onDelete()
-                },
-            )
+        note.attachments.forEach { attachment ->
+            Row(modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(15.dp)).clickable {
+                if (attachment.isWebLink) {
+                    runCatching {
+                        val safe = NoteAttachment.webLink(attachment.uri)
+                        context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(safe.uri)))
+                  }
+                        .onFailure { Toast.makeText(context, t("Немає застосунку для відкриття посилання"), Toast.LENGTH_SHORT).show() }
+                } else scope.launch {
+                    val uri = documentStore.resolve(attachment.uri)
+                    if (uri == null) Toast.makeText(context, t("Файл недоступний"), Toast.LENGTH_SHORT).show()
+                    else runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, attachment.mimeType)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        })
+                    }.onFailure { Toast.makeText(context, t("Немає застосунку для відкриття файла"), Toast.LENGTH_SHORT).show() }
+              }
+            }.padding(horizontal = 10.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (attachment.isWebLink) Icons.Default.Link else Icons.Default.AttachFile, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary)
+                Column(Modifier.weight(1f)) {
+                    Text(attachment.name, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
+                    if (attachment.isWebLink) runCatching { java.net.URI(attachment.uri).host }.getOrNull()?.let { SmallText(it) }
+              }
+                Icon(Icons.Default.OpenInNew, null,
+                    Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

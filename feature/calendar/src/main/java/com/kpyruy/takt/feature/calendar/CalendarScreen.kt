@@ -216,14 +216,13 @@ fun CalendarScreen(
     }
 
     val headerSubtitle = when (viewMode) {
-        CalendarViewMode.DAY -> selectedDate.format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
+        CalendarViewMode.DAY -> selectedDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", TaktI18n.locale))
         CalendarViewMode.WEEK -> "${weekStart.format(shortDateFormatter)} – ${weekStart.plusDays(6).format(shortDateFormatter)}"
         CalendarViewMode.MONTH -> visibleMonth.atDay(1).format(monthTitleFormatter).replaceFirstChar { it.uppercase() }
     }
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp).padding(top = 18.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -299,6 +298,10 @@ fun CalendarScreen(
                             hasTest = ::hasTest,
                             onEventClick = { event -> event.courseId?.let(onOpenCourse) ?: onEventLongClick(event) },
                             onEventLongClick = onEventLongClick,
+                            onSelectDate = {
+                                selectDate(it)
+                                viewMode = CalendarViewMode.DAY
+                            },
                         )
                         WeekLayout.COMPACT_LIST -> WeekCompactList(
                             dates = dates,

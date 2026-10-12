@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.data.GradeRepository
@@ -26,6 +28,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.kpyruy.takt.core.ui.components.CourseAvatar
 import com.kpyruy.takt.core.ui.components.CourseGradeBadge
+import com.kpyruy.takt.core.ui.components.TaktFullSheet
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 
 internal fun CourseStatus.title() = when (this) {
     CourseStatus.FULFILLED -> t("Здано")
@@ -52,28 +57,26 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
     val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }
         .collectAsStateWithLifecycle(initialValue = null)
     val grade = course.officialGrade ?: manualGrade
-    Row(Modifier.fillMaxWidth().padding(vertical = 12.dp).testTag("progress-course-${course.id}"),
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("progress-course-${course.id}"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(Modifier.weight(1f).clickable(onClick = onOpen).padding(vertical = 4.dp),
+        Row(Modifier.weight(1f).clickable(onClick = onOpen),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            CourseAvatar(course)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(course.title, style = MaterialTheme.typography.titleSmall)
-                Text(t("${course.semester} семестр · ${course.credits} кр."), style = MaterialTheme.typography.bodySmall,
+            CourseAvatar(course, Modifier.size(36.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(course.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(t("${course.credits} кредитів"), fontSize = 12.sp, lineHeight = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null })
         }
-        if (grade == null || course.status != CourseStatus.FULFILLED) {
-            val color = course.status.tint()
-            TextButton(onClick = onStatus, modifier = Modifier.widthIn(max = if (grade == null) 110.dp else 48.dp)
-                .heightIn(min = 48.dp).testTag("status-${course.id}")
+        Box(Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                .clickable(role = Role.Button, onClick = onStatus).testTag("status-${course.id}")
                 .semantics { contentDescription = t("Змінити статус: ${course.title}"); stateDescription = course.status.title() },
-                contentPadding = PaddingValues(horizontal = 6.dp)) {
-                Icon(course.status.icon(), null, Modifier.size(16.dp), tint = color)
-                if (grade == null) {
-                    Spacer(Modifier.width(5.dp))
-                    Text(course.status.title(), style = MaterialTheme.typography.labelSmall, color = color)
+            contentAlignment = Alignment.Center) {
+            if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null })
+            else GlassSurface(Modifier.size(42.dp), shape = RoundedCornerShape(11.dp),
+                tint = MaterialTheme.colorScheme.primaryContainer) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(course.status.icon(), null, Modifier.size(20.dp), tint = course.status.tint())
                 }
             }
         }
@@ -83,7 +86,7 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CourseStatusSheet(course: Course, uisManaged: Boolean = false, onStatus: (CourseStatus) -> Unit, onIcon: () -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(course.title, style = MaterialTheme.typography.headlineSmall)
             Text(t(if (uisManaged) "${course.semester} семестр" else "${course.semester} семестр · статус можна змінити будь-коли"),
@@ -92,7 +95,7 @@ internal fun CourseStatusSheet(course: Course, uisManaged: Boolean = false, onSt
             if (uisManaged) Text(t("Статус предмета визначає UIS"), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!uisManaged) CourseStatus.entries.forEach { status ->
-                Surface(onClick = { onStatus(status) }, Modifier.fillMaxWidth().testTag("choose-status-${status.name}"),
+                Surface(onClick = { onStatus(status) }, modifier = Modifier.fillMaxWidth().testTag("choose-status-${status.name}"),
                     color = if (status == course.status) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                     shape = RoundedCornerShape(12.dp)) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

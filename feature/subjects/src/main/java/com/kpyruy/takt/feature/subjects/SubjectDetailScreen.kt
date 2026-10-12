@@ -59,6 +59,10 @@ import com.kpyruy.takt.core.model.GradeScale
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.TaktUnderlineTabs
+import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
+import com.kpyruy.takt.core.ui.components.TaktIconButton
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import java.time.LocalDate
@@ -89,11 +93,13 @@ fun SubjectDetailScreen(
     val examInfo by remember(examRepository, courseId) { examRepository.observeExamInfo(courseId) }.collectAsStateWithLifecycle(initialValue = null)
     val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val lifecycleOwner = LocalLifecycleOwner.current
-    val today by androidx.compose.runtime.produceState(LocalDate.now(), lifecycleOwner) {
+    val clock by androidx.compose.runtime.produceState(java.time.LocalDateTime.now(), lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) { value = LocalDate.now(); delay(60_000L) }
+            while (true) { value = java.time.LocalDateTime.now(); delay(60_000L) }
         }
     }
+    val today = clock.toLocalDate()
+    val nextLesson = rememberNextCourseLesson(scheduleRepository, settings, allCourses, courseId, clock)
     val eligibility = remember(tasks, gradeItems) {
         ExamEligibilityCalculator.calculate(tasks, gradeItems)
     }
@@ -148,25 +154,26 @@ fun SubjectDetailScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(subjectBackground(paper = selectedTab != "exam")).padding(horizontal = 20.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            IconButton(onClick = { if (selectedTab == "exam") selectedTab = "overview" else onBack() }) { Icon(Icons.Default.ArrowBack, t("Назад")) }
-            Text(if (selectedTab == "exam") item.title else t("Предмет"), Modifier.weight(1f).padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.MoreHoriz, t("Налаштування предмета")) }
-        }
-        if (selectedTab == "exam") {
-            ScreenHeader(title = t("Екзамен"))
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { ScreenHeader(title = item.title, subtitle = item.code + " · " + item.credits + t(" кредитів · ") + t("${item.semester} семестр")) }
-                IconButton(onClick = { showIconPicker = true }, modifier = Modifier.semantics { contentDescription = t("Змінити іконку предмета") }) {
-                    SubjectMonogram(item)
-                }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onClick = {
+                if (selectedTab == "exam") selectedTab = "overview" else onBack()
+            })
+            IconButton(onClick = { showIconPicker = true }, modifier = Modifier.semantics {
+                contentDescription = t("Змінити іконку предмета")
+            }) { SubjectMonogram(item) }
+            Column(Modifier.weight(1f)) {
+                Text(item.title, fontSize = 27.sp, lineHeight = 31.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                Text(item.code + " · " + item.credits + t(" кредитів · ") + t("${item.semester} семестр"),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            TaktUnderlineTabs(labels = tabs.map(::subjectTabLabel), selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0), onSelected = { selectedTab = tabs[it] })
+            TaktIconButton(Icons.Default.MoreHoriz, t("Налаштування предмета"), onClick = { showSettings = true })
         }
+        TaktSegmentedTabs(labels = tabs.map(::subjectTabLabel), selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0),
+            onSelected = { selectedTab = tabs[it] })
 
         AnimatedContent(
             targetState = selectedTab,
@@ -184,6 +191,7 @@ fun SubjectDetailScreen(
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
                     tasks = tasks,
+                    notes = notes,
                     eligibility = eligibility,
                     showFinalGrade = showFinalGrade,
                     manualGrade = manualGrade,
@@ -195,6 +203,8 @@ fun SubjectDetailScreen(
                     onEditGrade = { editingGradeId = it.id },
                     onNotes = { selectedTab = "notes" },
                     onExam = { selectedTab = "exam" },
+                    nextLesson = nextLesson,
+                    onSettings = { showSettings = true },
                 )
                 "tasks" -> CourseTasksTab(
                     today = today,

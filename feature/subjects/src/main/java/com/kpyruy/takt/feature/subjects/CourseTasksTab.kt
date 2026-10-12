@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,6 +32,12 @@ import com.kpyruy.takt.core.model.CourseWork
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 @Composable
 internal fun CourseTasksTab(
@@ -57,12 +67,14 @@ internal fun CourseTasksTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AdmissionProgressCard(eligibility, compact = true)
+        Text(t("Курсові задачі"), fontSize = 21.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 8.dp))
         if (work.isEmpty()) {
             SectionCard { Text(t("Поки немає задач."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
             work.forEach { entry ->
                 when (entry) {
-                    is CourseWorkEntry.Task -> SectionCard {
+                    is CourseWorkEntry.Task -> {
                         StudyTaskRow(
                             task = entry.value,
                             today = today,
@@ -81,9 +93,14 @@ internal fun CourseTasksTab(
             }
         }
         Box(Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = { addMenuOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text(t("Додати роботу"))
+            GlassSurface(Modifier.fillMaxWidth().clickable { addMenuOpen = true }, shape = RoundedCornerShape(22.dp)) {
+                Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(t("Додати роботу"), color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium)
+                }
             }
             DropdownMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
                 DropdownMenuItem(text = { Text(t("Завдання без балів")) }, onClick = {

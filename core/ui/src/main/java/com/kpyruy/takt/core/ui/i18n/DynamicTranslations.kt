@@ -2,6 +2,10 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Templates use numbered placeholders so translated word order may differ from Ukrainian. */
 internal val dynamicTranslations = listOf(
+    DynamicTranslation("__ARG0__ семестр · зимовий", "Semester __ARG0__ · winter", "__ARG0__. semester · zimný"),
+    DynamicTranslation("__ARG0__ семестр · літній", "Semester __ARG0__ · summer", "__ARG0__. semester · letný"),
+    DynamicTranslation("Прострочені · __ARG0__", "Overdue · __ARG0__", "Po termíne · __ARG0__"),
+    DynamicTranslation("__ARG0__/__ARG1__ кредитів", "__ARG0__/__ARG1__ credits", "__ARG0__/__ARG1__ kreditov"),
     DynamicTranslation("__ARG0__ поки недосяжна", "__ARG0__ is currently unattainable", "__ARG0__ momentálne nie je dosiahnuteľné"),
     DynamicTranslation("Познач, що взяти з __ARG0__. Непозначені дані залишаться на телефоні.", "Select what to take from __ARG0__. Unselected data stays on the phone.", "Vyber, čo prevziať z __ARG0__. Neoznačené údaje zostanú v telefóne."),
     DynamicTranslation("Телефон: __ARG0__ · __ARG1__: __ARG2__", "Phone: __ARG0__ · __ARG1__: __ARG2__", "Telefón: __ARG0__ · __ARG1__: __ARG2__"),
@@ -57,6 +61,7 @@ internal val dynamicTranslations = listOf(
     DynamicTranslation(" · Для допуску__ARG0__", " · Required for exam__ARG0__", " · Potrebné na skúšku__ARG0__"),
     DynamicTranslation("__ARG0__ / __ARG1__ кредитів", "__ARG0__ / __ARG1__ credits", "__ARG0__ / __ARG1__ kreditov"),
     DynamicTranslation(" / __ARG0__ кредитів", " / __ARG0__ credits", " / __ARG0__ kreditov"),
+    DynamicTranslation("__ARG0__ кредитів", "__ARG0__ credits", "__ARG0__ kreditov"),
     DynamicTranslation(" · мін. __ARG0__ б.", " · min. __ARG0__ pts", " · min. __ARG0__ bodov"),
     DynamicTranslation("Для допуску__ARG0__", "Required for exam__ARG0__", "Potrebné na skúšku__ARG0__"),
     DynamicTranslation(" · __ARG0__ тиждень", " · __ARG0__ week", " · __ARG0__ týždeň"),

@@ -17,6 +17,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.kpyruy.takt.core.ui.components.glassSurface
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -77,24 +79,23 @@ fun WeekDaySelector(
         },
     ) { page ->
         val week = weekFor(page)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             repeat(7) { index ->
                 val date = week.plusDays(index.toLong())
                 val selected = date == selectedDate
                 Column(Modifier.weight(1f).testTag("calendar-day-${date.toEpochDay()}")
-                    .background(if (selected) MaterialTheme.colorScheme.primary else
-                        MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .glassSurface(RoundedCornerShape(14.dp), if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Unspecified)
                     .selectable(selected, role = Role.Tab) { onSelect(date) }
                     .padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(date.format(dayFormatter).replace(".", "").uppercase(),
                         fontSize = 10.sp, lineHeight = 13.sp,
-                        color = if (selected) MaterialTheme.colorScheme.onPrimary else
+                        color = if (selected) MaterialTheme.colorScheme.primary else
                             MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(date.dayOfMonth.toString(), fontSize = 15.sp, lineHeight = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (selected) MaterialTheme.colorScheme.onPrimary else
+                        color = if (selected) MaterialTheme.colorScheme.primary else
                             MaterialTheme.colorScheme.onSurface)
                 }
             }

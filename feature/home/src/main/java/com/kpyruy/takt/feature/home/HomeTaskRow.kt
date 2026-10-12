@@ -8,6 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconToggleButton
+import com.kpyruy.takt.core.ui.components.glassSurface
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,38 +34,39 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolean) -> Unit) {
-    val largeText = LocalDensity.current.fontScale > 1.15f
-    val dueLabel: @Composable () -> Unit = {
-        task.dueDate?.let { date ->
-            val today = LocalDate.now()
-            Text(when (date) { today -> t("Сьогодні"); today.plusDays(1) -> t("Завтра"); else -> date.format(DateTimeFormatter.ofPattern("dd.MM")) },
-                color = if (date <= today) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelSmall)
-        }
-    }
+    val today = LocalDate.now()
+    val due = task.dueDate?.let { when (it) {
+        today -> t("Сьогодні")
+        today.plusDays(1) -> t("Завтра")
+        else -> it.format(DateTimeFormatter.ofPattern("dd.MM"))
+    } }
+    val overdue = !task.completed && task.dueDate?.isBefore(today) == true
     SwipeCompletionBox(completed = task.completed, onCompletedChange = onCompletedChange) {
-        Row(Modifier.fillMaxWidth().testTag("home-task-${task.id}").animateContentSize().padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Checkbox(checked = task.completed, onCheckedChange = onCompletedChange,
-                modifier = Modifier.semantics { contentDescription = task.title })
+        Row(Modifier.fillMaxWidth().testTag("home-task-${task.id}").animateContentSize()
+            .glassSurface(tint = if (overdue) MaterialTheme.colorScheme.errorContainer else androidx.compose.ui.graphics.Color.Unspecified)
+            .padding(8.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
+                modifier = Modifier.size(40.dp).glassSurface(tint = MaterialTheme.colorScheme.primaryContainer)) {
+                Icon(if (task.completed) Icons.Outlined.CheckCircle else Icons.Outlined.Assignment,
+                    task.title, tint = MaterialTheme.colorScheme.primary)
+            }
             Column(Modifier.weight(1f)) {
                 Text(task.title, style = MaterialTheme.typography.titleSmall,
+                    color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null)
-                val minimum = task.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty()
-                Text(courseTitle + if (task.requiredForExam) t(" · Для допуску$minimum") else "",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                task.maxPoints?.let { maximum ->
-                    Text(t("${task.earnedPoints?.pointText() ?: "—"} / ${maximum.pointText()} б."),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) {
-                    Text(t("Поріг для допуску не виконано"), style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error)
-                }
-                if (largeText) dueLabel()
+                Text(listOfNotNull(courseTitle, due).joinToString(" · "), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (task.requiredForExam) Text(t("Для допуску") + task.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty(),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement)
+                    Text(t("Поріг для допуску не виконано"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
             }
-            if (!largeText) dueLabel()
+            task.maxPoints?.let { maximum ->
+                Text(if (task.earnedPoints != null) t("${task.earnedPoints?.pointText()} / ${maximum.pointText()} б.") else t("до ${maximum.pointText()} б."),
+                    Modifier.glassSurface(tint = MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }

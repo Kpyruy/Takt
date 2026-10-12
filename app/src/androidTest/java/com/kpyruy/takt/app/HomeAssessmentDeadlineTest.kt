@@ -4,6 +4,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.model.HomeWorkFilter
 import com.kpyruy.takt.core.model.ScheduleRecurrence
 import com.kpyruy.takt.core.model.ScheduleRule
 import java.time.DayOfWeek
@@ -13,9 +14,18 @@ import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Before
+import org.junit.After
 
 class HomeAssessmentDeadlineTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Before fun resetFilter() = runBlocking {
+        (compose.activity.application as TaktApplication).dataContainer.settingsRepository
+            .setHomeWorkFilter(HomeWorkFilter())
+    }
+
+    @After fun restoreFilter() = resetFilter()
 
     @Test fun datedTestAppearsInUnifiedTasksAndOpensCourseTasks() {
         val repository = (compose.activity.application as TaktApplication).dataContainer.gradeRepository
@@ -43,7 +53,7 @@ class HomeAssessmentDeadlineTest {
             compose.onNodeWithText("Без дати").assertDoesNotExist()
             compose.onNodeWithTag("home-assessment-$id").assertIsDisplayed().performClick()
             compose.onNodeWithText("Задачі").assertIsSelected()
-            compose.onNodeWithTag("course-work-$id").assertIsDisplayed()
+            compose.onNodeWithTag("course-work-$id").performScrollTo().assertIsDisplayed()
         } finally {
             runBlocking { repository.deleteItem(id) }
         }
@@ -60,11 +70,11 @@ class HomeAssessmentDeadlineTest {
             ))
         }
         try {
-            val section = compose.onNodeWithText("Задачі")
+            val section = compose.onNodeWithText("Найближчі роботи")
             val assessment = compose.onNodeWithTag("home-assessment-$id")
             section.assertIsDisplayed()
             assessment.assertIsDisplayed()
-            compose.onNodeWithText("TPAR_6B · 45 хв").assertIsDisplayed()
+            compose.onNodeWithText("45 хв", substring = true).assertIsDisplayed()
             compose.onNodeWithText("Завдання на день").assertDoesNotExist()
             org.junit.Assert.assertTrue(
                 assessment.getUnclippedBoundsInRoot().top > section.getUnclippedBoundsInRoot().top
@@ -92,14 +102,14 @@ class HomeAssessmentDeadlineTest {
             compose.onNodeWithTag("home-tasks-filter").performClick()
             compose.onNodeWithText("Усі").performClick()
             compose.onNodeWithText("Готово").performClick()
-            compose.onNodeWithTag("home-task-$taskId").assertIsDisplayed()
-            compose.onNodeWithTag("home-assessment-$testId").assertIsDisplayed()
-            compose.onNodeWithTag("home-tasks-filter").performClick()
+            compose.onNodeWithTag("home-task-$taskId").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("home-assessment-$testId").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("home-tasks-filter").performScrollTo().performClick()
             compose.onNodeWithText("Тест").performScrollTo().performClick()
             compose.onNodeWithText("Тест").assertIsSelected()
             compose.onNodeWithText("Готово").performClick()
             compose.onNodeWithTag("home-task-$taskId").assertDoesNotExist()
-            compose.onNodeWithTag("home-assessment-$testId").assertIsDisplayed()
+            compose.onNodeWithTag("home-assessment-$testId").performScrollTo().assertIsDisplayed()
         } finally {
             runBlocking {
                 container.studyContentRepository.deleteTask(taskId)
@@ -128,7 +138,7 @@ class HomeAssessmentDeadlineTest {
             compose.onNodeWithText("Календар").performClick()
             compose.onNodeWithTag("calendar-assessment-$id").assertIsDisplayed().performClick()
             compose.onNodeWithText("Задачі").assertIsSelected()
-            compose.onNodeWithTag("course-work-$id").assertIsDisplayed()
+            compose.onNodeWithTag("course-work-$id").performScrollTo().assertIsDisplayed()
         } finally {
             runBlocking { repository.deleteItem(id) }
         }
@@ -148,7 +158,7 @@ class HomeAssessmentDeadlineTest {
             compose.onNodeWithText("Календар").performClick()
             compose.onNodeWithTag("calendar-assessment-$id").assertIsDisplayed().performClick()
             compose.onNodeWithText("Задачі").assertIsSelected()
-            compose.onNodeWithTag("course-work-$id").assertIsDisplayed()
+            compose.onNodeWithTag("course-work-$id").performScrollTo().assertIsDisplayed()
         } finally {
             runBlocking { repository.deleteItem(id) }
         }

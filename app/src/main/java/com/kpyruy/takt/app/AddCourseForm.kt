@@ -4,6 +4,22 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
+import com.kpyruy.takt.core.ui.components.CourseIcons
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
+import com.kpyruy.takt.core.model.CourseGradingType
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +47,9 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
     var code by remember { mutableStateOf("") }
     var credits by remember { mutableStateOf("") }
     var semester by remember { mutableStateOf("1") }
+    var grading by remember { mutableStateOf(CourseGradingType.CONTINUOUS_LETTER) }
+    var iconKey by remember { mutableStateOf<String?>(null) }
+    var gradingMenu by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -42,19 +61,52 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-title"))
         TaktTextField(code, { code = it; error = null }, label = { Text(t("Код предмета")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-code"))
-        TaktTextField(credits, { credits = it.filter(Char::isDigit); error = null },
-            label = { Text(t("Кредити")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-credits"))
-        TaktTextField(semester, { semester = it.filter(Char::isDigit); error = null },
-            label = { Text(t("Семестр")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-semester"))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TaktTextField(credits, { credits = it.filter(Char::isDigit); error = null },
+                label = { Text(t("Кредити")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true, modifier = Modifier.weight(1f).testTag("course-credits"))
+            TaktTextField(semester, { semester = it.filter(Char::isDigit); error = null },
+                label = { Text(t("Семестр")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true, modifier = Modifier.weight(1f).testTag("course-semester"))
+        }
+        Box {
+            GlassSurface(Modifier.fillMaxWidth().clickable { gradingMenu = true }) {
+                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t("Оцінювання"), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(gradingLabel(grading), style = MaterialTheme.typography.bodyLarge)
+                    }
+                    Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            DropdownMenu(expanded = gradingMenu, onDismissRequest = { gradingMenu = false }) {
+                CourseGradingType.entries.forEach { value ->
+                    DropdownMenuItem(text = { Text(gradingLabel(value)) }, onClick = { grading = value; gradingMenu = false })
+                }
+            }
+        }
+        Text(t("Іконка предмета"), style = MaterialTheme.typography.labelLarge)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf("Atom", "MenuBook", "Code", "Calculate", "Translate").forEach { key ->
+                val icon = CourseIcons.find(key)
+                val selected = iconKey == key
+                Box(Modifier.weight(1f).size(52.dp)
+                    .glassSurface(RoundedCornerShape(16.dp), if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .18f) else androidx.compose.ui.graphics.Color.Unspecified)
+                    .clickable { iconKey = key }, contentAlignment = Alignment.Center) {
+                    icon?.let { Icon(it.vector, it.label, Modifier.size(28.dp), tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
+        }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         TaktPrimaryButton(
             onClick = {
                 saving = true
                 scope.launch {
                     val result = runCatching {
-                        repository.addCourse(title, code, parsedCredits!!, parsedSemester!!)
+                        val createdId = repository.addCourse(title, code, parsedCredits!!, parsedSemester!!)
+                        if (grading != CourseGradingType.CONTINUOUS_LETTER) repository.setGradingType(createdId, grading)
+                        iconKey?.let { repository.setIcon(createdId, it) }
                     }
                     saving = false
                     if (result.isSuccess) withContext(Dispatchers.Main.immediate) { onSaved() }
@@ -67,3 +119,10 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
         ) { Text(t("Додати предмет")) }
     }
 }
+
+@Composable
+private fun gradingLabel(type: CourseGradingType): String = t(when (type) {
+    CourseGradingType.EXAM_LETTER -> "Екзамен · A–FX"
+    CourseGradingType.CONTINUOUS_LETTER -> "Оцінка · A–FX"
+    CourseGradingType.PASS_FAIL -> "Залік"
+})

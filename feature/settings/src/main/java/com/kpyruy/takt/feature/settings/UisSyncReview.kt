@@ -33,7 +33,7 @@ import com.kpyruy.takt.core.ui.i18n.t
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun UisSyncReview(repository: UniversityAccountRepository) {
+fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean = true) {
     val preview by repository.syncPreview.collectAsStateWithLifecycle()
     val data = preview ?: return
     val settings by (repository.settingsRepository?.settings ?: flowOf(AppSettings()))
@@ -62,7 +62,7 @@ internal fun UisSyncReview(repository: UniversityAccountRepository) {
     val remotePeriod = data.period
 
     SectionCard {
-        Text(t("Порівняння з UIS"), style = MaterialTheme.typography.titleLarge)
+        if (showHeading) Text(t("Порівняння з UIS"), style = MaterialTheme.typography.titleLarge)
         action.message?.let { Text(t(it), color = MaterialTheme.colorScheme.primary) }
         action.error?.let {
             Text(t(it), color = MaterialTheme.colorScheme.error)

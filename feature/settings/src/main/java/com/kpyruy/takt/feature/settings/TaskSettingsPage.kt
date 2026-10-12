@@ -24,9 +24,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +51,7 @@ internal fun TaskSettingsPage(
     ) {
         ScreenHeader(
             title = t("Задачі"),
-            navigation = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) } },
+            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack) },
         )
         SettingsSectionTitle(t("Показувати задачі за"))
         val periods = listOf(

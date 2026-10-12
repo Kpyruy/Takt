@@ -12,10 +12,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField as OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilterChip
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,15 +53,18 @@ fun UniversityAccountPage(
     authenticate: DeviceAuthenticationRequest,
     onBack: () -> Unit,
 ) {
+    val preview by repository.syncPreview.collectAsStateWithLifecycle()
+    if (preview != null) {
+        UisPreviewPage(repository, onBack)
+        return
+    }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(title = t("Університетська система"), navigation = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Назад"))
-            }
+            TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Назад"), onBack)
         })
         SectionCard {
             Text("UIS", style = MaterialTheme.typography.titleLarge)

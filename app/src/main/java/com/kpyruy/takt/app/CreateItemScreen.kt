@@ -79,7 +79,16 @@ fun CreateItemScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ScreenHeader(
-            title = type.label,
+            title = t(when (type) {
+                CreateItemType.COURSE -> "Додати предмет"
+                CreateItemType.CLASS -> "Додати пару"
+                CreateItemType.TASK -> "Додати завдання"
+                CreateItemType.TEST -> "Додати тест"
+                CreateItemType.EXAM -> "Додати екзамен"
+                CreateItemType.NOTE -> "Додати нотатку"
+                CreateItemType.EVENT -> "Додати подію"
+                CreateItemType.REMINDER -> "Додати нагадування"
+            }),
             subtitle = courses.firstOrNull { it.id == courseId }?.title,
             navigation = {
                 TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onBack)

@@ -68,9 +68,7 @@ fun SwipeCompletionBox(
             }
         },
         content = {
-            val background = if (LocalTaktCardAppearance.current == CardAppearance.TONAL_FILLED)
-                MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
-            Box(Modifier.fillMaxWidth().background(background)) { content() }
+            Box(Modifier.fillMaxWidth()) { content() }
         },
     )
 }

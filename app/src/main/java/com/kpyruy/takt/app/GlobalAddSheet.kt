@@ -76,7 +76,10 @@ fun GlobalAddSheet(
                                     contentAlignment = Alignment.Center) {
                                     Icon(type.icon(), null, Modifier.size(24.dp), tint = tint)
                                 }
-                                Text(type.label, style = MaterialTheme.typography.titleSmall, maxLines = 2)
+                                Column {
+                                    Text(type.label, style = MaterialTheme.typography.titleSmall, maxLines = 2)
+                                    Text(type.actionHint(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                                }
                             }
                         }
                     }
@@ -117,3 +120,14 @@ private fun CreateItemType.actionTint(): Color = when (this) {
     CreateItemType.EXAM -> Color(0xFFCA4747)
     CreateItemType.REMINDER -> Color(0xFFB5881F)
 }
+
+private fun CreateItemType.actionHint(): String = t(when (this) {
+    CreateItemType.COURSE -> "Додати предмет"
+    CreateItemType.CLASS -> "Додати пару"
+    CreateItemType.TASK -> "Додати завдання"
+    CreateItemType.TEST -> "Додати тест"
+    CreateItemType.EXAM -> "Додати екзамен"
+    CreateItemType.NOTE -> "Додати нотатку"
+    CreateItemType.EVENT -> "Додати подію"
+    CreateItemType.REMINDER -> "Додати нагадування"
+})

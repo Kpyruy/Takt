@@ -13,13 +13,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Text
+import com.kpyruy.takt.core.ui.components.TaktIconButton
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,8 +43,8 @@ import com.kpyruy.takt.core.ui.i18n.t
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-internal enum class BackupReviewSource { JSON_FILE, DOCUMENTS }
-internal data class BackupReviewState(
+enum class BackupReviewSource { JSON_FILE, DOCUMENTS }
+data class BackupReviewState(
     val localRaw: String,
     val sourceRaw: String,
     val source: BackupReviewSource,
@@ -48,7 +52,7 @@ internal data class BackupReviewState(
 )
 
 @Composable
-internal fun BackupReviewPage(
+fun BackupReviewPage(
     review: BackupReviewState,
     onBack: () -> Unit,
     onApply: suspend (Set<BackupSection>) -> Unit,
@@ -69,7 +73,7 @@ internal fun BackupReviewPage(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenHeader(title = t("Порівняння даних"), navigation = {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
         })
         if (differing.isEmpty()) SectionCard {
             Text(t("Дані збігаються"), style = MaterialTheme.typography.titleMedium)
@@ -257,18 +261,22 @@ internal fun BackupReviewPage(
 @Composable
 private fun BackupChoice(section: BackupSection, selected: Set<BackupSection>, onToggle: (BackupSection) -> Unit,
     sourceName: String, title: String, summary: String, detail: @Composable () -> Unit) {
+    var expanded by remember(section) { mutableStateOf(false) }
     SectionCard {
         Row(Modifier.fillMaxWidth().clickable { onToggle(section) }, verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = section in selected, onCheckedChange = null)
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(if (section in selected) t("Взяти з ") + sourceName else t("Залишити на телефоні"),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (section in selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            IconButton(onClick = { expanded = !expanded }) {
+                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, t("Переглянути зміни"))
+            }
         }
-        if (summary.isNotBlank()) Text(summary, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        detail()
+        if (summary.isNotBlank()) Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        AnimatedVisibility(expanded) { Column { detail() } }
     }
 }
 
@@ -325,6 +333,7 @@ private fun themeFamilyName(value: String): String = when (value) {
 }
 
 private fun cardAppearanceName(value: String): String = when (value) {
+    "GLASS" -> t("Скло")
     "ELEVATED" -> t("Підняті")
     "TONAL_FILLED" -> t("Заливка")
     else -> value

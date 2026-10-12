@@ -21,7 +21,8 @@ class UisCourseRouteTest {
         val code = "MIG_$suffix"
         val oldId = runBlocking { data.studyPlanRepository.addCourse(title, code, 1, 1) }
         compose.onAllNodes(hasText("Предмети") and hasClickAction()).onLast().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(title))
+        compose.onNodeWithText(title).assertExists()
         compose.onNode(hasText(title) and hasClickAction()).performScrollTo().performClick()
         val canonicalId = "uis:990:$suffix"
         val remoteTitle = "UIS · $title"
@@ -45,9 +46,10 @@ class UisCourseRouteTest {
             data.studyPlanRepository.addCourse(title, code, 1, 1)
         }
         compose.onAllNodes(hasText("Предмети") and hasClickAction()).onLast().performClick()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(title))
+        compose.onNodeWithText(title).assertExists()
         compose.onNode(hasText(title) and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Нотатки") and hasClickAction()).performClick()
+        compose.onNode(hasText("Нотатки") and hasClickAction() and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)).performClick()
         compose.onNodeWithText("Додати нотатку").performScrollTo().performClick()
         val draftTitle = "Особиста нотатка $suffix"
         compose.onNode(hasText("Заголовок") and hasSetTextAction()).performTextInput(draftTitle)
@@ -58,11 +60,11 @@ class UisCourseRouteTest {
             assertEquals(canonicalId, data.studyPlanRepository.observeCourse(oldId).first()?.id)
         }
         compose.waitForIdle()
-        compose.onNodeWithText("Нова нотатка").assertExists()
+        compose.onNode(hasText("Додати нотатку") and !hasClickAction()).assertExists()
         compose.onNode(hasText("Заголовок") and hasSetTextAction()).assertTextContains(draftTitle)
         compose.onNode(hasText("Нотатка") and hasSetTextAction()).assertTextContains("Незбережений текст")
         compose.activityRule.scenario.recreate()
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Нова нотатка").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) { compose.onAllNodes(hasText("Додати нотатку") and !hasClickAction()).fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasText("Заголовок") and hasSetTextAction()).assertTextContains(draftTitle)
         compose.onNode(hasText("Нотатка") and hasSetTextAction()).assertTextContains("Незбережений текст")
         compose.onNodeWithText("Зберегти").performScrollTo().performClick()

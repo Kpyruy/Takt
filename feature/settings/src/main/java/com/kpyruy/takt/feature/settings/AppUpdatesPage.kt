@@ -8,6 +8,16 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,7 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +34,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,17 +72,21 @@ internal fun AppUpdatesPage(repository: AppReleaseRepository, onBack: () -> Unit
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ScreenHeader(title = t("Оновлення додатка"), navigation = {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
         })
         SectionCard {
-            Text(t("Встановлена версія"), style = MaterialTheme.typography.titleMedium)
-            Text("Takt " + state.installedVersion.ifBlank { t("Невідомо") })
-            Text(t("Останній реліз на GitHub"), style = MaterialTheme.typography.titleMedium)
-            Text(state.latest?.tag ?: t("Ще не перевірено"))
+            UpdateVersionRow(Icons.Outlined.School, t("Встановлена версія"), "Takt " + state.installedVersion.ifBlank { t("Невідомо") })
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+            UpdateVersionRow(Icons.Outlined.CloudDownload, t("Останній реліз на GitHub"), state.latest?.tag ?: t("Ще не перевірено"))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
             if (state.availableUpdate != null) {
                 Text(t("Доступне оновлення"), color = MaterialTheme.colorScheme.primary)
             } else if (state.latest != null && AppVersion.parse(state.installedVersion) != null) {
-                Text(t("Встановлено актуальну версію"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.secondary)
+                    Text(t("Встановлено актуальну версію"), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             state.availableUpdate?.let { release ->
                 Button(onClick = { openError = !openRelease(context, release) }, modifier = Modifier.fillMaxWidth()) {
@@ -91,21 +106,21 @@ internal fun AppUpdatesPage(repository: AppReleaseRepository, onBack: () -> Unit
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard {
-            Text(t("Остання успішна перевірка"), style = MaterialTheme.typography.titleMedium)
-            Text(state.lastSuccessfulCheck?.let {
+            UpdateVersionRow(Icons.Outlined.Schedule, t("Остання успішна перевірка"), state.lastSuccessfulCheck?.let {
                 DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
                     .withLocale(TaktI18n.locale).withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
             } ?: t("Ще не перевірено"))
-            OutlinedButton(onClick = {
-                openError = false
-                manuallyChecked = true
-                scope.launch { repository.check(force = true) }
-            }, enabled = !state.checking, modifier = Modifier.fillMaxWidth()) {
-                Text(t(if (state.checking) "Перевіряємо…" else "Перевірити зараз"))
-            }
-            if (manuallyChecked && !state.checking) state.error?.let {
-                Text(t(it.message()), color = MaterialTheme.colorScheme.error)
-            }
+        }
+        Button(onClick = {
+            openError = false
+            manuallyChecked = true
+            scope.launch { repository.check(force = true) }
+        }, enabled = !state.checking, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.Update, null)
+            Text(t(if (state.checking) "Перевіряємо…" else "Перевірити зараз"), Modifier.padding(start = 8.dp))
+        }
+        if (manuallyChecked && !state.checking) state.error?.let {
+            Text(t(it.message()), color = MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -144,4 +159,20 @@ private fun AppReleaseError.message(): String = when (this) {
     AppReleaseError.RATE_LIMITED -> "GitHub тимчасово обмежив перевірки. Спробуй пізніше."
     AppReleaseError.INVALID_RESPONSE -> "GitHub повернув нерозпізнаний реліз. Спробуй пізніше."
     AppReleaseError.UNAVAILABLE -> "Реліз на GitHub зараз недоступний. Спробуй пізніше."
+}
+
+@Composable
+private fun UpdateVersionRow(icon: ImageVector, label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        GlassSurface(Modifier.size(46.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+            Box(Modifier.size(46.dp), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.titleLarge)
+        }
+    }
 }

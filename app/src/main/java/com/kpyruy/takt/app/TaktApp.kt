@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
 import com.kpyruy.takt.feature.calendar.ScheduleEventEditor
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -28,6 +29,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.CompositionLocalProvider
 import com.kpyruy.takt.core.ui.components.LocalCourseIconKeys
+import com.kpyruy.takt.core.ui.components.LocalCourseCodeKeys
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -145,7 +147,8 @@ fun TaktApp(
             val result = snackbarHostState.showSnackbar(
                 message = t("Підключіть Documents/Takt для автозбереження й відновлення даних"),
                 actionLabel = t("Підключити"),
-                duration = SnackbarDuration.Indefinite,
+                duration = SnackbarDuration.Long,
+                withDismissAction = true,
             )
             if (result == SnackbarResult.ActionPerformed) folderPicker.launch(null)
         }
@@ -158,6 +161,7 @@ fun TaktApp(
                 } else t("Не вдалося синхронізувати Documents/Takt"),
                 actionLabel = t("Перевірити"),
                 duration = SnackbarDuration.Indefinite,
+                withDismissAction = true,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
         }
@@ -168,6 +172,7 @@ fun TaktApp(
                 message = t("Не вдалося скопіювати $unmigratedMaterials старих матеріалів"),
                 actionLabel = t("Деталі"),
                 duration = SnackbarDuration.Indefinite,
+                withDismissAction = true,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
         }
@@ -178,6 +183,7 @@ fun TaktApp(
                 message = t("UIS знайшов зміни для перегляду"),
                 actionLabel = t("Переглянути"),
                 duration = SnackbarDuration.Indefinite,
+                withDismissAction = true,
             )
             if (result == SnackbarResult.ActionPerformed) navController.navigate(SETTINGS_ROUTE)
         }
@@ -253,7 +259,7 @@ fun TaktApp(
         }
     }
 
-    CompositionLocalProvider(LocalCourseIconKeys provides courseIconKeys) {
+    CompositionLocalProvider(LocalCourseIconKeys provides courseIconKeys, LocalCourseCodeKeys provides courses.associate { it.id to it.code }) {
     actionEvent?.let { event ->
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
     }
@@ -287,7 +293,7 @@ fun TaktApp(
                 if (from >= 0 && to >= 0) slideOutHorizontally(TaktMotion.menu()) { if (to > from) -it else it }
                 else fadeOut(TaktMotion.fast())
             },
-            modifier = Modifier.padding(padding).testTag("root-content"),
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding).testTag("root-content"),
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(

@@ -3,6 +3,8 @@ package com.kpyruy.takt.feature.subjects
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
+import com.kpyruy.takt.core.ui.components.glassSurface
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,12 +15,12 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -129,13 +131,14 @@ fun AddGradeItemForm(
                 when {
                     initialItem != null -> t("Редагувати оцінювання")
                     initialType == GradeItemType.EXAM -> t("Додати екзамен")
+                    initialType == GradeItemType.TEST -> t("Додати тест")
                     else -> t("Додати оцінювання")
                 },
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
 
-        OutlinedTextField(
+        TaktTextField(
             value = title,
             onValueChange = { title = it },
             label = { Text(t("Назва")) },
@@ -167,7 +170,7 @@ fun AddGradeItemForm(
         )
 
         if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) {
-            OutlinedTextField(
+            TaktTextField(
                 value = durationText,
                 onValueChange = { durationText = it; error = null },
                 label = { Text(t("Тривалість тесту (хв)")) },
@@ -201,7 +204,7 @@ fun AddGradeItemForm(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -219,15 +222,15 @@ fun AddGradeItemForm(
         }
 
         if (!completed) {
-            Row(Modifier.fillMaxWidth().toggleable(value = awaitingResult, role = Role.Checkbox,
-                onValueChange = { awaitingResult = it }), verticalAlignment = Alignment.CenterVertically,
+            Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(value = awaitingResult, role = Role.Checkbox,
+                onValueChange = { awaitingResult = it }).padding(10.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Checkbox(awaitingResult, onCheckedChange = null)
                 Text(t("Роботу здано, очікую оцінку"))
             }
         }
-        Row(Modifier.fillMaxWidth().toggleable(value = contributesToGrade, role = Role.Checkbox,
-            onValueChange = { contributesToGrade = it }), verticalAlignment = Alignment.CenterVertically,
+        Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(value = contributesToGrade, role = Role.Checkbox,
+            onValueChange = { contributesToGrade = it }).padding(10.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Checkbox(contributesToGrade, onCheckedChange = null)
             Text(t("Бали входять у підсумкову оцінку"))
@@ -235,11 +238,11 @@ fun AddGradeItemForm(
 
         if (type != GradeItemType.EXAM) {
             Row(
-                modifier = Modifier.fillMaxWidth().toggleable(
+                modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
                     value = requiredForExam,
                     role = Role.Checkbox,
                     onValueChange = { requiredForExam = it },
-                ),
+                ).padding(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -248,43 +251,25 @@ fun AddGradeItemForm(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OutlinedTextField(
-                value = earnedText,
-                onValueChange = {
-                    earnedText = it
-                    error = null
-                },
-                enabled = completed,
-                label = { Text(t("Отримано")) },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                isError = error != null,
+        if (completed) TaktTextField(
+            value = earnedText,
+            onValueChange = { earnedText = it; error = null },
+            label = { Text(t("Отримано")) },
+            modifier = Modifier.fillMaxWidth(), singleLine = true, isError = error != null,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TaktTextField(
+                value = maxText, onValueChange = { maxText = it; error = null },
+                label = { Text(t("Максимум")) }, modifier = Modifier.weight(1f),
+                singleLine = true, isError = error != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
-            OutlinedTextField(
-                value = maxText,
-                onValueChange = {
-                    maxText = it
-                    error = null
-                },
-                label = { Text(t("Максимум")) },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                isError = error != null,
-            )
-        }
-
-        if (requiredForExam && type != GradeItemType.EXAM) {
-            OutlinedTextField(
-                value = minimumText,
-                onValueChange = { minimumText = it; error = null },
-                label = { Text(t("Мінімум балів для допуску")) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = error != null,
+            if (requiredForExam && type != GradeItemType.EXAM) TaktTextField(
+                value = minimumText, onValueChange = { minimumText = it; error = null },
+                label = { Text(t("Мінімум балів для допуску")) }, modifier = Modifier.weight(1f),
+                singleLine = true, isError = error != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
         }
 
@@ -292,7 +277,7 @@ fun AddGradeItemForm(
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
 
-        Button(
+        TaktPrimaryButton(
             onClick = {
                 val earned = if (completed) earnedText.replace(',', '.').toDoubleOrNull() else 0.0
                 val max = maxText.replace(',', '.').toDoubleOrNull()

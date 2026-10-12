@@ -13,6 +13,6 @@ internal fun SettingsSectionTitle(
     Text(
         text = text,
         modifier = modifier,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleLarge,
     )
 }

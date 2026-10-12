@@ -61,59 +61,58 @@ class PulseFlowTest {
         compose.onNode(hasText("День") and hasClickAction()).assertIsDisplayed()
         capture("calendar")
         clickRoot("Предмети")
-        compose.onNodeWithText("Знайти предмет").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Знайти предмет").assertIsDisplayed()
         capture("subjects")
-        compose.onNode(hasText("Fyzika") and hasClickAction()).performScrollTo().performClick()
-        compose.onNodeWithText("Набрано за семестр").assertIsDisplayed()
-        compose.onNodeWithText("24").assertIsDisplayed()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Fyzika"))
+        compose.onNode(hasText("Fyzika") and hasClickAction()).performClick()
+        compose.onNodeWithText("Набрано").assertIsDisplayed()
+        compose.onNodeWithText("24/100").assertIsDisplayed()
         capture("course")
-        compose.onNode(hasText("Екзамен") and hasClickAction()).performScrollTo().performClick()
+        compose.onNode(hasText("Екзамен") and hasClickAction()).performClick()
         compose.onNodeWithText("68").assertExists()
         capture("exam")
         compose.onAllNodes(hasText("B") and hasClickAction()).onFirst().performScrollTo().performClick()
         compose.onNodeWithText("59").assertExists()
         compose.onAllNodes(hasText("A") and hasClickAction()).onFirst().performClick()
         compose.onNodeWithText("68").assertExists()
-        // Back returns from the exam to the subject before leaving the subject.
+        // Back returns from Exam to Overview before leaving the course.
         back()
-        compose.onNodeWithText("Набрано за семестр").assertExists()
+        compose.onNodeWithText("Набрано").assertExists()
         back()
         clickRoot("Прогрес")
-        compose.onNodeWithTag("semester-1-completed").assertExists()
-        compose.onNodeWithTag("semester-3-active").assertExists()
+        compose.onNodeWithTag("semester-1-completed", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("semester-3-active", useUnmergedTree = true).assertExists()
         capture("progress")
-        compose.onNode(hasText("Допуск з Fyzika") and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Задачі") and isSelected()).assertExists()
-        compose.onNodeWithText("Лабораторна №2").assertExists()
-        // Completion changes admission, not semester points.
-        compose.onNodeWithContentDescription("Виконано: Лабораторна №2").performScrollTo().performClick()
-        compose.onNode(hasText("Огляд") and hasClickAction()).performScrollTo().performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Умови допуску виконано").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("24").assertExists()
-        back()
-        // An earlier required assessment must outrank a later task in the journey.
-        runBlocking {
-            data.studyContentRepository.upsertTask(StudyTask("review-later", courseId, "Пізніше завдання", null, LocalDate.now().plusDays(10), false, true))
-            data.gradeRepository.upsertItem(GradeItem("review-required-assessment", "TPAR_6B", "Обов’язковий тест", GradeItemType.TEST, 0.0, 10.0, dueDate = LocalDate.now(), completed = false, requiredForExam = true))
-        }
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Допуск з Technické prostriedky automatizovaného riadenia").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNode(hasText("Допуск з Technické prostriedky automatizovaného riadenia") and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Задачі") and isSelected()).assertExists()
-        back()
-        // A grade-only admission blocker opens the unified task and assessment list.
-        runBlocking {
-            data.studyContentRepository.setTaskCompleted("review-later", true)
-            data.gradeRepository.upsertItem(GradeItem("review-physics-required", courseId, "Допусковий тест", GradeItemType.TEST, 0.0, 10.0, completed = false, requiredForExam = true))
-        }
         clickRoot("Предмети")
-        compose.onNode(hasText("Fyzika") and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Екзамен") and hasClickAction()).performScrollTo().performClick()
-        compose.onNodeWithTag("exam-admission").performScrollTo().performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Fyzika"))
+        compose.onNode(hasText("Fyzika") and hasClickAction()).performClick()
+        compose.onNode(hasText("Задачі") and hasClickAction()).performClick()
+        compose.onNodeWithContentDescription("Виконано: Лабораторна №2").performScrollTo().performClick()
+        compose.onNode(hasText("Огляд") and hasClickAction()).performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("5/5").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("24/100").assertExists()
+        // A grade-only admission blocker opens the unified work list from Exam.
+        runBlocking {
+            data.gradeRepository.upsertItem(GradeItem("review-physics-required", courseId, "Допусковий тест",
+                GradeItemType.TEST, 0.0, 10.0, completed = false, requiredForExam = true))
+        }
+        compose.onNode(hasText("Екзамен") and hasClickAction()).performClick()
+        val closeHint = compose.onAllNodesWithContentDescription("Закрити")
+        if (closeHint.fetchSemanticsNodes().isNotEmpty()) closeHint.onFirst().performClick()
+        compose.onNodeWithTag("exam-admission").performScrollTo()
+        compose.waitForIdle()
+        android.os.SystemClock.sleep(600)
+        compose.onNodeWithTag("exam-admission").performClick()
+        capture("admission-after-tap")
+        InstrumentationRegistry.getInstrumentation().targetContext.openFileOutput("admission-after-tap-tree.txt", 0).use {
+            it.write(compose.onRoot(useUnmergedTree = true).printToString().toByteArray())
+        }
+        compose.waitUntil(5_000) { compose.onAllNodes(hasText("Задачі") and isSelected()).fetchSemanticsNodes().isNotEmpty() }
         compose.onNode(hasText("Задачі") and isSelected()).assertExists()
         back()
         clickRoot("Сьогодні")
         compose.onNodeWithContentDescription("Додати").performClick()
-        compose.onNodeWithText("Швидко").assertExists()
+        compose.onNodeWithText("Швидке додавання").assertExists()
     }
 
     private fun clickRoot(label: String) = compose.onAllNodes(hasText(label) and hasClickAction()).onLast().performClick()

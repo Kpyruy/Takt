@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -23,7 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +39,18 @@ import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.model.NoteAttachment
 import java.util.UUID
 import kotlinx.coroutines.launch
+import androidx.compose.ui.window.Dialog
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,30 +133,42 @@ fun AddNoteForm(
         }
     }
 
-    if (showLinkDialog) AlertDialog(
-        onDismissRequest = { showLinkDialog = false },
-        title = { Text(t("Додати посилання")) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(linkUrl, { linkUrl = it; linkError = false },
+    if (showLinkDialog) Dialog(onDismissRequest = { showLinkDialog = false }) {
+        GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp)) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(t("Додати посилання"), style = MaterialTheme.typography.headlineSmall)
+                TaktTextField(linkUrl, { linkUrl = it; linkError = false },
                     label = { Text(t("Адреса посилання")) }, singleLine = true,
-                    isError = linkError, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(linkTitle, { linkTitle = it },
+                    isError = linkError, modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    leadingIcon = { Icon(Icons.Default.Link, null) },
+                    trailingIcon = { if (linkUrl.isNotBlank()) IconButton(onClick = { linkUrl = ""; linkError = false }) {
+                        Icon(Icons.Default.Close, t("Очистити"))
+                    } })
+                TaktTextField(linkTitle, { linkTitle = it },
                     label = { Text(t("Назва (необов’язково)")) }, singleLine = true,
-                    modifier = Modifier.fillMaxWidth())
+                    modifier = Modifier.fillMaxWidth(), leadingIcon = { Icon(Icons.Default.Description, null) },
+                    trailingIcon = { if (linkTitle.isNotBlank()) IconButton(onClick = { linkTitle = "" }) {
+                        Icon(Icons.Default.Close, t("Очистити"))
+                    } })
                 if (linkError) Text(t("Вкажи коректне посилання https:// або http://"),
                     color = MaterialTheme.colorScheme.error)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(50)) {
+                        TextButton(onClick = { showLinkDialog = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(t("Скасувати")) }
+                    }
+                    TaktPrimaryButton(onClick = {
+                        runCatching { NoteAttachment.webLink(linkUrl, linkTitle) }
+                            .onSuccess { attachment ->
+                                attachments = attachments + attachment
+                                linkUrl = ""; linkTitle = ""; linkError = false; showLinkDialog = false
+                            }.onFailure { linkError = true }
+                    }, modifier = Modifier.weight(1f)) { Text(t("Додати")) }
+                }
             }
-        },
-        confirmButton = { TextButton(onClick = {
-            runCatching { NoteAttachment.webLink(linkUrl, linkTitle) }
-                .onSuccess { attachment ->
-                    attachments = attachments + attachment
-                    linkUrl = ""; linkTitle = ""; linkError = false; showLinkDialog = false
-                }.onFailure { linkError = true }
-        }) { Text(t("Додати")) } },
-        dismissButton = { TextButton(onClick = { showLinkDialog = false }) { Text(t("Скасувати")) } },
-    )
+        }
+    }
 
     Column(
         modifier = modifier,
@@ -152,46 +176,56 @@ fun AddNoteForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialNote == null) t("Нова нотатка") else t("Редагувати нотатку"),
-                style = MaterialTheme.typography.headlineSmall,
+                if (initialNote == null) t("Додати нотатку") else t("Редагувати нотатку"),
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
-        OutlinedTextField(
+        TaktTextField(
             value = title,
             onValueChange = { title = it },
             label = { Text(t("Заголовок")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
-        OutlinedTextField(
+        TaktTextField(
             value = content,
             onValueChange = { content = it },
             label = { Text(t("Нотатка")) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 5,
         )
+        Text(t("Вкладення"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         attachments.forEach { attachment ->
-            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                Icon(if (attachment.isWebLink) Icons.Default.Link else Icons.Default.AttachFile, contentDescription = null)
+            Row(modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(17.dp)).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Icon(if (attachment.isWebLink) Icons.Default.Link else Icons.Default.AttachFile, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(9.dp))
                 Text(attachment.name, modifier = Modifier.weight(1f))
                 IconButton(onClick = { attachments = attachments - attachment }) {
                     Icon(Icons.Default.Close, contentDescription = t("Прибрати вкладення"))
                 }
             }
         }
-        OutlinedButton(onClick = {
-            if (documentStore.isConnected) filesPicker.launch(arrayOf("*/*")) else folderPicker.launch(null)
-        }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.AttachFile, contentDescription = null)
-            Text(t("Додати фото або файл"))
-        }
-        OutlinedButton(onClick = { showLinkDialog = true }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Link, contentDescription = null)
-            Text(t("Додати посилання"))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(18.dp)) {
+                TextButton(onClick = {
+                    if (documentStore.isConnected) filesPicker.launch(arrayOf("*/*")) else folderPicker.launch(null)
+                }, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
+                    Icon(Icons.Default.AttachFile, contentDescription = null)
+                    Text(t("Додати файл"))
+                }
+            }
+            GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(18.dp)) {
+                TextButton(onClick = { showLinkDialog = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
+                    Icon(Icons.Default.Link, contentDescription = null)
+                    Text(t("Додати посилання"))
+                }
+            }
         }
         attachmentError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (copyingFiles) Text(t("Копіювання файлів…"), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Button(
+        TaktPrimaryButton(
             onClick = {
                 onSave(
                     CourseNote(

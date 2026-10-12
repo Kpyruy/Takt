@@ -6,14 +6,21 @@ import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.GradeBand
 import com.kpyruy.takt.core.model.GradeLetter
 import com.kpyruy.takt.core.model.GradeScale
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,44 +62,49 @@ fun EditGradeScaleSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Шкала предмета"), style = MaterialTheme.typography.headlineSmall)
+            Text(t("Шкала оцінювання"), style = MaterialTheme.typography.headlineMedium)
             Text(
-                t("Вкажи мінімальний відсоток для кожної оцінки."),
+                t("Мінімальний відсоток"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
+            SubjectPanel {
             listOf(
                 Triple("A", a) { value: String -> a = value },
                 Triple("B", b) { value: String -> b = value },
                 Triple("C", c) { value: String -> c = value },
                 Triple("D", d) { value: String -> d = value },
                 Triple("E", e) { value: String -> e = value },
-            ).chunked(2).forEach { rowItems ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    rowItems.forEach { (label, value, setter) ->
-                        OutlinedTextField(
+            ).forEach { (label, value, setter) ->
+                GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
+                  Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    GlassSurface(Modifier, shape = RoundedCornerShape(13.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+                        Text(label, Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontSize = 21.sp)
+                    }
+                        Spacer(Modifier.weight(1f))
+                        TaktTextField(
                             value = value,
                             onValueChange = {
                                 setter(it)
                                 error = null
                             },
-                            label = { Text(label) },
-                            suffix = { Text("%") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.width(100.dp).semantics { contentDescription = t("Мінімальний відсоток") + " · " + label },
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
                             isError = error != null,
                         )
-                    }
-                    if (rowItems.size == 1) {
-                        androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-                    }
+                  }
                 }
             }
-
-            Text(t("FX · 0%–нижче межі E"))
+            GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
+                Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("FX", style = MaterialTheme.typography.titleMedium)
+                    Text(t("Нижче межі E"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            SmallText(t("Пороги застосовуються до балів, що входять у підсумок."))
+            }
 
             if (error != null) {
                 Text(
@@ -97,14 +114,23 @@ fun EditGradeScaleSheet(
                 )
             }
 
-            Button(
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+              GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
+                TextButton(onClick = {
+                    val defaults = GradeScale.default().bands.associate { it.grade to it.minimumPercentage }
+                    a = defaults.getValue(GradeLetter.A).compact(); b = defaults.getValue(GradeLetter.B).compact()
+                    c = defaults.getValue(GradeLetter.C).compact(); d = defaults.getValue(GradeLetter.D).compact()
+                    e = defaults.getValue(GradeLetter.E).compact(); error = null
+                }, modifier = Modifier.fillMaxWidth()) { Text(t("Стандартна шкала")) }
+              }
+              TaktPrimaryButton(
                 onClick = {
                     val values = listOf(a, b, c, d, e).map {
                         it.replace(',', '.').toDoubleOrNull()
                     }
                     if (values.any { it == null }) {
                         error = t("Усі межі мають бути числами.")
-                        return@Button
+                        return@TaktPrimaryButton
                     }
                     val parsed = values.filterNotNull()
                     val valid = parsed[0] <= 100.0 &&
@@ -116,7 +142,7 @@ fun EditGradeScaleSheet(
 
                     if (!valid) {
                         error = t("Межі мають спадати: A > B > C > D > E > 0.")
-                        return@Button
+                        return@TaktPrimaryButton
                     }
 
                     onSave(
@@ -132,9 +158,10 @@ fun EditGradeScaleSheet(
                         )
                     )
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
             ) {
-                Text(t("Зберегти шкалу"))
+                Text(t("Зберегти"))
+            }
             }
         }
     }

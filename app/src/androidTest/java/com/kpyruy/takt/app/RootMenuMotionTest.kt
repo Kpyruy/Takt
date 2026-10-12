@@ -48,7 +48,7 @@ class RootMenuMotionTest {
         compose.onNodeWithText("Твій день").assertIsDisplayed()
     }
 
-    private fun selectedDay(): String = compose.onNodeWithTag("home-date-number")
+    private fun selectedDay(): String = compose.onNodeWithTag("home-date-number", useUnmergedTree = true)
         .fetchSemanticsNode().config[SemanticsProperties.Text].first().text
 
     private fun calendarTitle() = compose.onNode(hasText("Календар") and !hasClickAction())

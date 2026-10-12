@@ -27,6 +27,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.DatePickerState
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
+import com.kpyruy.takt.core.ui.i18n.TaktNativeLocale
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,7 +61,10 @@ fun TaktDatePickerField(
         ?.atStartOfDay()
         ?.toInstant(ZoneOffset.UTC)
         ?.toEpochMilli()
-    val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    val pickerLocale = TaktI18n.locale
+    val state = remember(pickerLocale, initialMillis) {
+        DatePickerState(locale = pickerLocale, initialSelectedDateMillis = initialMillis)
+    }
 
     TaktTextField(
         value = value?.format(taktDateFormatter).orEmpty(),
@@ -102,7 +109,12 @@ fun TaktDatePickerField(
                 }
             },
         ) {
-            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color.Transparent))
+            // Dialog creates its own Android configuration, so apply the app locale here too.
+            TaktNativeLocale {
+                DatePicker(state = state, title = {
+                    Text(t("Оберіть дату"), Modifier.padding(start = 24.dp, top = 16.dp), style = MaterialTheme.typography.labelLarge)
+                }, colors = DatePickerDefaults.colors(containerColor = Color.Transparent))
+            }
         }
     }
 }
@@ -163,7 +175,7 @@ fun TaktTimePickerField(
                 }
             },
             text = {
-                Column {
+                TaktNativeLocale {
                     TimePicker(state = state, colors = TimePickerDefaults.colors(
                         containerColor = Color.Transparent,
                         clockDialColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .45f),

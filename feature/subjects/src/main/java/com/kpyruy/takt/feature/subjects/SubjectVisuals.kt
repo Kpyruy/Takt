@@ -15,15 +15,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
+import com.kpyruy.takt.core.ui.components.GlassSurface
 
 @Composable internal fun subjectBackground(paper: Boolean = false): Color =
-    if (MaterialTheme.colorScheme.surface.luminance() < .5f) MaterialTheme.colorScheme.background
-    else if (paper) Color.White else Color(0xFFF6F8FC)
+    Color.Transparent
 
 @Composable internal fun SubjectPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+    GlassSurface(modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
     }
 }
 

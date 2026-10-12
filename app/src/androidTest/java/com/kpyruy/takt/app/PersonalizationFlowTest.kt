@@ -24,6 +24,7 @@ class PersonalizationFlowTest {
         val data = (compose.activity.application as TaktApplication).dataContainer
         val fifth = runBlocking {
             data.seedIfNeeded()
+            data.settingsRepository.setHomeWorkFilter(HomeWorkFilter())
             data.settingsRepository.setThemeMode(if (InstrumentationRegistry.getArguments().getString("dark") == "true") AppThemeMode.DARK else AppThemeMode.LIGHT)
             data.studyContentRepository.observeAllTasks().first().forEach { data.studyContentRepository.deleteTask(it.id) }
             data.studyContentRepository.upsertTask(StudyTask("gesture-task", "FYZI_6B", "Повторити рівняння руху", null, null, false))
@@ -51,14 +52,15 @@ class PersonalizationFlowTest {
         root("Календар")
         compose.onNode(hasText("День") and hasClickAction()).assertExists()
         root("Предмети")
-        compose.onNodeWithText("Знайти предмет").assertExists()
+        compose.onNodeWithContentDescription("Знайти предмет").assertExists()
         root("Прогрес")
         compose.onNodeWithText("Твій шлях").assertExists()
         root("Предмети")
-        compose.onNodeWithText("Знайти предмет").assertExists()
+        compose.onNodeWithContentDescription("Знайти предмет").assertExists()
 
         // Pick a custom icon through the actual subject UI.
-        compose.onNode(hasText("Fyzika") and hasClickAction()).performScrollTo().performClick()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Fyzika"))
+        compose.onNode(hasText("Fyzika") and hasClickAction()).performClick()
         compose.onNodeWithContentDescription("Змінити іконку предмета").performClick()
         capture("icons")
         compose.onNode(hasSetTextAction()).performTextInput("Science")
@@ -70,6 +72,8 @@ class PersonalizationFlowTest {
         compose.onNodeWithTag("progress-screen").performScrollToNode(hasTestTag("semester-toggle-5"))
         compose.onNodeWithTag("semester-toggle-5").performClick()
         compose.onNodeWithTag("progress-screen").performScrollToNode(hasTestTag("status-${fifth.id}"))
+        val closeHint = compose.onAllNodesWithContentDescription("Закрити")
+        if (closeHint.fetchSemanticsNodes().isNotEmpty()) closeHint.onFirst().performClick()
         compose.onNodeWithTag("status-${fifth.id}").performClick()
         capture("status")
         compose.onNodeWithTag("choose-status-ENROLLED").performClick()

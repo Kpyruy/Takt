@@ -84,4 +84,10 @@ class StoredSettingsCodecTest {
         assertEquals(5, settings.currentSemester)
         assertEquals(AppLanguage.SLOVAK, settings.language)
     }
+    @org.junit.Test fun glassCardStyleSurvivesStoredSettingsDecoding() {
+        val decoded = StoredSettingsCodec.decode(null, false, null, cardAppearance = "GLASS")
+        assertEquals(CardAppearance.GLASS, decoded.cardAppearance)
+        assertEquals(CardAppearance.ELEVATED, StoredSettingsCodec.decode(null, false, null, cardAppearance = "ELEVATED").cardAppearance)
+        assertEquals(CardAppearance.TONAL_FILLED, StoredSettingsCodec.decode(null, false, null, cardAppearance = "TONAL_FILLED").cardAppearance)
+    }
 }

@@ -32,7 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -52,6 +52,13 @@ import com.kpyruy.takt.core.model.CourseGradingType
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.ui.components.CourseAvatar
+import com.kpyruy.takt.core.ui.components.TaktFullSheet
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,23 +73,32 @@ internal fun CourseSettingsSheet(
     onScale: () -> Unit,
 ) {
     var statusExpanded by remember { mutableStateOf(false) }
-    ModalBottomSheet(onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+    TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(t("Налаштування предмета"), style = MaterialTheme.typography.headlineSmall)
-                    Text(course.code, style = MaterialTheme.typography.bodySmall,
+                    Text(course.title + " · " + course.code, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити налаштування предмета")) }
             }
-            Surface(onClick = onIcon, shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+            SubjectPanel {
+                Text(if (uisManaged) t("Дані з UIS") else t("Предмет"), style = MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        SmallText(t("Кількість кредитів"))
+                        Text(course.credits.toString(), style = MaterialTheme.typography.headlineSmall)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        SmallText(t("Семестр"))
+                        Text(course.semester.toString(), style = MaterialTheme.typography.headlineSmall)
+                    }
+                }
+            }
+            GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onIcon), shape = RoundedCornerShape(18.dp)) {
                 Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CourseAvatar(course)
@@ -130,7 +146,7 @@ internal fun CourseSettingsSheet(
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SettingsLabel(t("ОЦІНЮВАННЯ"))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     GradingChoice("A–FX", course.gradingType != CourseGradingType.PASS_FAIL,
                         Modifier.weight(1f)) {
                         if (course.gradingType == CourseGradingType.PASS_FAIL) {
@@ -144,7 +160,7 @@ internal fun CourseSettingsSheet(
             if (course.gradingType == CourseGradingType.PASS_FAIL) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SettingsLabel(t("ПІДСУМОК"))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ResultChoice(t("Зараховано"), course.passFailResult == PassFailResult.PASSED,
                             Modifier.weight(1f)) { onResult(PassFailResult.PASSED) }
                         ResultChoice(t("Не зараховано"), course.passFailResult == PassFailResult.FAILED,
@@ -155,19 +171,23 @@ internal fun CourseSettingsSheet(
                     }
                 }
             } else {
-                OutlinedButton(onClick = onScale, modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)) {
-                    Icon(Icons.Outlined.Tune, null, Modifier.size(18.dp))
-                    Text(t("Шкала оцінювання"), Modifier.padding(start = 8.dp))
+                GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onScale), shape = RoundedCornerShape(18.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Tune, null, Modifier.size(20.dp))
+                        Text(t("Шкала оцінювання"), Modifier.weight(1f).padding(start = 12.dp),
+                            style = MaterialTheme.typography.titleMedium)
+                        Icon(Icons.Outlined.ChevronRight, null)
+                    }
                 }
             }
+            TaktPrimaryButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(t("Готово")) }
         }
     }
 }
 
 @Composable
 private fun GradingChoice(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(14.dp),
+    Surface(modifier = modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick), shape = RoundedCornerShape(14.dp),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
         Row(Modifier.heightIn(min = 58.dp).padding(horizontal = 11.dp, vertical = 10.dp),
@@ -181,7 +201,7 @@ private fun GradingChoice(label: String, selected: Boolean, modifier: Modifier, 
 
 @Composable
 private fun ResultChoice(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(onClick = onClick, modifier = modifier, shape = RoundedCornerShape(14.dp),
+    Surface(modifier = modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick), shape = RoundedCornerShape(14.dp),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
         Text(label, Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 13.dp),

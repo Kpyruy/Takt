@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +32,8 @@ import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import java.time.LocalDate
 import java.util.UUID
+import com.kpyruy.takt.core.ui.components.glassSurface
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +81,7 @@ fun AddTaskForm(
     var requiredForExam by rememberSaveable(initialTask?.id, initialRequiredForExam) {
         mutableStateOf(initialTask?.requiredForExam ?: initialRequiredForExam)
     }
+    var completed by rememberSaveable(initialTask?.id) { mutableStateOf(initialTask?.completed ?: false) }
     var earnedText by rememberSaveable(initialTask?.id) {
         mutableStateOf(initialTask?.earnedPoints?.toTaskPointText().orEmpty())
     }
@@ -95,18 +99,18 @@ fun AddTaskForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialTask == null) t("Нове завдання") else t("Редагувати завдання"),
-                style = MaterialTheme.typography.headlineSmall,
+                if (initialTask == null) t("Додати завдання") else t("Редагувати завдання"),
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
-        OutlinedTextField(
+        TaktTextField(
             value = title,
             onValueChange = { title = it },
             label = { Text(t("Назва")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
-        OutlinedTextField(
+        TaktTextField(
             value = description,
             onValueChange = { description = it },
             label = { Text(t("Опис")) },
@@ -123,12 +127,22 @@ fun AddTaskForm(
             TextButton(onClick = { dueDate = null }) { Text(t("Без дедлайну")) }
         }
 
+        if (initialTask?.maxPoints == null) Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
+            value = completed,
+            role = Role.Switch,
+            onValueChange = { completed = it },
+        ).padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Text(t("Виконано"), Modifier.weight(1f))
+            Switch(completed, onCheckedChange = null)
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth().toggleable(
+            modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
                 value = requiredForExam,
                 role = Role.Checkbox,
                 onValueChange = { requiredForExam = it },
-            ),
+            ).padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -139,7 +153,7 @@ fun AddTaskForm(
         if (initialTask?.maxPoints != null) {
             Text(t("Бали (раніше створене завдання)"), style = MaterialTheme.typography.titleSmall)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
+                TaktTextField(
                     value = earnedText,
                     onValueChange = { earnedText = it; error = null },
                     label = { Text(t("Отримано")) },
@@ -148,7 +162,7 @@ fun AddTaskForm(
                     singleLine = true,
                     isError = error != null,
                 )
-                OutlinedTextField(
+                TaktTextField(
                     value = maxText,
                     onValueChange = {
                         maxText = it
@@ -162,7 +176,7 @@ fun AddTaskForm(
                 )
             }
             if (requiredForExam && maxText.isNotBlank()) {
-                OutlinedTextField(
+                TaktTextField(
                     value = minimumText,
                     onValueChange = { minimumText = it; error = null },
                     label = { Text(t("Мінімум балів для допуску")) },
@@ -175,7 +189,7 @@ fun AddTaskForm(
 
         error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
 
-        Button(
+        TaktPrimaryButton(
             onClick = {
                 val maxInput = maxText.trim().takeIf { it.isNotEmpty() }
                 val max = maxInput?.replace(',', '.')?.toDoubleOrNull()
@@ -197,7 +211,7 @@ fun AddTaskForm(
                             title = title.trim(),
                             description = description.trim().ifBlank { null },
                             dueDate = dueDate,
-                            completed = earned != null || initialTask?.completed == true,
+                            completed = earned != null || completed,
                             requiredForExam = requiredForExam,
                             earnedPoints = earned,
                             maxPoints = max,

@@ -12,13 +12,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Alignment
+import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kpyruy.takt.core.ui.components.TaktTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.LocationOn
+import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -102,37 +111,30 @@ internal fun EditExamInfoSheet(
                 }
             }
 
-            OutlinedTextField(
+            TaktTextField(
                 value = room,
                 onValueChange = { room = it },
                 label = { Text(t("Аудиторія")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                trailingIcon = { Icon(Icons.Outlined.LocationOn, null) },
             )
 
             Text(t("Спроба · максимум 3"), style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (1..3).forEach { number ->
-                    FilterChip(
-                        selected = attempt == number,
-                        onClick = { attempt = number },
-                        label = { Text(number.toString() + "/3") },
-                    )
-                }
-            }
+            TaktSegmentedTabs(listOf("1/3", "2/3", "3/3"), attempt - 1, { attempt = it + 1 })
 
             if (examItems.isNotEmpty()) {
                 Text(t("Пов'язаний результат"), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
-                        FilterChip(
+                        ExamChoice(
                             selected = linkedGradeItemId == null,
                             onClick = { linkedGradeItemId = null },
                             label = { Text(t("Не вибрано")) },
                         )
                     }
                     items(examItems, key = { it.id }) { item ->
-                        FilterChip(
+                        ExamChoice(
                             selected = linkedGradeItemId == item.id,
                             onClick = { linkedGradeItemId = item.id },
                             label = { Text(item.title, maxLines = 1) },
@@ -141,7 +143,7 @@ internal fun EditExamInfoSheet(
                 }
             }
 
-            OutlinedTextField(
+            TaktTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text(t("Нотатки")) },
@@ -153,11 +155,11 @@ internal fun EditExamInfoSheet(
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
-            Button(
+            TaktPrimaryButton(
                 onClick = {
                     if (date != null && endTime <= startTime) {
                         error = t("Кінець має бути пізніше початку.")
-                        return@Button
+                        return@TaktPrimaryButton
                     }
                     onSave(
                         ExamInfo(
@@ -177,6 +179,17 @@ internal fun EditExamInfoSheet(
             ) {
                 Text(t("Зберегти"))
             }
+        }
+    }
+}
+
+@Composable
+private fun ExamChoice(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit) {
+    GlassSurface(Modifier.heightIn(min = 48.dp).selectable(selected, role = Role.RadioButton, onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        tint = if (selected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Unspecified) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+            label()
         }
     }
 }

@@ -1,36 +1,27 @@
 package com.kpyruy.takt.feature.subjects
 
-import com.kpyruy.takt.core.ui.i18n.t
-
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.ui.components.GlassSurface
 import com.kpyruy.takt.core.ui.components.SwipeCompletionBox
-import java.time.format.DateTimeFormatter
+import com.kpyruy.takt.core.ui.i18n.t
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun StudyTaskRow(
@@ -41,91 +32,56 @@ fun StudyTaskRow(
     today: LocalDate = LocalDate.now(),
 ) {
     val overdue = !task.completed && task.dueDate?.isBefore(today) == true
+    val belowThreshold = task.completed && task.requiredForExam && !task.meetsAdmissionRequirement
     var menuOpen by remember { mutableStateOf(false) }
-    val containerColor by animateColorAsState(
-        targetValue = if (task.completed) {
-            MaterialTheme.colorScheme.surfaceVariant
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        label = "task-completion-color",
-    )
-
-    SwipeCompletionBox(
-        completed = task.completed,
-        onCompletedChange = onCompletedChange,
-    ) {
-        Surface(
-            color = containerColor,
-            modifier = Modifier.animateContentSize(),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(checked = task.completed, onCheckedChange = onCompletedChange, modifier = Modifier.semantics { contentDescription = t("Виконано: ${task.title}") })
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        task.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        textDecoration = if (task.completed) TextDecoration.LineThrough else null,
-                        maxLines = 2,
-                    )
-                    if (overdue) {
-                        Text(overdueLabel(task.dueDate!!, today), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error)
-                    }
-                    val supporting = buildList {
-                        task.dueDate?.takeUnless { overdue }?.let {
-                            add(t("до ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+    SwipeCompletionBox(completed = task.completed, onCompletedChange = onCompletedChange) {
+        GlassSurface(Modifier.fillMaxWidth().animateContentSize().testTag("course-work-${task.id}")
+            .clickable(onClick = onEdit), shape = RoundedCornerShape(22.dp)) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Checkbox(checked = task.completed, onCheckedChange = onCompletedChange,
+                        modifier = Modifier.semantics { contentDescription = t("Виконано: ${task.title}") })
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(task.title, style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold, maxLines = 2)
+                        task.description?.takeIf { it.isNotBlank() }?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3)
                         }
-                        if (task.requiredForExam) add(t("потрібно для допуску"))
-                        task.minimumPointsForExam?.let { add(t("мін. ${it.displayNumber()} б.")) }
-                        if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) add(t("поріг не виконано"))
-                    }.joinToString(" · ")
-                    if (supporting.isNotBlank()) {
-                        Text(
-                            supporting,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (task.requiredForExam && !task.completed) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                        )
                     }
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Дії завдання")) }
+                        DropdownMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
+                            DropdownMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+                        }
+                    }
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    task.dueDate?.let {
+                        AssessmentDetailChip(t("До ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), Icons.Outlined.CalendarMonth)
+                    }
+                    if (task.requiredForExam) AssessmentDetailChip(t("потрібно для допуску"), Icons.Outlined.Lock)
+                    if (task.maxPoints != null) AssessmentDetailChip(t("Входить у підсумок"), Icons.Outlined.Description)
+                    task.minimumPointsForExam?.let {
+                        AssessmentDetailChip(t("Мінімум ") + it.displayNumber() + t(" б."), Icons.Outlined.BarChart)
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                val resultColor = if (overdue || belowThreshold) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Icon(if (overdue || belowThreshold) Icons.Outlined.ErrorOutline else if (task.completed) Icons.Outlined.CheckCircle else Icons.Outlined.Schedule,
+                        null, Modifier.size(18.dp), tint = resultColor)
+                    Text(when {
+                        overdue -> overdueLabel(task.dueDate!!, today)
+                        belowThreshold -> t("Поріг не виконано")
+                        task.completed -> t("Виконано")
+                        else -> t("Очікується")
+                    }, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = resultColor)
                     task.maxPoints?.let { maximum ->
-                        Text(t("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} б."),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} ${t("б.")}",
+                            style = MaterialTheme.typography.labelLarge)
                     }
-                    task.description?.takeIf { it.isNotBlank() }?.let {
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                        )
-                    }
-                }
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = t("Дії завдання"))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(
-                        text = { Text(t("Редагувати")) },
-                        onClick = {
-                            menuOpen = false
-                            onEdit()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(t("Видалити")) },
-                        onClick = {
-                            menuOpen = false
-                            onDelete()
-                        },
-                    )
                 }
             }
         }

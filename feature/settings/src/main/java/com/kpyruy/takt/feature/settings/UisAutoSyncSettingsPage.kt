@@ -8,6 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Schedule
+import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +54,7 @@ internal fun UisAutoSyncSettingsPage(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ScreenHeader(title = t("Автооновлення UIS"), navigation = {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад")) }
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
         })
         FrequencyChoice(t("Прогрес"), settings.progress,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
@@ -72,19 +81,34 @@ private fun FrequencyChoice(title: String, selected: UisRefreshFrequency,
     options: List<UisRefreshFrequency>, onSelected: (UisRefreshFrequency) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     SectionCard {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Box {
-            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(t(selected.label()), Modifier.weight(1f))
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            val icon = when (title) {
+                t("Прогрес") -> Icons.Outlined.BarChart
+                t("Предмети") -> Icons.Outlined.MenuBook
+                t("Розклад") -> Icons.Outlined.Schedule
+                else -> Icons.Outlined.CalendarMonth
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { value ->
-                DropdownMenuItem(text = { Text(t(value.label())) }, onClick = {
-                    expanded = false
-                    onSelected(value)
-                })
+            GlassSurface(Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+                Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                    Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+                }
             }
+            Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Box {
+                OutlinedButton(onClick = { expanded = true }) {
+                    Text(t(selected.label()), style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.width(4.dp))
+                    Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp))
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    options.forEach { value ->
+                        DropdownMenuItem(text = { Text(t(value.label())) }, onClick = {
+                            expanded = false
+                            onSelected(value)
+                        })
+                    }
+                }
             }
         }
     }

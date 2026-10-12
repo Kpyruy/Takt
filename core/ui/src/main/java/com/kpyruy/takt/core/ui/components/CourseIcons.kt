@@ -19,6 +19,7 @@ object CourseIcons {
         CourseIconOption("Assignment", "Завдання", "Навчання", Icons.Outlined.Assignment),
         CourseIconOption("FactCheck", "Перевірка", "Навчання", Icons.Outlined.FactCheck),
         CourseIconOption("WorkspacePremium", "Диплом нагорода", "Навчання", Icons.Outlined.WorkspacePremium),
+        CourseIconOption("Atom", "Фізика атом", "Наука", TaktIcons.Atom),
         CourseIconOption("Science", "Хімія колба", "Наука", Icons.Outlined.Science),
         CourseIconOption("Biotech", "Біологія мікроскоп", "Наука", Icons.Outlined.Biotech),
         CourseIconOption("Functions", "Математика функція", "Наука", Icons.Outlined.Functions),

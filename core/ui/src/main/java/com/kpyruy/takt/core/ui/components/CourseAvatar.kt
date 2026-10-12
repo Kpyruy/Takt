@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 
+val LocalCourseCodeKeys = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
+
 val LocalCourseIconKeys = staticCompositionLocalOf<Map<String, String?>> { emptyMap() }
 
 @Composable

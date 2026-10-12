@@ -50,7 +50,7 @@ class AppSettingsTest {
     fun visualPreferencesHaveApprovedDefaults() {
         val settings = AppSettings()
 
-        assertEquals(CardAppearance.ELEVATED, settings.cardAppearance)
+        assertEquals(CardAppearance.GLASS, settings.cardAppearance)
         assertEquals(ThemeFamily.BLUE, settings.themeFamily)
         assertEquals(AppThemeMode.SYSTEM, settings.themeMode)
         assertEquals(WeekLayout.TIMETABLE, settings.weekLayout)

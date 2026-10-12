@@ -38,6 +38,7 @@ import com.kpyruy.takt.core.model.GradeSummary
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.model.CourseWork
+import com.kpyruy.takt.core.model.CourseNote
 import com.kpyruy.takt.core.ui.components.SectionCard
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -49,6 +50,7 @@ internal fun CourseOverviewTab(
     gradeItems: List<GradeItem>,
     gradeScale: GradeScale,
     tasks: List<StudyTask>,
+    notes: List<CourseNote>,
     eligibility: ExamEligibility,
     showFinalGrade: Boolean,
     manualGrade: GradeLetter?,
@@ -58,6 +60,8 @@ internal fun CourseOverviewTab(
     onEditGrade: (GradeItem) -> Unit,
     onNotes: () -> Unit,
     onExam: () -> Unit,
+    nextLesson: com.kpyruy.takt.core.model.ResolvedScheduleEvent? = null,
+    onSettings: (() -> Unit)? = null,
 ) {
     val allGradedWork = CourseWork.scoredItems(tasks, gradeItems)
     val projection = GradeProjection.calculate(allGradedWork, gradeScale)
@@ -82,43 +86,107 @@ internal fun CourseOverviewTab(
                 }
             }
         }
-        if (hasExam) AdmissionProgressCard(eligibility)
-        if (course.gradingType != CourseGradingType.PASS_FAIL) CourseworkProgressCard(allGradedWork, projection, currentGrade)
+        if (course.gradingType != CourseGradingType.PASS_FAIL) {
+            SubjectPanel {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OverviewMetric(t("Набрано"), projection.securedPoints, projection.totalPoints, Modifier.weight(1f))
+                    VerticalDivider(Modifier.height(74.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                    OverviewMetric(t("Потенціал"), projection.maximumPossiblePoints, projection.totalPoints, Modifier.weight(1f))
+                }
+                currentGrade?.let { SmallText(t("Поточна оцінка") + ": " + it.name) }
+            }
+        }
         else if (course.passFailResult != null) SubjectPanel {
             Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
             Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" })
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(t("Обов’язкові роботи"), style = MaterialTheme.typography.titleMedium)
-            Text("${eligibility.completedCount} / ${eligibility.requiredCount}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
-        }
-        Column {
-            HorizontalDivider()
+        if (hasExam || eligibility.requiredCount > 0) SubjectPanel {
+            Text(t("Допуск до екзамену"), style = MaterialTheme.typography.titleMedium)
+            Text("${eligibility.completedCount}/${eligibility.requiredCount}", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            LinearProgressIndicator(progress = { if (eligibility.requiredCount > 0) eligibility.completedCount.toFloat() / eligibility.requiredCount else 0f },
+                modifier = Modifier.fillMaxWidth().height(7.dp), gapSize = 0.dp, drawStopIndicator = {})
             requiredTasks.forEach { task ->
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Row(Modifier.fillMaxWidth().clickable { onEditTask(task) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(task.completed, onCheckedChange = { onTaskCompleted(task, it) })
-                    Column(Modifier.weight(1f)) { Text(task.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (task.meetsAdmissionRequirement) t("Зараховано") else if (task.completed) t("Поріг балів не виконано") else task.description?.takeIf { it.isNotBlank() } ?: t("Для допуску")) }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(task.title, fontSize = 13.sp, lineHeight = 17.sp)
+                        SmallText(if (task.meetsAdmissionRequirement) t("Зараховано") else if (task.completed) t("Поріг балів не виконано") else task.description?.takeIf { it.isNotBlank() } ?: t("Для допуску"))
+                        task.minimumPointsForExam?.let { SmallText(t("Мінімум ") + it.displayNumber() + t(" б.")) }
+                    }
                     task.dueDate?.let { SmallText(it.format(DateTimeFormatter.ofPattern("dd.MM"))) }
                 }
-                HorizontalDivider()
             }
             requiredGrades.forEach { grade ->
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Row(Modifier.fillMaxWidth().clickable { onEditGrade(grade) }.padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(if (grade.meetsAdmissionRequirement) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Column { Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp); SmallText(if (grade.meetsAdmissionRequirement) t("Зараховано") else if (grade.completed) t("Поріг балів не виконано") else if (grade.isAwaitingResult) t("Очікую оцінку") else t("Додати результат")) }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp)
+                        SmallText(if (grade.meetsAdmissionRequirement) t("Зараховано") else if (grade.completed) t("Поріг балів не виконано") else if (grade.isAwaitingResult) t("Очікую оцінку") else t("Додати результат"))
+                        grade.minimumPointsForExam?.let { SmallText(t("Мінімум ") + it.displayNumber() + t(" б.")) }
+                    }
                 }
-                HorizontalDivider()
             }
             if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText(t("Обов’язкових робіт не позначено"), Modifier.padding(vertical = 16.dp))
         }
-        Text(t("Під рукою"), style = MaterialTheme.typography.titleMedium)
-        ResourceRow(t("Формули й конспекти"), t("Нотатки та матеріали предмета"), onNotes)
-        if (hasExam) ResourceRow(t("Підготовка до екзамену"), t("Дата й цільова оцінка"), onExam)
+        nextLesson?.let { lesson ->
+            SubjectPanel {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.CalendarMonth, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        SmallText(t("Найближча пара"))
+                        Text(lesson.date.format(DateTimeFormatter.ofPattern("EEEE, dd.MM", com.kpyruy.takt.core.ui.i18n.TaktI18n.locale)) +
+                            " · ${lesson.startTime}–${lesson.endTime}", style = MaterialTheme.typography.titleSmall)
+                        SmallText(t(lesson.lessonType.label) + lesson.room?.let { " · " + t("ауд.") + " $it" }.orEmpty())
+                    }
+                }
+            }
+        }
+        SubjectPanel {
+            Row(Modifier.fillMaxWidth().clickable(onClick = onNotes), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(t("Нотатки"), style = MaterialTheme.typography.titleMedium)
+                Text(t("Усі нотатки ›"), color = MaterialTheme.colorScheme.primary)
+            }
+            if (notes.isEmpty()) SmallText(t("Нотатки та матеріали предмета"))
+            notes.take(2).forEach { note ->
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ResourceRow(note.title, note.content.take(85), onNotes)
+            }
+        }
+        if (hasExam) SubjectPanel { ResourceRow(t("Підготовка до екзамену"), t("Дата й цільова оцінка"), onExam) }
         if (showFinalGrade && course.gradingType != CourseGradingType.PASS_FAIL && course.officialGrade == null) {
             ManualGradeSection(manualGrade, onManualGradeChange)
         }
-        course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; ResourceRow(t("Програма предмета"), course.code) { runCatching { uriHandler.openUri(url) } } }
+        course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; SubjectPanel {
+            ResourceRow(t("Програма предмета"), course.code) { runCatching { uriHandler.openUri(url) } }
+        } }
+        onSettings?.let { open ->
+            SubjectPanel {
+                Row(Modifier.fillMaxWidth().clickable(onClick = open).heightIn(min = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.Settings, null)
+                    Text(t("Налаштування предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Icon(Icons.Default.ChevronRight, null)
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable private fun OverviewMetric(label: String, value: Double, maximum: Double, modifier: Modifier) {
+    val progress = if (maximum > 0) (value / maximum).toFloat().coerceIn(0f, 1f) else 0f
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        SmallText(label)
+        Text("${value.displayNumber()}/${maximum.displayNumber()}", fontSize = 24.sp, lineHeight = 30.sp,
+            fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            LinearProgressIndicator(progress = { progress },
+                modifier = Modifier.weight(1f).height(6.dp), gapSize = 0.dp, drawStopIndicator = {})
+            SmallText("${(progress * 100).toInt()}%")
+        }
     }
 }
 
@@ -128,5 +196,4 @@ internal fun CourseOverviewTab(
         Column(Modifier.weight(1f)) { Text(title, fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold); SmallText(subtitle) }
         Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))
     }
-    HorizontalDivider()
 }

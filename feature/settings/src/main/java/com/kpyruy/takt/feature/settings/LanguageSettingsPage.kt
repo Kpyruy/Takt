@@ -5,6 +5,7 @@ import com.kpyruy.takt.core.ui.i18n.t
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -19,8 +20,9 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Text
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,57 +50,43 @@ internal fun LanguageSettingsPage(
         ScreenHeader(
             title = t("Мова застосунку"),
             navigation = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = t("Назад"))
-                }
+                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
             },
         )
-        listOf(
-            AppLanguage.UKRAINIAN to t("Українська"),
-            AppLanguage.ENGLISH to "English",
-            AppLanguage.SLOVAK to "Slovenčina",
-        ).forEach { (language, label) ->
-            val active = selected == language
-            Surface(
-                modifier = Modifier.fillMaxWidth().clickable { onSelected(language) }
-                    .testTag("language-${language.name}"),
-                shape = MaterialTheme.shapes.medium,
-                color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp,
-                    if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
-            ) {
-                Row(Modifier.padding(horizontal = 18.dp, vertical = 17.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                    if (active) Icon(Icons.Outlined.Check, contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-        }
-        Text(t("Мова назв предметів"), style = MaterialTheme.typography.titleMedium)
-        listOf(
-            CourseNameLanguage.FOLLOW_APP to t("За мовою застосунку"),
-            CourseNameLanguage.ENGLISH to "English",
-            CourseNameLanguage.SLOVAK to "Slovenčina",
-        ).forEach { (language, label) ->
-            Surface(Modifier.fillMaxWidth().clickable { onCourseNameSelected(language) }
-                .testTag("course-name-${language.name}"), shape = MaterialTheme.shapes.medium,
-                color = if (courseNameLanguage == language) MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surface) {
-                Text(label, Modifier.padding(16.dp))
-            }
-        }
+        LanguageRadioGroup(
+            options = listOf(AppLanguage.UKRAINIAN to t("Українська"), AppLanguage.ENGLISH to "English", AppLanguage.SLOVAK to "Slovenčina"),
+            selected = selected, tagPrefix = "language", onSelect = onSelected,
+        )
+        Text(t("Мова назв предметів"), style = MaterialTheme.typography.titleLarge)
+        LanguageRadioGroup(
+            options = listOf(CourseNameLanguage.FOLLOW_APP to t("За мовою застосунку"), CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),
+            selected = courseNameLanguage, tagPrefix = "course-name", onSelect = onCourseNameSelected,
+        )
         if (selected == AppLanguage.UKRAINIAN && courseNameLanguage == CourseNameLanguage.FOLLOW_APP) {
-            Text(t("Для української мови інтерфейсу"), style = MaterialTheme.typography.titleSmall)
-            listOf(CourseNameLanguage.ENGLISH to "English", CourseNameLanguage.SLOVAK to "Slovenčina")
-                .forEach { (language, label) ->
-                    Surface(Modifier.fillMaxWidth().clickable { onUkrainianFallbackSelected(language) },
-                        shape = MaterialTheme.shapes.medium,
-                        color = if (ukrainianFallback == language) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surface) {
-                        Text(label, Modifier.padding(16.dp))
-                    }
+            Text(t("Для української мови інтерфейсу"), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            LanguageRadioGroup(
+                options = listOf(CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),
+                selected = ukrainianFallback, tagPrefix = "course-fallback", onSelect = onUkrainianFallbackSelected,
+            )
+        }
+    }
+}
+
+@Composable
+private fun <T : Enum<T>> LanguageRadioGroup(options: List<Pair<T, String>>, selected: T, tagPrefix: String, onSelect: (T) -> Unit) {
+    com.kpyruy.takt.core.ui.components.SectionCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp)) {
+        Column {
+            options.forEachIndexed { index, (value, label) ->
+                Row(Modifier.fillMaxWidth().testTag("$tagPrefix-${value.name}")
+                    .selectable(selected = value == selected, role = androidx.compose.ui.semantics.Role.RadioButton, onClick = { onSelect(value) })
+                    .padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.RadioButton(selected = value == selected, onClick = null)
+                    Text(label, Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
                 }
+                if (index != options.lastIndex) androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f))
+            }
         }
     }
 }

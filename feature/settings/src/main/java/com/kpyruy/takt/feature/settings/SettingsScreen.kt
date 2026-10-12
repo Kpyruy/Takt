@@ -25,7 +25,10 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.SystemUpdate
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.CloudUpload
+import com.kpyruy.takt.core.ui.components.TaktIconButton
+import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +85,7 @@ fun SettingsScreen(
     var showPeriods by remember { mutableStateOf(false) }
     var showUniversityAccount by remember { mutableStateOf(false) }
     var showUisAutoSync by remember { mutableStateOf(false) }
+    var showDocuments by remember { mutableStateOf(false) }
     var showAppUpdates by remember { mutableStateOf(false) }
     val releaseState by appReleaseRepository.state.collectAsStateWithLifecycle()
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
@@ -260,98 +264,8 @@ fun SettingsScreen(
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        ScreenHeader(
-            title = t("Налаштування"),
-            navigation = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("Назад"))
-                }
-            },
-        )
-
-        SettingsSectionTitle(t("Під себе"))
-        SettingsNavigationTile(
-            title = t("Вигляд"),
-            icon = Icons.Outlined.Palette,
-            onClick = { showAppearance = true },
-        )
-        SettingsNavigationTile(
-            title = t("Мова"),
-            icon = Icons.Outlined.Language,
-            onClick = { showLanguage = true },
-        )
-        SettingsNavigationTile(
-            title = t("Календар і розклад"),
-            icon = Icons.Outlined.CalendarMonth,
-            onClick = { showCalendar = true },
-        )
-        SettingsNavigationTile(
-            title = t("Періоди навчання"),
-            icon = Icons.Outlined.DateRange,
-            onClick = { showPeriods = true },
-        )
-
-        SettingsNavigationTile(
-            title = t("Задачі"),
-            icon = Icons.Outlined.Checklist,
-            onClick = { showTasks = true },
-        )
-
-        SettingsSectionTitle(t("Акаунт"))
-        SettingsNavigationTile(
-            title = t("Університетська система"),
-            subtitle = when {
-                uisPreview != null -> t("UIS · є зміни для перегляду")
-                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t("UIS · потрібен код підтвердження")
-                uisSession in setOf(com.kpyruy.takt.core.data.uis.UisResult.INVALID_CREDENTIALS,
-                    com.kpyruy.takt.core.data.uis.UisResult.UNAVAILABLE,
-                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t("UIS · перевірка не вдалася")
-                uisImport.error != null -> t("UIS · перевірка не вдалася")
-                hasUniversityAccount -> t("UIS · дані збережено")
-                else -> t("Локальний режим")
-            },
-            icon = Icons.Outlined.AccountCircle,
-            onClick = { showUniversityAccount = true },
-        )
-        SettingsNavigationTile(
-            title = t("Автооновлення UIS"),
-            subtitle = t("Прогрес") + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
-                t("Розклад") + ": " + t(settings.uisAutoSync.timetable.label()),
-            icon = Icons.Outlined.DateRange,
-            onClick = { showUisAutoSync = true },
-        )
-
-        SettingsSectionTitle(t("Оцінювання"))
-        SectionCard {
-            Text(t("Стандартна шкала"), style = MaterialTheme.typography.titleMedium)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
-                    Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(grade, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                        Text(threshold, style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-            Text(t("FX · нижче 56%"), style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-
-        SettingsNavigationTile(
-            title = t("Оновлення додатка"),
-            subtitle = if (releaseState.availableUpdate != null) t("Доступне оновлення") else "Takt " + releaseState.installedVersion,
-            icon = Icons.Outlined.SystemUpdate,
-            onClick = { showAppUpdates = true },
-        )
-
-        SettingsSectionTitle(t("Дані"))
+    if (showDocuments) {
+        DocumentsSettingsPage(onBack = { showDocuments = false }) {
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.size(9.dp).background(
@@ -418,6 +332,110 @@ fun SettingsScreen(
                     },
                 )
             }
+        }
+        }
+        return
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        ScreenHeader(
+            title = t("Налаштування"),
+            navigation = {
+                TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Назад"), onBack)
+            },
+        )
+
+        SettingsGroup(t("Під себе")) {
+        SettingsNavigationTile(
+            title = t("Вигляд"),
+            icon = Icons.Outlined.Palette,
+            onClick = { showAppearance = true },
+        )
+        SettingsNavigationTile(
+            title = t("Мова"),
+            icon = Icons.Outlined.Language,
+            onClick = { showLanguage = true },
+        )
+        SettingsNavigationTile(
+            title = t("Календар і розклад"),
+            icon = Icons.Outlined.CalendarMonth,
+            onClick = { showCalendar = true },
+        )
+        SettingsNavigationTile(
+            title = t("Періоди навчання"),
+            icon = Icons.Outlined.DateRange,
+            onClick = { showPeriods = true },
+        )
+
+        SettingsNavigationTile(
+            title = t("Задачі"),
+            icon = Icons.Outlined.Checklist,
+            onClick = { showTasks = true },
+        )
+
+        }
+        SettingsGroup(t("Акаунт")) {
+        SettingsNavigationTile(
+            title = t("Університетська система"),
+            subtitle = when {
+                uisPreview != null -> t("UIS · є зміни для перегляду")
+                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t("UIS · потрібен код підтвердження")
+                uisSession in setOf(com.kpyruy.takt.core.data.uis.UisResult.INVALID_CREDENTIALS,
+                    com.kpyruy.takt.core.data.uis.UisResult.UNAVAILABLE,
+                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t("UIS · перевірка не вдалася")
+                uisImport.error != null -> t("UIS · перевірка не вдалася")
+                hasUniversityAccount -> t("UIS · дані збережено")
+                else -> t("Локальний режим")
+            },
+            icon = Icons.Outlined.AccountCircle,
+            onClick = { showUniversityAccount = true },
+        )
+        SettingsNavigationTile(
+            title = t("Автооновлення UIS"),
+            subtitle = t("Прогрес") + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
+                t("Розклад") + ": " + t(settings.uisAutoSync.timetable.label()),
+            icon = Icons.Outlined.DateRange,
+            onClick = { showUisAutoSync = true },
+        )
+
+        }
+        SettingsSectionTitle(t("Оцінювання"))
+        SectionCard {
+            Text(t("Стандартна шкала"), style = MaterialTheme.typography.titleMedium)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
+                    Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(grade, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(threshold, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            Text(t("FX · нижче 56%"), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        SettingsGroup(t("Додаток")) {
+        SettingsNavigationTile(
+            title = t("Оновлення додатка"),
+            subtitle = if (releaseState.availableUpdate != null) t("Доступне оновлення") else "Takt " + releaseState.installedVersion,
+            icon = Icons.Outlined.SystemUpdate,
+            onClick = { showAppUpdates = true },
+        )
+
+        }
+        SettingsGroup(t("Дані")) {
+            SettingsNavigationTile("Documents/Takt", Icons.Outlined.Folder,
+                onClick = { showDocuments = true },
+                subtitle = t(if (documentStatus == DocumentSyncStatus.READY) "Підключено" else "Не підключено"))
+            SettingsNavigationTile(t("Резервна копія"), Icons.Outlined.CloudUpload,
+                onClick = { showDocuments = true })
         }
     }
 }

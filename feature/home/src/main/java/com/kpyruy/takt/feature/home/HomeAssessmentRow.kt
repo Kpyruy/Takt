@@ -13,7 +13,11 @@ import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
+import com.kpyruy.takt.core.ui.components.glassSurface
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,15 +36,18 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
     val icon = when (item.type) {
         GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
         GradeItemType.EXAM -> Icons.Outlined.School
+        GradeItemType.LAB -> Icons.Outlined.Science
         else -> Icons.Outlined.Assignment
     }
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag("home-assessment-${item.id}")) {
         Row(
-            Modifier.fillMaxWidth().padding(vertical = 5.dp),
+            Modifier.fillMaxWidth().padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Icon(icon, contentDescription = null, tint = subjectColor)
+            Box(Modifier.size(40.dp).glassSurface(tint = subjectColor), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = subjectColor)
+            }
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.titleSmall)
                 Text(buildList {
