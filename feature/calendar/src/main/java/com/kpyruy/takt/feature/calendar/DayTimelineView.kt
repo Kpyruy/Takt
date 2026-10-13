@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -96,102 +95,103 @@ fun DayTimelineView(
         }
     }
     val clock = LocalDateTime.of(today, now)
-    // A proportional grid must not let a large title paint over the following event.
-    // Dense schedules and increased text sizes use the existing agenda interaction instead.
-    val agenda = ordered.any { it.endTime <= it.startTime } || LocalDensity.current.fontScale > 1.15f ||
-        placements.any { it.durationMinutes < 45 || it.laneCount > 2 }
-    if (agenda) {
-        Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-            Text(t("Події за часом"), style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            ordered.forEach { event ->
-                TimelineEventBlock(event, cancellationStyle, hasTest(event), { onEventClick(event) },
-                    onLongClick = { onEventLongClick(event) }, modifier = Modifier.fillMaxWidth(), dimmed = event.isVisuallyMuted(clock), compact = false)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        // A proportional grid must not let a large title paint over the following event.
+        // Dense schedules and increased text sizes use the existing agenda interaction instead.
+        val fontScale = LocalDensity.current.fontScale
+        val eventAreaWidth = (maxWidth - timelineLabelWidth).coerceAtLeast(0.dp)
+        val adaptiveNarrow = placements.any { eventAreaWidth / it.laneCount.toFloat() < 140.dp * fontScale }
+        val agenda = adaptiveNarrow || ordered.any { it.endTime <= it.startTime } || fontScale > 1.15f ||
+            placements.any { it.durationMinutes < 45 || it.laneCount > 2 }
+        if (agenda) {
+            Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                Text(t("Події за часом"), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ordered.forEach { event ->
+                    TimelineEventBlock(event, cancellationStyle, hasTest(event), { onEventClick(event) },
+                        onLongClick = { onEventLongClick(event) }, modifier = Modifier.fillMaxWidth(), dimmed = event.isVisuallyMuted(clock), compact = false)
+                }
             }
-        }
-        return
-    }
-
-    BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 20.dp).height(totalHeight)) {
-        Column(
-            modifier = Modifier
-                .offset(x = timelineLabelWidth)
-                .width(maxWidth - timelineLabelWidth),
-        ) {
-            repeat(rangeEndHour - rangeStartHour) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(Modifier.height(timelineHourHeight - 1.dp))
-            }
-        }
-
-        repeat(rangeEndHour - rangeStartHour + 1) { index ->
-            val hourMinute = (rangeStartHour + index) * 60
-            if (selectedDate != today || kotlin.math.abs(now.hour * 60 + now.minute - hourMinute) > 12) Text(
-                text = "%d:00".format(rangeStartHour + index),
-                modifier = Modifier.offset(y = timelineHourHeight * index - 7.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        val eventAreaWidth = maxWidth - timelineLabelWidth
-        placements.forEach { placement ->
-            val event = eventById.getValue(placement.id)
-            val laneWidth = eventAreaWidth / placement.laneCount.toFloat()
-            TimelineEventBlock(
-                event = event,
-                cancellationStyle = cancellationStyle,
-                hasTest = hasTest(event),
-                onClick = { onEventClick(event) },
-                onLongClick = { onEventLongClick(event) },
+        } else BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 20.dp).height(totalHeight)) {
+            Column(
                 modifier = Modifier
-                    .offset(
-                        x = timelineLabelWidth + laneWidth * placement.lane.toFloat(),
-                        y = minutesToDp(placement.offsetMinutes),
-                    )
-                    .width(laneWidth)
-                    .padding(end = if (placement.laneCount > 1) 3.dp else 0.dp)
-                    .height(minutesToDp(placement.durationMinutes)),
-                dimmed = event.isVisuallyMuted(clock),
-                short = placement.durationMinutes < 75,
-            )
-        }
-
-        ordered.zipWithNext().forEach { (current, following) ->
-            val gap = Duration.between(current.endTime, following.startTime).toMinutes()
-            if (gap >= 35 && placements.all { it.laneCount == 1 }) {
-                val offset = Duration.between(rangeStart, current.endTime).toMinutes() + gap / 2
-                val currentOffset = Duration.between(rangeStart, now).toMinutes()
-                if (selectedDate != today || kotlin.math.abs(currentOffset - offset) > 18) Text(t("Перерва") + " · " + formatDurationMinutes(gap),
-                    Modifier.offset(x = timelineLabelWidth + 13.dp, y = minutesToDp(offset) - 7.dp),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-
-        val nowMinute = now.hour * 60 + now.minute
-        val rangeEndMinute = rangeEndHour * 60
-        if (selectedDate == today && nowMinute in (rangeStartHour * 60)..rangeEndMinute) {
-            val nowOffset = Duration.between(rangeStart, now).toMinutes().coerceIn(0, rangeMinutes)
-            Row(
-                modifier = Modifier.fillMaxWidth().offset(y = minutesToDp(nowOffset) - 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .offset(x = timelineLabelWidth)
+                    .width(maxWidth - timelineLabelWidth),
             ) {
-                Text(
-                    now.format(timelineTimeFormatter),
-                    modifier = Modifier.width(timelineLabelWidth),
+                repeat(rangeEndHour - rangeStartHour) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(timelineHourHeight - 1.dp))
+                }
+            }
+
+            repeat(rangeEndHour - rangeStartHour + 1) { index ->
+                val hourMinute = (rangeStartHour + index) * 60
+                if (selectedDate != today || kotlin.math.abs(now.hour * 60 + now.minute - hourMinute) > 12) Text(
+                    text = "%d:00".format(rangeStartHour + index),
+                    modifier = Modifier.offset(y = timelineHourHeight * index - 7.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Box(
-                    Modifier.width(6.dp).height(6.dp).background(
-                        MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(50),
-                    ),
+            }
+
+            placements.forEach { placement ->
+                val event = eventById.getValue(placement.id)
+                val laneWidth = eventAreaWidth / placement.laneCount.toFloat()
+                TimelineEventBlock(
+                    event = event,
+                    cancellationStyle = cancellationStyle,
+                    hasTest = hasTest(event),
+                    onClick = { onEventClick(event) },
+                    onLongClick = { onEventLongClick(event) },
+                    modifier = Modifier
+                        .offset(
+                            x = timelineLabelWidth + laneWidth * placement.lane.toFloat(),
+                            y = minutesToDp(placement.offsetMinutes),
+                        )
+                        .width(laneWidth)
+                        .padding(end = if (placement.laneCount > 1) 3.dp else 0.dp)
+                        .height(minutesToDp(placement.durationMinutes)),
+                    dimmed = event.isVisuallyMuted(clock),
+                    short = placement.durationMinutes < 75,
                 )
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.primary,
-                )
+            }
+
+            ordered.zipWithNext().forEach { (current, following) ->
+                val gap = Duration.between(current.endTime, following.startTime).toMinutes()
+                if (gap >= 35 && placements.all { it.laneCount == 1 }) {
+                    val offset = Duration.between(rangeStart, current.endTime).toMinutes() + gap / 2
+                    val currentOffset = Duration.between(rangeStart, now).toMinutes()
+                    if (selectedDate != today || kotlin.math.abs(currentOffset - offset) > 18) Text(t("Перерва") + " · " + formatDurationMinutes(gap),
+                        Modifier.offset(x = timelineLabelWidth + 13.dp, y = minutesToDp(offset) - 7.dp),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            val nowMinute = now.hour * 60 + now.minute
+            val rangeEndMinute = rangeEndHour * 60
+            if (selectedDate == today && nowMinute in (rangeStartHour * 60)..rangeEndMinute) {
+                val nowOffset = Duration.between(rangeStart, now).toMinutes().coerceIn(0, rangeMinutes)
+                Row(
+                    modifier = Modifier.fillMaxWidth().offset(y = minutesToDp(nowOffset) - 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        now.format(timelineTimeFormatter),
+                        modifier = Modifier.width(timelineLabelWidth),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Box(
+                        Modifier.width(6.dp).height(6.dp).background(
+                            MaterialTheme.colorScheme.primary,
+                            RoundedCornerShape(50),
+                        ),
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }
@@ -228,47 +228,50 @@ private fun TimelineEventBlock(
         color = if (dimmed) MaterialTheme.colorScheme.surfaceContainerLow
             else lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),
     ) {
-        Row(Modifier.height(IntrinsicSize.Min)) {
-            Box(Modifier.width(3.dp).fillMaxHeight().background(accentColor))
-            Column(Modifier.padding(horizontal = 13.dp, vertical = if (short) 5.dp else 11.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CourseInlineIcon(event.courseId)
-                    Text(
-                        if (short && status != null) "$status · ${event.title}" else event.title,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall,
-                        textDecoration = decoration,
-                        maxLines = if (!compact) Int.MAX_VALUE else if (short) 1 else 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (hasTest) LessonTestBadge(compact = true)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    LessonTypeIcon(event.lessonType)
-                    Text(
-                        buildString {
-                            if (event.lessonType != LessonType.UNSPECIFIED) append(t(event.lessonType.shortLabel)).append(" · ")
-                            append(event.startTime.format(timelineTimeFormatter))
-                            append("–")
-                            append(event.endTime.format(timelineTimeFormatter))
-                            event.room?.let { append(" · ").append(it) }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textDecoration = decoration,
-                        maxLines = if (compact) 1 else Int.MAX_VALUE,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                status?.takeUnless { compact && short }?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = if (compact) 1 else Int.MAX_VALUE,
-                        overflow = TextOverflow.Ellipsis,
-                        color = if (cancelled || event.isAbsent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        Column(
+            Modifier.fillMaxWidth()
+                .then(if (compact) Modifier.fillMaxHeight() else Modifier)
+                .calendarEventAccent(accentColor)
+                .padding(start = 16.dp, end = 13.dp, top = if (short) 5.dp else 11.dp,
+                    bottom = if (short) 5.dp else 11.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CourseInlineIcon(event.courseId)
+                Text(
+                    if (short && status != null) "$status · ${event.title}" else event.title,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    textDecoration = decoration,
+                    maxLines = if (!compact) Int.MAX_VALUE else if (short) 1 else 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (hasTest) LessonTestBadge(compact = true)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                LessonTypeIcon(event.lessonType)
+                Text(
+                    buildString {
+                        if (event.lessonType != LessonType.UNSPECIFIED) append(t(event.lessonType.shortLabel)).append(" · ")
+                        append(event.startTime.format(timelineTimeFormatter))
+                        append("–")
+                        append(event.endTime.format(timelineTimeFormatter))
+                        event.room?.let { append(" · ").append(it) }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textDecoration = decoration,
+                    maxLines = if (compact) 1 else Int.MAX_VALUE,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            status?.takeUnless { compact && short }?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = if (compact) 1 else Int.MAX_VALUE,
+                    overflow = TextOverflow.Ellipsis,
+                    color = if (cancelled || event.isAbsent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

@@ -6,10 +6,8 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -64,14 +61,11 @@ import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.DeviceAuthenticationResult
 import com.kpyruy.takt.core.data.UniversityAccountRepository
 import com.kpyruy.takt.core.model.AppLanguage
-import com.kpyruy.takt.core.model.AppThemeMode
-import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.core.ui.components.TaktGlassBackground
 import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
-import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
 import com.kpyruy.takt.feature.settings.AppearanceLivePreview
 import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
 import com.kpyruy.takt.feature.settings.UniversityAccountForm
@@ -179,42 +173,11 @@ internal fun FirstRunScreen(
                         }
                         AppearanceLivePreview(draft)
                         Text(t("Тема"), style = MaterialTheme.typography.titleMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(AppThemeMode.SYSTEM to t("Як телефон"), AppThemeMode.LIGHT to t("Світла"),
-                                AppThemeMode.DARK to t("Темна")).forEach { (mode, label) ->
-                                FilterChip(selected = draft.themeMode == mode, onClick = { draft = draft.copy(themeMode = mode) },
-                                    label = { Text(label) }, modifier = Modifier.weight(1f).testTag("onboarding-theme-${mode.name}"))
-                            }
-                        }
+                        com.kpyruy.takt.feature.settings.AppearanceLightingChoices(
+                            draft, { draft = it }, tagPrefix = "onboarding-theme")
                         Text(t("Колір"), style = MaterialTheme.typography.titleMedium)
-                        val dark = when (draft.themeMode) {
-                            AppThemeMode.SYSTEM -> isSystemInDarkTheme()
-                            AppThemeMode.LIGHT -> false
-                            AppThemeMode.DARK -> true
-                        }
-                        listOf(ThemeFamily.BLUE to t("Синя"), ThemeFamily.GREEN to t("Зелена"),
-                            ThemeFamily.PURPLE to t("Фіолетова"), ThemeFamily.WARM to t("Тепла"),
-                            ThemeFamily.MONOCHROME to t("Монохром")).forEach { (family, label) ->
-                            val selected = draft.themeFamily == family
-                            Surface(
-                                modifier = Modifier.fillMaxWidth().clickable { draft = draft.copy(themeFamily = family) }
-                                    .testTag("onboarding-color-${family.name}"),
-                                shape = MaterialTheme.shapes.medium,
-                                color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
-                            ) {
-                                Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                        taktThemePreviewColors(family, dark).take(3).forEach { color ->
-                                            Box(Modifier.size(19.dp).background(color, CircleShape))
-                                        }
-                                    }
-                                    Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                                    if (selected) Icon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-                        }
+                        com.kpyruy.takt.feature.settings.AppearanceThemeChoices(
+                            draft, { draft = it }, tagPrefix = "onboarding-color")
                         TextButton(onClick = { folderPicker.launch(null) }) { Text(t("Відновити з Documents/Takt")) }
                         restoreMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }

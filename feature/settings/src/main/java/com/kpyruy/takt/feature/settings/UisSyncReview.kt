@@ -4,6 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.AlertDialog
@@ -29,8 +39,11 @@ import kotlinx.coroutines.flow.flowOf
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.ScheduleRule
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.i18n.t
 import kotlinx.coroutines.launch
+import java.time.format.TextStyle
 
 @Composable
 fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean = true) {
@@ -61,7 +74,7 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
     val removedEvents = if (scheduleAvailable) data.localOneOffEvents.filter { local -> data.oneOffEvents.none { sameEvent(it, local) } } else emptyList()
     val remotePeriod = data.period
 
-    SectionCard {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showHeading) Text(t("Порівняння з UIS"), style = MaterialTheme.typography.titleLarge)
         action.message?.let { Text(t(it), color = MaterialTheme.colorScheme.primary) }
         action.error?.let {
@@ -69,8 +82,6 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
             TextButton(enabled = !action.running, onClick = { scope.launch { repository.retrySyncAction() } }) { Text(t("Повторити")) }
         }
         if (action.running) Text(t("Збереження…"))
-        Text(t("Обери окремі зміни або залиш локальні дані."),
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (UisSyncSection.PERIODS in data.availableSections && remotePeriod != null && data.localPeriod != remotePeriod) {
             Text(t("Навчальний період"), style = MaterialTheme.typography.titleMedium)
             Text(t("Локально: ${data.localPeriod?.studyStart ?: "—"} – ${data.localPeriod?.studyEnd ?: "—"}; іспити ${data.localPeriod?.examStart ?: "—"} – ${data.localPeriod?.examEnd ?: "—"}"))
@@ -91,7 +102,9 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 Text(t("Оновити весь прогрес"))
             }
             progress.forEach { (local, remote) ->
-                Text("${remote.code} · ${local.title}")
+                SectionCard {
+                Text(local.title, style = MaterialTheme.typography.titleMedium)
+                Text(remote.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (local.status != remote.status) Text("${statusLabel(local.status)} → ${statusLabel(remote.status)}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (local.passFailResult != remote.passFailResult) {
@@ -111,11 +124,13 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 TextButton(enabled = !action.running, onClick = { scope.launch { repository.applyProgress(remote.id) } }) {
                     Text(t("Оновити прогрес предмета"))
                 }
+                }
             }
         }
         if (metadata.isNotEmpty()) {
             Text(t("Предмети · ${metadata.size} змін"), style = MaterialTheme.typography.titleMedium)
             metadata.forEach { remote ->
+                SectionCard {
                 val local = data.localCourses.matchingUisCourse(remote)
                 Text("${remote.code} · ${local?.title ?: "—"} → ${settings.displayCourseTitle(remote)}")
                 val candidates = data.localCourses.filter { it.matchesUisCourse(remote) }
@@ -125,6 +140,7 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 }) {
                     Text(t(if (local == null) "Додати предмет" else "Оновити предмет"))
                 }
+                }
             }
         }
         if (addedRules.isNotEmpty() || addedEvents.isNotEmpty() || removedRules.isNotEmpty() || removedEvents.isNotEmpty()) {
@@ -133,12 +149,16 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
             OutlinedButton(enabled = !action.running, onClick = { confirmReplacement = true },
                 modifier = Modifier.fillMaxWidth()) { Text(t("Замінити весь розклад розкладом UIS")) }
             addedRules.forEach { rule ->
-                TimetableDifference(enabled = !action.running, label = "${rule.dayOfWeek} ${rule.startTime}–${rule.endTime} · ${rule.title} · ${rule.room.orEmpty()}") {
+                TimetableDifference(enabled = !action.running, title = rule.title,
+                    details = rule.dayOfWeek.getDisplayName(TextStyle.FULL, TaktI18n.locale) + " · ${rule.startTime}–${rule.endTime}" +
+                        rule.room?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()) {
                     scope.launch { repository.addRule(rule.id) }
                 }
             }
             addedEvents.forEach { event ->
-                TimetableDifference(enabled = !action.running, label = "${event.date} ${event.startTime}–${event.endTime} · ${event.title} · ${event.room.orEmpty()}") {
+                TimetableDifference(enabled = !action.running, title = event.title,
+                    details = "${event.date} · ${event.startTime}–${event.endTime}" +
+                        event.room?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()) {
                     scope.launch { repository.addOneOff(event.id) }
                 }
             }
@@ -191,10 +211,25 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
 }
 
 @Composable
-private fun TimetableDifference(label: String, enabled: Boolean, onAdd: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label)
-        TextButton(enabled = enabled, onClick = onAdd) { Text(t("Додати заняття")) }
+private fun TimetableDifference(title: String, details: String, enabled: Boolean, onAdd: () -> Unit) {
+    SectionCard {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            GlassSurface(Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.Schedule, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+        OutlinedButton(enabled = enabled, onClick = onAdd, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.Add, null, Modifier.padding(end = 8.dp).size(18.dp))
+            Text(t("Додати заняття"))
+        }
     }
 }
 

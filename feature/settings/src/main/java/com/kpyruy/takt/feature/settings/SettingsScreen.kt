@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -27,6 +30,8 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.Restore
 import com.kpyruy.takt.core.ui.components.TaktIconButton
 import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.Icon
@@ -180,7 +185,7 @@ fun SettingsScreen(
             onBack = { showAppearance = false },
             onApply = { preview ->
                 scope.launch {
-                    settingsRepository.setAppearance(preview.themeMode, preview.themeFamily, preview.cardAppearance)
+                    settingsRepository.setAppearance(preview)
                     showAppearance = false
                 }
             },
@@ -304,22 +309,31 @@ fun SettingsScreen(
             }
         }
         SectionCard {
-            Text(t("Резервна копія"), style = MaterialTheme.typography.titleMedium)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center) {
+                Icon(Icons.Outlined.CloudUpload, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(10.dp))
+                Text(t("Резервна копія"), style = MaterialTheme.typography.titleLarge)
+            }
             Button(
                 onClick = {
                     exportLauncher.launch("takt-backup-" + LocalDate.now() + ".json")
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
-                Text(t("Експортувати JSON"))
+                Icon(Icons.Outlined.FileUpload, null)
+                Spacer(Modifier.width(10.dp))
+                Text(t("Експортувати JSON"), style = MaterialTheme.typography.titleMedium)
             }
             OutlinedButton(
                 onClick = {
                     importLauncher.launch(arrayOf("application/json", "text/plain"))
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
             ) {
-                Text(t("Відновити з JSON"))
+                Icon(Icons.Outlined.Restore, null)
+                Spacer(Modifier.width(10.dp))
+                Text(t("Відновити з JSON"), style = MaterialTheme.typography.titleMedium)
             }
             backupMessage?.let { message ->
                 Text(
@@ -432,10 +446,8 @@ fun SettingsScreen(
         }
         SettingsGroup(t("Дані")) {
             SettingsNavigationTile("Documents/Takt", Icons.Outlined.Folder,
-                onClick = { showDocuments = true },
+                onClick = { backupMessage = null; showDocuments = true },
                 subtitle = t(if (documentStatus == DocumentSyncStatus.READY) "Підключено" else "Не підключено"))
-            SettingsNavigationTile(t("Резервна копія"), Icons.Outlined.CloudUpload,
-                onClick = { showDocuments = true })
         }
     }
 }

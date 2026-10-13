@@ -48,11 +48,12 @@ internal fun LanguageSettingsPage(
         .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenHeader(
-            title = t("Мова застосунку"),
+            title = t("Мова"),
             navigation = {
                 TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
             },
         )
+        Text(t("Мова застосунку"), style = MaterialTheme.typography.titleLarge)
         LanguageRadioGroup(
             options = listOf(AppLanguage.UKRAINIAN to t("Українська"), AppLanguage.ENGLISH to "English", AppLanguage.SLOVAK to "Slovenčina"),
             selected = selected, tagPrefix = "language", onSelect = onSelected,

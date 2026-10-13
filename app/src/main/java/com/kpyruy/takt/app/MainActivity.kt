@@ -57,6 +57,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         deviceAuthenticator = DeviceAuthenticator(this)
         enableEdgeToEdge()
+        window.decorView.post { window.preferResponsiveDisplay() }
 
         val taktApplication = application as TaktApplication
         val dataContainer = taktApplication.dataContainer
@@ -73,7 +74,8 @@ class MainActivity : FragmentActivity() {
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
             val releaseState by taktApplication.appReleaseRepository.state.collectAsStateWithLifecycle()
             val hasUniversityAccount by dataContainer.universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
-            SideEffect { TaktI18n.use(settings.language) }
+            // Setup owns its unsaved language draft until the final settings are committed.
+            SideEffect { if (showOnboarding != true) TaktI18n.use(settings.language) }
             LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground) {
                 if (hasUniversityAccount && !taktApplication.deviceUnlocked && foreground && !deviceAuthenticator.isShowing) {
                     requestUnlock()
@@ -115,7 +117,8 @@ class MainActivity : FragmentActivity() {
                         isAppearanceLightNavigationBars = lightSystemBars
                     }
                 }
-                TaktGlassBackground(modifier = Modifier.fillMaxSize()) {
+                TaktGlassBackground(modifier = Modifier.fillMaxSize(),
+                    enabled = showOnboarding != true || (hasUniversityAccount && !taktApplication.deviceUnlocked)) {
                     when {
                         hasUniversityAccount && !taktApplication.deviceUnlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
                         showOnboarding == true -> FirstRunScreen(
@@ -123,8 +126,7 @@ class MainActivity : FragmentActivity() {
                             universityAccountRepository = dataContainer.universityAccountRepository,
                             authenticateDevice = ::authenticateForAccount,
                             onFinish = { appearance -> scope.launch {
-                                dataContainer.settingsRepository.setAppearance(
-                                    appearance.themeMode, appearance.themeFamily, appearance.cardAppearance)
+                                dataContainer.settingsRepository.setAppearance(appearance)
                                 dataContainer.settingsRepository.setLanguage(appearance.language)
                                 dataContainer.firstRunRepository.complete()
                                 showOnboarding = false

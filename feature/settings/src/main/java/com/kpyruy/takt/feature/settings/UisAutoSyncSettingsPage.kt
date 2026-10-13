@@ -15,6 +15,8 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.AutoMode
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -56,20 +58,22 @@ internal fun UisAutoSyncSettingsPage(
         ScreenHeader(title = t("Автооновлення UIS"), navigation = {
             TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
         })
-        FrequencyChoice(t("Прогрес"), settings.progress,
+        FrequencyChoice(t("Прогрес"), Icons.Outlined.BarChart, settings.progress,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
         SectionCard {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SettingsSyncIcon(Icons.Outlined.AutoMode)
                 Text(t("Автоматично застосовувати прогрес"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = settings.applyProgressAutomatically,
                     onCheckedChange = { onChange(settings.copy(applyProgressAutomatically = it)) })
             }
         }
-        FrequencyChoice(t("Предмети"), settings.subjects,
+        FrequencyChoice(t("Предмети"), Icons.Outlined.MenuBook, settings.subjects,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(subjects = it)) }
-        FrequencyChoice(t("Періоди навчання"), settings.periods,
+        FrequencyChoice(t("Періоди навчання"), Icons.Outlined.CalendarMonth, settings.periods,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(periods = it)) }
-        FrequencyChoice(t("Розклад"), settings.timetable,
+        FrequencyChoice(t("Розклад"), Icons.Outlined.Schedule, settings.timetable,
             listOf(UisRefreshFrequency.MANUAL, UisRefreshFrequency.TEACHING_START)) {
             onChange(settings.copy(timetable = it))
         }
@@ -77,27 +81,18 @@ internal fun UisAutoSyncSettingsPage(
 }
 
 @Composable
-private fun FrequencyChoice(title: String, selected: UisRefreshFrequency,
+private fun FrequencyChoice(title: String, icon: ImageVector, selected: UisRefreshFrequency,
     options: List<UisRefreshFrequency>, onSelected: (UisRefreshFrequency) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     SectionCard {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val icon = when (title) {
-                t("Прогрес") -> Icons.Outlined.BarChart
-                t("Предмети") -> Icons.Outlined.MenuBook
-                t("Розклад") -> Icons.Outlined.Schedule
-                else -> Icons.Outlined.CalendarMonth
-            }
-            GlassSurface(Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
-                Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                    Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
-                }
-            }
+            SettingsSyncIcon(icon)
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            Box {
-                OutlinedButton(onClick = { expanded = true }) {
-                    Text(t(selected.label()), style = MaterialTheme.typography.labelMedium)
+        }
+            Box(Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(t(selected.label()), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.width(4.dp))
                     Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp))
                 }
@@ -110,6 +105,14 @@ private fun FrequencyChoice(title: String, selected: UisRefreshFrequency,
                     }
                 }
             }
+    }
+}
+
+@Composable
+private fun SettingsSyncIcon(icon: ImageVector) {
+    GlassSurface(Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+        Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+            Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }

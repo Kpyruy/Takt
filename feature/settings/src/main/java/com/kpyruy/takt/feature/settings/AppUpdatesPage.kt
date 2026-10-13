@@ -102,13 +102,12 @@ internal fun AppUpdatesPage(repository: AppReleaseRepository, onBack: () -> Unit
                 Text(t("Автоматично перевіряти оновлення"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = state.automaticChecks, onCheckedChange = repository::setAutomaticChecks)
             }
-            Text(t("Раз на добу під час відкриття Takt. Перевіряється лише публічний реліз на GitHub."),
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard {
             UpdateVersionRow(Icons.Outlined.Schedule, t("Остання успішна перевірка"), state.lastSuccessfulCheck?.let {
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-                    .withLocale(TaktI18n.locale).withZone(ZoneId.systemDefault()).format(Instant.ofEpochMilli(it))
+                val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())
+                DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(TaktI18n.locale).format(date) +
+                    " · " + DateTimeFormatter.ofPattern("HH:mm", TaktI18n.locale).format(date)
             } ?: t("Ще не перевірено"))
         }
         Button(onClick = {

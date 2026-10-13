@@ -286,6 +286,9 @@ internal fun AppSettings.toBackup() = BackupSettings(
     parityOverride = parityOverride.name,
     cardAppearance = cardAppearance.name,
     themeFamily = themeFamily.name,
+    customThemes = com.kpyruy.takt.core.model.normalizeCustomThemes(customThemes)
+        .map { BackupCustomColorTheme(it.id, it.name, it.primaryHex) },
+    selectedCustomThemeId = selectedCustomTheme?.id,
     themeMode = themeMode.name,
     weekLayout = weekLayout.name,
     homeWorkFilter = homeWorkFilter.toBackup(),
@@ -302,6 +305,8 @@ internal fun AppSettings.toBackup() = BackupSettings(
 )
 
 internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null) = AppSettings(
+    customThemes = customThemes.map { com.kpyruy.takt.core.model.CustomColorTheme(it.id, it.name, it.primaryHex) },
+    selectedCustomThemeId = selectedCustomThemeId,
     cancellationStyle = runCatching { CancellationDisplayStyle.valueOf(cancellationStyle) }
         .getOrDefault(CancellationDisplayStyle.STRIKETHROUGH),
     showHiddenLessons = showHiddenLessons,
@@ -341,7 +346,7 @@ internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null) = AppS
             ?: com.kpyruy.takt.core.model.UisRefreshFrequency.TEACHING_START,
         applyProgressAutomatically = uisApplyProgressAutomatically,
     ),
-)
+).normalizedAppearance()
 
 internal fun Map<Int, SemesterPeriod>.toBackup(): List<BackupSemesterPeriod> = entries.sortedBy { it.key }.map { (semester, period) ->
     BackupSemesterPeriod(semester, period.studyStart?.toString(), period.studyEnd?.toString(),

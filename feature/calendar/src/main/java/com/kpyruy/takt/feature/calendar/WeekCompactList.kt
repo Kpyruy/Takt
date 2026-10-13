@@ -143,15 +143,16 @@ private fun WeekLessonRow(
         event.status == ScheduleEventStatus.MOVED -> t("Перенесено")
         else -> null
     }
-    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("week-lesson-${event.id}")
+    Row(Modifier.fillMaxWidth().testTag("week-lesson-${event.id}")
         .alpha(if (muted) 0.6f else 1f)
         .lessonInteraction(onClick, onLongClick)
+        .calendarEventAccent(accentColor, startOffset = 55.dp)
         .padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Text(event.startTime.format(time), Modifier.width(45.dp),
             style = MaterialTheme.typography.labelLarge, color = accentColor)
-        Box(Modifier.width(3.dp).fillMaxHeight().background(accentColor, RoundedCornerShape(3.dp)))
+        Spacer(Modifier.width(3.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CourseInlineIcon(event.courseId)

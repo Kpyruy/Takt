@@ -14,6 +14,7 @@ val releaseSigningReady = listOf(releaseStorePath, releaseStorePassword, release
 android {
     namespace = "com.kpyruy.takt"
     compileSdk = 35
+    testBuildType = providers.gradleProperty("taktTestBuildType").getOrElse("debug")
 
     defaultConfig {
         applicationId = "com.kpyruy.takt"
@@ -80,4 +81,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.room.runtime)
     debugImplementation(libs.compose.ui.test.manifest)
+    add("glassPreviewImplementation", libs.compose.ui.test.manifest)
 }

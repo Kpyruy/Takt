@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.GradeLetter
@@ -31,12 +33,13 @@ fun CourseGradeBadge(grade: GradeLetter, fulfilledOn: LocalDate?, modifier: Modi
         Box(Modifier.size(42.dp).glassSurface(RoundedCornerShape(11.dp), MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center) {
             Text(grade.name, color = color, fontSize = 22.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold,
-                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
+                textAlign = TextAlign.Center, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
         }
         if (fulfilledOn != null) {
             Spacer(Modifier.height(4.dp))
             Text(fulfilledOn.format(gradeDateFormat), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

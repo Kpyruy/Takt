@@ -330,6 +330,8 @@ fun TaktApp(
                     onCourseClick = ::openCourse,
                     onAddCourse = { startCreate(CreateItemType.COURSE) },
                     allowCourseCreation = !uisAccount,
+                    settingsRepository = settingsRepository,
+                    onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
                 )
             }
             composable(Destination.PLAN.route) {

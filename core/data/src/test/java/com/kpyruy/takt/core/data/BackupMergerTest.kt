@@ -111,6 +111,23 @@ class BackupMergerTest {
             BackupMerger.changedSections(phone, backup))
     }
 
+    @Test fun customThemesAreReviewedAndRestoredOnlyWithAppearance() {
+        val phone = local.copy(settings = BackupSettings(language = "ENGLISH", currentSemester = 3,
+            customThemes = listOf(BackupCustomColorTheme("local-theme", "Ocean", "#007E91")),
+            selectedCustomThemeId = "local-theme"))
+        val backup = phone.copy(settings = phone.settings.copy(
+            customThemes = listOf(BackupCustomColorTheme("file-theme", "Rose", "#B52D67")),
+            selectedCustomThemeId = "file-theme"))
+        assertEquals(setOf(BackupSection.APPEARANCE), BackupMerger.changedSections(phone, backup))
+        val appearance = BackupMerger.merge(phone, backup, setOf(BackupSection.APPEARANCE)).settings
+        assertEquals(backup.settings.customThemes, appearance.customThemes)
+        assertEquals("file-theme", appearance.selectedCustomThemeId)
+        assertEquals("ENGLISH", appearance.language)
+        assertEquals(3, appearance.currentSemester)
+        assertEquals(phone.settings, BackupMerger.merge(phone, backup,
+            setOf(BackupSection.PREFERENCES)).settings)
+    }
+
     @Test fun otherPreferencesDoNotOverrideLanguageAppearanceOrSemester() {
         val phone = local.copy(settings = BackupSettings(language = "ENGLISH", themeMode = "DARK",
             currentSemester = 1, showHiddenLessons = false))

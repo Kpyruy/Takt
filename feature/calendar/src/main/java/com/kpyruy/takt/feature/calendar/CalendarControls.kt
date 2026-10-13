@@ -10,6 +10,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -48,6 +50,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
@@ -69,21 +74,33 @@ internal fun CalendarViewTabs(
     var weekMenuExpanded by remember { mutableStateOf(false) }
     var lastTapIndex by remember { mutableIntStateOf(-1) }
     var lastTapAt by remember { mutableLongStateOf(0L) }
-    val scrollable = LocalDensity.current.fontScale > 1.15f || LocalConfiguration.current.screenWidthDp < 360
+    val density = LocalDensity.current
+    val labels = listOf(t("День"), t("Тиждень"), t("Місяць"))
+    val textStyle = MaterialTheme.typography.titleSmall
+    val measurer = rememberTextMeasurer()
+    val neededWidth = remember(labels, textStyle, density) {
+        with(density) { labels.mapIndexed { index, label ->
+            measurer.measure(label, textStyle).size.width.toDp() + 12.dp + if (index == 1) 28.dp else 0.dp
+        }.max() }
+    }
+    BoxWithConstraints(modifier.height(48.dp).glassSurface(RoundedCornerShape(24.dp))) {
+    val scrollable = density.fontScale > 1.15f || neededWidth > (maxWidth - 10.dp) / 3
     Row(
-        modifier = modifier
+        modifier = Modifier
             .height(48.dp)
-            .glassSurface(RoundedCornerShape(24.dp))
             .then(if (scrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier)
             .selectableGroup()
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        listOf(t("День"), t("Тиждень"), t("Місяць")).forEachIndexed { index, label ->
+        labels.forEachIndexed { index, label ->
             val selected = index == selectedIndex
+            val bringIntoView = remember { BringIntoViewRequester() }
+            LaunchedEffect(selected, scrollable) { if (selected && scrollable) bringIntoView.bringIntoView() }
             Box(
-                modifier = (if (scrollable) Modifier.widthIn(min = 108.dp) else Modifier.weight(1f))
+                modifier = (if (scrollable) Modifier.widthIn(min = neededWidth.coerceAtLeast(88.dp)) else Modifier.weight(1f))
                     .height(42.dp)
+                    .bringIntoViewRequester(bringIntoView)
                     .then(if (selected) Modifier.glassSurface(RoundedCornerShape(21.dp), MaterialTheme.colorScheme.primaryContainer) else Modifier)
                     .testTag("calendar-view-${viewKeys[index]}")
                     .semantics { this.selected = selected }
@@ -159,6 +176,7 @@ internal fun CalendarViewTabs(
                 }
             }
         }
+    }
     }
 }
 

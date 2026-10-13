@@ -105,6 +105,10 @@ object BackupMerger {
                 fileSettings.ukrainianCourseNameFallback else phoneSettings.ukrainianCourseNameFallback,
             themeMode = if (BackupSection.APPEARANCE in fromBackup) fileSettings.themeMode else phoneSettings.themeMode,
             themeFamily = if (BackupSection.APPEARANCE in fromBackup) fileSettings.themeFamily else phoneSettings.themeFamily,
+            customThemes = if (BackupSection.APPEARANCE in fromBackup) fileSettings.customThemes
+                else phoneSettings.customThemes,
+            selectedCustomThemeId = if (BackupSection.APPEARANCE in fromBackup) fileSettings.selectedCustomThemeId
+                else phoneSettings.selectedCustomThemeId,
             cardAppearance = if (BackupSection.APPEARANCE in fromBackup) fileSettings.cardAppearance
                 else phoneSettings.cardAppearance,
             currentSemester = if (BackupSection.CURRENT_SEMESTER in fromBackup) fileSettings.currentSemester

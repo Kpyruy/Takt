@@ -41,6 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
+import com.kpyruy.takt.core.ui.components.CourseAvatar
 import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
@@ -157,20 +160,27 @@ fun SubjectDetailScreen(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onClick = {
-                if (selectedTab == "exam") selectedTab = "overview" else onBack()
-            })
-            IconButton(onClick = { showIconPicker = true }, modifier = Modifier.semantics {
-                contentDescription = t("Змінити іконку предмета")
-            }) { SubjectMonogram(item) }
-            Column(Modifier.weight(1f)) {
-                Text(item.title, fontSize = 27.sp, lineHeight = 31.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-                Text(item.code + " · " + item.credits + t(" кредитів · ") + t("${item.semester} семестр"),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.fillMaxWidth().testTag("subject-header"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onClick = {
+                    if (selectedTab == "exam") selectedTab = "overview" else onBack()
+                }, modifier = Modifier.testTag("subject-header-back"))
+                IconButton(onClick = { showIconPicker = true }, modifier = Modifier.size(48.dp)
+                    .testTag("subject-header-avatar").semantics {
+                        contentDescription = t("Змінити іконку предмета")
+                    }) { CourseAvatar(item, Modifier.size(48.dp)) }
+                Text(item.title, Modifier.weight(1f).testTag("subject-header-title"),
+                    fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                TaktIconButton(Icons.Default.MoreHoriz, t("Налаштування предмета"),
+                    onClick = { showSettings = true }, modifier = Modifier.testTag("subject-header-menu"))
             }
-            TaktIconButton(Icons.Default.MoreHoriz, t("Налаштування предмета"), onClick = { showSettings = true })
+            // 48dp back control + 10dp gap: metadata starts at the avatar, below all controls.
+            Text(item.code + " · " + item.credits + t(" кредитів · ") + t("${item.semester} семестр"),
+                Modifier.fillMaxWidth().padding(start = 58.dp).testTag("subject-header-metadata"),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         TaktSegmentedTabs(labels = tabs.map(::subjectTabLabel), selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0),
             onSelected = { selectedTab = tabs[it] })

@@ -98,9 +98,11 @@ fun SemesterSection(
                         fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(t("$semester семестр") + if (state == SemesterState.ACTIVE) t(if (semester % 2 == 1) " · зимовий" else " · літній") else "",
+                    Text(t("$semester семестр" + if (state == SemesterState.ACTIVE) {
+                        if (semester % 2 == 1) " · зимовий" else " · літній"
+                    } else ""),
                         style = MaterialTheme.typography.titleMedium)
-                    if (state == SemesterState.ACTIVE) Text(activeCoursesLabel(activeCount), style = MaterialTheme.typography.bodySmall,
+                    if (activeCount > 0) Text(activeCoursesLabel(activeCount), modifier = Modifier.testTag("semester-active-count-$semester"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(if (state == SemesterState.COMPLETED) t("$earnedCredits/$relevantCredits кредитів")

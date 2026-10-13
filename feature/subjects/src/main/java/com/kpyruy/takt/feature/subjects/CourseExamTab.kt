@@ -34,6 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.role
@@ -114,19 +118,23 @@ internal fun CourseExamTab(
             } else {
                 SmallText(if (needed != null) t("із ${projection.examRemainingPoints.displayNumber()} балів на екзамені") else t("Немає незавершеного екзамену"))
             }
-            GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
-                Text(if (needed == null) t("Розрахунок за поточною шкалою оцінювання.")
-                    else t("${projection.securedPoints.displayNumber()} набрано") + (if (pendingOther > 0) t(" + до ${pendingOther.displayNumber()} за інші роботи") else t(" за семестр")) + t(" + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}"),
+            if (needed != null) GlassSurface(Modifier.fillMaxWidth().testTag("exam-target-formula"),
+                shape = RoundedCornerShape(12.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
+                Text(t("${projection.securedPoints.displayNumber()} набрано") + (if (pendingOther > 0) t(" + до ${pendingOther.displayNumber()} за інші роботи") else t(" за семестр")) + t(" + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}"),
                     Modifier.padding(11.dp), style = MaterialTheme.typography.titleSmall)
             }
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 listOf(GradeLetter.A, GradeLetter.B, GradeLetter.C, GradeLetter.D, GradeLetter.E).forEach { grade ->
-                    GlassSurface(modifier = Modifier.weight(1f).heightIn(min = 48.dp)
+                    GlassSurface(modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("exam-target-${grade.name}")
                         .selectable(selected = target == grade, role = Role.RadioButton, onClick = { target = grade }),
                         shape = RoundedCornerShape(11.dp), tint = if (target == grade) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Unspecified) {
-                        Box(contentAlignment = Alignment.Center) { Text(grade.name, Modifier.padding(vertical = 12.dp),
-                            fontSize = 17.sp, fontWeight = FontWeight.Bold,
-                            color = if (target == grade) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface) }
+                        Box(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center) {
+                            Text(grade.name, fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                                color = if (target == grade) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                        }
                     }
                 }
             }

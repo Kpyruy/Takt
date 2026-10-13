@@ -40,7 +40,8 @@ fun TaktBottomNavigation(items: List<TaktNavItem>, centerContent: (@Composable (
     require(items.size == 4)
     Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
-            Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(999.dp)).selectableGroup().padding(5.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(999.dp))
+                .glassSurface(RoundedCornerShape(999.dp)).selectableGroup().padding(5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {

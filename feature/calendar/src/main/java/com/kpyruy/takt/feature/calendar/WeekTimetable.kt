@@ -28,10 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ResolvedScheduleEvent
+import com.kpyruy.takt.core.model.ScheduleEventStatus
 import com.kpyruy.takt.core.model.isVisuallyMuted
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import java.time.LocalDate
@@ -183,6 +186,14 @@ fun WeekTimetable(
                                     laneEvent.event.courseId ?: laneEvent.event.title
                                 )
                                 val muted = laneEvent.event.isVisuallyMuted(clock)
+                                val accentColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
+                                val status = when {
+                                    laneEvent.event.isAbsent -> t("Пропущено")
+                                    laneEvent.event.status == ScheduleEventStatus.CANCELLED -> t("Скасовано")
+                                    laneEvent.event.status == ScheduleEventStatus.MOVED -> t("Перенесено")
+                                    laneEvent.event.status == ScheduleEventStatus.ONE_OFF -> t("Разова подія")
+                                    else -> null
+                                }
                                 Surface(
                                     modifier = Modifier
                                         .offset(
@@ -193,15 +204,26 @@ fun WeekTimetable(
                                         .height(eventHeight(laneEvent.event))
                                         .padding(horizontal = 2.dp, vertical = 1.dp)
                                         .alpha(if (muted) 0.6f else 1f)
+                                        .semantics {
+                                            contentDescription = listOfNotNull(
+                                                laneEvent.event.title, t(laneEvent.event.lessonType.label),
+                                                "${laneEvent.event.startTime}–${laneEvent.event.endTime}",
+                                                laneEvent.event.room, status,
+                                                if (hasTest(laneEvent.event)) t("тест") else null,
+                                            ).joinToString(", ")
+                                        }
                                         .lessonInteraction({ onEventClick(laneEvent.event) }, { onEventLongClick(laneEvent.event) }),
                                     shape = MaterialTheme.shapes.extraSmall,
                                     color = if (muted) MaterialTheme.colorScheme.surfaceContainerLow
                                         else subjectColor.copy(alpha = 0.18f),
                                 ) {
-                                    Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Column(Modifier.fillMaxWidth().fillMaxHeight()
+                                        .calendarEventAccent(accentColor)
+                                        .padding(start = 9.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                listOf(if (laneEvent.event.isAbsent) t("Пропущено") else "", t(laneEvent.event.lessonType.shortLabel), laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
+                                                listOfNotNull(status, t(laneEvent.event.lessonType.shortLabel), laneEvent.event.title).filter { it.isNotBlank() }.joinToString(" · "),
                                                 modifier = Modifier.weight(1f),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 maxLines = 2,

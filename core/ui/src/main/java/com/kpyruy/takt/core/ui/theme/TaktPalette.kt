@@ -5,6 +5,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.ThemeFamily
 
 internal data class TaktPalette(
@@ -163,4 +165,31 @@ internal fun paletteFor(family: ThemeFamily): TaktPalette = when (family) {
             Color(0xFFC2A078), Color(0xFFB88FA4), Color(0xFF8EA1B4),
         ),
     )
+    ThemeFamily.ROSE -> accentPalette(Color(0xFFB52D67))
+    ThemeFamily.AMBER -> accentPalette(Color(0xFF9B6500))
+    ThemeFamily.CYAN -> accentPalette(Color(0xFF007E91))
+}
+
+internal fun paletteFor(settings: AppSettings): TaktPalette = settings.selectedCustomTheme
+    ?.let { accentPalette(Color(it.primaryArgb)) } ?: paletteFor(settings.themeFamily)
+
+/** Seed colors become readable accents in both lighting modes; the legacy five are untouched. */
+private fun accentPalette(seed: Color): TaktPalette {
+    fun lightAccent(color: Color): Color {
+        var result = color
+        while (result.luminance() > .14f) result = lerp(result, Color.Black, .08f)
+        return result
+    }
+    fun darkAccent(color: Color): Color {
+        var result = lerp(color, Color.White, .6f)
+        while (result.luminance() < .5f) result = lerp(result, Color.White, .08f)
+        return result
+    }
+    val primary = lightAccent(seed)
+    val secondary = lightAccent(Color(seed.blue, seed.red, seed.green))
+    val tertiary = lightAccent(lerp(seed, Color(0xFF7052BA), .5f))
+    val subjects = listOf(primary, secondary, tertiary, Color(0xFF4D8E77), Color(0xFF9B6500), Color(0xFF4E8ECB))
+    return palette(primary, secondary, tertiary,
+        darkAccent(seed), darkAccent(secondary), darkAccent(tertiary),
+        subjects, subjects.map { lerp(it, Color.White, .5f) })
 }

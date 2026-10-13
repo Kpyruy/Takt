@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,22 +59,25 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
     val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }
         .collectAsStateWithLifecycle(initialValue = null)
     val grade = course.officialGrade ?: manualGrade
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("progress-course-${course.id}"),
+    // Reserve the same date-capable column for every status, including icon-only rows.
+    val statusColumnWidth = 88.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(vertical = 8.dp).testTag("progress-course-${course.id}"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.weight(1f).clickable(onClick = onOpen),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             CourseAvatar(course, Modifier.size(36.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(course.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text(course.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold,
+                    maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Text(t("${course.credits} кредитів"), fontSize = 12.sp, lineHeight = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Box(Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+        Box(Modifier.width(statusColumnWidth).heightIn(min = 48.dp)
                 .clickable(role = Role.Button, onClick = onStatus).testTag("status-${course.id}")
                 .semantics { contentDescription = t("Змінити статус: ${course.title}"); stateDescription = course.status.title() },
             contentAlignment = Alignment.Center) {
-            if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null })
+            if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null }, Modifier.fillMaxWidth())
             else GlassSurface(Modifier.size(42.dp), shape = RoundedCornerShape(11.dp),
                 tint = MaterialTheme.colorScheme.primaryContainer) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

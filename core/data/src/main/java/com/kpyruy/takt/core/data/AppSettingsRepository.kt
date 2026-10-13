@@ -28,6 +28,10 @@ interface AppSettingsRepository {
     suspend fun setUkrainianCourseNameFallback(language: CourseNameLanguage)
     suspend fun setUisAutoSync(settings: UisAutoSyncSettings)
     suspend fun setAppearance(themeMode: AppThemeMode, themeFamily: ThemeFamily, cardAppearance: CardAppearance)
+    /** Full appearance snapshot. Legacy implementations remain source-compatible. */
+    suspend fun setAppearance(appearance: AppSettings) {
+        setAppearance(appearance.themeMode, appearance.themeFamily, appearance.cardAppearance)
+    }
     suspend fun setWeekLayout(layout: WeekLayout)
     suspend fun setHomeWorkFilter(filter: HomeWorkFilter)
     suspend fun setSemesterPeriods(periods: Map<Int, SemesterPeriod>)

@@ -176,6 +176,9 @@ data class BackupExamMaterial(
 )
 
 @Serializable
+data class BackupCustomColorTheme(val id: String = "", val name: String = "", val primaryHex: String = "")
+
+@Serializable
 data class BackupSettings(
     val cancellationStyle: String = "STRIKETHROUGH",
     val showHiddenLessons: Boolean = false,
@@ -195,6 +198,8 @@ data class BackupSettings(
     val uisPeriodFrequency: String = "MANUAL",
     val uisTimetableFrequency: String = "TEACHING_START",
     val uisApplyProgressAutomatically: Boolean = true,
+    val customThemes: List<BackupCustomColorTheme> = emptyList(),
+    val selectedCustomThemeId: String? = null,
 )
 
 @Serializable

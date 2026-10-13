@@ -49,8 +49,8 @@ class SharedPreferencesAppSettingsRepository(
     }
 
     override suspend fun setThemeFamily(themeFamily: ThemeFamily) {
-        preferences.edit().putString(KEY_THEME_FAMILY, themeFamily.name).apply()
-        state.value = state.value.copy(themeFamily = themeFamily)
+        preferences.edit().putString(KEY_THEME_FAMILY, themeFamily.name).remove(KEY_SELECTED_CUSTOM_THEME).apply()
+        state.value = state.value.copy(themeFamily = themeFamily, selectedCustomThemeId = null)
     }
 
     override suspend fun setThemeMode(themeMode: AppThemeMode) {
@@ -91,16 +91,27 @@ class SharedPreferencesAppSettingsRepository(
         themeFamily: ThemeFamily,
         cardAppearance: CardAppearance,
     ) {
-        preferences.edit()
-            .putString(KEY_THEME_MODE, themeMode.name)
-            .putString(KEY_THEME_FAMILY, themeFamily.name)
-            .putString(KEY_CARD_APPEARANCE, cardAppearance.name)
-            .apply()
-        state.value = state.value.copy(
+        setAppearance(state.value.copy(
             themeMode = themeMode,
             themeFamily = themeFamily,
             cardAppearance = cardAppearance,
-        )
+            selectedCustomThemeId = null,
+        ))
+    }
+
+    override suspend fun setAppearance(appearance: AppSettings) {
+        val clean = appearance.normalizedAppearance()
+        preferences.edit()
+            .putString(KEY_THEME_MODE, clean.themeMode.name)
+            .putString(KEY_THEME_FAMILY, clean.themeFamily.name)
+            .putString(KEY_CARD_APPEARANCE, clean.cardAppearance.name)
+            .putString(KEY_CUSTOM_THEMES, CustomThemesCodec.encode(clean.customThemes))
+            .putString(KEY_SELECTED_CUSTOM_THEME, clean.selectedCustomThemeId)
+            .apply()
+        // Only appearance is copied: an editor draft cannot overwrite newer language/UIS settings.
+        state.value = state.value.copy(themeMode = clean.themeMode, themeFamily = clean.themeFamily,
+            cardAppearance = clean.cardAppearance, customThemes = clean.customThemes,
+            selectedCustomThemeId = clean.selectedCustomThemeId)
     }
 
     override suspend fun setWeekLayout(layout: WeekLayout) {
@@ -157,6 +168,8 @@ class SharedPreferencesAppSettingsRepository(
         uisPeriodFrequency = preferences.getString(KEY_UIS_PERIOD_FREQUENCY, null),
         uisTimetableFrequency = preferences.getString(KEY_UIS_TIMETABLE_FREQUENCY, null),
         uisApplyProgress = preferences.getBoolean(KEY_UIS_APPLY_PROGRESS, true),
+        customThemes = preferences.getString(KEY_CUSTOM_THEMES, null),
+        selectedCustomThemeId = preferences.getString(KEY_SELECTED_CUSTOM_THEME, null),
     )
 
     private companion object {
@@ -167,6 +180,8 @@ class SharedPreferencesAppSettingsRepository(
         const val KEY_CARD_APPEARANCE = "card_appearance"
         const val KEY_THEME_FAMILY = "theme_family"
         const val KEY_THEME_MODE = "theme_mode"
+        const val KEY_CUSTOM_THEMES = "custom_color_themes"
+        const val KEY_SELECTED_CUSTOM_THEME = "selected_custom_theme_id"
         const val KEY_WEEK_LAYOUT = "week_layout"
         const val KEY_HOME_WORK_FILTER = "home_work_filter"
         const val KEY_SEMESTER_PERIODS = "semester_periods"

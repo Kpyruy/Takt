@@ -27,7 +27,28 @@ enum class ThemeFamily {
     PURPLE,
     WARM,
     MONOCHROME,
+    ROSE,
+    AMBER,
+    CYAN,
 }
+
+/** An editable theme has only user-visible metadata; its id keeps selection stable on rename. */
+data class CustomColorTheme(val id: String, val name: String, val primaryHex: String) {
+    val primaryArgb: Int get() = (0xFF000000L or primaryHex.removePrefix("#").toLong(16)).toInt()
+
+    fun normalizedOrNull(): CustomColorTheme? {
+        val cleanName = name.trim()
+        val cleanHex = normalizeThemeHex(primaryHex) ?: return null
+        if (id.isBlank() || id.length > 128 || cleanName.isEmpty() || cleanName.length > 40) return null
+        return copy(name = cleanName, primaryHex = cleanHex)
+    }
+}
+
+fun normalizeThemeHex(value: String): String? = value.trim().removePrefix("#")
+    .takeIf { it.matches(Regex("[0-9a-fA-F]{6}")) }?.let { "#${it.uppercase(java.util.Locale.ROOT)}" }
+
+fun normalizeCustomThemes(themes: List<CustomColorTheme>): List<CustomColorTheme> =
+    themes.mapNotNull { it.normalizedOrNull() }.distinctBy { it.id }
 
 enum class AppThemeMode {
     SYSTEM,
@@ -74,7 +95,18 @@ data class AppSettings(
     val courseNameLanguage: CourseNameLanguage = CourseNameLanguage.FOLLOW_APP,
     val ukrainianCourseNameFallback: CourseNameLanguage = CourseNameLanguage.ENGLISH,
     val uisAutoSync: UisAutoSyncSettings = UisAutoSyncSettings(),
+    val customThemes: List<CustomColorTheme> = emptyList(),
+    val selectedCustomThemeId: String? = null,
 ) {
+    val selectedCustomTheme: CustomColorTheme?
+        get() = customThemes.firstOrNull { it.id == selectedCustomThemeId }?.normalizedOrNull()
+
+    fun normalizedAppearance(): AppSettings {
+        val themes = normalizeCustomThemes(customThemes)
+        return copy(customThemes = themes,
+            selectedCustomThemeId = selectedCustomThemeId?.takeIf { id -> themes.any { it.id == id } })
+    }
+
     fun displayCourseTitle(course: Course): String {
         val selected = when (courseNameLanguage) {
             CourseNameLanguage.FOLLOW_APP -> when (language) {

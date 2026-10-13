@@ -11,6 +11,10 @@ import com.kpyruy.takt.core.model.CancellationDisplayStyle
 import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.WeekLayout
+import com.kpyruy.takt.core.model.CustomColorTheme
+import com.kpyruy.takt.core.model.normalizeCustomThemes
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object StoredSettingsCodec {
     fun decode(
@@ -33,6 +37,8 @@ object StoredSettingsCodec {
         uisPeriodFrequency: String? = null,
         uisTimetableFrequency: String? = null,
         uisApplyProgress: Boolean = true,
+        customThemes: String? = null,
+        selectedCustomThemeId: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -66,9 +72,23 @@ object StoredSettingsCodec {
                     ?: UisRefreshFrequency.TEACHING_START,
                 applyProgressAutomatically = uisApplyProgress,
             ),
-        )
+            customThemes = CustomThemesCodec.decode(customThemes),
+            selectedCustomThemeId = selectedCustomThemeId,
+        ).normalizedAppearance()
     }
 
     private inline fun <reified T : Enum<T>> enumValueOrNull(value: String?): T? =
         value?.let { stored -> enumValues<T>().firstOrNull { it.name == stored } }
+}
+
+internal object CustomThemesCodec {
+    private val json = Json { ignoreUnknownKeys = true }
+    fun encode(themes: List<CustomColorTheme>): String =
+        json.encodeToString(normalizeCustomThemes(themes).map { BackupCustomColorTheme(it.id, it.name, it.primaryHex) })
+
+    fun decode(raw: String?): List<CustomColorTheme> = raw?.let {
+        runCatching { json.decodeFromString<List<BackupCustomColorTheme>>(it).map { theme ->
+            CustomColorTheme(theme.id, theme.name, theme.primaryHex)
+        }.let(::normalizeCustomThemes) }.getOrNull()
+    } ?: emptyList()
 }

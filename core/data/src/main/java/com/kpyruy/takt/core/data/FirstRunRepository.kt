@@ -1,6 +1,8 @@
 package com.kpyruy.takt.core.data
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Tracks setup separately from the user's courses and backup data. */
 class FirstRunRepository(context: Context, private val data: TaktDataContainer) {
@@ -14,7 +16,7 @@ class FirstRunRepository(context: Context, private val data: TaktDataContainer) 
         return !existing
     }
 
-    fun complete() {
+    suspend fun complete() = withContext(Dispatchers.IO) {
         check(preferences.edit().putBoolean("complete", true).commit()) { "Не вдалося завершити налаштування" }
     }
 }

@@ -11,6 +11,8 @@ import com.kpyruy.takt.core.ui.i18n.TaktI18n
 class TaktTestRunner : AndroidJUnitRunner() {
     override fun callApplicationOnCreate(app: Application) {
         super.callApplicationOnCreate(app)
+        // Performance checks exercise the real fresh-install setup, not the seeded review route.
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("performanceFreshStart") == "true") return
         app.getSharedPreferences("takt_onboarding", Context.MODE_PRIVATE)
             .edit().putBoolean("complete", true).commit()
         // Use the Application-owned container: constructing and closing another container
