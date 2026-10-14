@@ -68,6 +68,10 @@ fun CreateItemScreen(
     // Saving may resume from a Room transaction; navigation and feedback belong on Main.
     val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
     val haptics = rememberTaktHaptics()
+    val settings = settingsRepository.settings.collectAsState().value
+    val academicSemester = courses.firstOrNull { it.id == courseId }?.let {
+        settings.academicSemester(it, settings.effectiveCurrentSemester(courses))
+    }
     val uisAccount = universityAccountRepository?.hasAccount?.collectAsState()?.value == true
 
     Column(
@@ -110,7 +114,8 @@ fun CreateItemScreen(
                 courses = courses,
                 initialCourseId = courseId ?: draft?.courseId,
                 initialLessonType = draft?.lessonType ?: com.kpyruy.takt.core.model.LessonType.UNSPECIFIED,
-                initialDay = LocalDate.now().dayOfWeek,
+                initialDay = (draft?.dueDate ?: LocalDate.now()).dayOfWeek,
+                initialDate = draft?.dueDate,
                 initialTitle = draft?.title.orEmpty(),
                 initialStartTime = draft?.startTime,
                 initialEndTime = draft?.endTime,
@@ -188,10 +193,13 @@ fun CreateItemScreen(
             CreateItemType.TEST,
             CreateItemType.EXAM -> AddGradeItemForm(
                 courseId = courseId.orEmpty(),
+                academicSemester = academicSemester,
                 scheduleRepository = scheduleRepository,
                 settingsRepository = settingsRepository,
                 initialType = if (type == CreateItemType.TEST) GradeItemType.TEST else GradeItemType.EXAM,
                 initialTitle = draft?.title.orEmpty(),
+                initialDueDate = draft?.dueDate,
+                initialRequiredForExam = draft?.requiredForExam ?: false,
                 showHeading = false,
                 onSave = { item ->
                     scope.launch {

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
@@ -15,8 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -102,12 +102,12 @@ internal fun CourseTasksTab(
                         style = MaterialTheme.typography.titleMedium)
                 }
             }
-            DropdownMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
-                DropdownMenuItem(text = { Text(t("Завдання без балів")) }, onClick = {
+            TaktChoiceMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
+                TaktChoiceMenuItem(text = { Text(t("Завдання без балів")) }, onClick = {
                     addMenuOpen = false
                     onAddTask()
                 })
-                DropdownMenuItem(text = { Text(t("Оцінювана робота з балами")) }, onClick = {
+                TaktChoiceMenuItem(text = { Text(t("Оцінювана робота з балами")) }, onClick = {
                     addMenuOpen = false
                     onAddGrade()
                 })

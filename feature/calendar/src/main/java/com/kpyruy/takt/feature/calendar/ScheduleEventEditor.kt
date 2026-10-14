@@ -85,6 +85,13 @@ fun ScheduleEventEditor(
             courses = courses,
             initialDay = rule.dayOfWeek,
             initialRule = rule,
+            initialDate = event.date,
+            onSaveOneOff = {
+                scope.launch {
+                    scheduleRepository.convertRuleToOneOff(rule.id, it)
+                    editingRule = null
+                }
+            },
             onDismiss = { editingRule = null },
             onSave = {
                 scope.launch {
@@ -96,16 +103,28 @@ fun ScheduleEventEditor(
     }
 
     editingOneOff?.let { event ->
-        OneOffEventSheet(
+        if (event.type == OneOffScheduleEventType.BLOCK_ACTION) AddLessonSheet(
+            courses = courses,
+            initialDay = event.date.dayOfWeek,
+            initialOneOff = event,
+            initialDate = event.date,
+            onDismiss = { editingOneOff = null },
+            onSaveOneOff = {
+                scope.launch { scheduleRepository.upsertOneOffEvent(it); editingOneOff = null }
+            },
+            onSave = {
+                scope.launch {
+                    scheduleRepository.convertOneOffToRule(event.id, it)
+                    editingOneOff = null
+                }
+            },
+        ) else OneOffEventSheet(
             courses = courses,
             initialDate = event.date,
             initialEvent = event,
             onDismiss = { editingOneOff = null },
             onSave = {
-                scope.launch {
-                    scheduleRepository.upsertOneOffEvent(it)
-                    editingOneOff = null
-                }
+                scope.launch { scheduleRepository.upsertOneOffEvent(it); editingOneOff = null }
             },
         )
     }

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -51,9 +53,9 @@ fun StudyTaskRow(
                     }
                     Box {
                         IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Дії завдання")) }
-                        DropdownMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
-                            DropdownMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+                        TaktChoiceMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
+                            TaktChoiceMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
+                            TaktChoiceMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
                         }
                     }
                 }

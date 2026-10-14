@@ -19,6 +19,15 @@ interface ScheduleRepository {
     suspend fun upsertRules(rules: List<ScheduleRule>)
     suspend fun upsertOneOffEvent(event: OneOffScheduleEvent)
     suspend fun upsertOneOffEvents(events: List<OneOffScheduleEvent>)
+    /** Swap storage kinds without exposing a duplicate intermediate state in persistent repositories. */
+    suspend fun convertRuleToOneOff(ruleId: String, event: OneOffScheduleEvent) {
+        upsertOneOffEvent(event)
+        deleteRule(ruleId)
+    }
+    suspend fun convertOneOffToRule(eventId: String, rule: ScheduleRule) {
+        upsertRule(rule)
+        deleteOneOffEvent(eventId)
+    }
     suspend fun deleteOneOffEvent(id: String)
     suspend fun upsertException(exception: ScheduleException)
     suspend fun deleteRule(id: String)

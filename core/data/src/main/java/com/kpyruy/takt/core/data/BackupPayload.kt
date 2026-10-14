@@ -176,7 +176,13 @@ data class BackupExamMaterial(
 )
 
 @Serializable
-data class BackupCustomColorTheme(val id: String = "", val name: String = "", val primaryHex: String = "")
+data class BackupCustomColorTheme(
+    val id: String = "",
+    val name: String = "",
+    val primaryHex: String = "",
+    val secondaryHex: String? = null,
+    val tertiaryHex: String? = null,
+)
 
 @Serializable
 data class BackupSettings(

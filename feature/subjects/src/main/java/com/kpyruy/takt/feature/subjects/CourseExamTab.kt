@@ -99,10 +99,9 @@ internal fun CourseExamTab(
                 Icon(Icons.Default.CalendarMonth, t("Редагувати дані екзамену"), Modifier.size(20.dp))
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ExamMetric(t("За семестр"), earned.displayNumber(), "/ ${maximum.displayNumber()}", Icons.Default.Assignment, Modifier.weight(1f))
-            ExamMetric(t("Доступно на екзамені"), if (allGradedWork.any { it.type == GradeItemType.EXAM }) projection.examRemainingPoints.displayNumber() else "—", t("балів"), Icons.Default.School, Modifier.weight(1f))
-        }
+        // Only stored coursework defines this total. Exam capacity belongs to its assessment.
+        ExamMetric(t("За семестр"), earned.displayNumber(), "/ ${maximum.displayNumber()}", Icons.Default.Assignment,
+            Modifier.fillMaxWidth().testTag("exam-semester-metric"))
         SubjectPanel {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
@@ -162,14 +161,14 @@ internal fun CourseExamTab(
 }
 
 @Composable private fun ExamMetric(label: String, value: String, suffix: String, icon: ImageVector, modifier: Modifier) {
-    SubjectPanel(modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    GlassSurface(modifier, shape = RoundedCornerShape(18.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(icon, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-            SmallText(label, Modifier.weight(1f))
-        }
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
             Text(value, fontSize = 27.sp, lineHeight = 35.sp, fontWeight = FontWeight.SemiBold)
-            SmallText(suffix, Modifier.padding(bottom = 4.dp))
+            SmallText(suffix)
         }
     }
 }

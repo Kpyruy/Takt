@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,7 +38,6 @@ import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.PassFailResult
 import com.kpyruy.takt.core.model.CourseWork
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun SubjectsScreen(
@@ -51,6 +49,7 @@ fun SubjectsScreen(
     allowCourseCreation: Boolean = true,
     settingsRepository: AppSettingsRepository? = null,
     onOpenSettings: () -> Unit = {},
+    showAddButton: Boolean = true,
 ) {
     val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by remember(settingsRepository) { settingsRepository?.settings ?: flowOf(AppSettings()) }
@@ -63,28 +62,32 @@ fun SubjectsScreen(
         }
     }
     Box(Modifier.fillMaxSize().testTag("subjects-screen")) {
-      Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 16.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Предмети"), Modifier.weight(1f), fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold)
-            TaktIconButton(Icons.Outlined.Settings, t("Налаштування"), onClick = onOpenSettings,
-                modifier = Modifier.testTag("subjects-settings"))
-        }
-        Spacer(Modifier.height(12.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-            items(visible, key = { it.id }) { course ->
-                SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
-            }
-            if (visible.isEmpty()) item {
-                Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SmallText(if (courses.isEmpty()) t("Тут будуть твої предмети") else t("Предметів не знайдено"))
-                    if (courses.isEmpty() && allowCourseCreation) Button(onClick = onAddCourse) { Text(t("Додати перший предмет")) }
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(top = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.kpyruy.takt.core.ui.components.ScreenHeader(
+                title = t("Предмети"), modifier = Modifier.testTag("subjects-header"),
+                action = {
+                    TaktIconButton(Icons.Outlined.Settings, t("Налаштування"), onClick = onOpenSettings,
+                        modifier = Modifier.testTag("subjects-settings"))
+                },
+            )
+            LazyColumn(Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 120.dp)) {
+                items(visible, key = { it.id }) { course ->
+                    SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
+                }
+                if (visible.isEmpty()) item {
+                    Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SmallText(if (courses.isEmpty()) t("Тут будуть твої предмети") else t("Предметів не знайдено"))
+                        if (courses.isEmpty() && allowCourseCreation) Button(onClick = onAddCourse) { Text(t("Додати перший предмет")) }
+                    }
                 }
             }
         }
-      }
-      if (allowCourseCreation) TaktIconButton(Icons.Default.Add, t("Додати предмет"), onClick = onAddCourse,
-          modifier = Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 20.dp))
+        if (allowCourseCreation && showAddButton) TaktIconButton(Icons.Default.Add, t("Додати предмет"), onClick = onAddCourse,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 100.dp))
     }
+
 }
 
 @Composable

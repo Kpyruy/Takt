@@ -2,8 +2,6 @@ package com.kpyruy.takt.feature.calendar
 
 import com.kpyruy.takt.core.ui.i18n.t
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material3.*
+import com.kpyruy.takt.core.ui.components.TaktSurface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,10 +66,7 @@ fun WeekCompactList(
                     Text(date.format(dayDate), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Surface(shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    modifier = Modifier.fillMaxWidth().border(1.dp,
-                        MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))) {
+                TaktSurface(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(horizontal = 13.dp, vertical = 9.dp)) {
                         Row(Modifier.fillMaxWidth().padding(bottom = 7.dp),
                             verticalAlignment = Alignment.CenterVertically,

@@ -4,6 +4,7 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,9 +12,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.CourseNote
@@ -44,13 +45,16 @@ internal fun CourseNotesTab(
             Text(t("Поки немає нотаток."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         notes.forEach { note ->
-            SectionCard {
-                CourseNoteCard(
-                    note = note,
-                    documentStore = documentStore,
-                    onEdit = { onEdit(note) },
-                    onDelete = { onDelete(note) },
-                )
+            key(note.id) {
+                // Card owns the padding so the entire glass surface opens the reader.
+                SectionCard(contentPadding = PaddingValues(0.dp)) {
+                    CourseNoteCard(
+                        note = note,
+                        documentStore = documentStore,
+                        onEdit = { onEdit(note) },
+                        onDelete = { onDelete(note) },
+                    )
+                }
             }
         }
         GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onAddNote), shape = RoundedCornerShape(20.dp)) {

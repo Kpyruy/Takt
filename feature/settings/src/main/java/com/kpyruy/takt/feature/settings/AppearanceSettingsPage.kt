@@ -3,7 +3,6 @@ package com.kpyruy.takt.feature.settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -11,21 +10,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface as SolidSurface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,23 +29,14 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.*
-import com.kpyruy.takt.core.ui.components.GlassSurface
 import com.kpyruy.takt.core.ui.components.ScreenHeader
-import com.kpyruy.takt.core.ui.components.SectionCard
-import com.kpyruy.takt.core.ui.components.TaktGlassBackground
 import com.kpyruy.takt.core.ui.components.TaktIconButton
 import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
-import com.kpyruy.takt.core.ui.components.TaktTextField
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.theme.TaktTheme
-import com.kpyruy.takt.core.ui.theme.taktThemePreviewColors
-import java.util.UUID
 
 @Composable
 internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, onApply: (AppSettings) -> Unit) {
@@ -78,7 +62,6 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
             ScreenHeader(title = t("Твій вигляд"), navigation = {
                 TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
             })
-            AppearanceLivePreview(draft)
             SettingsSectionTitle(t("Освітлення"))
             AppearanceLightingChoices(draft, { draft = it })
             SettingsSectionTitle(t("Палітра"))
@@ -108,163 +91,6 @@ fun AppearanceLightingChoices(settings: AppSettings, onChange: (AppSettings) -> 
         ).forEach { (mode, label, icon) ->
             LightingOption(label, icon, settings.themeMode == mode,
                 Modifier.weight(1f).testTag("$tagPrefix-${mode.name}")) { onChange(settings.copy(themeMode = mode)) }
-        }
-    }
-}
-
-@Composable
-fun AppearanceThemeChoices(settings: AppSettings, onChange: (AppSettings) -> Unit, tagPrefix: String = "appearance-color") {
-    var editorOpen by remember { mutableStateOf(false) }
-    var editingId by remember { mutableStateOf<String?>(null) }
-    var name by remember { mutableStateOf("") }
-    var hex by remember { mutableStateOf("#145BFA") }
-    BackHandler(enabled = editorOpen) { editorOpen = false }
-    val dark = when (settings.themeMode) {
-        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DARK -> true
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(
-            ThemeFamily.BLUE to t("Синя"), ThemeFamily.GREEN to t("Зелена"),
-            ThemeFamily.PURPLE to t("Фіолетова"), ThemeFamily.WARM to t("Тепла"),
-            ThemeFamily.MONOCHROME to t("Монохром"), ThemeFamily.ROSE to t("Рожева"),
-            ThemeFamily.AMBER to t("Бурштинова"), ThemeFamily.CYAN to t("Блакитна"),
-        ).chunked(2).forEach { pair ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                pair.forEach { (family, label) ->
-                    PaletteOption(label, taktThemePreviewColors(family, dark),
-                        settings.selectedCustomTheme == null && settings.themeFamily == family,
-                        Modifier.weight(1f).testTag("$tagPrefix-${family.name}")) {
-                        onChange(settings.copy(themeFamily = family, selectedCustomThemeId = null))
-                    }
-                }
-            }
-        }
-        Text(t("Власні теми"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
-        settings.customThemes.forEach { theme ->
-            val selected = settings.selectedCustomThemeId == theme.id
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PaletteOption(theme.name, taktThemePreviewColors(settings.copy(selectedCustomThemeId = theme.id), dark),
-                    selected, Modifier.weight(1f).testTag("$tagPrefix-custom-${theme.id}")) {
-                    onChange(settings.copy(selectedCustomThemeId = theme.id))
-                }
-                IconButton(onClick = {
-                    editingId = theme.id; name = theme.name; hex = theme.primaryHex; editorOpen = true
-                }, modifier = Modifier.size(48.dp).testTag("theme-edit-${theme.id}")) {
-                    Icon(Icons.Outlined.Edit, t("Редагувати тему") + ": " + theme.name)
-                }
-                IconButton(onClick = {
-                    onChange(settings.copy(customThemes = settings.customThemes.filterNot { it.id == theme.id },
-                        selectedCustomThemeId = settings.selectedCustomThemeId.takeUnless { it == theme.id }))
-                    if (editingId == theme.id) editorOpen = false
-                }, modifier = Modifier.size(48.dp).testTag("theme-delete-${theme.id}")) {
-                    Icon(Icons.Outlined.DeleteOutline, t("Видалити тему") + ": " + theme.name)
-                }
-            }
-        }
-        TextButton(onClick = {
-            editingId = null; name = ""; hex = "#145BFA"; editorOpen = true
-        }, modifier = Modifier.heightIn(min = 48.dp).testTag("theme-create")) {
-            Icon(Icons.Outlined.Add, null, Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(t("Створити тему"))
-        }
-        if (editorOpen) {
-            val normalizedHex = normalizeThemeHex(hex)
-            val validName = name.trim().isNotEmpty() && name.trim().length <= 40
-            val duplicateName = settings.customThemes.any {
-                it.id != editingId && it.name.equals(name.trim(), ignoreCase = true)
-            }
-            val valid = validName && normalizedHex != null && !duplicateName
-            SectionCard {
-                Text(if (editingId == null) t("Нова тема") else t("Редагувати тему"),
-                    style = MaterialTheme.typography.titleMedium)
-                TaktTextField(name, { name = it }, Modifier.fillMaxWidth().testTag("theme-name"),
-                    label = { Text(t("Назва теми")) }, singleLine = true,
-                    isError = name.isNotEmpty() && (!validName || duplicateName),
-                    supportingText = { Text(if (duplicateName) t("Тема з такою назвою вже існує") else t("Від 1 до 40 символів")) })
-                TaktTextField(hex, { hex = it }, Modifier.fillMaxWidth().testTag("theme-hex"),
-                    label = { Text(t("Основний колір")) }, singleLine = true, isError = normalizedHex == null,
-                    supportingText = { Text(t("HEX: #RRGGBB, наприклад #B52D67")) },
-                    leadingIcon = {
-                        val color = normalizedHex?.let { Color(CustomColorTheme("preview", "preview", it).primaryArgb) }
-                            ?: MaterialTheme.colorScheme.outline
-                        Box(Modifier.size(22.dp).background(color, CircleShape))
-                    })
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    listOf("#145BFA", "#147D64", "#7048C8", "#B52D67", "#9B6500", "#007E91").forEach { value ->
-                        Box(Modifier.weight(1f).heightIn(min = 48.dp)
-                            .selectable(hex.equals(value, true), role = Role.RadioButton, onClick = { hex = value })
-                            .semantics { contentDescription = value }
-                            .testTag("theme-swatch-${value.drop(1)}"), contentAlignment = Alignment.Center) {
-                            Box(Modifier.size(26.dp).background(Color(CustomColorTheme("swatch", "swatch", value).primaryArgb), CircleShape))
-                            if (hex.equals(value, true)) Icon(Icons.Outlined.Check, value, Modifier.size(18.dp), tint = Color.White)
-                        }
-                    }
-                }
-                if (normalizedHex != null) {
-                    val preview = CustomColorTheme(editingId ?: "editor-preview", name.trim().ifEmpty { t("Нова тема") }.take(40), normalizedHex)
-                    AppearanceLivePreview(settings.copy(customThemes = settings.customThemes.filterNot { it.id == preview.id } + preview,
-                        selectedCustomThemeId = preview.id))
-                }
-                Text(t("Тему буде збережено разом із налаштуваннями."), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { editorOpen = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text(t("Скасувати")) }
-                    Button(enabled = valid, onClick = {
-                        val theme = CustomColorTheme(editingId ?: UUID.randomUUID().toString(), name.trim(), checkNotNull(normalizedHex))
-                        onChange(settings.copy(customThemes = settings.customThemes.filterNot { it.id == theme.id } + theme,
-                            selectedCustomThemeId = theme.id))
-                        editorOpen = false
-                    }, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("theme-save")) { Text(t("Зберегти тему")) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PaletteOption(label: String, colors: List<Color>, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(modifier = modifier.selectable(selected, role = Role.RadioButton, onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
-        Column(Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(label, Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-                if (selected) Icon(Icons.Outlined.Check, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                colors.forEach { color -> Box(Modifier.size(18.dp).background(color, CircleShape)) }
-            }
-        }
-    }
-}
-
-@Composable
-fun AppearanceLivePreview(settings: AppSettings) {
-    TaktTheme(settings) {
-        TaktGlassBackground(Modifier.fillMaxWidth().heightIn(min = 144.dp).clip(MaterialTheme.shapes.large),
-            drawWallpaper = false) {
-            SectionCard(Modifier.fillMaxWidth().padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    GlassSurface(Modifier.size(48.dp), tint = MaterialTheme.colorScheme.secondaryContainer) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.MenuBook, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.secondary)
-                        }
-                    }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(settings.selectedCustomTheme?.name ?: t("ПРИКЛАД"), style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary)
-                        Text(t("Твоя перша пара"), style = MaterialTheme.typography.titleMedium)
-                        Text("09:00–10:30 · " + t("Лекція · ауд. 302"), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(t("Підготувати конспект") + " · " + t("завтра"), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
         }
     }
 }

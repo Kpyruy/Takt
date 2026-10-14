@@ -32,7 +32,9 @@ class FirstRunScreenTest {
         }
         compose.onNodeWithText("Почати локально").performClick()
         compose.onNodeWithText("Твій Takt").assertExists()
+        compose.onNodeWithTag("onboarding-color-open").performScrollTo().performClick()
         compose.onNodeWithTag("onboarding-color-PURPLE").performScrollTo().performClick()
+        compose.onNodeWithTag("palette-popup-apply").performClick()
         compose.onNodeWithTag("onboarding-primary").performClick()
         compose.onNodeWithText("Як користуватися Takt?").assertExists()
         compose.onNodeWithTag("onboarding-uis").performClick()

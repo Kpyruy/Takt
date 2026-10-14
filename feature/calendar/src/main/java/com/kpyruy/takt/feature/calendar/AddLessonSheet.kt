@@ -5,17 +5,30 @@ import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.kpyruy.takt.core.ui.components.TaktTextField as OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,15 +42,28 @@ import androidx.compose.runtime.setValue
 import com.kpyruy.takt.core.model.Course
 import com.kpyruy.takt.core.data.UisLessonOption
 import com.kpyruy.takt.core.model.LessonType
-import com.kpyruy.takt.core.ui.components.LessonTypeSelector
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
+import com.kpyruy.takt.core.ui.components.LessonTypeIcon
+import com.kpyruy.takt.core.ui.components.glassSurface
+import com.kpyruy.takt.core.ui.components.taktPressFeedback
 import com.kpyruy.takt.core.ui.components.CourseLinkSelector
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.ScheduleRecurrence
 import com.kpyruy.takt.core.model.ScheduleRule
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
-import com.kpyruy.takt.core.model.OneOffScheduleEventType
+import com.kpyruy.takt.core.model.LessonScheduleSave
+import com.kpyruy.takt.core.model.prepareLessonSchedule
 import com.kpyruy.takt.core.ui.components.TaktTimePickerField
+import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -50,29 +76,38 @@ fun AddLessonSheet(
     initialDay: DayOfWeek,
     courses: List<Course> = emptyList(),
     initialRule: ScheduleRule? = null,
+    initialOneOff: OneOffScheduleEvent? = null,
+    initialDate: LocalDate? = null,
     onDismiss: () -> Unit,
+    onSaveOneOff: ((OneOffScheduleEvent) -> Unit)? = null,
     onSave: (ScheduleRule) -> Unit,
 ) {
     TaktFullSheet(onDismissRequest = onDismiss) {
         AddLessonForm(
             initialDay = initialDay,
             initialRule = initialRule,
+            initialOneOff = initialOneOff,
+            initialDate = initialDate,
             courses = courses,
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 28.dp),
+            onSaveOneOff = onSaveOneOff,
             onSave = onSave,
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddLessonForm(
     initialDay: DayOfWeek,
     courses: List<Course> = emptyList(),
     initialRule: ScheduleRule? = null,
+    initialOneOff: OneOffScheduleEvent? = null,
+    initialDate: LocalDate? = null,
     initialTitle: String = "",
     initialCourseId: String? = null,
     initialLessonType: LessonType = LessonType.UNSPECIFIED,
@@ -85,37 +120,42 @@ fun AddLessonForm(
     onSaveOneOff: ((OneOffScheduleEvent) -> Unit)? = null,
     onSave: (ScheduleRule) -> Unit,
 ) {
-    var linkedCourseId by remember(initialRule?.id, initialCourseId) { mutableStateOf(initialRule?.courseId ?: initialCourseId) }
-    var lessonType by remember(initialRule?.id, initialLessonType) { mutableStateOf(initialRule?.lessonType ?: initialLessonType) }
-    var title by remember(initialRule?.id, initialTitle) {
-        mutableStateOf(initialRule?.title ?: initialTitle)
+    val editingId = initialRule?.id ?: initialOneOff?.id
+    var linkedCourseId by remember(editingId, initialCourseId) { mutableStateOf(initialRule?.courseId ?: initialOneOff?.courseId ?: initialCourseId) }
+    var lessonType by remember(editingId, initialLessonType) { mutableStateOf(initialRule?.lessonType ?: initialOneOff?.lessonType ?: initialLessonType) }
+    var title by remember(editingId, initialTitle) {
+        mutableStateOf(initialRule?.title ?: initialOneOff?.title ?: initialTitle)
     }
-    var room by remember(initialRule?.id, initialRoom) {
-        mutableStateOf(initialRule?.room ?: initialRoom)
+    var room by remember(editingId, initialRoom) {
+        mutableStateOf(initialRule?.room ?: initialOneOff?.room ?: initialRoom)
     }
-    var startTime by remember(initialRule?.id, initialStartTime) {
-        mutableStateOf(initialRule?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
+    var startTime by remember(editingId, initialStartTime) {
+        mutableStateOf(initialRule?.startTime ?: initialOneOff?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
     }
-    var endTime by remember(initialRule?.id, initialEndTime) {
-        mutableStateOf(initialRule?.endTime ?: initialEndTime ?: LocalTime.of(9, 50))
+    var endTime by remember(editingId, initialEndTime) {
+        mutableStateOf(initialRule?.endTime ?: initialOneOff?.endTime ?: initialEndTime ?: LocalTime.of(9, 50))
     }
-    var day by remember(initialRule?.id, initialDay) {
-        mutableStateOf(initialRule?.dayOfWeek ?: initialDay)
+    var day by remember(editingId, initialDay) {
+        mutableStateOf(initialRule?.dayOfWeek ?: initialOneOff?.date?.dayOfWeek ?: initialDay)
     }
-    var recurrence by remember(initialRule?.id) {
+    var recurrence by remember(editingId) {
         mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
     }
+    var typeMenuExpanded by remember { mutableStateOf(false) }
+    var repeatMenuExpanded by remember { mutableStateOf(false) }
+    val linkedCourse = courses.firstOrNull { it.id == linkedCourseId }
+    val savedTitle = linkedCourse?.title ?: title
     var showTimeError by remember { mutableStateOf(false) }
     var uisLessons by remember { mutableStateOf<List<UisLessonOption>>(emptyList()) }
     var uisLoading by remember { mutableStateOf(false) }
     var uisLoadFailed by remember { mutableStateOf(false) }
     var uisReload by remember { mutableStateOf(0) }
     var chosenUisKey by remember { mutableStateOf<String?>(null) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var isOneOff by remember(editingId, initialDate) { mutableStateOf(initialOneOff != null || initialDate != null && initialRule == null) }
+    var selectedDate by remember(editingId, initialDate) { mutableStateOf(initialOneOff?.date ?: initialDate ?: LocalDate.now()) }
     LaunchedEffect(linkedCourseId, uisReload) {
         uisLessons = emptyList()
         chosenUisKey = null
-        selectedDate = null
         uisLoadFailed = false
         val course = courses.firstOrNull { it.id == linkedCourseId } ?: return@LaunchedEffect
         val load = onLoadUisLessons ?: return@LaunchedEffect
@@ -137,13 +177,12 @@ fun AddLessonForm(
     ) {
         if (showHeading) {
             Text(
-                text = if (initialRule == null) t("Додати пару") else t("Редагувати пару"),
+                text = if (editingId == null) t("Додати пару") else t("Редагувати пару"),
                 style = MaterialTheme.typography.headlineSmall,
             )
         }
 
         CourseLinkSelector(courses, linkedCourseId) { course ->
-            if (title.isBlank() || title == courses.firstOrNull { it.id == linkedCourseId }?.title) title = course?.title.orEmpty()
             linkedCourseId = course?.id
         }
         if (onLoadUisLessons != null && linkedCourseId != null) {
@@ -168,7 +207,8 @@ fun AddLessonForm(
                         endTime = option.end
                         room = option.room.orEmpty()
                         lessonType = option.lessonType
-                        selectedDate = option.date
+                        isOneOff = option.date != null && onSaveOneOff != null
+                        option.date?.let { selectedDate = it }
                         recurrence = ScheduleRecurrence.WEEKLY
                         showTimeError = false
                     }, modifier = Modifier.fillMaxWidth(),
@@ -185,32 +225,87 @@ fun AddLessonForm(
                 }
             }
         }
-        LessonTypeSelector(lessonType) { lessonType = it }
-
-        OutlinedTextField(
+        if (linkedCourse == null) OutlinedTextField(
             value = title,
             onValueChange = { title = it },
             label = { Text(t("Назва предмета")) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("lesson-custom-title"),
             singleLine = true,
         )
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t("Тип заняття"), style = MaterialTheme.typography.titleSmall)
+            Box(Modifier.fillMaxWidth()) {
+                LessonChoiceTrigger(t(lessonType.label), "lesson-type-trigger", { typeMenuExpanded = true }) {
+                    if (lessonType == LessonType.UNSPECIFIED) Icon(Icons.Outlined.HelpOutline, null)
+                    else LessonTypeIcon(lessonType)
+                }
+                TaktChoiceMenu(typeMenuExpanded, onDismissRequest = { typeMenuExpanded = false }) {
+                    LessonType.entries.forEach { option ->
+                        TaktChoiceMenuItem(text = { Text(t(option.label)) },
+                            modifier = Modifier.testTag("lesson-type-${option.name}").semantics { selected = lessonType == option },
+                            leadingIcon = {
+                                if (option == LessonType.UNSPECIFIED) Icon(Icons.Outlined.HelpOutline, null)
+                                else LessonTypeIcon(option)
+                            },
+                            trailingIcon = { if (lessonType == option) Icon(Icons.Outlined.Check, null) },
+                            onClick = { lessonType = option; typeMenuExpanded = false })
+                    }
+                }
+            }
+        }
 
         OutlinedTextField(
             value = room,
             onValueChange = { room = it },
             label = { Text(t("Аудиторія")) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("lesson-room"),
             singleLine = true,
         )
 
-        Text(t("День тижня"), style = MaterialTheme.typography.titleSmall)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(DayOfWeek.entries) { option ->
-                FilterChip(
-                    selected = day == option,
-                    onClick = { day = option; selectedDate = null; chosenUisKey = null },
-                    label = { Text(option.shortLabel()) },
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(t("Повторення"), style = MaterialTheme.typography.titleSmall)
+            val recurrenceOptions = listOf(
+                ScheduleRecurrence.WEEKLY to t("Щотижня"),
+                ScheduleRecurrence.ODD_WEEKS to t("Непарні"),
+                ScheduleRecurrence.EVEN_WEEKS to t("Парні"),
+            )
+            Box(Modifier.fillMaxWidth()) {
+                LessonChoiceTrigger(
+                    if (isOneOff && onSaveOneOff != null) t("Один раз") else recurrenceOptions.first { it.first == recurrence }.second,
+                    "lesson-repeat-trigger", { repeatMenuExpanded = true },
+                ) {
+                    Icon(if (isOneOff && onSaveOneOff != null) Icons.Outlined.Event else Icons.Outlined.Repeat, null)
+                }
+                TaktChoiceMenu(repeatMenuExpanded, onDismissRequest = { repeatMenuExpanded = false }) {
+                    if (onSaveOneOff != null) TaktChoiceMenuItem(text = { Text(t("Один раз")) },
+                        modifier = Modifier.testTag("lesson-repeat-once").semantics { selected = isOneOff },
+                        leadingIcon = { Icon(Icons.Outlined.Event, null) },
+                        trailingIcon = { if (isOneOff) Icon(Icons.Outlined.Check, null) },
+                        onClick = { isOneOff = true; chosenUisKey = null; repeatMenuExpanded = false })
+                    recurrenceOptions.forEach { (option, label) ->
+                        TaktChoiceMenuItem(text = { Text(label) },
+                            modifier = Modifier.testTag("lesson-repeat-${option.name}")
+                                .semantics { selected = !isOneOff && recurrence == option },
+                            leadingIcon = { Icon(if (option == ScheduleRecurrence.WEEKLY) Icons.Outlined.Repeat else Icons.Outlined.DateRange, null) },
+                            trailingIcon = { if (!isOneOff && recurrence == option) Icon(Icons.Outlined.Check, null) },
+                            onClick = { isOneOff = false; recurrence = option; chosenUisKey = null; repeatMenuExpanded = false })
+                    }
+                }
+            }
+        }
+        if (isOneOff && onSaveOneOff != null) {
+            TaktDatePickerField(label = t("Дата заняття"), value = selectedDate,
+                onValueChange = { selectedDate = it; chosenUisKey = null },
+                modifier = Modifier.fillMaxWidth().testTag("lesson-once-date"))
+        } else {
+            Text(t("День тижня"), style = MaterialTheme.typography.titleSmall)
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DayOfWeek.entries.forEach { option ->
+                    LessonChoiceChip(option.shortLabel(), day == option,
+                        onClick = { day = option; chosenUisKey = null })
+                }
             }
         }
 
@@ -238,25 +333,6 @@ fun AddLessonForm(
             )
         }
 
-        Text(t(if (selectedDate == null) "Повторення" else "Разове заняття"), style = MaterialTheme.typography.titleSmall)
-        if (selectedDate == null) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(
-                        ScheduleRecurrence.WEEKLY to t("Щотижня"),
-                        ScheduleRecurrence.ODD_WEEKS to t("Непарні"),
-                        ScheduleRecurrence.EVEN_WEEKS to t("Парні"),
-                    ).forEach { (option, label) ->
-                        FilterChip(
-                            selected = recurrence == option,
-                            onClick = { recurrence = option },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-            }
-        }
-
         if (showTimeError) {
             Text(
                 text = t("Кінець має бути пізніше початку."),
@@ -272,31 +348,21 @@ fun AddLessonForm(
                     return@Button
                 }
 
-                if (selectedDate != null && onSaveOneOff != null) {
-                    onSaveOneOff(OneOffScheduleEvent(
-                        id = UUID.randomUUID().toString(), courseId = linkedCourseId, title = title.trim(),
-                        date = selectedDate!!, startTime = startTime, endTime = endTime,
-                        room = room.trim().ifBlank { null }, type = OneOffScheduleEventType.BLOCK_ACTION,
-                        lessonType = lessonType,
-                    ))
-                } else onSave(
-                    ScheduleRule(
-                        id = initialRule?.id ?: UUID.randomUUID().toString(),
-                        courseId = linkedCourseId,
-                        lessonType = lessonType,
-                        title = title.trim(),
-                        dayOfWeek = day,
-                        startTime = startTime,
-                        endTime = endTime,
-                        recurrence = recurrence,
-                        room = room.trim().ifBlank { null },
-                    )
-                )
+                when (val saved = prepareLessonSchedule(
+                    id = editingId ?: UUID.randomUUID().toString(), courseId = linkedCourseId,
+                    title = savedTitle, lessonType = lessonType, room = room, startTime = startTime,
+                    endTime = endTime, day = day,
+                    recurrence = if (isOneOff && onSaveOneOff != null) null else recurrence,
+                    date = selectedDate,
+                )) {
+                    is LessonScheduleSave.Once -> onSaveOneOff?.invoke(saved.event)
+                    is LessonScheduleSave.Recurring -> onSave(saved.rule)
+                }
             },
-            enabled = title.isNotBlank(),
+            enabled = savedTitle.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialRule == null) t("Зберегти") else t("Оновити"))
+            Text(if (editingId == null) t("Зберегти") else t("Оновити"))
         }
     }
 }
@@ -309,4 +375,42 @@ private fun DayOfWeek.shortLabel(): String = when (this) {
     DayOfWeek.FRIDAY -> t("Пт")
     DayOfWeek.SATURDAY -> t("Сб")
     DayOfWeek.SUNDAY -> t("Нд")
+}
+
+@Composable
+private fun LessonChoiceTrigger(label: String, tag: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    val interaction = remember { MutableInteractionSource() }
+    Surface(modifier = Modifier.fillMaxWidth().taktPressFeedback(interaction).clip(shape)
+        .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
+        .testTag(tag), shape = shape) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            icon()
+            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Icon(Icons.Outlined.ExpandMore, null)
+        }
+    }
+}
+
+/** The complete label and icon stay in one chip; rows wrap between chips only. */
+@Composable
+private fun LessonChoiceChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
+) {
+    val shape = RoundedCornerShape(12.dp)
+    val interaction = remember { MutableInteractionSource() }
+    Row(modifier.taktPressFeedback(interaction).clip(shape).glassSurface(shape,
+        if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Unspecified)
+        .selectable(selected = selected, role = Role.RadioButton,
+            interactionSource = interaction, indication = null, onClick = onClick)
+        .heightIn(min = 44.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        leadingIcon?.invoke()
+        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false)
+    }
 }

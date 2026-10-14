@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.PlatformTextStyle
@@ -25,7 +27,10 @@ val LocalCourseIconKeys = staticCompositionLocalOf<Map<String, String?>> { empty
 fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
     val color = taktSubjectColor(course.id)
     val icon = CourseIcons.find(course.iconKey)
-    Box(modifier.size(46.dp).glassSurface(RoundedCornerShape(13.dp), color), contentAlignment = Alignment.Center) {
+    val shape = RoundedCornerShape(13.dp)
+    // A restrained subject-colour tile avoids the white glass rim around this small icon.
+    Box(modifier.size(46.dp).clip(shape).background(color.copy(alpha = .16f), shape)
+        .border(.75.dp, color.copy(alpha = .28f), shape), contentAlignment = Alignment.Center) {
         if (icon != null) Icon(icon.vector, icon.label, Modifier.size(26.dp), tint = color)
         else Text(course.code.substringBefore("_").take(2), color = color, fontSize = 14.sp, lineHeight = 18.sp,
             fontWeight = FontWeight.SemiBold, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))

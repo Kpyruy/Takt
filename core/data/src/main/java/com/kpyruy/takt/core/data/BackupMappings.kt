@@ -287,7 +287,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     cardAppearance = cardAppearance.name,
     themeFamily = themeFamily.name,
     customThemes = com.kpyruy.takt.core.model.normalizeCustomThemes(customThemes)
-        .map { BackupCustomColorTheme(it.id, it.name, it.primaryHex) },
+        .map { BackupCustomColorTheme(it.id, it.name, it.primaryHex, it.secondaryHex, it.tertiaryHex) },
     selectedCustomThemeId = selectedCustomTheme?.id,
     themeMode = themeMode.name,
     weekLayout = weekLayout.name,
@@ -305,7 +305,9 @@ internal fun AppSettings.toBackup() = BackupSettings(
 )
 
 internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null) = AppSettings(
-    customThemes = customThemes.map { com.kpyruy.takt.core.model.CustomColorTheme(it.id, it.name, it.primaryHex) },
+    customThemes = customThemes.map {
+        com.kpyruy.takt.core.model.CustomColorTheme(it.id, it.name, it.primaryHex, it.secondaryHex, it.tertiaryHex)
+    },
     selectedCustomThemeId = selectedCustomThemeId,
     cancellationStyle = runCatching { CancellationDisplayStyle.valueOf(cancellationStyle) }
         .getOrDefault(CancellationDisplayStyle.STRIKETHROUGH),

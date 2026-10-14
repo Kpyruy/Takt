@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
@@ -23,8 +25,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,8 +58,6 @@ internal fun UisAutoSyncSettingsPage(
         ScreenHeader(title = t("Автооновлення UIS"), navigation = {
             TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
         })
-        FrequencyChoice(t("Прогрес"), Icons.Outlined.BarChart, settings.progress,
-            UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
         SectionCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -69,6 +67,8 @@ internal fun UisAutoSyncSettingsPage(
                     onCheckedChange = { onChange(settings.copy(applyProgressAutomatically = it)) })
             }
         }
+        FrequencyChoice(t("Прогрес"), Icons.Outlined.BarChart, settings.progress,
+            UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
         FrequencyChoice(t("Предмети"), Icons.Outlined.MenuBook, settings.subjects,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(subjects = it)) }
         FrequencyChoice(t("Періоди навчання"), Icons.Outlined.CalendarMonth, settings.periods,
@@ -96,9 +96,9 @@ private fun FrequencyChoice(title: String, icon: ImageVector, selected: UisRefre
                     Spacer(Modifier.width(4.dp))
                     Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp))
                 }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                TaktChoiceMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     options.forEach { value ->
-                        DropdownMenuItem(text = { Text(t(value.label())) }, onClick = {
+                        TaktChoiceMenuItem(text = { Text(t(value.label())) }, onClick = {
                             expanded = false
                             onSelected(value)
                         })

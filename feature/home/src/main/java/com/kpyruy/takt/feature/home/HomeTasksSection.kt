@@ -20,6 +20,12 @@ import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.EditCalendar
+import androidx.compose.material.icons.outlined.RecordVoiceOver
+import androidx.compose.material.icons.outlined.HomeWork
+import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -32,6 +38,7 @@ import com.kpyruy.takt.core.model.*
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
 import com.kpyruy.takt.core.ui.components.SectionCard
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
+import com.kpyruy.takt.core.ui.components.CourseIcons
 import java.time.LocalDate
 
 private val homeWorkFilterSaver = Saver<HomeWorkFilter, List<String>>(
@@ -196,7 +203,8 @@ private fun HomeTaskFilterSheet(
                         FilterChip(selected = filter.courseId == course.id,
                             onClick = { onChange(filter.copy(courseId = course.id)) },
                             label = { Text(course.code) },
-                            leadingIcon = { Icon(Icons.Outlined.School, null, Modifier.size(18.dp)) },
+                            leadingIcon = { Icon(CourseIcons.find(course.iconKey)?.vector ?: Icons.Outlined.School,
+                                null, Modifier.size(18.dp).testTag("home-filter-course-icon-${course.id}")) },
                             shape = RoundedCornerShape(12.dp))
                     }
                 }
@@ -215,12 +223,7 @@ private fun HomeTaskFilterSheet(
                         listOf(null to t("Завдання")) + GradeItemType.entries
                             .filterNot { it == GradeItemType.EXAM || it == GradeItemType.MIDTERM }.map { it to t(it.label) }
                     types.forEach { (type, label) ->
-                        val icon = when (type) {
-                            null -> Icons.Outlined.TaskAlt
-                            GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
-                            GradeItemType.LAB -> Icons.Outlined.Science
-                            else -> Icons.Outlined.Assignment
-                        }
+                        val icon = homeFilterTaskIcon(type)
                         val selected = type in filter.types ||
                             (type == GradeItemType.TEST && GradeItemType.MIDTERM in filter.types)
                         FilterChip(selected = selected,
@@ -260,4 +263,17 @@ private fun HomeTaskFilterSheet(
             Button(onClick = onDismiss, Modifier.fillMaxWidth()) { Text(t("Готово")) }
         }
     }
+}
+
+/** Match the work itself; only legacy MIDTERM intentionally shares the test symbol. */
+internal fun homeFilterTaskIcon(type: GradeItemType?): ImageVector = when (type) {
+    null -> Icons.Outlined.TaskAlt
+    GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
+    GradeItemType.LAB -> Icons.Outlined.Science
+    GradeItemType.SEMINAR -> Icons.Outlined.RecordVoiceOver
+    GradeItemType.HOMEWORK -> Icons.Outlined.HomeWork
+    GradeItemType.PROJECT -> Icons.Outlined.AccountTree
+    GradeItemType.ORAL -> Icons.Outlined.Mic
+    GradeItemType.EXAM -> Icons.Outlined.School
+    GradeItemType.OTHER -> Icons.Outlined.MoreHoriz
 }

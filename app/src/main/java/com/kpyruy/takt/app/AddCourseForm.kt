@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import com.kpyruy.takt.core.ui.components.CourseIcons
@@ -80,9 +80,9 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            DropdownMenu(expanded = gradingMenu, onDismissRequest = { gradingMenu = false }) {
+            TaktChoiceMenu(expanded = gradingMenu, onDismissRequest = { gradingMenu = false }) {
                 CourseGradingType.entries.forEach { value ->
-                    DropdownMenuItem(text = { Text(gradingLabel(value)) }, onClick = { grading = value; gradingMenu = false })
+                    TaktChoiceMenuItem(text = { Text(gradingLabel(value)) }, onClick = { grading = value; gradingMenu = false })
                 }
             }
         }

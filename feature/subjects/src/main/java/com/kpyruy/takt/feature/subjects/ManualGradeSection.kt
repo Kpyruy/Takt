@@ -1,11 +1,11 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
@@ -50,9 +50,9 @@ internal fun ManualGradeSection(
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 }
                 }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                TaktChoiceMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     GradeLetter.entries.forEach { grade ->
-                        DropdownMenuItem(text = { Text(grade.name) }, onClick = {
+                        TaktChoiceMenuItem(text = { Text(grade.name) }, onClick = {
                             menuOpen = false
                             onManualGradeChange(grade)
                         })

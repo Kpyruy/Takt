@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.ui.theme.readableAccentColor
 
 @Composable
 fun TaktPrimaryButton(
@@ -31,8 +32,7 @@ fun TaktPrimaryButton(
     val scheme = MaterialTheme.colorScheme
     val primary = if (scheme.background.luminance() < .3f) lerp(scheme.primary, scheme.primaryContainer, .72f) else scheme.primary
     // The top edge reflects light while the lower body retains contrast for white labels.
-    val colors = if (enabled) listOf(lerp(primary, Color.White, .10f), primary, lerp(primary, Color.Black, .08f))
-        else listOf(primary.copy(alpha = .32f), primary.copy(alpha = .24f))
+    val colors = glassButtonColorStops(primary, enabled)
     Button(
         onClick = onClick, enabled = enabled, shape = shape,
         modifier = modifier.heightIn(min = 52.dp)
@@ -43,4 +43,11 @@ fun TaktPrimaryButton(
             disabledContainerColor = Color.Transparent),
         contentPadding = contentPadding, content = content,
     )
+}
+
+internal fun glassButtonColorStops(primary: Color, enabled: Boolean): List<Color> {
+    if (!enabled) return listOf(primary.copy(alpha = .32f), primary.copy(alpha = .24f))
+    val legible = readableAccentColor(primary, Color.White)
+    return listOf(readableAccentColor(lerp(legible, Color.White, .10f), Color.White),
+        legible, lerp(legible, Color.Black, .08f))
 }

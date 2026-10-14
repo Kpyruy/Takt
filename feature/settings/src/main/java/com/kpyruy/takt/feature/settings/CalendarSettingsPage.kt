@@ -3,7 +3,6 @@ package com.kpyruy.takt.feature.settings
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,10 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 import androidx.compose.material3.Switch
@@ -47,6 +44,8 @@ import com.kpyruy.takt.core.model.ParityOverride
 import com.kpyruy.takt.core.model.WeekLayout
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 
 @Composable
 internal fun CalendarSettingsPage(
@@ -58,7 +57,6 @@ internal fun CalendarSettingsPage(
     onWeekLayout: (WeekLayout) -> Unit,
 ) {
     BackHandler(onBack = onBack)
-    var parityExpanded by remember { mutableStateOf(false) }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -95,27 +93,24 @@ internal fun CalendarSettingsPage(
             }
         }
         SettingsSectionTitle(t("Скасовані пари"))
-        listOf(
-            CancellationDisplayStyle.STRIKETHROUGH to t("Закреслювати"),
-            CancellationDisplayStyle.MARKED to t("Позначати"),
-            CancellationDisplayStyle.HIDDEN to t("Ховати"),
-        ).forEach { (style, label) ->
-            CalendarChoiceCard(
-                title = label,
-                selected = settings.cancellationStyle == style,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { onCancellationStyle(style) },
-            ) {
-                when (style) {
-                    CancellationDisplayStyle.STRIKETHROUGH -> Text(t("09:00  Теорія права"),
-                        textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CancellationDisplayStyle.MARKED -> Text(t("09:00  Теорія права  ·  Скасовано"),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    CancellationDisplayStyle.HIDDEN -> Text(t("Скасовані пари зникнуть із розкладу"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+        CalendarPopupChoice(
+            selected = settings.cancellationStyle,
+            options = listOf(
+                CancellationDisplayStyle.STRIKETHROUGH to t("Закреслювати"),
+                CancellationDisplayStyle.MARKED to t("Позначати"),
+                CancellationDisplayStyle.HIDDEN to t("Ховати"),
+            ),
+            onSelected = onCancellationStyle,
+        ) { style ->
+            when (style) {
+                CancellationDisplayStyle.STRIKETHROUGH -> Text(t("09:00  Теорія права"),
+                    textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                CancellationDisplayStyle.MARKED -> Text(t("09:00  Теорія права  ·  Скасовано"),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                CancellationDisplayStyle.HIDDEN -> Text(t("Скасовані пари зникнуть із розкладу"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (settings.cancellationStyle == CancellationDisplayStyle.HIDDEN) {
@@ -132,31 +127,44 @@ internal fun CalendarSettingsPage(
             ParityOverride.EVEN to t("Завжди парний"),
             ParityOverride.ODD to t("Завжди непарний"),
         )
-        val selectedParityLabel = parityOptions.first { it.first == settings.parityOverride }.second
-        Surface(
-            modifier = Modifier.fillMaxWidth().clickable { parityExpanded = !parityExpanded },
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-        ) {
-            Row(Modifier.heightIn(min = 58.dp).padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Text(selectedParityLabel, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold)
-                Icon(if (parityExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = if (parityExpanded) t("Згорнути вибір") else t("Змінити парність"))
+        CalendarPopupChoice(settings.parityOverride, parityOptions, onParityOverride)
+    }
+}
+
+@Composable
+private fun <T> CalendarPopupChoice(
+    selected: T,
+    options: List<Pair<T, String>>,
+    onSelected: (T) -> Unit,
+    preview: @Composable (T) -> Unit = {},
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth()) {
+        Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
+            onClick = { expanded = true }) {
+            Row(Modifier.heightIn(min = 58.dp).padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(options.first { it.first == selected }.second, style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold)
+                    preview(selected)
+                }
+                Icon(Icons.Outlined.ExpandMore, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        AnimatedVisibility(visible = parityExpanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                parityOptions.filter { it.first != settings.parityOverride }.forEach { (parity, label) ->
-                    CalendarChoiceCard(
-                        title = label,
-                        selected = false,
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { onParityOverride(parity); parityExpanded = false },
-                    ) {}
-                }
+        TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (value, label) ->
+                TaktChoiceMenuItem(text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(label)
+                        preview(value)
+                    }
+                }, trailingIcon = {
+                    if (value == selected) Icon(Icons.Outlined.Check, null, tint = MaterialTheme.colorScheme.primary)
+                }, onClick = {
+                    expanded = false
+                    onSelected(value)
+                })
             }
         }
     }

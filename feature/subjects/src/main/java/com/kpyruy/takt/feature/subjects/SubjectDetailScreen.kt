@@ -283,6 +283,7 @@ fun SubjectDetailScreen(
     if (showAddGrade || editingGrade != null) {
         AddGradeItemSheet(
             courseId = courseId,
+            academicSemester = settings.academicSemester(item, settings.effectiveCurrentSemester(allCourses)),
             scheduleRepository = scheduleRepository,
             settingsRepository = settingsRepository,
             initialItem = editingGrade,

@@ -31,6 +31,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.kpyruy.takt.core.ui.components.LocalCourseIconKeys
 import com.kpyruy.takt.core.ui.components.LocalCourseCodeKeys
 import androidx.compose.runtime.Composable
+import com.kpyruy.takt.core.ui.components.TaktContentBackdropHost
+import com.kpyruy.takt.core.ui.components.captureTaktContentBackdrop
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -263,6 +266,7 @@ fun TaktApp(
     actionEvent?.let { event ->
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
     }
+    TaktContentBackdropHost {
     Scaffold(
         snackbarHost = { if (currentRoute != SETTINGS_ROUTE) SnackbarHost(snackbarHostState) },
         containerColor = Color.Transparent,
@@ -293,7 +297,9 @@ fun TaktApp(
                 if (from >= 0 && to >= 0) slideOutHorizontally(TaktMotion.menu()) { if (to > from) -it else it }
                 else fadeOut(TaktMotion.fast())
             },
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding).testTag("root-content"),
+            modifier = Modifier.padding(if (showRootNavigation) androidx.compose.foundation.layout.PaddingValues(
+                top = padding.calculateTopPadding(), bottom = 0.dp) else padding)
+                .consumeWindowInsets(padding).captureTaktContentBackdrop().testTag("root-content"),
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(
@@ -324,6 +330,7 @@ fun TaktApp(
             }
             composable(Destination.SUBJECTS.route) {
                 SubjectsScreen(
+                    showAddButton = false,
                     repository = repository,
                     gradeRepository = gradeRepository,
                     studyContentRepository = studyContentRepository,
@@ -437,6 +444,7 @@ fun TaktApp(
 
     }
 
+    }
     if (showGlobalAdd) {
         GlobalAddSheet(
             allowCourseCreation = !uisAccount,

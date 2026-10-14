@@ -101,6 +101,22 @@ class RoomScheduleRepository(
         }
     }
 
+    override suspend fun convertRuleToOneOff(ruleId: String, event: OneOffScheduleEvent) {
+        require(event.id == ruleId)
+        database.withTransaction {
+            upsertOneOffEvent(event)
+            deleteRule(ruleId)
+        }
+    }
+
+    override suspend fun convertOneOffToRule(eventId: String, rule: ScheduleRule) {
+        require(rule.id == eventId)
+        database.withTransaction {
+            upsertRule(rule)
+            deleteOneOffEvent(eventId)
+        }
+    }
+
     override suspend fun deleteOneOffEvent(id: String) {
         dao.deleteOneOffEvent(id)
         dao.deleteEventAbsences(id, true)

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -98,17 +100,17 @@ fun StudyPlanScreen(
                             onClick = { menuExpanded = true },
                             modifier = Modifier.testTag("progress-menu"),
                         )
-                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                            DropdownMenuItem(
+                        TaktChoiceMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                            TaktChoiceMenuItem(
                                 text = { Text(t("Знайти предмет")) },
                                 modifier = Modifier.testTag("progress-search-open"),
                                 onClick = { menuExpanded = false; searchOpen = true },
                             )
-                            DropdownMenuItem(text = { Text(t("Розгорнути весь план")) }, onClick = {
+                            TaktChoiceMenuItem(text = { Text(t("Розгорнути весь план")) }, onClick = {
                                 expandedSemesters = semesters.keys.toSet()
                                 menuExpanded = false
                             })
-                            DropdownMenuItem(text = { Text(t("Згорнути всі семестри")) }, onClick = {
+                            TaktChoiceMenuItem(text = { Text(t("Згорнути всі семестри")) }, onClick = {
                                 expandedSemesters = emptySet()
                                 menuExpanded = false
                             })
@@ -142,7 +144,8 @@ fun StudyPlanScreen(
                 }
             }
             Spacer(Modifier.height(16.dp))
-            TaktSegmentedTabs(listOf(t("План"), t("Активні"), t("Здані")), filter, { filter = it })
+            TaktSegmentedTabs(listOf(t("План"), t("Активні"), t("Здані")), filter, { filter = it },
+                railCornerRadius = 12.dp)
             Spacer(Modifier.height(12.dp))
         }
         if (filter != 0) {

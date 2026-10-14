@@ -244,7 +244,11 @@ fun CalendarScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (viewMode != CalendarViewMode.MONTH) {
+        androidx.compose.animation.AnimatedVisibility(
+            visible = viewMode == CalendarViewMode.DAY,
+            enter = androidx.compose.animation.expandVertically() + fadeIn(animationSpec = TaktMotion.fast()),
+            exit = androidx.compose.animation.shrinkVertically() + fadeOut(animationSpec = TaktMotion.fast()),
+        ) {
             WeekDaySelector(
                 dates = dates,
                 selectedDate = selectedDate,
@@ -290,6 +294,7 @@ fun CalendarScreen(
                 CalendarViewMode.WEEK -> {
                     when (settings.weekLayout) {
                         WeekLayout.TIMETABLE -> WeekTimetable(
+                        initiallyVisibleDate = selectedDate,
                             dates = dates,
                             clock = clock,
                             eventsForDate = ::eventsForDate,

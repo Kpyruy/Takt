@@ -3,7 +3,6 @@ package com.kpyruy.takt.app
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -70,7 +69,7 @@ class DraftRestorationTest {
         compose.activityRule.scenario.recreate()
         assertGradeDraft()
         assertNoGradeSaved()
-        save()
+        saveGrade()
         compose.waitUntil(5_000) { grades().count { it.title == prefix + "test" } == 1 }
         val saved = grades().single { it.title == prefix + "test" }
         assertEquals(date, saved.dueDate)
@@ -127,10 +126,10 @@ class DraftRestorationTest {
         openSubjectWork("Оцінювана робота з балами")
         fillGrade()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("Додати оцінювання").assertExists()
         assertGradeDraft()
+        compose.onNodeWithText("Додати оцінювання").assertExists()
         assertNoGradeSaved()
-        save()
+        saveGrade()
         compose.waitUntil(5_000) { grades().count { it.title == prefix + "test" } == 1 }
     }
 
@@ -184,13 +183,13 @@ class DraftRestorationTest {
         fillTask()
         fill("Отримано", "7")
         fill("Максимум", "30")
-        fill("Мінімум балів для допуску", "6")
+        fill("Мінімум", "6")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("Редагувати завдання").assertExists()
         assertTaskDraft()
         field("Отримано").assertTextContains("7")
         field("Максимум").assertTextContains("30")
-        field("Мінімум балів для допуску").assertTextContains("6")
+        field("Мінімум").assertTextContains("6")
         assertEquals(original, tasks().single { it.id == original.id })
         save("Оновити")
         compose.waitUntil(5_000) { tasks().any { it.id == original.id && it.title == prefix + "task" } }
@@ -210,10 +209,10 @@ class DraftRestorationTest {
         compose.onNodeWithText("Редагувати").performClick()
         fillGrade()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("Редагувати оцінювання").assertExists()
         assertGradeDraft()
+        compose.onNodeWithText("Редагувати оцінювання").assertExists()
         assertEquals(original, grades().single { it.id == original.id })
-        save("Оновити")
+        saveGrade()
         compose.waitUntil(5_000) { grades().any { it.id == original.id && it.title == prefix + "test" } }
         val saved = grades().single { it.title == prefix + "test" }
         assertEquals(original.id, saved.id)
@@ -280,7 +279,7 @@ class DraftRestorationTest {
         // Material's calendar exposes full dates through semantics, not day-number Text.
         val accessibleDate = date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.US))
         compose.onNode(hasText(accessibleDate, substring = true) and hasClickAction()).performClick()
-        compose.onNodeWithText("Готово").performClick()
+        compose.onNode(hasText("Готово") and hasClickAction() and !hasTestTag("grade-details-done")).performClick()
     }
     private fun assertDate(label: String) = compose.onNodeWithText(label).assertTextContains(date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
     private fun fillTask() {
@@ -298,22 +297,48 @@ class DraftRestorationTest {
     }
     private fun fillGrade() {
         fill("Назва", prefix + "test")
+        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextReplacement("20")
+        openGradeDetails()
+        gradeTab("WHEN")
+        compose.onNodeWithTag("grade-date-mode-DATE").performClick()
         selectDate("Дата тесту")
-        fill("Тривалість тесту (хв)", "45")
-        compose.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch)).performScrollTo().performClick()
-        compose.onNodeWithText("Потрібно для допуску").performScrollTo().performClick()
-        fill("Отримано", "7")
-        fill("Максимум", "20")
-        fill("Мінімум балів для допуску", "6")
+        compose.onNodeWithTag("grade-duration").performScrollTo().performTextReplacement("45")
+        gradeTab("RESULT")
+        compose.onNodeWithTag("grade-result-KNOWN").performClick()
+        compose.onNodeWithTag("grade-earned").performScrollTo().performTextReplacement("7")
+        gradeTab("RULES")
+        compose.onNodeWithTag("grade-required").performClick()
+        compose.onNodeWithTag("grade-minimum").performScrollTo().performTextReplacement("6")
+        // Recreate with Details open, preserving the nested sheet and its selected category.
     }
     private fun assertGradeDraft() {
+        compose.onNodeWithTag("grade-details").assertExists()
+        compose.onNodeWithTag("grade-details-tab-RULES").assertIsSelected()
+        compose.onNodeWithTag("grade-required").assertIsOn()
+        compose.onNodeWithTag("grade-minimum").assertTextContains("6")
+        gradeTab("WHEN")
+        compose.onNodeWithTag("grade-date-mode-DATE").assertIsSelected()
+        compose.onNodeWithTag("grade-explicit-date").assertTextContains(date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+        compose.onNodeWithTag("grade-duration").assertTextContains("45")
+        gradeTab("RESULT")
+        compose.onNodeWithTag("grade-result-KNOWN").assertIsSelected()
+        compose.onNodeWithTag("grade-earned").assertTextContains("7").assertIsEnabled()
+        doneGradeDetails()
         field("Назва").assertTextContains(prefix + "test")
-        assertDate("Дата тесту")
-        field("Тривалість тесту (хв)").assertTextContains("45")
-        field("Отримано").assertTextContains("7").assertIsEnabled()
-        field("Максимум").assertTextContains("20")
-        field("Мінімум балів для допуску").assertTextContains("6")
+        compose.onNodeWithTag("grade-maximum").assertTextContains("20")
     }
+    private fun openGradeDetails() {
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitForIdle()
+    }
+    private fun gradeTab(name: String) = compose.onNodeWithTag("grade-details-tab-$name").performClick()
+    private fun doneGradeDetails() {
+        compose.onNodeWithTag("grade-details-done").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isEmpty() }
+        compose.waitForIdle()
+    }
+    private fun saveGrade() = compose.onNodeWithTag("grade-save").performScrollTo().performClick()
     private fun fillNote() {
         fill("Заголовок", prefix + "note")
         fill("Нотатка", "Keep the lecture notes")

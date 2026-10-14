@@ -171,10 +171,12 @@ internal fun paletteFor(family: ThemeFamily): TaktPalette = when (family) {
 }
 
 internal fun paletteFor(settings: AppSettings): TaktPalette = settings.selectedCustomTheme
-    ?.let { accentPalette(Color(it.primaryArgb)) } ?: paletteFor(settings.themeFamily)
+    ?.let { accentPalette(Color(it.primaryArgb), it.secondaryArgb?.let { argb -> Color(argb) },
+        it.tertiaryArgb?.let { argb -> Color(argb) }) }
+    ?: paletteFor(settings.themeFamily)
 
 /** Seed colors become readable accents in both lighting modes; the legacy five are untouched. */
-private fun accentPalette(seed: Color): TaktPalette {
+private fun accentPalette(seed: Color, secondarySeed: Color? = null, tertiarySeed: Color? = null): TaktPalette {
     fun lightAccent(color: Color): Color {
         var result = color
         while (result.luminance() > .14f) result = lerp(result, Color.Black, .08f)
@@ -186,10 +188,10 @@ private fun accentPalette(seed: Color): TaktPalette {
         return result
     }
     val primary = lightAccent(seed)
-    val secondary = lightAccent(Color(seed.blue, seed.red, seed.green))
-    val tertiary = lightAccent(lerp(seed, Color(0xFF7052BA), .5f))
+    val secondary = lightAccent(secondarySeed ?: Color(seed.blue, seed.red, seed.green))
+    val tertiary = lightAccent(tertiarySeed ?: lerp(seed, Color(0xFF7052BA), .5f))
     val subjects = listOf(primary, secondary, tertiary, Color(0xFF4D8E77), Color(0xFF9B6500), Color(0xFF4E8ECB))
     return palette(primary, secondary, tertiary,
-        darkAccent(seed), darkAccent(secondary), darkAccent(tertiary),
+        darkAccent(seed), darkAccent(secondarySeed ?: secondary), darkAccent(tertiarySeed ?: tertiary),
         subjects, subjects.map { lerp(it, Color.White, .5f) })
 }

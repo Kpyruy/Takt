@@ -67,12 +67,18 @@ class NewFeaturesUiTest {
             TaktTheme { AddGradeItemForm("course", modifier=Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), onSave={saved=it}) }
         }
         compose.onNode(hasText("Назва") and hasSetTextAction()).performTextInput("Допусковий тест")
-        compose.onNodeWithText("Бали входять у підсумкову оцінку").performScrollTo().performClick()
-        compose.onNodeWithText("Роботу здано, очікую оцінку").performScrollTo().performClick()
-        compose.onNodeWithText("Потрібно для допуску").performScrollTo().performClick()
-        compose.onNode(hasText("Максимум") and hasSetTextAction()).performScrollTo().performTextInput("20")
-        compose.onNode(hasText("Мінімум балів для допуску") and hasSetTextAction()).performScrollTo().performTextInput("10")
-        compose.onNodeWithText("Зберегти").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RESULT").performClick()
+        compose.onNodeWithTag("grade-result-AWAITING").performClick()
+        compose.onNodeWithTag("grade-details-tab-RULES").performClick()
+        compose.onNodeWithTag("grade-contributes").performClick()
+        compose.onNodeWithTag("grade-required").performClick()
+        compose.onNodeWithTag("grade-minimum").performScrollTo().performTextInput("10")
+        compose.onNodeWithTag("grade-details-done").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isEmpty() }
+        compose.waitForIdle()
+        compose.onNodeWithTag("grade-save").performScrollTo().performClick()
         compose.runOnIdle {
             assertNotNull(saved);assertFalse(saved!!.contributesToGrade);assertTrue(saved!!.isAwaitingResult)
             assertTrue(saved!!.requiredForExam);assertEquals(10.0,saved!!.minimumPointsForExam!!,0.0)

@@ -84,11 +84,13 @@ object StoredSettingsCodec {
 internal object CustomThemesCodec {
     private val json = Json { ignoreUnknownKeys = true }
     fun encode(themes: List<CustomColorTheme>): String =
-        json.encodeToString(normalizeCustomThemes(themes).map { BackupCustomColorTheme(it.id, it.name, it.primaryHex) })
+        json.encodeToString(normalizeCustomThemes(themes).map {
+            BackupCustomColorTheme(it.id, it.name, it.primaryHex, it.secondaryHex, it.tertiaryHex)
+        })
 
     fun decode(raw: String?): List<CustomColorTheme> = raw?.let {
         runCatching { json.decodeFromString<List<BackupCustomColorTheme>>(it).map { theme ->
-            CustomColorTheme(theme.id, theme.name, theme.primaryHex)
+            CustomColorTheme(theme.id, theme.name, theme.primaryHex, theme.secondaryHex, theme.tertiaryHex)
         }.let(::normalizeCustomThemes) }.getOrNull()
     } ?: emptyList()
 }

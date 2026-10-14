@@ -19,6 +19,7 @@ import org.junit.Test
 
 class AdmissionFormTest {
     @get:Rule val compose = createComposeRule()
+    @org.junit.Before fun language() = com.kpyruy.takt.core.ui.i18n.TaktI18n.use(com.kpyruy.takt.core.model.AppLanguage.UKRAINIAN)
 
     @Test fun testUsesAdmissionCheckboxAndOptionalMinimum() {
         var saved: GradeItem? = null
@@ -31,11 +32,14 @@ class AdmissionFormTest {
         compose.onNodeWithText("Ще можна заробити ці бали").assertDoesNotExist()
         compose.onNodeWithText("Окремо від кількості балів.").assertDoesNotExist()
         compose.onNode(hasText("Назва") and hasSetTextAction()).performScrollTo().performTextInput("Weekly test")
-        compose.onNodeWithText("Потрібно для допуску").performScrollTo().performClick()
-        compose.onNodeWithText("Мінімум балів для допуску").assertExists()
-        compose.onNode(hasText("Максимум") and hasSetTextAction()).performScrollTo().performTextInput("20")
-        compose.onNode(hasText("Мінімум балів для допуску") and hasSetTextAction()).performScrollTo().performTextInput("10")
-        compose.onNodeWithText("Зберегти").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RULES").performClick()
+        compose.onNodeWithTag("grade-required").performClick()
+        compose.onNodeWithText("Мінімум").assertExists()
+        compose.onNodeWithTag("grade-minimum").performScrollTo().performTextInput("10")
+        doneDetails()
+        compose.onNodeWithTag("grade-save").performScrollTo().performClick()
 
         compose.runOnIdle {
             assertEquals(10.0, saved?.minimumPointsForExam)
@@ -52,9 +56,12 @@ class AdmissionFormTest {
             }
         }
         compose.onNode(hasText("Назва") and hasSetTextAction()).performScrollTo().performTextInput("Short quiz")
-        compose.onNode(hasText("Максимум") and hasSetTextAction()).performScrollTo().performTextInput("20")
-        compose.onNode(hasText("Тривалість тесту (хв)") and hasSetTextAction()).performScrollTo().performTextInput("45")
-        compose.onNodeWithText("Зберегти").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-WHEN").performClick()
+        compose.onNodeWithTag("grade-duration").performScrollTo().performTextInput("45")
+        doneDetails()
+        compose.onNodeWithTag("grade-save").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(45, saved?.durationMinutes) }
     }
 
@@ -89,5 +96,11 @@ class AdmissionFormTest {
         compose.onNodeWithText("Максимум").assertExists()
         compose.onNodeWithText("Оновити").performClick()
         compose.runOnIdle { assertEquals(10.0, saved?.maxPoints) }
+    }
+
+    private fun doneDetails() {
+        compose.onNodeWithTag("grade-details-done").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isEmpty() }
+        compose.waitForIdle()
     }
 }

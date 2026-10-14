@@ -1,6 +1,9 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -14,8 +17,6 @@ import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,12 +79,14 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                         fontWeight = FontWeight.SemiBold, maxLines = 2, color = MaterialTheme.colorScheme.onSurface)
                     Text(t(item.type.label), style = MaterialTheme.typography.labelMedium, color = accentText)
                 }
-                IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(40.dp)) {
-                    Icon(Icons.Default.MoreVert, contentDescription = t("Дії оцінювання"))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
-                    DropdownMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+                Box {
+                    IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.MoreVert, contentDescription = t("Дії оцінювання"))
+                    }
+                    TaktChoiceMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        TaktChoiceMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
+                        TaktChoiceMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+                    }
                 }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp),

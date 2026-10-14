@@ -66,7 +66,6 @@ import com.kpyruy.takt.core.ui.components.TaktGlassBackground
 import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
-import com.kpyruy.takt.feature.settings.AppearanceLivePreview
 import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
 import com.kpyruy.takt.feature.settings.UniversityAccountForm
 import kotlinx.coroutines.launch
@@ -171,7 +170,6 @@ internal fun FirstRunScreen(
                                 )
                             }
                         }
-                        AppearanceLivePreview(draft)
                         Text(t("Тема"), style = MaterialTheme.typography.titleMedium)
                         com.kpyruy.takt.feature.settings.AppearanceLightingChoices(
                             draft, { draft = it }, tagPrefix = "onboarding-theme")

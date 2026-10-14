@@ -41,7 +41,10 @@ fun TaktTheme(
             colorScheme = if (darkTheme) palette.dark else palette.light,
             typography = TaktTypography,
             shapes = TaktShapes,
-            content = { TaktNativeLocale(content) },
+            content = { TaktNativeLocale {
+                CompositionLocalProvider(androidx.compose.foundation.LocalIndication provides
+                    com.kpyruy.takt.core.ui.components.TaktPressIndication) { content() }
+            } },
         )
     }
 }

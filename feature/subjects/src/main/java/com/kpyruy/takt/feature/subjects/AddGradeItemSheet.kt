@@ -3,35 +3,40 @@ package com.kpyruy.takt.feature.subjects
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
-import com.kpyruy.takt.core.ui.components.glassSurface
+import com.kpyruy.takt.core.ui.components.taktPressFeedback
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.kpyruy.takt.core.ui.components.TaktTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -40,6 +45,11 @@ import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.ui.components.TaktDatePickerField
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
+import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
+import com.kpyruy.takt.core.ui.components.TaktSurface
+import com.kpyruy.takt.core.ui.components.TaktSegmentedTabs
+import com.kpyruy.takt.core.ui.components.LessonTypeIcon
 import java.time.LocalDate
 import java.util.UUID
 
@@ -47,6 +57,7 @@ import java.util.UUID
 @Composable
 fun AddGradeItemSheet(
     courseId: String,
+    academicSemester: Int? = null,
     scheduleRepository: ScheduleRepository? = null,
     settingsRepository: AppSettingsRepository? = null,
     initialItem: GradeItem? = null,
@@ -57,6 +68,7 @@ fun AddGradeItemSheet(
     TaktFullSheet(onDismissRequest = onDismiss) {
         AddGradeItemForm(
             courseId = courseId,
+            academicSemester = academicSemester,
             scheduleRepository = scheduleRepository,
             settingsRepository = settingsRepository,
             initialItem = initialItem,
@@ -74,11 +86,14 @@ fun AddGradeItemSheet(
 @Composable
 fun AddGradeItemForm(
     courseId: String,
+    academicSemester: Int? = null,
     scheduleRepository: ScheduleRepository? = null,
     settingsRepository: AppSettingsRepository? = null,
     initialItem: GradeItem? = null,
     initialType: GradeItemType = GradeItemType.TEST,
     initialTitle: String = "",
+    initialDueDate: LocalDate? = null,
+    initialRequiredForExam: Boolean = false,
     modifier: Modifier = Modifier,
     showHeading: Boolean = true,
     onSave: (GradeItem) -> Unit,
@@ -105,21 +120,34 @@ fun AddGradeItemForm(
         mutableStateOf(initialItem?.durationMinutes?.toString().orEmpty())
     }
     var type by rememberSaveable(initialItem?.id, initialType) { mutableStateOf(effectiveType) }
-    var dueDate by rememberSaveable(initialItem?.id) { mutableStateOf<LocalDate?>(initialItem?.dueDate) }
+    var dueDate by rememberSaveable(initialItem?.id, initialDueDate) { mutableStateOf<LocalDate?>(initialItem?.dueDate ?: initialDueDate) }
+    var selectedTeachingWeek by rememberSaveable(initialItem?.id) { mutableStateOf<Int?>(null) }
     var lessonId by rememberSaveable(initialItem?.id) { mutableStateOf(initialItem?.lessonId) }
     var completed by rememberSaveable(initialItem?.id, effectiveType) {
         mutableStateOf(initialItem?.completed ?: false)
     }
     var requiredForExam by rememberSaveable(initialItem?.id) {
-        mutableStateOf(initialItem?.requiredForExam ?: false)
+        mutableStateOf(initialItem?.requiredForExam ?: initialRequiredForExam)
     }
     var contributesToGrade by rememberSaveable(initialItem?.id) { mutableStateOf(initialItem?.contributesToGrade ?: true) }
     var awaitingResult by rememberSaveable(initialItem?.id) { mutableStateOf(initialItem?.isAwaitingResult ?: false) }
+    var detailsVisible by rememberSaveable(initialItem?.id) { mutableStateOf(false) }
+    var detailsTab by rememberSaveable(initialItem?.id) { mutableStateOf(GradeDetailsTab.WHEN) }
+    var dateMode by rememberSaveable(initialItem?.id) { mutableStateOf(GradeDateMode.DATE) }
+    var errorTab by rememberSaveable { mutableStateOf<GradeDetailsTab?>(null) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val teachingWeeks = rememberTeachingWeekOptions(scheduleRepository, settingsRepository, courseId, academicSemester)
     val lessonOptions = rememberGradeLessonOptions(scheduleRepository, settingsRepository, courseId, dueDate)
     val selectedLessonId = if (lessonOptions.isEmpty()) lessonId else {
         lessonId?.takeIf { selected -> lessonOptions.any { it.id == selected } }
             ?: lessonOptions.first().id
+    }
+
+    fun invalidDetails(tab: GradeDetailsTab, message: String) {
+        detailsTab = tab
+        errorTab = tab
+        error = message
+        detailsVisible = true
     }
 
     Column(
@@ -142,139 +170,47 @@ fun AddGradeItemForm(
             value = title,
             onValueChange = { title = it },
             label = { Text(t("Назва")) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("grade-title"),
             singleLine = true,
         )
 
         Text(t("Тип"), style = MaterialTheme.typography.titleSmall)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                GradeTypeChips(
-                    selected = type,
-                    onSelected = {
-                        type = it
-                        if (it == GradeItemType.EXAM) requiredForExam = false
-                    },
-                )
-            }
-        }
-
-        TaktDatePickerField(
-            label = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) t("Дата тесту") else t("Дедлайн / дата"),
-            value = dueDate,
-            onValueChange = {
-                if (dueDate != it) lessonId = null
-                dueDate = it
+        GradeTypeSelector(
+            selected = type,
+            onSelected = {
+                type = it
+                if (it == GradeItemType.EXAM) { requiredForExam = false; selectedTeachingWeek = null }
             },
-            modifier = Modifier.fillMaxWidth(),
         )
 
-        if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) {
-            TaktTextField(
-                value = durationText,
-                onValueChange = { durationText = it; error = null },
-                label = { Text(t("Тривалість тесту (хв)")) },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                isError = error != null,
-            )
-            if (lessonOptions.isNotEmpty()) {
-                Text(t("Пара з тестом"), style = MaterialTheme.typography.titleSmall)
-                lessonOptions.forEach { lesson ->
-                    val selected = lesson.id == selectedLessonId
-                    Row(
-                        modifier = Modifier.fillMaxWidth().selectable(
-                            selected = selected,
-                            role = Role.RadioButton,
-                            onClick = { lessonId = lesson.id },
-                        ),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        RadioButton(selected = selected, onClick = null)
-                        Text("${lesson.startTime}–${lesson.endTime} · ${lesson.title}" +
-                            lesson.room?.let { " · $it" }.orEmpty())
-                    }
-                }
-            } else if (dueDate != null && scheduleRepository != null) {
-                Text(t("На цю дату немає пари цього предмета"), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(t("Результат уже відомий"))
-            }
-            Switch(
-                checked = completed,
-                onCheckedChange = {
-                    completed = it
-                    if (it) awaitingResult = false
-                    if (!it) earnedText = "0"
-                },
-            )
-        }
-
-        if (!completed) {
-            Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(value = awaitingResult, role = Role.Checkbox,
-                onValueChange = { awaitingResult = it }).padding(10.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Checkbox(awaitingResult, onCheckedChange = null)
-                Text(t("Роботу здано, очікую оцінку"))
-            }
-        }
-        Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(value = contributesToGrade, role = Role.Checkbox,
-            onValueChange = { contributesToGrade = it }).padding(10.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Checkbox(contributesToGrade, onCheckedChange = null)
-            Text(t("Бали входять у підсумкову оцінку"))
-        }
-
-        if (type != GradeItemType.EXAM) {
-            Row(
-                modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
-                    value = requiredForExam,
-                    role = Role.Checkbox,
-                    onValueChange = { requiredForExam = it },
-                ).padding(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(checked = requiredForExam, onCheckedChange = null)
-                Text(t("Потрібно для допуску"))
-            }
-        }
-
-        if (completed) TaktTextField(
-            value = earnedText,
-            onValueChange = { earnedText = it; error = null },
-            label = { Text(t("Отримано")) },
-            modifier = Modifier.fillMaxWidth(), singleLine = true, isError = error != null,
+        // A normal single-line field sizes itself; do not stretch it to another field's wrapped label.
+        TaktTextField(
+            value = maxText, onValueChange = { maxText = it; error = null },
+            label = { Text(t("Максимум")) }, modifier = Modifier.fillMaxWidth().testTag("grade-maximum"),
+            singleLine = true, isError = error != null && errorTab == null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TaktTextField(
-                value = maxText, onValueChange = { maxText = it; error = null },
-                label = { Text(t("Максимум")) }, modifier = Modifier.weight(1f),
-                singleLine = true, isError = error != null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-            if (requiredForExam && type != GradeItemType.EXAM) TaktTextField(
-                value = minimumText, onValueChange = { minimumText = it; error = null },
-                label = { Text(t("Мінімум балів для допуску")) }, modifier = Modifier.weight(1f),
-                singleLine = true, isError = error != null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-        }
 
-        error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        val detailsInteraction = remember { MutableInteractionSource() }
+        val detailsShape = RoundedCornerShape(18.dp)
+        TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(detailsInteraction).clip(detailsShape)
+            .clickable(interactionSource = detailsInteraction, indication = null, role = Role.Button,
+                onClick = { detailsVisible = true })
+            .testTag("grade-details-trigger"), shape = detailsShape) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Outlined.Tune, null)
+                Column(Modifier.weight(1f)) {
+                    Text(t("Деталі"), style = MaterialTheme.typography.titleSmall)
+                    Text(t("Дата, результат і умови оцінювання"), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(Icons.Outlined.ChevronRight, null)
+            }
+        }
+        if (errorTab == null) error?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.testTag("grade-form-error"))
         }
 
         TaktPrimaryButton(
@@ -287,16 +223,26 @@ fun AddGradeItemForm(
                     (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) && it.isNotBlank()
                 }
                 val duration = durationInput?.toIntOrNull()
+                error = null
+                errorTab = null
                 when {
-                    earned == null || max == null -> error = t("Введіть числові значення балів.")
-                    !earned.isFinite() || earned < 0.0 -> error = t("Отримані бали не можуть бути від'ємними.")
+                    max == null -> error = t("Введіть числові значення балів.")
                     !max.isFinite() || max <= 0.0 -> error = t("Максимум має бути більшим за 0.")
-                    earned > max -> error = t("Отримані бали не можуть перевищувати максимум.")
-                    minimumInput != null && minimum == null -> error = t("Введіть числовий мінімум балів.")
+                    earned == null -> invalidDetails(GradeDetailsTab.RESULT, t("Введіть числові значення балів."))
+                    !earned.isFinite() || earned < 0.0 ->
+                        invalidDetails(GradeDetailsTab.RESULT, t("Отримані бали не можуть бути від'ємними."))
+                    earned > max -> invalidDetails(GradeDetailsTab.RESULT, t("Отримані бали не можуть перевищувати максимум."))
+                    selectedTeachingWeek != null && dueDate == null && teachingWeeks.weeks
+                        .any { it.number == selectedTeachingWeek && it.occurrences.size > 1 } -> {
+                        dateMode = GradeDateMode.SCHEDULE
+                        invalidDetails(GradeDetailsTab.WHEN, t("Обери пару цього тижня або вкажи дату."))
+                    }
+                    minimumInput != null && minimum == null ->
+                        invalidDetails(GradeDetailsTab.RULES, t("Введіть числовий мінімум балів."))
                     minimum != null && (!minimum.isFinite() || minimum < 0.0 || minimum > max) ->
-                        error = t("Мінімум має бути від 0 до максимуму балів.")
+                        invalidDetails(GradeDetailsTab.RULES, t("Мінімум має бути від 0 до максимуму балів."))
                     durationInput != null && (duration == null || duration <= 0) ->
-                        error = t("Тривалість тесту має бути додатним числом хвилин.")
+                        invalidDetails(GradeDetailsTab.WHEN, t("Тривалість тесту має бути додатним числом хвилин."))
                     else -> onSave(
                         GradeItem(
                             id = initialItem?.id ?: UUID.randomUUID().toString(),
@@ -320,34 +266,201 @@ fun AddGradeItemForm(
                 }
             },
             enabled = title.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("grade-save"),
         ) {
             Text(if (initialItem == null) t("Зберегти") else t("Оновити"))
+        }
+    }
+
+    if (detailsVisible) GradeDetailsSheet(
+        selectedTab = detailsTab,
+        onTabSelected = { detailsTab = it },
+        onDismiss = { detailsVisible = false },
+        error = error.takeIf { errorTab == detailsTab },
+    ) {
+        when (detailsTab) {
+            GradeDetailsTab.WHEN -> {
+                if (type != GradeItemType.EXAM) TaktSegmentedTabs(
+                    labels = GradeDateMode.entries.map { t(it.label) },
+                    selectedIndex = dateMode.ordinal,
+                    onSelected = { dateMode = GradeDateMode.entries[it] },
+                    railCornerRadius = 12.dp,
+                    tabTag = { "grade-date-mode-${GradeDateMode.entries[it].name}" },
+                )
+                if (type != GradeItemType.EXAM && dateMode == GradeDateMode.SCHEDULE) {
+                    TeachingWeekDateSelector(
+                        options = teachingWeeks, selectedWeek = selectedTeachingWeek, dueDate = dueDate, lessonId = lessonId,
+                        onSelectWeek = { week ->
+                            selectedTeachingWeek = week.number
+                            // A week with multiple lessons remains unresolved until an occurrence is chosen.
+                            val single = week.occurrences.singleOrNull()
+                            dueDate = single?.date
+                            lessonId = single?.id
+                            error = null
+                        },
+                        onSelectOccurrence = { occurrence -> dueDate = occurrence.date; lessonId = occurrence.id; error = null },
+                    )
+                } else {
+                    TaktDatePickerField(
+                        label = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) t("Дата тесту") else t("Дедлайн / дата"),
+                        value = dueDate,
+                        onValueChange = {
+                            if (dueDate != it) lessonId = null
+                            dueDate = it
+                            selectedTeachingWeek = null
+                            error = null
+                        },
+                        modifier = Modifier.fillMaxWidth().testTag("grade-explicit-date"),
+                    )
+                    if ((type == GradeItemType.TEST || type == GradeItemType.MIDTERM) && selectedTeachingWeek == null) {
+                        if (lessonOptions.isNotEmpty()) GradeLessonSelector(
+                            lessons = lessonOptions, selectedId = selectedLessonId,
+                            onSelected = { lessonId = it.id; error = null },
+                        ) else if (dueDate != null && scheduleRepository != null) {
+                            Text(t("На цю дату немає пари цього предмета"), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) TaktTextField(
+                    value = durationText, onValueChange = { durationText = it; error = null },
+                    label = { Text(t("Тривалість тесту (хв)")) },
+                    modifier = Modifier.fillMaxWidth().testTag("grade-duration"),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true, isError = error != null && errorTab == GradeDetailsTab.WHEN,
+                )
+            }
+            GradeDetailsTab.RESULT -> {
+                val result = when {
+                    completed -> GradeResultState.KNOWN
+                    awaitingResult -> GradeResultState.AWAITING
+                    else -> GradeResultState.PLANNED
+                }
+                GradeResultChoices(result) {
+                    completed = it == GradeResultState.KNOWN
+                    awaitingResult = it == GradeResultState.AWAITING
+                    // Keep typed points as a draft while trying another status.
+                    error = null
+                }
+                if (completed) TaktTextField(
+                    value = earnedText, onValueChange = { earnedText = it; error = null },
+                    label = { Text(t("Отримано")) }, modifier = Modifier.fillMaxWidth().testTag("grade-earned"),
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = error != null && errorTab == GradeDetailsTab.RESULT,
+                )
+            }
+            GradeDetailsTab.RULES -> {
+                GradeRuleToggle("grade-contributes", "Бали входять у підсумкову оцінку", contributesToGrade) {
+                    contributesToGrade = it
+                    error = null
+                }
+                if (type != GradeItemType.EXAM) {
+                    GradeRuleToggle("grade-required", "Потрібно для допуску", requiredForExam) {
+                        requiredForExam = it
+                        error = null
+                    }
+                    if (requiredForExam) TaktTextField(
+                        value = minimumText, onValueChange = { minimumText = it; error = null },
+                        label = { Text(t("Мінімум")) }, modifier = Modifier.fillMaxWidth().testTag("grade-minimum"),
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = error != null && errorTab == GradeDetailsTab.RULES,
+                    )
+                }
+            }
+        }
+    }
+
+}
+
+@Composable
+private fun GradeTypeSelector(selected: GradeItemType, onSelected: (GradeItemType) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val choices = listOf(
+        GradeItemType.TEST to t("Тест"), GradeItemType.LAB to t("Лаба"),
+        GradeItemType.SEMINAR to t("Семінар"), GradeItemType.HOMEWORK to t("ДЗ"),
+        GradeItemType.PROJECT to t("Проєкт"), GradeItemType.ORAL to t("Усне"),
+        GradeItemType.EXAM to t("Екзамен"), GradeItemType.OTHER to t("Інше"),
+    )
+    Box(Modifier.fillMaxWidth()) {
+        GradeChoiceTrigger("grade-type-trigger", { expanded = true },
+            icon = { GradeTypeIcon(selected) },
+            text = { Text(choices.first { it.first == selected }.second) })
+        TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
+            choices.forEach { (option, label) ->
+                TaktChoiceMenuItem(text = { Text(label) }, leadingIcon = { GradeTypeIcon(option) },
+                    modifier = Modifier.testTag("grade-type-${option.name}").semantics { this.selected = selected == option },
+                    trailingIcon = { if (selected == option) Icon(Icons.Outlined.Check, null) },
+                    onClick = { onSelected(option); expanded = false })
+            }
         }
     }
 }
 
 @Composable
-private fun GradeTypeChips(
-    selected: GradeItemType,
-    onSelected: (GradeItemType) -> Unit,
+private fun GradeTypeIcon(type: GradeItemType) {
+    Icon(when (type) {
+        GradeItemType.TEST, GradeItemType.MIDTERM -> Icons.Outlined.Quiz
+        GradeItemType.LAB -> Icons.Outlined.Science
+        GradeItemType.SEMINAR -> Icons.Outlined.Forum
+        GradeItemType.HOMEWORK -> Icons.Outlined.Assignment
+        GradeItemType.PROJECT -> Icons.Outlined.AccountTree
+        GradeItemType.ORAL -> Icons.Outlined.Mic
+        GradeItemType.EXAM -> Icons.Outlined.School
+        GradeItemType.OTHER -> Icons.Outlined.MoreHoriz
+    }, contentDescription = null)
+}
+
+@Composable
+private fun GradeLessonSelector(
+    lessons: List<com.kpyruy.takt.core.model.ResolvedScheduleEvent>,
+    selectedId: String?,
+    onSelected: (com.kpyruy.takt.core.model.ResolvedScheduleEvent) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(
-            GradeItemType.TEST to t("Тест"),
-            GradeItemType.LAB to t("Лаба"),
-            GradeItemType.SEMINAR to t("Семінар"),
-            GradeItemType.HOMEWORK to t("ДЗ"),
-            GradeItemType.PROJECT to t("Проєкт"),
-            GradeItemType.ORAL to t("Усне"),
-            GradeItemType.EXAM to t("Екзамен"),
-            GradeItemType.OTHER to t("Інше"),
-        ).forEach { (option, label) ->
-            FilterChip(
-                selected = selected == option,
-                onClick = { onSelected(option) },
-                label = { Text(label) },
-            )
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLesson = lessons.firstOrNull { it.id == selectedId }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(t("Пара з тестом"), style = MaterialTheme.typography.titleSmall)
+        Box(Modifier.fillMaxWidth()) {
+            GradeChoiceTrigger("grade-date-lesson-trigger", { expanded = true },
+                icon = { selectedLesson?.let { LessonTypeIcon(it.lessonType) } },
+                text = { selectedLesson?.let { Text("${it.startTime}–${it.endTime}" + it.room?.let { " · $it" }.orEmpty()) }
+                    ?: Text(t("Пара з тестом")) })
+            TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
+                lessons.forEach { lesson ->
+                    TaktChoiceMenuItem(text = {
+                        Column {
+                            Text("${lesson.startTime}–${lesson.endTime} · ${lesson.title}")
+                            Text(t(lesson.lessonType.label) + lesson.room?.let { " · $it" }.orEmpty(),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                    }, leadingIcon = { LessonTypeIcon(lesson.lessonType) },
+                        trailingIcon = { if (lesson.id == selectedId) Icon(Icons.Outlined.Check, null) },
+                        modifier = Modifier.testTag("grade-date-lesson-${lesson.id}")
+                            .semantics { selected = lesson.id == selectedId },
+                        onClick = { onSelected(lesson); expanded = false })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GradeChoiceTrigger(
+    tag: String,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    text: @Composable () -> Unit,
+) {
+    val shape = RoundedCornerShape(18.dp)
+    val interaction = remember { MutableInteractionSource() }
+    TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(interaction).clip(shape)
+        .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
+        .testTag(tag), shape = shape) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            icon()
+            Box(Modifier.weight(1f)) { text() }
+            Icon(Icons.Outlined.ExpandMore, null)
         }
     }
 }

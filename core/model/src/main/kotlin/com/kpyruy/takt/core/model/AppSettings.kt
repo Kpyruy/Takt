@@ -33,14 +33,25 @@ enum class ThemeFamily {
 }
 
 /** An editable theme has only user-visible metadata; its id keeps selection stable on rename. */
-data class CustomColorTheme(val id: String, val name: String, val primaryHex: String) {
+data class CustomColorTheme(
+    val id: String,
+    val name: String,
+    val primaryHex: String,
+    /** Null retains the derived accent of themes saved before independent role editing. */
+    val secondaryHex: String? = null,
+    val tertiaryHex: String? = null,
+) {
     val primaryArgb: Int get() = (0xFF000000L or primaryHex.removePrefix("#").toLong(16)).toInt()
+    val secondaryArgb: Int? get() = secondaryHex?.let { (0xFF000000L or it.removePrefix("#").toLong(16)).toInt() }
+    val tertiaryArgb: Int? get() = tertiaryHex?.let { (0xFF000000L or it.removePrefix("#").toLong(16)).toInt() }
 
     fun normalizedOrNull(): CustomColorTheme? {
         val cleanName = name.trim()
         val cleanHex = normalizeThemeHex(primaryHex) ?: return null
+        val cleanSecondary = secondaryHex?.let { normalizeThemeHex(it) ?: return null }
+        val cleanTertiary = tertiaryHex?.let { normalizeThemeHex(it) ?: return null }
         if (id.isBlank() || id.length > 128 || cleanName.isEmpty() || cleanName.length > 40) return null
-        return copy(name = cleanName, primaryHex = cleanHex)
+        return copy(name = cleanName, primaryHex = cleanHex, secondaryHex = cleanSecondary, tertiaryHex = cleanTertiary)
     }
 }
 
