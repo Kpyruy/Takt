@@ -262,8 +262,8 @@ fun Modifier.glassSurface(
     val glass = appearance == CardAppearance.GLASS
     if (!glass) {
         val fill = if (tint != Color.Unspecified) tint else if (tonal) colors.primaryContainer else colors.surface
-        return this.shadow(if (tonal) 0.dp else 7.dp, shape, clip = false)
-            .clip(shape).background(fill)
+        return this.shadow(if (tonal) 0.dp else 7.dp, shape, clip = true)
+            .background(fill)
             .border(1.dp, if (tonal) colors.primary.copy(alpha = .18f) else colors.outlineVariant, shape)
     }
     val backdropTint = LocalGlassTint.current
@@ -273,10 +273,10 @@ fun Modifier.glassSurface(
     val edge = if (dark) Color(0xFFB7DFFF) else Color.White
     return this
         .onGloballyPositioned { position = it.positionOnScreen() }
-        .shadow(if (tonal) 1.dp else 7.dp, shape, clip = false,
+        // One render layer owns both the shadow and shape clip.
+        .shadow(if (tonal) 1.dp else 7.dp, shape, clip = true,
             ambientColor = Color(0xFF315677).copy(alpha = .12f),
             spotColor = Color(0xFF315677).copy(alpha = .17f))
-        .clip(shape)
         .drawWithCache {
             val outline = shape.createOutline(size, layoutDirection, this)
             val frostPainter = backdrop?.pixels?.frost?.asAndroidBitmap()?.let(::GlassFrostPainter)

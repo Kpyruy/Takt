@@ -4,6 +4,12 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.SizeTransform
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.testTag
+import com.kpyruy.takt.core.ui.components.tourTarget
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -92,6 +98,8 @@ fun CalendarScreen(
     onOpenCourse: (String) -> Unit,
     onOpenAssessment: (GradeItem) -> Unit,
     onEventLongClick: (ResolvedScheduleEvent) -> Unit,
+    guidedViewMode: Int? = null,
+    guidedWeekLayout: WeekLayout? = null,
 ) {
     val current by planningSnapshot.collectAsStateWithLifecycle()
     val planning = current ?: return
@@ -119,6 +127,11 @@ fun CalendarScreen(
     var visibleMonth by rememberSaveable(stateSaver = Saver<YearMonth, String>({ it.toString() }, { YearMonth.parse(it) })) { mutableStateOf(YearMonth.from(today)) }
     var viewMode by rememberSaveable { mutableStateOf(CalendarViewMode.DAY) }
 
+    if (guidedViewMode != null) androidx.compose.runtime.LaunchedEffect(guidedViewMode) {
+        viewMode = CalendarViewMode.entries[guidedViewMode.coerceIn(0, 2)]
+    }
+
+    val weekLayout = guidedWeekLayout ?: settings.weekLayout
     val dates = remember(weekStart) { (0L..6L).map(weekStart::plusDays) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = settings.effectiveParity(selectedDate)
@@ -234,43 +247,32 @@ fun CalendarScreen(
 
         CalendarViewTabs(
             selectedIndex = viewMode.ordinal,
-            weekLayout = settings.weekLayout,
+            weekLayout = weekLayout,
             onSelected = { viewMode = CalendarViewMode.entries[it] },
             onDoubleTap = {
                 viewMode = CalendarViewMode.entries[it]
                 selectDate(today)
             },
             onWeekLayoutSelected = { layout -> scope.launch { settingsRepository.setWeekLayout(layout) } },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().tourTarget("calendar-modes"),
         )
-
-        androidx.compose.animation.AnimatedVisibility(
-            visible = viewMode == CalendarViewMode.DAY,
-            enter = androidx.compose.animation.expandVertically() + fadeIn(animationSpec = TaktMotion.fast()),
-            exit = androidx.compose.animation.shrinkVertically() + fadeOut(animationSpec = TaktMotion.fast()),
-        ) {
-            WeekDaySelector(
-                dates = dates,
-                selectedDate = selectedDate,
-                onWeekChange = ::selectDate,
-                onSelect = {
-                    selectDate(it)
-                    if (viewMode == CalendarViewMode.WEEK) viewMode = CalendarViewMode.DAY
-                },
-            )
-        }
 
         AnimatedContent(
             targetState = viewMode,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).clipToBounds(),
             transitionSpec = {
-                fadeIn(animationSpec = TaktMotion.fast()) togetherWith
-                    fadeOut(animationSpec = TaktMotion.fast())
+                val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                (slideInHorizontally(TaktMotion.menu()) { it * direction } togetherWith
+                    slideOutHorizontally(TaktMotion.menu()) { -it * direction })
+                    .using(SizeTransform(clip = true))
             },
             label = "calendar-view",
         ) { mode ->
             when (mode) {
                 CalendarViewMode.DAY -> {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WeekDaySelector(dates = dates, selectedDate = selectedDate,
+                        onWeekChange = ::selectDate, onSelect = ::selectDate)
                     SelectedDayAgenda(
                         date = selectedDate,
                         events = eventsForDate(selectedDate),
@@ -289,10 +291,11 @@ fun CalendarScreen(
                             }
                         },
                     )
+                    }
                 }
 
                 CalendarViewMode.WEEK -> {
-                    when (settings.weekLayout) {
+                    when (weekLayout) {
                         WeekLayout.TIMETABLE -> WeekTimetable(
                         initiallyVisibleDate = selectedDate,
                             dates = dates,

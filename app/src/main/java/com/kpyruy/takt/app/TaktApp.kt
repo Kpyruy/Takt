@@ -331,6 +331,7 @@ fun TaktApp(
             composable(Destination.SUBJECTS.route) {
                 SubjectsScreen(
                     showAddButton = false,
+                    planning = snapshotState.value,
                     repository = repository,
                     gradeRepository = gradeRepository,
                     studyContentRepository = studyContentRepository,
@@ -347,6 +348,7 @@ fun TaktApp(
                     gradeRepository = gradeRepository,
                     settingsRepository = settingsRepository,
                     universityAccountRepository = universityAccountRepository,
+                    planning = snapshotState.value,
                     onCourseClick = ::openCourse,
                     onAddCourse = { startCreate(CreateItemType.COURSE) },
                 )

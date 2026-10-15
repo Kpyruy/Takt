@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
 import android.os.SystemClock
@@ -71,6 +72,7 @@ internal fun CalendarViewTabs(
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberTaktHaptics()
+    val switchTab = com.kpyruy.takt.core.ui.motion.rememberTabSwitchGuard()
     var weekMenuExpanded by remember { mutableStateOf(false) }
     var lastTapIndex by remember { mutableIntStateOf(-1) }
     var lastTapAt by remember { mutableLongStateOf(0L) }
@@ -116,19 +118,26 @@ internal fun CalendarViewTabs(
                                 lastTapAt = 0L
                             } else {
                                 if (!selected) {
-                                    haptics.tick()
-                                    onSelected(index)
+                                    switchTab {
+                                        haptics.tick()
+                                        onSelected(index)
+                                        lastTapIndex = index
+                                        lastTapAt = now
+                                    }
+                                } else {
+                                    lastTapIndex = index
+                                    lastTapAt = now
                                 }
-                                lastTapIndex = index
-                                lastTapAt = now
                             }
                         },
                         onLongClick = if (index == 1) {
                             {
                                 lastTapAt = 0L
                                 haptics.tick()
-                                if (!selected) onSelected(index)
-                                weekMenuExpanded = true
+                                if (selected) weekMenuExpanded = true else switchTab {
+                                    onSelected(index)
+                                    weekMenuExpanded = true
+                                }
                             }
                         } else null,
                         onLongClickLabel = if (index == 1) t("Вибрати вигляд тижня") else null,
@@ -146,10 +155,12 @@ internal fun CalendarViewTabs(
                     if (index == 1) {
                         IconButton(
                             onClick = {
-                                if (!selected) onSelected(index)
-                                weekMenuExpanded = true
+                                if (selected) weekMenuExpanded = true else switchTab {
+                                    onSelected(index)
+                                    weekMenuExpanded = true
+                                }
                             },
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(28.dp).tourTarget("calendar-week-layout"),
                         ) {
                             Icon(Icons.Default.KeyboardArrowDown, t("Вибрати вигляд тижня"), Modifier.size(19.dp))
                         }

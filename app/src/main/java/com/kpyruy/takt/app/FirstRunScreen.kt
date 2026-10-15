@@ -43,6 +43,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.draw.clipToBounds
+import com.kpyruy.takt.core.ui.components.TaktSheetMaterialShape
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,6 +70,7 @@ import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.core.ui.components.TaktGlassBackground
 import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.glassSurface
 import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
@@ -75,7 +82,7 @@ private data class TourPage(val title: String, val body: String, val icon: Image
 private fun localizedTourPages() = listOf(
     TourPage(t("Сьогодні"), t("Пари та задачі на вибраний день. Натисни пару, щоб відкрити предмет."), Icons.Outlined.Today),
     TourPage(t("Календар"), t("Дивись розклад за днем, тижнем або місяцем. Затисни «Тиждень» для вибору таймтейблу чи списку. Двічі натисни активний режим, щоб повернутися до сьогодні."), Icons.Outlined.CalendarMonth),
-    TourPage(t("Предмети"), t("Спочатку створи предмет із власною назвою та кодом. До нього привʼязуються пари й задачі."), Icons.Outlined.MenuBook),
+    TourPage(t("Предмети"), t("Активні предмети, задачі й нотатки в одному місці."), Icons.Outlined.MenuBook),
     TourPage(t("Прогрес"), t("Позначай активні й здані предмети, обирай поточний семестр та стеж за балами."), Icons.Outlined.School),
     TourPage(t("Налаштування"), t("Тут можна змінити вигляд, розклад і задачі та підключити резервну копію. Після додавання предметів обери поточний семестр у Прогресі, а в Налаштування → Періоди навчання вкажи дати занять та екзаменів."), Icons.Outlined.Settings),
 )
@@ -85,27 +92,36 @@ internal fun FirstRunScreen(
     settings: AppSettings,
     universityAccountRepository: UniversityAccountRepository,
     authenticateDevice: DeviceAuthenticationRequest,
-    onFinish: (AppSettings) -> Unit,
+    onFinish: (AppSettings, Boolean) -> Unit,
     onRestore: suspend (Uri) -> String?,
+    onSystemBarBackground: (Color) -> Unit = {},
 ) {
     var draft by remember { mutableStateOf(settings) }
     SideEffect { TaktI18n.use(draft.language) }
     val tourPages = remember(TaktI18n.language) { localizedTourPages() }
     var step by rememberSaveable { mutableIntStateOf(-1) }
-    var tourIndex by rememberSaveable { mutableIntStateOf(0) }
+    var finishing by remember { mutableStateOf(false) }
     var restoreMessage by remember { mutableStateOf<String?>(null) }
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     var useUIS by rememberSaveable { mutableStateOf(universityAccountRepository.hasAccount.value) }
     var accountMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(step) {
+        if (step != 1) { focusManager.clearFocus(force = true); keyboard?.hide() }
+    }
+    val pageScroll = key(step) { rememberScrollState() }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) scope.launch { restoreMessage = onRestore(uri) }
     }
     BackHandler(step > -1) {
-        if (step == 3 && tourIndex > 0) tourIndex-- else step--
+        step--
     }
 
     TaktTheme(draft) {
+        val barBackground = MaterialTheme.colorScheme.background
+        SideEffect { onSystemBarBackground(barBackground) }
         if (step == -1) {
             TaktWelcomeScreen(
                 onConnect = { useUIS = true; step = 0 },
@@ -118,37 +134,37 @@ internal fun FirstRunScreen(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
             bottomBar = {
-                GlassSurface {
-                    Column(Modifier.fillMaxWidth().navigationBarsPadding()
+                    Column(Modifier.fillMaxWidth().clipToBounds().glassSurface(TaktSheetMaterialShape)
+                        .testTag("onboarding-footer").navigationBarsPadding()
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         TaktPrimaryButton(
                             onClick = {
+                                focusManager.clearFocus(force = true)
+                                keyboard?.hide()
                                 when (step) {
                                     0 -> step = 1
                                     1 -> step = 2
-                                    2 -> { step = 3; tourIndex = 0 }
-                                    else -> if (tourIndex < tourPages.lastIndex) tourIndex++ else onFinish(draft)
+                                    else -> { finishing = true; onFinish(draft, true) }
                                 }
                             },
-                            enabled = step != 1 || !useUIS || hasUniversityAccount,
+                            enabled = !finishing && (step != 1 || !useUIS || hasUniversityAccount),
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("onboarding-primary"),
                         ) {
-                            Text(when (step) { 0, 1 -> t("Далі"); 2 -> t("Показати короткий тур");
-                                else -> if (tourIndex == tourPages.lastIndex) t("Почати") else t("Далі") })
+                            Text(if (step < 2) t("Далі") else t("Почати екскурсію"))
                         }
-                        if (step == 2 || step == 3) {
-                            TextButton(onClick = { onFinish(draft) }, modifier = Modifier.fillMaxWidth()) {
-                                Text(if (step == 2) t("Почати без туру") else t("Пропустити тур"))
+                        if (step == 2) {
+                            TextButton(onClick = { finishing = true; onFinish(draft, false) }, enabled = !finishing,
+                                modifier = Modifier.fillMaxWidth()) {
+                                Text(t("Почати без туру"))
                             }
                         }
                     }
-                }
             },
         ) { insets ->
-            Column(Modifier.fillMaxSize().padding(insets).consumeWindowInsets(insets).verticalScroll(rememberScrollState())
+            Column(Modifier.fillMaxSize().padding(insets).consumeWindowInsets(insets).verticalScroll(pageScroll)
                 .padding(horizontal = 20.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Text("TAKT  ·  ${step + 1} / 4", style = MaterialTheme.typography.labelLarge,
+                Text("TAKT  ·  ${step + 1} / 3", style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 when (step) {
                     0 -> {
@@ -209,7 +225,7 @@ internal fun FirstRunScreen(
                     }
                     2 -> {
                         Text(t("Показати, що де?"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text(t("Короткий тур покаже головні розділи й налаштування. Його можна пропустити."),
+                        Text(t("Екскурсія відкриє екрани Takt і підсвітить головне. Її можна зупинити будь-коли."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Surface(shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.primaryContainer) {
@@ -231,13 +247,7 @@ internal fun FirstRunScreen(
                             }
                         }
                     }
-                    else -> {
-                        Text(t("Швидкий тур"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        LinearProgressIndicator(progress = { (tourIndex + 1) / tourPages.size.toFloat() },
-                            modifier = Modifier.fillMaxWidth())
-                        TourCard(tourPages[tourIndex])
-                        Text(t("${tourIndex + 1} із ${tourPages.size}"), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+
                 }
             }
         }
@@ -252,18 +262,6 @@ private fun TourTeaser(page: TourPage, modifier: Modifier = Modifier) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(page.icon, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
             Text(page.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-private fun TourCard(page: TourPage) {
-    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(page.icon, null, modifier = Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
-            Text(page.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-            Text(page.body, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
