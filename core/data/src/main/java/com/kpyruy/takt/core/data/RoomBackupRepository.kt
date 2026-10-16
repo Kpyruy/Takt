@@ -74,7 +74,8 @@ class RoomBackupRepository(
         }
 
         // The UIS-detected term is local state, so a Documents restore must not erase it.
-        val settings = payload.settings.toModel(settingsRepository.settings.value.uisCurrentSemester)
+        val settings = payload.settings.toModel(settingsRepository.settings.value.uisCurrentSemester,
+            localWallpaper = settingsRepository.settings.value.customWallpaper)
         settingsRepository.setCancellationStyle(settings.cancellationStyle)
         settingsRepository.setShowHiddenLessons(settings.showHiddenLessons)
         settingsRepository.setParityOverride(settings.parityOverride)
@@ -88,5 +89,6 @@ class RoomBackupRepository(
         settingsRepository.setCourseNameLanguage(settings.courseNameLanguage)
         settingsRepository.setUkrainianCourseNameFallback(settings.ukrainianCourseNameFallback)
         settingsRepository.setUisAutoSync(settings.uisAutoSync)
+        settingsRepository.setReminders(settings.reminders)
     }
 }

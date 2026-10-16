@@ -206,6 +206,7 @@ data class BackupSettings(
     val uisApplyProgressAutomatically: Boolean = true,
     val customThemes: List<BackupCustomColorTheme> = emptyList(),
     val selectedCustomThemeId: String? = null,
+    val reminders: BackupReminderSettings = BackupReminderSettings(),
 )
 
 @Serializable

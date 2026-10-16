@@ -113,6 +113,37 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return UisStudyResultsParser.parse(page.html)
     }
 
+    fun readCourseTeachers(subjectId: String): List<com.kpyruy.takt.core.model.CourseTeacher> {
+        require(UisTeachingLinks.validId(subjectId))
+        val page = exchange(origin.resolve("auth/katalog/syllabus.pl?predmet=$subjectId;lang=en")!!)
+        if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        return UisTeachingParser.teachers(page.html)
+    }
+
+    fun readTeacherProfile(personId: String, language: com.kpyruy.takt.core.model.AppLanguage): com.kpyruy.takt.core.model.TeacherProfile {
+        require(UisTeachingLinks.validId(personId))
+        val lang = if (language == com.kpyruy.takt.core.model.AppLanguage.SLOVAK) "sk" else "en"
+        val page = exchange(origin.resolve("auth/lide/clovek.pl?id=$personId;zalozka=1;lang=$lang")!!)
+        if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        return UisTeachingParser.profile(page.html, personId)
+    }
+
+    fun readTeacherPhoto(personId: String): ByteArray? {
+        require(UisTeachingLinks.validId(personId))
+        if (closed.get()) return null
+        val request = Request.Builder().url(origin.resolve("auth/lide/foto.pl?id=$personId")!!).build()
+        val call = http.newCall(request)
+        activeCall.set(call)
+        if (closed.get()) call.cancel()
+        return call.execute().use { response ->
+            if (!response.isSuccessful || response.header("Content-Type")?.substringBefore(';') !in
+                setOf("image/jpeg", "image/png", "image/webp", "image/gif")) return@use null
+            val source = response.body?.source() ?: return@use null
+            source.request(350_001)
+            if (source.buffer.size > 350_000) null else source.readByteArray()
+        }
+    }
+
     fun readStudyLinks(studyId: String, periodId: String): UisStudyLinks {
         require(studyId.all(Char::isDigit) && periodId.all(Char::isDigit))
         val page = exchange(origin.resolve("auth/student/moje_studium.pl?_m=3110;studium=$studyId;obdobi=$periodId;lang=en")!!)

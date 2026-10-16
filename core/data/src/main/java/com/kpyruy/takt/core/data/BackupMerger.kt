@@ -24,6 +24,7 @@ object BackupMerger {
         fun <T> sameItems(left: List<T>, right: List<T>) =
             left.size == right.size && left.groupingBy { it }.eachCount() == right.groupingBy { it }.eachCount()
         fun normalizedSettings(value: BackupSettings) = value.copy(
+            reminders = value.reminders.toModel().toBackup(),
             semesterPeriods = value.semesterPeriods.sortedBy { it.semester },
             homeWorkFilter = value.homeWorkFilter.copy(types = value.homeWorkFilter.types.sorted()),
         )
@@ -87,6 +88,7 @@ object BackupMerger {
         val fileSettings = incoming.settings
         val other = BackupSection.PREFERENCES in fromBackup
         val settings = phoneSettings.copy(
+            reminders = if (other) fileSettings.reminders else phoneSettings.reminders,
             cancellationStyle = if (other) fileSettings.cancellationStyle else phoneSettings.cancellationStyle,
             showHiddenLessons = if (other) fileSettings.showHiddenLessons else phoneSettings.showHiddenLessons,
             parityOverride = if (other) fileSettings.parityOverride else phoneSettings.parityOverride,
