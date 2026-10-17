@@ -27,4 +27,29 @@ class UisTimetableParserTest {
         assertEquals("102", items[1].subjectId)
         assertEquals(LessonType.LECTURE, items[1].lessonType)
     }
+    private fun table(vararg rows: String) = "<table id='tmtab_1'><tbody>${rows.joinToString("")}</tbody></table>"
+    private val weekly = "<tr><td>Tue</td><td>8.00</td><td>9.50</td><td><a href='syllabus.pl?predmet=101'>Physics</a></td><td>Lecture</td><td>Room</td><td>Teacher</td><td>group</td><td>25</td></tr>"
+    private fun rejects(html: String) {
+        org.junit.Assert.assertTrue("Unrecognized timetable must fail instead of replacing valid data",
+            runCatching { UisTimetableParser.parse(html) }.isFailure)
+    }
+    @Test fun extraColumnAndPartialRowsAreRejectedInsteadOfLookingEmptyOrComplete() {
+        val extra = weekly.replace("</tr>", "<td>new column</td></tr>")
+        rejects(table(extra))
+        rejects(table(weekly, extra))
+    }
+    @Test fun missingBlockFootnoteOrSubjectOrDateCannotBecomeWeeklyLesson() {
+        val block = weekly.replace("<a href='syllabus.pl?predmet=101'>Physics</a>", "Block class <sup>(7)</sup>")
+        rejects(table(block))
+        rejects(table(block) + "<table><tr><td>(7)</td><td>Physics 25. 9. 2026</td></tr></table>")
+        rejects(table(block) + "<table><tr><td>(7)</td><td><a href='syllabus.pl?predmet=101'>Physics</a></td></tr></table>")
+    }
+    @Test fun explicitEmptyTableAndHeadersAreSupportedButUnknownDaysAndTimesAreNot() {
+        assertEquals(emptyList<UisTimetableItem>(), UisTimetableParser.parse(table()))
+        assertEquals(emptyList<UisTimetableItem>(), UisTimetableParser.parse(table("<tr><th>Day</th><th>Time</th></tr>")))
+        rejects(table(weekly.replace("Tue", "Unknown")))
+        rejects(table(weekly.replace("8.00", "25.99")))
+        rejects("<p>New page layout</p>")
+    }
+
 }

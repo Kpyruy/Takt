@@ -38,13 +38,15 @@ internal object UisTimetableParser {
             }
         }.toMap()
         val occurrence = mutableMapOf<String, Int>()
-        return table.select("tbody tr").mapNotNull { row ->
-            val cells = row.select("td")
-            if (cells.size != 9) return@mapNotNull null
-            val day = dayNames[cells[0].text().trim().take(3).lowercase(Locale.ROOT)] ?: return@mapNotNull null
-            val start = parseTime(cells[1].text()) ?: return@mapNotNull null
-            val end = parseTime(cells[2].text()) ?: return@mapNotNull null
-            if (end <= start) return@mapNotNull null
+        var rejected = 0
+        val parsed = table.select("tbody > tr").mapNotNull { row ->
+            val cells = row.children().filter { it.tagName() == "td" }
+            if (cells.isEmpty() && row.children().any { it.tagName() == "th" }) return@mapNotNull null
+            if (cells.size != 9) { rejected++; return@mapNotNull null }
+            val day = dayNames[cells[0].text().trim().take(3).lowercase(Locale.ROOT)]
+            val start = parseTime(cells[1].text())
+            val end = parseTime(cells[2].text())
+            if (day == null || start == null || end == null || end <= start) { rejected++; return@mapNotNull null }
             val block = cells[3].text().startsWith("Block class", true)
             val noteNumber = cells[3].selectFirst("sup")?.text()?.trim()
                 ?.removeSurrounding("(", ")")?.toIntOrNull()
@@ -53,8 +55,9 @@ internal object UisTimetableParser {
             val subjectId = courseLink?.let { idPattern.find(it.attr("href"))?.groupValues?.get(1) }
             val title = courseLink?.text()?.trim() ?: cells[3].ownText().trim().ifBlank { cells[3].text().trim() }
             val date = if (block) datePattern.find(note?.text().orEmpty())?.let { match ->
-                LocalDate.of(match.groupValues[3].toInt(), match.groupValues[2].toInt(), match.groupValues[1].toInt())
+                runCatching { LocalDate.of(match.groupValues[3].toInt(), match.groupValues[2].toInt(), match.groupValues[1].toInt()) }.getOrNull()
             } else null
+            if (title.isBlank() || (block && (date == null || subjectId == null))) { rejected++; return@mapNotNull null }
             val type = when {
                 block || cells[4].text().contains("Lecture", true) -> LessonType.LECTURE
                 cells[4].text().contains("Seminar", true) -> LessonType.SEMINAR
@@ -68,6 +71,8 @@ internal object UisTimetableParser {
             val sequence = occurrence.merge(identity, 1, Int::plus) ?: 1
             UisTimetableItem("$identity|$sequence", subjectId, title, day, start, end, room, type, date)
         }
+        check(rejected == 0) { "UIS timetable format unrecognized: ${parsed.size} recognized rows, $rejected rejected rows" }
+        return parsed
     }
 
     private fun parseTime(raw: String): LocalTime? {
