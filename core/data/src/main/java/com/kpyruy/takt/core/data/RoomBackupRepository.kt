@@ -3,17 +3,24 @@ package com.kpyruy.takt.core.data
 import androidx.room.withTransaction
 import com.kpyruy.takt.core.database.TaktDatabase
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 class RoomBackupRepository(
     private val database: TaktDatabase,
     private val settingsRepository: AppSettingsRepository,
+    private val wallpaperStore: WallpaperStore? = null,
+    private val teachingStore: TeachingStore? = null,
 ) : BackupRepository {
+    override val changes: kotlinx.coroutines.flow.Flow<Unit> get() = teachingStore?.snapshot?.map { Unit } ?: kotlinx.coroutines.flow.emptyFlow()
     override suspend fun exportJson(): String {
         val settings = settingsRepository.settings.first()
+        val photo = wallpaperStore?.exportWallpaper(settings.customWallpaper)
         val payload = database.withTransaction {
+            val courses = database.courseDao().getAllSnapshot().map { it.toBackup() }
+            val teaching = teachingStore?.snapshot?.value?.forCourses(courses.map { it.code })
             BackupPayload(
                 lessonAbsences = database.scheduleDao().getAbsencesSnapshot().map { it.toBackup() },
-                courses = database.courseDao().getAllSnapshot().map { it.toBackup() },
+                courses = courses,
                 courseIdAliases = database.courseDao().getAliasesSnapshot().map { BackupCourseIdAlias(it.oldId, it.courseId) },
                 courseImportDecisions = database.courseDao().getImportDecisionsSnapshot().map { it.courseId },
                 scheduleRules = database.scheduleDao().getRulesSnapshot().map { it.toBackup() },
@@ -26,7 +33,8 @@ class RoomBackupRepository(
                 courseNotes = database.studyContentDao().getNotesSnapshot().map { it.toBackup() },
                 examInfo = database.examDao().getExamInfoSnapshot().map { it.toBackup() },
                 examMaterials = database.examDao().getMaterialsSnapshot().map { it.toBackup() },
-                settings = settings.toBackup(),
+                teaching = teaching,
+                settings = settings.toBackup().copy(wallpaperRecorded = wallpaperStore != null && (settings.customWallpaper == null || photo != null), wallpaper = photo),
             )
         }
         return BackupPayloadCodec.encode(payload)
@@ -34,6 +42,10 @@ class RoomBackupRepository(
 
     override suspend fun importJson(raw: String) {
         val payload = BackupPayloadCodec.decode(raw)
+        val previousPhoto = settingsRepository.settings.value.customWallpaper
+        val restoredPhoto = if (payload.settings.wallpaperRecorded && wallpaperStore != null) {
+            payload.settings.wallpaper?.let { wallpaperStore.restoreWallpaper(it, previousPhoto) }
+        } else previousPhoto
 
         database.withTransaction {
             val courseDao = database.courseDao()
@@ -73,9 +85,11 @@ class RoomBackupRepository(
             examDao.upsertMaterials(payload.examMaterials.map { it.toEntity() })
         }
 
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { payload.teaching?.let { teachingStore?.replace(it) } }
+
         // The UIS-detected term is local state, so a Documents restore must not erase it.
         val settings = payload.settings.toModel(settingsRepository.settings.value.uisCurrentSemester,
-            localWallpaper = settingsRepository.settings.value.customWallpaper)
+            localWallpaper = restoredPhoto)
         settingsRepository.setCancellationStyle(settings.cancellationStyle)
         settingsRepository.setShowHiddenLessons(settings.showHiddenLessons)
         settingsRepository.setParityOverride(settings.parityOverride)

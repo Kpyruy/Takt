@@ -44,16 +44,19 @@ fun TeacherProfileSheet(
     onDismiss: () -> Unit,
     onSettings: () -> Unit = {},
 ) {
-    var profile by remember(teacher.personId, language) { mutableStateOf<TeacherProfile?>(null) }
+    var profile by remember(teacher.personId, language) { mutableStateOf(repository.savedProfile(teacher, language)) }
     var error by remember(teacher.personId, language) { mutableStateOf<Throwable?>(null) }
     var loading by remember { mutableStateOf(true) }
     var reload by remember { mutableIntStateOf(0) }
     var mailFailure by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    LaunchedEffect(teacher.personId, language, repository) {
+        repository.changes.collect { profile = repository.savedProfile(teacher, language) }
+    }
     LaunchedEffect(teacher.personId, language, reload) {
         loading = true; error = null
-        try { profile = repository.profile(teacher, language, refresh = reload > 0) }
+        try { profile = repository.profile(teacher, language, refresh = true) }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure }
         finally { loading = false }
@@ -67,7 +70,7 @@ fun TeacherProfileSheet(
         catch (_: Exception) { null }
     }
     fun composeMail(address: String) {
-        mailFailure = runCatching { context.startActivity(teacherEmailIntent(address)) }.isFailure
+        mailFailure = runCatching { context.startActivity(teacherEmailIntent(address, teacher.personId)) }.isFailure
     }
     TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().testTag("teacher-profile").verticalScroll(rememberScrollState())
@@ -153,7 +156,13 @@ fun TeacherProfileSheet(
     }
 }
 
-fun teacherEmailIntent(address: String): Intent = Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", address, null))
+fun teacherEmailIntent(address: String, personId: String? = null): Intent {
+    if (address.substringAfterLast('@').equals("is.stuba.sk", ignoreCase = true) && personId != null) {
+        require(personId.matches(Regex("[1-9][0-9]{0,11}")))
+        return Intent(Intent.ACTION_VIEW, Uri.parse("https://is.stuba.sk/auth/posta/nova_zprava.pl?uzivatel=$personId"))
+    }
+    return Intent(Intent.ACTION_SENDTO, Uri.fromParts("mailto", address, null))
+}
 
 @Composable
 private fun TeacherEmailRow(label: String, address: String, tag: String, onClick: () -> Unit) {

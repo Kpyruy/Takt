@@ -34,6 +34,9 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     private val activeCall = AtomicReference<Call?>(null)
     private val cookies = mutableListOf<Cookie>()
     private var challenge: LoginForm? = null
+    private var teachingPlan: UisStudyPlan? = null
+    private var documentFolders: Pair<Set<String>, List<UisDocumentsParser.Folder>>? = null
+    private val teachingSyllabi = linkedMapOf<Pair<String, String>, Map<String, String>>()
     private val http = OkHttpClient.Builder()
         .followRedirects(false).followSslRedirects(false)
         .connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS)
@@ -52,7 +55,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
 
     fun login(login: String, password: String): UisResult = safely {
         stage = UisStage.LOGIN_FORM
-        cookies.clear(); challenge = null
+        cookies.clear(); challenge = null; teachingPlan = null; teachingSyllabi.clear(); documentFolders = null
         val page = exchange(origin.resolve("system/login.pl?lang=sk")!!)
         val form = form(page) ?: throw ProtocolFailure(UisFailureReason.LOGIN_FORM_MISSING)
         form.fields["credential_0"] = login
@@ -97,6 +100,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         val page = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=en")!!)
         check(isAuthenticated(page)) { "UIS session expired while reading the study plan" }
         val english = UisStudyPlanParser.parse(page.html)
+        teachingPlan = english
         val slovakPage = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=sk")!!)
         check(isAuthenticated(slovakPage)) { "UIS session expired while reading Slovak course names" }
         val slovak = UisStudyPlanParser.slovakTitles(slovakPage.html)
@@ -110,14 +114,174 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         val page = exchange(origin.resolve(
             "auth/student/pruchod_studiem.pl?studium=$studyId;obdobi=$periodId;vyber=podrobne_vybrane_obdobi;lang=en")!!)
         check(isAuthenticated(page)) { "UIS session expired while reading study results" }
+        rememberTeachingSyllabi(studyId, periodId, page.html)
         return UisStudyResultsParser.parse(page.html)
     }
 
-    fun readCourseTeachers(subjectId: String): List<com.kpyruy.takt.core.model.CourseTeacher> {
+    fun readCourseTeachers(
+        subjectId: String,
+        code: String? = null,
+        studyIdHint: String? = null,
+        refresh: Boolean = false,
+    ): List<com.kpyruy.takt.core.model.CourseTeacher> {
         require(UisTeachingLinks.validId(subjectId))
-        val page = exchange(origin.resolve("auth/katalog/syllabus.pl?predmet=$subjectId;lang=en")!!)
+        var plan = teachingPlan
+        // A fresh session needs the selected study and period, not all Slovak course names.
+        if ((code != null || plan != null) && (plan == null || refresh)) {
+            val selected = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=en")!!)
+            if (!isAuthenticated(selected)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+            plan = UisStudyPlanParser.parse(selected.html)
+            teachingPlan = plan
+        }
+        val courseCode = (code ?: plan?.courses?.firstOrNull { it.subjectId == subjectId }?.code)
+            ?.uppercase(java.util.Locale.ROOT)
+        var currentSubject = subjectId
+        if (plan != null && courseCode != null && (studyIdHint == null || studyIdHint == plan.studyId)) {
+            val key = plan.studyId to plan.periodId
+            if (refresh || key !in teachingSyllabi) {
+                val progress = exchange(origin.resolve("auth/student/pruchod_studiem.pl?studium=${plan.studyId};obdobi=${plan.periodId};vyber=podrobne_vybrane_obdobi;lang=en")!!)
+                if (!isAuthenticated(progress)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+                rememberTeachingSyllabi(plan.studyId, plan.periodId, progress.html)
+            }
+            // Courses absent from the selected period retain their explicit stored syllabus.
+            currentSubject = teachingSyllabi[key]?.get(courseCode) ?: subjectId
+        }
+        val page = exchange(origin.resolve("auth/katalog/syllabus.pl?predmet=$currentSubject;lang=en")!!)
         if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
         return UisTeachingParser.teachers(page.html)
+    }
+
+    fun readCourseDocuments(code: String, activeCourseCodes: Set<String>, refresh: Boolean = false): com.kpyruy.takt.core.model.CourseDocumentListing {
+        if (code !in activeCourseCodes) return com.kpyruy.takt.core.model.CourseDocumentListing(emptyList(), false)
+        val documentBase = origin.resolve("auth/dok_server/")!!
+        val roots = documentFolders?.takeIf { !refresh && it.first == activeCourseCodes }?.second ?: run {
+            val page = exchange(documentBase.resolve("?lang=en")!!, destinationAllowed = { next ->
+                next.encodedPath in setOf("/auth/dok_server/", "/auth/dok_server/index.pl", "/system/login.pl", "/auth/system/login.pl")
+            })
+            if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+            UisDocumentsParser.courseFolders(page.html, activeCourseCodes, documentBase).also {
+                documentFolders = activeCourseCodes.toSet() to it
+            }
+        }
+        val matching = roots.filter { it.code == code }
+        val queue = java.util.ArrayDeque<Pair<UisDocumentsParser.Folder, HttpUrl>>()
+        var truncated = matching.size > 16
+        fun enqueue(folder: UisDocumentsParser.Folder, url: HttpUrl) {
+            if (queue.size >= 128) truncated = true else queue.add(folder to url)
+        }
+        matching.take(16).forEach { enqueue(it, documentBase.resolve("slozka.pl?ds=1;id=${it.id};lang=en")!!) }
+        val visited = mutableSetOf<String>()
+        val files = linkedMapOf<String, com.kpyruy.takt.core.model.CourseDocumentFile>()
+        var pageCount = 0
+        while (queue.isNotEmpty() && pageCount < 40 && files.size < 512) {
+            val (folder, url) = queue.removeFirst()
+            if (!visited.add(url.toString())) continue
+            pageCount++
+            val page = exchange(url, destinationAllowed = { next ->
+                if (next.encodedPath in setOf("/system/login.pl", "/auth/system/login.pl")) true
+                else UisDocumentsParser.link(next.toString(), documentBase)?.let { it.id == folder.id && it.documentId == null } == true
+            })
+            if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+            val parsed = UisDocumentsParser.folder(page.html, folder, documentBase)
+            parsed.files.forEach { if (files.size < 512) files["${it.folderId}:${it.documentId}"] = it else truncated = true }
+            parsed.subfolders.forEach { child ->
+                if (child.path.count { it == '/' } >= 12) truncated = true
+                else enqueue(child, documentBase.resolve("slozka.pl?ds=1;id=${child.id};lang=en")!!)
+            }
+            parsed.pages.forEach { enqueue(folder, it) }
+        }
+        truncated = truncated || queue.isNotEmpty()
+        return com.kpyruy.takt.core.model.CourseDocumentListing(files.values.toList(), matching.isNotEmpty(),
+            matching.singleOrNull()?.let { "https://is.stuba.sk/auth/dok_server/slozka.pl?ds=1;id=${it.id};lang=en" }, truncated)
+    }
+
+    /** Copies a single deliberately selected attachment without retaining its bytes in memory. */
+    fun downloadCourseDocument(document: com.kpyruy.takt.core.model.CourseDocumentFile, output: java.io.OutputStream): com.kpyruy.takt.core.model.DownloadedCourseDocument =
+        downloadCourseDocument(document, output, AtomicBoolean(false))
+
+    fun downloadCourseDocument(document: com.kpyruy.takt.core.model.CourseDocumentFile, output: java.io.OutputStream, cancelled: AtomicBoolean): com.kpyruy.takt.core.model.DownloadedCourseDocument {
+        fun checkTransferActive() {
+            if (cancelled.get() || closed.get() || Thread.currentThread().isInterrupted)
+                throw InterruptedIOException("Download cancelled")
+        }
+        checkTransferActive()
+        val base = origin.resolve("auth/dok_server/")!!
+        var url = base.resolve("slozka.pl?id=${document.folderId};download=${document.documentId}")!!
+        if (cookies.none { it.name == "UISAuth" && it.expiresAt > System.currentTimeMillis() && it.matches(url) })
+            throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        repeat(6) {
+            checkTransferActive()
+            val call = http.newCall(Request.Builder().url(url).header("Cache-Control", "no-store").build())
+            activeCall.set(call)
+            if (cancelled.get() || closed.get()) call.cancel()
+            checkTransferActive()
+            call.execute().use { response ->
+                if (response.code in listOf(301, 302, 303, 307, 308)) {
+                    val next = url.resolve(response.header("Location") ?: error("Missing redirect")) ?: error("Invalid redirect")
+                    if (sameOrigin(next) && next.encodedPath in setOf("/system/login.pl", "/auth/system/login.pl"))
+                        throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+                    val link = UisDocumentsParser.link(next.toString(), base)
+                    require(link?.id == document.folderId && link.documentId == document.documentId) { "Unsafe document redirect" }
+                    url = next
+                } else {
+                    if (response.code in listOf(401, 403)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+                    if (!response.isSuccessful) throw HttpFailure(response.code)
+                    val body = response.body ?: error("Missing attachment")
+                    val type = body.contentType()?.let { "${it.type}/${it.subtype}" } ?: "application/octet-stream"
+                    val source = body.source()
+                    source.request(512)
+                    val prefix = source.buffer.clone().readByteArray(minOf(512L, source.buffer.size))
+                        .toString(Charsets.ISO_8859_1).trimStart().lowercase(java.util.Locale.ROOT)
+                    if (type in setOf("text/html", "application/xhtml+xml") || prefix.startsWith("<!doctype html") ||
+                        prefix.startsWith("<html") || prefix.startsWith("<form") || prefix.contains("name=credential_1"))
+                        throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+                    require(type.startsWith("application/") || type.startsWith("image/") || type.startsWith("audio/") ||
+                        type.startsWith("video/") || type in setOf("text/plain", "text/csv")) { "Unexpected attachment content type" }
+                    if (document.mimeType == "application/pdf" || type == "application/pdf")
+                        require(prefix.startsWith("%pdf-")) { "Invalid PDF attachment" }
+                    val limit = 50L * 1024 * 1024
+                    require(body.contentLength() <= limit) { "Document exceeds 50 MiB" }
+                    val buffer = ByteArray(8192)
+                    var total = 0L
+                    while (true) {
+                        checkTransferActive()
+                        val count = source.read(buffer)
+                        if (count == -1) break
+                        total += count
+                        require(total <= limit) { "Document exceeds 50 MiB" }
+                        checkTransferActive()
+                        output.write(buffer, 0, count)
+                    }
+                    val mime = if (type == "application/octet-stream") document.mimeType else type
+                    val fallback = document.fileName ?: document.title.let { title ->
+                        val ext = UisDocumentsParser.extension(mime)
+                        if (title.lowercase(java.util.Locale.ROOT).endsWith(ext)) title else title + ext
+                    }
+                    val filename = attachmentFilename(response.header("Content-Disposition")) ?: safeAttachmentName(fallback)
+                    return com.kpyruy.takt.core.model.DownloadedCourseDocument(filename, mime, total)
+                }
+            }
+        }
+        error("Too many document redirects")
+    }
+
+    private fun attachmentFilename(disposition: String?): String? {
+        if (disposition == null) return null
+        val utf8 = Regex("""(?:^|;)\s*filename\*\s*=\s*UTF-8''([^;]+)""", RegexOption.IGNORE_CASE)
+            .find(disposition)?.groupValues?.get(1)?.trim()?.trim('"')
+        val plain = Regex("""(?:^|;)\s*filename\s*=\s*(?:"([^"]*)"|([^;]*))""", RegexOption.IGNORE_CASE)
+            .find(disposition)?.let { it.groupValues[1].ifBlank { it.groupValues[2].trim() } }
+        val decoded = utf8?.let { runCatching { java.net.URLDecoder.decode(it.replace("+", "%2B"), "UTF-8") }.getOrNull() }
+            ?: plain ?: return null
+        return decoded.takeIf { it.isNotBlank() }?.let(::safeAttachmentName)
+    }
+
+    private fun safeAttachmentName(name: String): String = name.substringAfterLast('/').substringAfterLast('\\')
+        .filter { it >= ' ' && it != '\u007f' }.trim().take(180).takeIf { it.isNotBlank() && it !in setOf(".", "..") } ?: "document"
+
+    private fun rememberTeachingSyllabi(studyId: String, periodId: String, html: String) {
+        teachingSyllabi[studyId to periodId] = UisTeachingParser.progressSyllabi(html)
+        while (teachingSyllabi.size > 4) teachingSyllabi.remove(teachingSyllabi.keys.first())
     }
 
     fun readTeacherProfile(personId: String, language: com.kpyruy.takt.core.model.AppLanguage): com.kpyruy.takt.core.model.TeacherProfile {
@@ -223,6 +387,9 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return UisTimetableParser.parse(list.html).filter { it.subjectId == subjectId }
     }
 
+    /** Cancels the current transfer without discarding the authenticated session. */
+    fun cancelActiveRequest() { activeCall.get()?.cancel() }
+
     fun close() {
         closed.set(true)
         activeCall.get()?.cancel()
@@ -272,7 +439,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return LoginForm(target, fields)
     }
 
-    private fun exchange(url: HttpUrl, fields: Map<String, String>? = null, referer: HttpUrl? = null): Page {
+    private fun exchange(url: HttpUrl, fields: Map<String, String>? = null, referer: HttpUrl? = null, destinationAllowed: ((HttpUrl) -> Boolean)? = null): Page {
         if (closed.get()) throw IOException("Session closed")
         if (!sameOrigin(url)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
         var request = Request.Builder().url(url).header("Accept-Language", "sk")
@@ -290,7 +457,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
                 if (response.code in listOf(301, 302, 303)) {
                     val next = request.url.resolve(response.header("Location") ?: error("Missing redirect"))
                         ?: error("Invalid redirect")
-                    if (!sameOrigin(next)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
+                    if (!sameOrigin(next) || destinationAllowed?.invoke(next) == false) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
                     request = Request.Builder().url(next).header("Accept-Language", "sk").build()
                 } else {
                     if (!response.isSuccessful) throw HttpFailure(response.code)

@@ -12,7 +12,7 @@ class TaktMotionTest {
         val motion = animation()
         val at100 = motion.getValueFromNanos(100_000_000)
         assertTrue("First100ms must be gradual, actual=$at100", at100 in .15f.. .65f)
-        assertTrue("Keep a short, finite transition", motion.durationNanos in 320_000_000..400_000_000)
+        assertTrue("Keep a short, finite transition", motion.durationNanos in 324_000_000..334_000_000)
     }
 
     @Test fun highRefreshSamplesAreContinuousMonotonicAndReachTheSameEndpoint() {
@@ -22,10 +22,12 @@ class TaktMotionTest {
             assertEquals(0f, samples.first(), .00001f)
             assertTrue("No reverse or bounce at $hz Hz", samples.zipWithNext().all { (a,b) -> b >= a })
             assertTrue("Every refresh needs an interpolated value at $hz Hz", samples.distinct().size >= samples.size - 1)
-            assertTrue("No abrupt frame jump at $hz Hz", samples.zipWithNext().maxOf { (a,b) -> b - a } < 7f / hz)
+            val largestStep = samples.zipWithNext().maxOf { (a,b) -> b - a }
+            assertTrue("No abrupt frame jump at $hz Hz, actual=$largestStep", largestStep < (7f * 360 / TaktMotion.NavigationMs) / hz)
             assertEquals(1f, motion.getValueFromNanos(motion.durationNanos), .00001f)
             assertEquals(1f, motion.getValueFromNanos(motion.durationNanos + 1_000_000), .00001f)
-            assertEquals(0f, motion.getVelocityVectorFromNanos(motion.durationNanos).value, .001f)
+            // Tween estimates velocity by a finite1ms difference at the endpoint.
+            assertEquals(0f, motion.getVelocityVectorFromNanos(motion.durationNanos).value, .01f)
         }
     }
 }

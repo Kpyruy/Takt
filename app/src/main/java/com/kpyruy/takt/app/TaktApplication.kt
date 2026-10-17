@@ -8,12 +8,15 @@ import com.kpyruy.takt.core.data.TaktDataContainer
 import com.kpyruy.takt.core.data.AppReleaseRepository
 import com.kpyruy.takt.core.data.GitHubReleaseClient
 import com.kpyruy.takt.core.data.SharedPreferencesAppReleaseStore
+import com.kpyruy.takt.core.data.AndroidReminderNotificationDelivery
+import com.kpyruy.takt.core.data.ReminderCoordinatorOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class TaktApplication : Application() {
+class TaktApplication : Application(), ReminderCoordinatorOwner {
+    override val reminderCoordinator get() = dataContainer.reminderCoordinator
     /** Survives activity recreation, but is reset when Android starts a new process. */
     var deviceUnlocked by mutableStateOf(false)
 
@@ -26,6 +29,16 @@ class TaktApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         dataContainer = TaktDataContainer(this)
+        reminderCoordinator.start(AndroidReminderNotificationDelivery(this, AppReminderTextProvider))
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: android.app.Activity) { reminderCoordinator.requestRefresh() }
+            override fun onActivityCreated(activity: android.app.Activity, state: android.os.Bundle?) = Unit
+            override fun onActivityStarted(activity: android.app.Activity) = Unit
+            override fun onActivityPaused(activity: android.app.Activity) = Unit
+            override fun onActivityStopped(activity: android.app.Activity) = Unit
+            override fun onActivitySaveInstanceState(activity: android.app.Activity, state: android.os.Bundle) = Unit
+            override fun onActivityDestroyed(activity: android.app.Activity) = Unit
+        })
         val installedVersion = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
         val releaseClient = GitHubReleaseClient.forPublicReleases()
         appReleaseRepository = AppReleaseRepository(installedVersion, SharedPreferencesAppReleaseStore(this), releaseClient::latest)

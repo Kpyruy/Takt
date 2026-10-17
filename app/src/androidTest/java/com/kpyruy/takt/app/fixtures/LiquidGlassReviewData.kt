@@ -17,9 +17,9 @@ internal suspend fun TaktDataContainer.seedLiquidGlassReview() {
     database.clearAllTables()
     val active = listOf(
         CourseEntity("glass-physics", "FYZI_6B", "Фізика", 5, 3, "enrolled", "COMPULSORY", null,
-            gradingType = "EXAM_LETTER", iconKey = "Science"),
+            gradingType = "EXAM_LETTER", iconKey = "Atom"),
         CourseEntity("glass-programming", "TPAR_6B", "Теорія програмування", 6, 3, "enrolled", "COMPULSORY", null,
-            gradingType = "EXAM_LETTER", iconKey = "Laptop"),
+            gradingType = "EXAM_LETTER", iconKey = "Computer"),
         CourseEntity("glass-math", "MATE_6B", "Математика", 5, 3, "enrolled", "COMPULSORY", null,
             iconKey = "Functions"),
         CourseEntity("glass-english", "ANJA_6B", "Англійська мова", 3, 3, "fulfilled", "COMPULSORY", null,
@@ -36,7 +36,9 @@ internal suspend fun TaktDataContainer.seedLiquidGlassReview() {
     settingsRepository.setLanguage(AppLanguage.UKRAINIAN)
     settingsRepository.setThemeMode(AppThemeMode.LIGHT)
     settingsRepository.setThemeFamily(ThemeFamily.BLUE)
+    settingsRepository.setCardAppearance(CardAppearance.GLASS)
     settingsRepository.setCurrentSemester(3)
+    settingsRepository.setWeekLayout(WeekLayout.TIMETABLE)
     settingsRepository.setSemesterPeriods(mapOf(3 to SemesterPeriod(day.minusWeeks(3), day.plusWeeks(10),
         day.plusWeeks(11), day.plusWeeks(14))))
     listOf(

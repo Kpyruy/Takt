@@ -11,7 +11,8 @@ enum class LessonType(val label: String, val shortLabel: String) {
     LECTURE("Лекція", "Лек."),
     SEMINAR("Семінар", "Сем."),
     PRACTICE("Практика", "Практ."),
-    LAB("Лабораторна", "Лаб.");
+    LAB("Лабораторна", "Лаб."),
+    EVENT("Подія", "Подія");
 
     companion object {
         fun fromStorage(value: String): LessonType = entries.firstOrNull { it.name == value } ?: UNSPECIFIED

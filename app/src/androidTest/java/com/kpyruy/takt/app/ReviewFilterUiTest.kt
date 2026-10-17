@@ -28,9 +28,10 @@ class ReviewFilterUiTest {
  private val instrumentation get()=InstrumentationRegistry.getInstrumentation()
  private fun seed()=runBlocking {
   data.seedLiquidGlassReview()
-  data.settingsRepository.setAppearance(data.settingsRepository.settings.value.copy(themeMode=AppThemeMode.DARK,customWallpaper=null))
+  data.settingsRepository.setAppearance(data.settingsRepository.settings.value.copy(themeMode=AppThemeMode.DARK,customWallpaper=null,customThemes=emptyList(),selectedCustomThemeId=null))
   data.settingsRepository.setLanguage(AppLanguage.SLOVAK)
   data.settingsRepository.setHomeWorkFilter(HomeWorkFilter())
+  data.awaitRestoredPlanning()
  }
  private fun photo():BackupWallpaper {
   val bitmap=Bitmap.createBitmap(240,360,Bitmap.Config.ARGB_8888)
@@ -69,10 +70,14 @@ class ReviewFilterUiTest {
  }
  @Test fun comparisonHasNamedThemePhotoAndReadableScheduleAndNotes() {
   seed()
-  val local=runBlocking { BackupPayloadCodec.decode(data.backupRepository.exportJson()) }
+  android.os.SystemClock.sleep(8_000) // Let queued test download toasts leave the screenshot.
+  val exported=runBlocking { BackupPayloadCodec.decode(data.backupRepository.exportJson()) }
+  val titles=mapOf("glass-physics" to "Fyzika", "glass-programming" to "Technické prostriedky automatického riadenia", "glass-math" to "Matematika")
+  val local=exported.copy(courses=exported.courses.map { it.copy(title=titles[it.id] ?: it.title) },
+    scheduleRules=exported.scheduleRules.map { it.copy(title=titles[it.courseId] ?: it.title) })
   val source=local.copy(
-   courses=local.courses.map { it.copy(iconKey="Computer") },
-   scheduleRules=listOf(local.scheduleRules.first().copy(dayOfWeek=2,startMinute=480,endMinute=590,title="Technické prostriedky automatického riadenia",lessonType="PRACTICE",room="T02 4.108")),
+   courses=local.courses.map { if (it.status=="enrolled") it.copy(iconKey=if(it.iconKey=="Computer") "DeveloperBoard" else "Computer") else it },
+   scheduleRules=listOf(local.scheduleRules.first().copy(courseId="glass-programming",dayOfWeek=2,startMinute=480,endMinute=590,title="Technické prostriedky automatického riadenia",lessonType="PRACTICE",room="T02 4.108")),
    courseNotes=listOf(local.courseNotes.first().copy(title="Kinematika – stručný prehľad",content="Výpočty a príklady pohybu.")),
    settings=local.settings.copy(customThemes=listOf(BackupCustomColorTheme("campus","Campus Night","#9B75E1","#4477AA","#CC8844")),selectedCustomThemeId="campus",wallpaperRecorded=true,wallpaper=photo()))
   compose.activityRule.scenario.onActivity { activity -> activity.setContent {
@@ -85,16 +90,27 @@ class ReviewFilterUiTest {
   capture("comparison-icons.png")
   compose.onNodeWithTag("backup-expand-SCHEDULE").performScrollTo().performClick()
   compose.onNodeWithText("08:00–09:50",substring=true).performScrollTo().assertIsDisplayed()
+  compose.onNodeWithTag("backup-section-SCHEDULE").performScrollTo()
   capture("comparison-schedule.png")
   compose.onNodeWithTag("backup-expand-MATERIALS").performScrollTo().performClick()
   compose.onNodeWithText("Kinematika – stručný prehľad").performScrollTo().assertIsDisplayed()
   compose.onNodeWithText("Výpočty a príklady pohybu.").assertExists()
+  compose.onNodeWithTag("backup-section-MATERIALS").performScrollTo()
   capture("comparison-notes.png")
   compose.onNodeWithTag("backup-expand-APPEARANCE").performScrollTo().performClick()
-  compose.onNodeWithText("Campus Night").performScrollTo().assertIsDisplayed()
-  compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Pozadie").fetchSemanticsNodes().isNotEmpty() }
-  compose.onNodeWithContentDescription("Pozadie").performScrollTo()
+  compose.onAllNodesWithText("Campus Night")[0].performScrollTo().assertIsDisplayed()
+  compose.waitUntil(5_000) { compose.onAllNodesWithTag("backup-appearance-file-background").fetchSemanticsNodes().isNotEmpty() }
+  compose.onNodeWithTag("backup-section-APPEARANCE").performScrollTo()
   capture("comparison-appearance.png")
+  listOf("palette", "material", "background").forEach { kind ->
+   compose.onNodeWithTag("backup-appearance-phone-$kind").performScrollTo().assertIsDisplayed()
+   compose.onNodeWithTag("backup-appearance-file-$kind").assertIsDisplayed()
+   val left=compose.onNodeWithTag("backup-appearance-phone-$kind").fetchSemanticsNode().boundsInRoot
+   val right=compose.onNodeWithTag("backup-appearance-file-$kind").fetchSemanticsNode().boundsInRoot
+   assertEquals(left.top, right.top, 1f)
+   assertEquals(left.height, right.height, 1f)
+   if (kind != "palette") capture("comparison-$kind.png")
+  }
  }
  @Test fun compactPopupsPersistMultipleCoursesAndAllExclusivelyClearsSpecificChoices() {
   seed()

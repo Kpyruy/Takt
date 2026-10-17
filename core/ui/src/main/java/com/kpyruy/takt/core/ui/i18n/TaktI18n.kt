@@ -22,9 +22,21 @@ object TaktI18n {
 
     fun text(ukrainian: String): String = when (language) {
         AppLanguage.ENGLISH -> enTranslations[ukrainian]
+            ?: ReviewTranslations.lookup(ukrainian, language)
+            ?: DocumentTranslations.lookup(ukrainian, language)
+            ?: WallpaperTranslations.lookup(ukrainian, language)
+            ?: TeachingTranslations.lookup(ukrainian, language)
+            ?: TourTranslations.lookup(ukrainian, language)
+            ?: NotificationTranslations.lookup(ukrainian, AppLanguage.ENGLISH)
             ?: dynamicTranslations.firstNotNullOfOrNull { it.translate(ukrainian, AppLanguage.ENGLISH) }
             ?: ukrainian
         AppLanguage.SLOVAK -> skTranslations[ukrainian]
+            ?: ReviewTranslations.lookup(ukrainian, language)
+            ?: DocumentTranslations.lookup(ukrainian, language)
+            ?: WallpaperTranslations.lookup(ukrainian, language)
+            ?: TeachingTranslations.lookup(ukrainian, language)
+            ?: TourTranslations.lookup(ukrainian, language)
+            ?: NotificationTranslations.lookup(ukrainian, AppLanguage.SLOVAK)
             ?: dynamicTranslations.firstNotNullOfOrNull { it.translate(ukrainian, AppLanguage.SLOVAK) }
             ?: ukrainian
         else -> ukrainian

@@ -4,7 +4,7 @@ package com.kpyruy.takt.core.data
 internal fun sameDocumentBackupData(a: String, b: String): Boolean {
     fun normalized(raw: String): BackupPayload {
         val value = BackupPayloadCodec.decode(raw)
-        return value.copy(version = 0, settings = value.settings.copy(
+        return value.copy(version = 0, teaching = value.teaching?.takeIf { it.teams.isNotEmpty() || it.profiles.isNotEmpty() }, settings = value.settings.copy(
             wallpaperRecorded = true, wallpaper = value.settings.wallpaper?.copy(name = "")))
     }
     return normalized(a) == normalized(b)

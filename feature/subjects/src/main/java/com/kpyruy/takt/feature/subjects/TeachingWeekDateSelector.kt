@@ -68,10 +68,10 @@ internal fun TeachingWeekDateSelector(
         Text(t("Навчальний тиждень"), style = MaterialTheme.typography.titleSmall)
         when (options.setupIssue) {
             TeachingWeekSetupIssue.SEMESTER_PERIOD -> Text(
-                t("Налаштуй період навчання семестру в налаштуваннях або вкажи дату нижче."),
+                t("Налаштуй період навчання семестру в налаштуваннях або обери «Дату»."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TeachingWeekSetupIssue.COURSE_SCHEDULE -> Text(
-                t("Додай повторювані пари цього предмета або вкажи дату нижче."),
+                t("Додай повторювані пари цього предмета або обери «Дату»."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             null -> {
                 var expanded by remember { mutableStateOf(false) }
@@ -121,11 +121,9 @@ internal fun TeachingWeekDateSelector(
                         }
                     }
                 }
-                Text(t("Тиждень 1 — тиждень початку навчання, з понеділка."),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (week != null) {
                     if (week.occurrences.isEmpty()) Text(
-                        t("У цьому навчальному тижні немає пари за розкладом. Вкажи дату нижче."),
+                        t("У цьому навчальному тижні немає пари за розкладом. Обери «Дату»."),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else {
                         val selectedOccurrence = week.occurrences.firstOrNull { dueDate == it.date && lessonId == it.id }

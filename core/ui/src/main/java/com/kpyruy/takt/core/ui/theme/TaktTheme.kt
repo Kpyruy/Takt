@@ -16,6 +16,7 @@ import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.model.CustomColorTheme
 import com.kpyruy.takt.core.ui.i18n.TaktNativeLocale
 
+val LocalTaktWallpaper = staticCompositionLocalOf<String?> { null }
 val LocalTaktThemeFamily = staticCompositionLocalOf { ThemeFamily.BLUE }
 val LocalTaktCustomTheme = staticCompositionLocalOf<CustomColorTheme?> { null }
 val LocalTaktCardAppearance = staticCompositionLocalOf { CardAppearance.ELEVATED }
@@ -35,6 +36,7 @@ fun TaktTheme(
         LocalTaktCardAppearance provides settings.cardAppearance,
         LocalTaktThemeFamily provides settings.themeFamily,
         LocalTaktCustomTheme provides customTheme,
+        LocalTaktWallpaper provides settings.customWallpaper,
         LocalTaktSubjectColors provides if (darkTheme) palette.subjectColorsDark else palette.subjectColorsLight,
     ) {
         MaterialTheme(

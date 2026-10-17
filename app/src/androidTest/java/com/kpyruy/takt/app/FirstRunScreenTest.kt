@@ -21,12 +21,13 @@ class FirstRunScreenTest {
 
     @Test fun themePreviewAndOptionalTourLeadToOwnSetup() {
         var chosen: AppSettings? = null
+        var startTour = false
         compose.setContent {
             FirstRunScreen(
                 settings = AppSettings(language = AppLanguage.UKRAINIAN),
                 universityAccountRepository = UniversityAccountRepository(InstrumentationRegistry.getInstrumentation().targetContext),
                 authenticateDevice = { _, callback -> callback(com.kpyruy.takt.core.model.DeviceAuthenticationResult.CANCELLED) },
-                onFinish = { chosen = it },
+                onFinish = { settings, tour -> chosen = settings; startTour = tour },
                 onRestore = { null },
             )
         }
@@ -44,11 +45,8 @@ class FirstRunScreenTest {
         compose.onNodeWithText("Показати, що де?").assertExists()
         compose.onNodeWithText("Перед стартом розкладу").assertExists()
         compose.onNodeWithTag("onboarding-primary").performClick()
-        listOf("Сьогодні", "Календар", "Предмети", "Прогрес", "Налаштування").forEach { title ->
-            compose.onNodeWithText(title).assertExists()
-            compose.onNodeWithTag("onboarding-primary").performClick()
-        }
         compose.runOnIdle {
+            org.junit.Assert.assertTrue(startTour)
             assertNotNull(chosen)
             assertEquals(ThemeFamily.PURPLE, chosen?.themeFamily)
         }

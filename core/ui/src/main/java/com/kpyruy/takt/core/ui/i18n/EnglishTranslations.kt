@@ -2,6 +2,8 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for English UI text. */
 internal val enTranslations: Map<String, String> = mapOf(
+    "Місце" to "Place",
+    "Сповіщення для нагадувань можна налаштувати в «Під себе» → «Сповіщення»." to "Configure reminder notifications in Personalize → Notifications.",
     "Коли" to "When",
     "Результат" to "Result",
     "Умови" to "Rules",

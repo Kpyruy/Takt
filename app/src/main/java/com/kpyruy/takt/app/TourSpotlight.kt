@@ -35,6 +35,8 @@ internal fun BoxScope.TourSpotlight(
     onBack: () -> Unit,
     onNext: () -> Unit,
     onExit: () -> Unit,
+    nextEnabled: Boolean = true,
+    onReplay: (() -> Unit)? = null,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val density = LocalDensity.current
@@ -85,7 +87,9 @@ internal fun BoxScope.TourSpotlight(
                     TextButton(onClick = onBack, enabled = step.ordinal > 0, modifier = Modifier.testTag("tour-back")) {
                         Text(t("Назад"))
                     }
-                    TaktPrimaryButton(onClick = onNext, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("tour-next")) {
+                    if (onReplay != null) TextButton(onClick = onReplay, enabled = nextEnabled,
+                        modifier = Modifier.testTag("tour-replay")) { Text(t("Ще раз")) }
+                    TaktPrimaryButton(onClick = onNext, enabled = nextEnabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("tour-next")) {
                         Text(if (step == GuidedTourStep.entries.last()) t("Завершити") else t("Далі"))
                     }
                 }

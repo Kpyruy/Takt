@@ -15,6 +15,7 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.teacherEmailIntent
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -29,13 +30,20 @@ class TeacherDirectoryUiTest {
         CourseTeacher("2758", "prof. Mgr. Róbert Vrábeľ, PhD.", listOf("person responsible for course")),
     )
 
-    private fun showSubject(failProfileOnce: Boolean = false) {
+    private fun showSubject(failProfileOnce: Boolean = false, replay: CourseTeachingRepository? = null) {
         runBlocking {
             data.seedLiquidGlassReview()
             data.database.courseDao().insertAll(data.database.courseDao().getAllSnapshot().map {
-                if (it.id == "glass-physics") it.copy(syllabusUrl = "https://is.stuba.sk/auth/katalog/syllabus.pl?predmet=441254") else it
+                if (it.id == "glass-programming") it.copy(code = "TPAR_6B", title = "Technické prostriedky automatického riadenia", iconKey = "DeveloperBoard", syllabusUrl = "https://is.stuba.sk/auth/katalog/syllabus.pl?predmet=441254") else it
             })
-            data.studyContentRepository.upsertNote(CourseNote("teacher-note", "glass-physics", "This note belongs only in Notes", "Preview must stay hidden", 0))
+            data.settingsRepository.setLanguage(AppLanguage.SLOVAK)
+            data.gradeRepository.observeItems("glass-programming").first().forEach {
+                data.gradeRepository.upsertItem(it.copy(title = "Priebežný test"))
+            }
+            data.studyContentRepository.observeTasks("glass-programming").first().forEach {
+                data.studyContentRepository.upsertTask(it.copy(title = "Laboratórna úloha"))
+            }
+            data.studyContentRepository.upsertNote(CourseNote("teacher-note", "glass-programming", "This note belongs only in Notes", "Preview must stay hidden", 0))
         }
         var fail = failProfileOnce
         val directory = object : CourseTeachingRepository {
@@ -57,7 +65,7 @@ class TeacherDirectoryUiTest {
                     TaktGlassBackground {
                         SubjectDetailScreen(data.studyPlanRepository, data.gradeRepository, data.scheduleRepository,
                             data.settingsRepository, data.studyContentRepository, data.examRepository, data.documentStore,
-                            uisManaged = true, courseId = "glass-physics", onBack = {}, teachingRepository = directory)
+                            uisManaged = true, courseId = "glass-programming", onBack = {}, teachingRepository = replay ?: directory)
                     }
                 }
             }
@@ -86,7 +94,13 @@ class TeacherDirectoryUiTest {
         assertEquals(Intent.ACTION_SENDTO, intent.action)
         assertEquals("mailto", intent.data!!.scheme)
         assertEquals("martin.barton@stuba.sk", intent.data!!.schemeSpecificPart)
-        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        val uisIntent = teacherEmailIntent("xbarton@is.stuba.sk", "71659")
+        assertEquals(Intent.ACTION_VIEW, uisIntent.action)
+        assertEquals("https://is.stuba.sk/auth/posta/nova_zprava.pl?uzivatel=71659", uisIntent.dataString)
+        val universityIntent = teacherEmailIntent("martin.barton@stuba.sk", "71659")
+        assertEquals("martin.barton@stuba.sk", universityIntent.data!!.schemeSpecificPart)
+        // ModalBottomSheet owns its dialog window, so dismiss through its actual control.
+        compose.onNodeWithContentDescription(com.kpyruy.takt.core.ui.i18n.t("Закрити")).performScrollTo().performClick()
         compose.onNodeWithTag("teacher-profile").assertDoesNotExist()
         compose.onNodeWithText("Poznámky").performClick()
         compose.onNodeWithText("This note belongs only in Notes").assertIsDisplayed()
@@ -97,6 +111,85 @@ class TeacherDirectoryUiTest {
         compose.onNodeWithTag("course-teacher-71659").performScrollTo().performClick()
         compose.onNodeWithTag("teacher-retry").performScrollTo().performClick()
         compose.onNodeWithTag("teacher-email-university").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test fun actualClientParserAndCacheResolveCurrentTeamAndSlovakOfficeBeforeRendering() {
+        val server = okhttp3.mockwebserver.MockWebServer()
+        val requests = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val assets = InstrumentationRegistry.getInstrumentation().context.assets
+        fun fixture(name: String) = assets.open(name).bufferedReader().use { it.readText() }
+        server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+            override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): okhttp3.mockwebserver.MockResponse {
+                val path = request.path.orEmpty(); requests.add(path)
+                val html = when {
+                    path == "/auth/studijni/studijni_povinnosti.pl?lang=en" -> """
+                        <form name="formular"><input name="obdobi" value="741">
+                        <select name="studium"><option value="210634" selected>Study</option></select></form>
+                        <table id="tmtab_1"><tr><td colspan="6">3rd semester</td></tr><tr>
+                        <td><a href="/auth/katalog/syllabus.pl?predmet=441154">TPAR_6B</a></td>
+                        <td>Hardware</td><td>Exm</td><td>5</td><td>1x</td><td>ENROLLED</td></tr></table>"""
+                    path.startsWith("/auth/student/pruchod_studiem.pl?") -> """
+                        <table><tr><th>Code</th><th>Course</th><th>Result</th><th>Entered</th></tr>
+                        <tr><td>TPAR_6B</td><td><a href="/auth/katalog/syllabus.pl?predmet=441254;lang=en">Hardware</a></td>
+                        <td></td><td></td></tr></table>"""
+                    path == "/auth/katalog/syllabus.pl?predmet=441254;lang=en" -> fixture("syllabus.html")
+                    path == "/auth/lide/clovek.pl?id=2758;zalozka=1;lang=sk" -> fixture("vrabel-sk.html")
+                    path.startsWith("/auth/lide/foto.pl?") -> return okhttp3.mockwebserver.MockResponse().setResponseCode(404)
+                    else -> return okhttp3.mockwebserver.MockResponse().setResponseCode(400)
+                }
+                return okhttp3.mockwebserver.MockResponse().setBody("<a href='/system/logout.pl'>Logout</a><a href='/auth/student/moje_studium.pl'>Study</a>" + html)
+            }
+        }
+        val certificate = okhttp3.tls.HeldCertificate.Builder().commonName("localhost")
+            .addSubjectAlternativeName("localhost").build()
+        val serverCertificates = okhttp3.tls.HandshakeCertificates.Builder().heldCertificate(certificate).build()
+        val clientCertificates = okhttp3.tls.HandshakeCertificates.Builder().addTrustedCertificate(certificate.certificate).build()
+        server.useHttps(serverCertificates.sslSocketFactory(), false)
+        server.start()
+        // Internal production types are reflected only in the test, without adding a product debug API.
+        val clientType = Class.forName("com.kpyruy.takt.core.data.uis.UisClient")
+        val client = clientType.getDeclaredConstructor(okhttp3.HttpUrl::class.java).newInstance(server.url("/"))
+        // Trust only this test's local HTTPS certificate, leaving the product transport policy intact.
+        val transport = clientType.getDeclaredField("http").apply { isAccessible = true }
+        val existingTransport = transport.get(client) as okhttp3.OkHttpClient
+        existingTransport.cookieJar.saveFromResponse(server.url("/"), listOf(okhttp3.Cookie.Builder()
+            .name("UISAuth").value("local-fixture").domain(server.url("/").host).path("/").build()))
+        transport.set(client, existingTransport.newBuilder()
+            .sslSocketFactory(clientCertificates.sslSocketFactory(), clientCertificates.trustManager).build())
+        val loadTeam: suspend (Course, Boolean) -> List<CourseTeacher> = { course, refresh ->
+            @Suppress("UNCHECKED_CAST")
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                clientType.getDeclaredMethod("readCourseTeachers", String::class.java, String::class.java,
+                    String::class.java, Boolean::class.javaPrimitiveType)
+                    .invoke(client, "441154", course.code, "210634", refresh) as List<CourseTeacher>
+            }
+        }
+        val loadProfile: suspend (String, AppLanguage) -> TeacherProfile = { id, language ->
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                clientType.getDeclaredMethod("readTeacherProfile", String::class.java, AppLanguage::class.java)
+                    .invoke(client, id, language) as TeacherProfile
+            }
+        }
+        val loadPhoto: suspend (String) -> ByteArray? = { null }
+        val repositoryType = Class.forName("com.kpyruy.takt.core.data.CachedCourseTeachingRepository")
+        val repository = repositoryType.declaredConstructors.single { it.parameterCount == 4 }
+            .newInstance(loadTeam, loadProfile, loadPhoto, com.kpyruy.takt.core.data.TeachingStore()) as CourseTeachingRepository
+        try {
+            showSubject(replay = repository)
+            compose.waitUntil(8_000) { compose.onAllNodesWithTag("course-teacher-71659").fetchSemanticsNodes().isNotEmpty() }
+            for (teacher in team) compose.onNodeWithTag("course-teacher-${teacher.personId}").performScrollTo().assertIsDisplayed()
+            capture("corrected-current-team.png")
+            compose.onNodeWithTag("course-teacher-2758").performClick()
+            compose.onNodeWithTag("teacher-email-uis").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("vrabelr@is.stuba.sk").assertIsDisplayed()
+            compose.onNodeWithTag("teacher-office").performScrollTo()
+            compose.onNodeWithText("T02 3.110").assertIsDisplayed()
+            compose.onNodeWithTag("teacher-hours").performScrollTo()
+            compose.onNodeWithText("štvrtok 8.00-10.00 (prípadne iný termín po dohode)").assertIsDisplayed()
+            capture("corrected-vrabel-office.png")
+            assertTrue(requests.contains("/auth/katalog/syllabus.pl?predmet=441254;lang=en"))
+            assertFalse(requests.any { it.contains("predmet=441154") })
+        } finally { clientType.getDeclaredMethod("close").invoke(client); server.shutdown() }
     }
 
     private fun capture(name: String) {

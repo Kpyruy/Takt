@@ -6,7 +6,6 @@ import org.junit.Test
 class CourseDocumentPathsTest {
     @Test fun courseCodesStayInOneFolderAndDocumentNamesCannotTraversePaths() {
         assertEquals("FYZI_6B", CourseDocumentPaths.courseFolder("FYZI_6B"))
-        assertEquals("Download/Takt/FYZI_6B/", CourseDocumentPaths.downloadsPath("FYZI_6B"))
         val file = CourseDocumentPaths.fileName("../../lecture\r\n.pdf")
         assertFalse(file.contains('/')); assertFalse(file.contains('\\'))
         assertFalse(file.startsWith('.')); assertFalse(file.contains('\r')); assertFalse(file.contains('\n'))

@@ -1,5 +1,9 @@
 package com.kpyruy.takt.core.ui.components
 
+import android.content.Context
+import java.io.File
+import com.kpyruy.takt.core.model.normalizeWallpaperReference
+import com.kpyruy.takt.core.ui.theme.LocalTaktWallpaper
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -67,9 +71,13 @@ import kotlinx.coroutines.ensureActive
 internal data class GlassPaletteKey(val dark: Boolean, val family: ThemeFamily, val accent: Color)
 
 /** Read-only pixels shared across backgrounds; no screen coordinates or context retained here. */
-private class GlassPixels(val image: ImageBitmap, val frost: ImageBitmap)
+private class GlassPixels(val image: ImageBitmap, val frost: ImageBitmap, val cropFill: Boolean = false)
 
 private val glassPixelCache = SharedGlassPixelCache<GlassPaletteKey, GlassPixels>()
+private data class PhotoKey(val reference: String, val dark: Boolean)
+private val photoPixelCache = SharedGlassPixelCache<PhotoKey, GlassPixels>(capacity = 2)
+private data class PreviewPhotoKey(val image: Bitmap, val dark: Boolean)
+private val previewPhotoPixelCache = SharedGlassPixelCache<PreviewPhotoKey, GlassPixels>(capacity = 2)
 
 /** Each background owns geometry even when it shares pixels with a nested background. */
 private class GlassBackdrop(initialPixels: GlassPixels?, private val parentGeometry: GlassBackdrop? = null) {
@@ -114,6 +122,8 @@ fun TaktGlassBackground(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     drawWallpaper: Boolean = true,
+    // Portable backup thumbnails can preview the real material without publishing a wallpaper file.
+    photoPreview: Bitmap? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     if (!enabled) {
@@ -123,25 +133,42 @@ fun TaktGlassBackground(
     val colors = MaterialTheme.colorScheme
     val dark = colors.background.luminance() < .3f
     // Only application resources reach the worker; localized/Activity contexts are not captured.
-    val resources = LocalContext.current.applicationContext.resources
+    val context = LocalContext.current.applicationContext
+    val resources = context.resources
+    val wallpaper = normalizeWallpaperReference(LocalTaktWallpaper.current)
+    val previewKey = photoPreview?.let { PreviewPhotoKey(it, dark) }
+    val photoKey = wallpaper?.takeIf { previewKey == null }?.let { PhotoKey(it, dark) }
     val family = LocalTaktThemeFamily.current
     val custom = LocalTaktCustomTheme.current
     val key = preparedGlassKey(dark, family, custom != null)
-    val tinted = custom != null || family in setOf(ThemeFamily.ROSE, ThemeFamily.AMBER, ThemeFamily.CYAN)
+    val tinted = wallpaper == null && previewKey == null && (custom != null || family in setOf(ThemeFamily.ROSE, ThemeFamily.AMBER, ThemeFamily.CYAN))
     val wallpaperAccent = custom?.let { Color(it.primaryArgb) } ?: colors.primary
     val tint = remember(tinted, wallpaperAccent, dark) {
         if (tinted) glassTint(wallpaperAccent, dark) else null
     }
-    val requestedKey by rememberUpdatedState(key)
+    val requestedKey by rememberUpdatedState(previewKey ?: photoKey ?: key)
     val parent = LocalGlassBackdrop.current
-    val backdrop = remember(dark, drawWallpaper, parent) {
-        GlassBackdrop(glassPixelCache.peek(key), parentGeometry = parent.takeUnless { drawWallpaper })
+    val backdrop = remember(dark, wallpaper, previewKey, drawWallpaper, parent) {
+        GlassBackdrop(when {
+            previewKey != null -> previewPhotoPixelCache.peek(previewKey)
+            photoKey != null -> photoPixelCache.peek(photoKey)
+            else -> glassPixelCache.peek(key)
+        },
+            parentGeometry = parent.takeUnless { drawWallpaper })
     }
-    LaunchedEffect(key) {
+    LaunchedEffect(key, photoKey, previewKey) {
         try {
-            val pixels = glassPixelCache.get(key) { decodePreparedGlassPixels(resources, key) }
+            val pixels = if (previewKey != null) {
+                previewPhotoPixelCache.get(previewKey) {
+                    preparePhotoPixels(requireNotNull(previewKey.image.copy(Bitmap.Config.ARGB_8888, true)), dark)
+                }
+            } else if (photoKey != null) {
+                try { photoPixelCache.get(photoKey) { decodePhotoPixels(context, photoKey) } }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { glassPixelCache.get(key) { decodePreparedGlassPixels(resources, key) } }
+            } else glassPixelCache.get(key) { decodePreparedGlassPixels(resources, key) }
             currentCoroutineContext().ensureActive()
-            if (requestedKey == key) backdrop.pixels = pixels
+            if (requestedKey == (previewKey ?: photoKey ?: key)) backdrop.pixels = pixels
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
@@ -156,8 +183,11 @@ fun TaktGlassBackground(
         }) {
             if (drawWallpaper) Canvas(Modifier.matchParentSize().testTag("glass-wallpaper")) {
                 backdrop.pixels?.let {
-                    drawImage(it.image, dstSize = IntSize(size.width.toInt(), size.height.toInt()),
-                        colorFilter = tint?.image)
+                    val destination = IntSize(size.width.toInt(), size.height.toInt())
+                    val crop = if (it.cropFill) wallpaperCrop(it.image.width, it.image.height, destination.width, destination.height)
+                        else intArrayOf(0, 0, it.image.width, it.image.height)
+                    drawImage(it.image, srcOffset = IntOffset(crop[0], crop[1]),
+                        srcSize = IntSize(crop[2], crop[3]), dstSize = destination, colorFilter = tint?.image)
                 }
             }
             content()
@@ -251,6 +281,7 @@ fun Modifier.glassSurface(
     shape: Shape = RoundedCornerShape(20.dp),
     tint: Color = Color.Unspecified,
     sampleContent: Boolean = false,
+    extendBackdrop: Boolean = false,
 ): Modifier {
     val colors = MaterialTheme.colorScheme
     val dark = colors.background.luminance() < .3f
@@ -280,7 +311,10 @@ fun Modifier.glassSurface(
         .drawWithCache {
             val outline = shape.createOutline(size, layoutDirection, this)
             val frostPainter = backdrop?.pixels?.frost?.asAndroidBitmap()?.let(::GlassFrostPainter)
-                ?.apply { setColorFilter(backdropTint?.frost) }
+                ?.apply {
+                    setColorFilter(backdropTint?.frost)
+                    setCropFill(backdrop?.pixels?.cropFill == true)
+                }
             val rim = Brush.linearGradient(
                 listOf(edge.copy(alpha = if (dark) .52f else .95f), edge.copy(alpha = .22f), edge.copy(alpha = .68f)),
                 start = Offset.Zero, end = Offset(size.width * .75f, size.height),
@@ -303,7 +337,7 @@ fun Modifier.glassSurface(
                         drawIntoCanvas { canvas ->
                             frostPainter.draw(canvas.nativeCanvas, local.x, local.y,
                                 source.sampledSize.width, source.sampledSize.height,
-                                size.width, size.height, magnification)
+                                size.width, size.height, magnification, extendBackdrop)
                         }
                     }
                 }
@@ -319,6 +353,7 @@ fun Modifier.glassSurface(
                 drawOutline(outline, body.copy(alpha = when {
                     solidAccent -> .98f
                     dark && backdrop != null && backdrop.pixels == null -> .96f
+                    backdrop?.pixels?.cropFill == true && tint == Color.Unspecified -> if (dark) .32f else .72f
                     tonal -> if (dark) .24f else .63f
                     tint != Color.Unspecified -> if (dark) .20f else .28f
                     else -> if (dark) .13f else if (glass) .52f else .62f
@@ -372,4 +407,50 @@ internal fun blurGlassBackdrop(input: IntArray, width: Int, height: Int, radius:
     pass(input, horizontal, height, width, false)
     pass(horizontal, output, width, height, true)
     return output
+}
+
+/** Center-crop source rectangle, shared by background drawing and tested aspect-ratio policy. */
+internal fun wallpaperCrop(sourceWidth: Int, sourceHeight: Int, width: Int, height: Int): IntArray {
+    if (width <= 0 || height <= 0) return intArrayOf(0, 0, sourceWidth, sourceHeight)
+    val scale = maxOf(width.toFloat() / sourceWidth, height.toFloat() / sourceHeight)
+    val cropWidth = (width / scale).toInt().coerceIn(1, sourceWidth)
+    val cropHeight = (height / scale).toInt().coerceIn(1, sourceHeight)
+    return intArrayOf((sourceWidth - cropWidth) / 2, (sourceHeight - cropHeight) / 2, cropWidth, cropHeight)
+}
+
+/** Runs once on the shared worker; cached pixels already include the readability veil. */
+private fun decodePhotoPixels(context: Context, key: PhotoKey): GlassPixels {
+    val file = File(File(context.filesDir, "wallpapers"), key.reference)
+    require(file.length() in 1..(24L * 1024 * 1024))
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.path, bounds)
+    require(bounds.outWidth in 1..2048 && bounds.outHeight in 1..2048)
+    val decoded = requireNotNull(BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inMutable = true }))
+    return preparePhotoPixels(decoded, key.dark)
+}
+
+/** Owns its mutable input; the same veil, crop and frost are used for saved photos and backup previews. */
+private fun preparePhotoPixels(decoded: Bitmap, dark: Boolean): GlassPixels {
+    var image: Bitmap? = null
+    var reduced: Bitmap? = null
+    var frost: Bitmap? = null
+    var published = false
+    try {
+        val mutable = decoded
+        image = mutable
+        android.graphics.Canvas(mutable).drawColor(if (dark) 0x66000000 else 0x99FFFFFF.toInt())
+        val scale = minOf(1f, 360f / maxOf(mutable.width, mutable.height))
+        val width = maxOf(1, (mutable.width * scale).toInt())
+        val height = maxOf(1, (mutable.height * scale).toInt())
+        val small = Bitmap.createScaledBitmap(mutable, width, height, true)
+        reduced = small
+        val pixels = IntArray(width * height)
+        small.getPixels(pixels, 0, width, 0, 0, width, height)
+        val blurred = Bitmap.createBitmap(blurGlassBackdrop(pixels, width, height, 10), width, height, Bitmap.Config.ARGB_8888)
+        frost = blurred
+        return GlassPixels(mutable.asImageBitmap(), blurred.asImageBitmap(), cropFill = true).also { published = true }
+    } finally {
+        if (reduced !== image) reduced?.recycle()
+        if (!published) { image?.recycle(); frost?.recycle() }
+    }
 }

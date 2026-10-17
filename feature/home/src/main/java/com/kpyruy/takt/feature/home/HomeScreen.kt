@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.i18n.formatDurationMinutes
@@ -152,7 +153,7 @@ fun HomeScreen(
         Text(t("Твій день"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         if (events.isEmpty()) Text(t("Пар на цей день немає"), style = MaterialTheme.typography.bodyMedium, color = muted)
-        Column(Modifier.drawBehind {
+        Column(Modifier.tourTarget("home-lessons").drawBehind {
             if (events.isNotEmpty()) drawLine(accent.copy(alpha = .24f),
                 Offset(timeWidth.toPx() + 4.dp.toPx(), 20.dp.toPx()),
                 Offset(timeWidth.toPx() + 4.dp.toPx(), size.height - 20.dp.toPx()), strokeWidth = 1.dp.toPx())
@@ -235,7 +236,7 @@ private fun HomeWeekStrip(selected: LocalDate, onSelect: (LocalDate) -> Unit) {
 
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxWidth().testTag("home-week-strip"),
+        modifier = Modifier.fillMaxWidth().testTag("home-week-strip").tourTarget("home-week"),
     ) { page ->
         val week = anchorWeek.plusWeeks((page - centerPage).toLong())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

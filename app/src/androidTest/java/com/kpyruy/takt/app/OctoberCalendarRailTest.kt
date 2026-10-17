@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
+import androidx.test.platform.app.InstrumentationRegistry
 import com.kpyruy.takt.core.model.*
 import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.feature.calendar.DayTimelineView
@@ -35,7 +36,7 @@ class OctoberCalendarRailTest {
         val card = compose.onNode(hasText("Full height rail") and hasClickAction())
         val image = card.captureToImage()
         val pixels = image.toPixelMap()
-        val density = image.height / card.getUnclippedBoundsInRoot().height.value
+        val density = InstrumentationRegistry.getInstrumentation().targetContext.resources.displayMetrics.density
         val x = density.roundToInt()
         val inset = (18 * density).roundToInt()
         assertTrue("Timed card must leave room beyond its text", image.height > 80 * density)

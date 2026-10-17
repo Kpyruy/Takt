@@ -13,8 +13,8 @@ class CourseTeachingRepositoryTest {
     @Test fun repeatedViewsAreCachedRefreshIsExplicitAndFailureKeepsOldData() = runBlocking {
         var calls = 0
         var fail = false
-        val repository = CachedCourseTeachingRepository({ id ->
-            assertEquals("441254", id); calls++
+        val repository = CachedCourseTeachingRepository({ loadedCourse, _ ->
+            assertEquals(course, loadedCourse); calls++
             if (fail) error("offline")
             listOf(teacher)
         }, { id, _ -> TeacherProfile(id, teacher.name) })
@@ -29,7 +29,7 @@ class CourseTeachingRepositoryTest {
 
     @Test fun languageCachesAreSeparateAndLargePortraitsAreNotRetained() = runBlocking {
         var profiles = 0; var photos = 0
-        val repository = CachedCourseTeachingRepository({ listOf(teacher) }, { id, _ ->
+        val repository = CachedCourseTeachingRepository({ _, _ -> listOf(teacher) }, { id, _ ->
             profiles++; TeacherProfile(id, teacher.name)
         }, { photos++; ByteArray(350_001) })
         repository.profile(teacher, AppLanguage.SLOVAK)
@@ -46,7 +46,7 @@ class CourseTeachingRepositoryTest {
 
     @Test fun changedAccountCannotReceiveAnOldInFlightCacheEntry() = runBlocking {
         val started = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
-        val repository = CachedCourseTeachingRepository({ started.complete(Unit); release.await(); listOf(teacher) },
+        val repository = CachedCourseTeachingRepository({ _, _ -> started.complete(Unit); release.await(); listOf(teacher) },
             { id, _ -> TeacherProfile(id, teacher.name) })
         val result = async { runCatching { repository.teachers(course) } }
         started.await(); repository.clear(); release.complete(Unit)
@@ -55,7 +55,7 @@ class CourseTeachingRepositoryTest {
 
     @Test fun foreignLinksNeverReachTheAuthenticatedLoader() = runBlocking {
         var calls = 0
-        val repository = CachedCourseTeachingRepository({ calls++; listOf(teacher) }, { id, _ -> TeacherProfile(id, teacher.name) })
+        val repository = CachedCourseTeachingRepository({ _, _ -> calls++; listOf(teacher) }, { id, _ -> TeacherProfile(id, teacher.name) })
         for (url in listOf("https://evil.test/auth/katalog/syllabus.pl?predmet=441254",
             "https://someone@is.stuba.sk/auth/katalog/syllabus.pl?predmet=441254",
             "https://is.stuba.sk/auth/katalog/syllabus.pl?predmet=1;predmet=2")) {

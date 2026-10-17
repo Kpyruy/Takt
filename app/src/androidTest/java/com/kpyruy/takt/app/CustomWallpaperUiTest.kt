@@ -53,19 +53,26 @@ class CustomWallpaperUiTest {
         }
         source.outputStream().use { photo.compress(Bitmap.CompressFormat.PNG, 100, it) }; photo.recycle()
         var imported: String? = null
+        var entry = 0
         fun appearance() {
+            val appearanceEntry = ++entry
             compose.activityRule.scenario.onActivity { activity -> activity.setContent {
                 val settings by data.settingsRepository.settings.collectAsStateWithLifecycle()
                 TaktI18n.use(settings.language)
-                TaktTheme(settings) { TaktGlassBackground {
+                key(appearanceEntry) { TaktTheme(settings) { TaktGlassBackground {
                     SettingsScreen(data.settingsRepository, data.backupRepository, data.documentStore, data.studyPlanRepository,
                         data.universityAccountRepository, { _, reply -> reply(DeviceAuthenticationResult.CANCELLED) },
-                        data.appReleaseRepository, {}, guidedPage = "appearance")
-                } }
+                        (compose.activity.application as TaktApplication).appReleaseRepository, {}, guidedPage = "appearance")
+                } } }
             } }
         }
         try {
             appearance()
+            compose.onNodeWithTag("appearance-wallpaper-choose").assertDoesNotExist()
+            compose.onNodeWithTag("appearance-wallpaper-open").performScrollTo().assertIsDisplayed()
+            capture("appearance-background-entry.png")
+            compose.onNodeWithTag("appearance-wallpaper-open").performClick()
+            compose.onNodeWithTag("appearance-wallpaper-menu").assertIsDisplayed()
             compose.onNodeWithTag("appearance-wallpaper-choose").performScrollTo().assertIsDisplayed()
             val filter = IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*")
@@ -77,8 +84,11 @@ class CustomWallpaperUiTest {
                 assertEquals(1, monitor.hits)
             } finally { instrumentation.removeMonitor(monitor) }
             assertNull("Preview must not apply the draft", data.settingsRepository.settings.value.customWallpaper)
-            capture("wallpaper-preview.png")
-            compose.onNodeWithText("Použiť vzhľad").performClick()
+            capture("wallpaper-menu-preview.png")
+            compose.onNodeWithTag("appearance-wallpaper-done").performClick()
+            compose.onNodeWithTag("appearance-wallpaper-menu").assertDoesNotExist()
+            compose.onNodeWithTag("appearance-wallpaper-choose").assertDoesNotExist()
+            compose.onNodeWithText("Použiť zobrazenie").performClick()
             compose.waitUntil(5_000) { data.settingsRepository.settings.value.customWallpaper != null }
             imported = data.settingsRepository.settings.value.customWallpaper
             assertEquals(imported, SharedPreferencesAppSettingsRepository(compose.activity).settings.value.customWallpaper)
@@ -86,9 +96,13 @@ class CustomWallpaperUiTest {
             capture("wallpaper-applied.png")
             // A new settings entry must reconstruct the applied photo and offer the built-in reset.
             appearance()
+            compose.onNodeWithTag("appearance-wallpaper-open").performScrollTo().performClick()
             compose.onNodeWithTag("appearance-wallpaper-reset").performScrollTo().performClick()
             compose.onNodeWithTag("appearance-wallpaper-reset").assertDoesNotExist()
-            compose.onNodeWithText("Použiť vzhľad").performClick()
+            compose.onNodeWithTag("appearance-wallpaper-done").performClick()
+            compose.onNodeWithTag("appearance-wallpaper-menu").assertDoesNotExist()
+            compose.onNodeWithTag("appearance-wallpaper-choose").assertDoesNotExist()
+            compose.onNodeWithText("Použiť zobrazenie").performClick()
             compose.waitUntil(5_000) { data.settingsRepository.settings.value.customWallpaper == null }
             assertNull(SharedPreferencesAppSettingsRepository(compose.activity).settings.value.customWallpaper)
         } finally {
@@ -99,7 +113,7 @@ class CustomWallpaperUiTest {
     }
 
     private fun capture(name: String) {
-        compose.waitForIdle(); android.os.SystemClock.sleep(120)
+        compose.waitForIdle(); android.os.SystemClock.sleep(350)
         val image = instrumentation.uiAutomation.takeScreenshot()
         compose.activity.openFileOutput(name, 0).use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         image.recycle()

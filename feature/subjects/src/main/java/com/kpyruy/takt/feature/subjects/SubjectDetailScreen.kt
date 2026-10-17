@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -12,6 +13,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,12 +42,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import com.kpyruy.takt.core.ui.components.CourseAvatar
+import com.kpyruy.takt.core.ui.components.taktPressFeedback
 import com.kpyruy.takt.core.data.ExamRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
@@ -85,7 +92,17 @@ fun SubjectDetailScreen(
     courseId: String,
     onBack: () -> Unit,
     initialTab: String = "overview",
+    guidedTab: String? = null,
+    teachingRepository: com.kpyruy.takt.core.data.CourseTeachingRepository? = null,
+    courseDocumentsRepository: com.kpyruy.takt.core.data.CourseDocumentsRepository? = null,
+    authenticateTeaching: (String, (com.kpyruy.takt.core.model.DeviceAuthenticationResult) -> Unit) -> Unit = { _, reply -> reply(com.kpyruy.takt.core.model.DeviceAuthenticationResult.ERROR) },
+    onOpenUisSettings: () -> Unit = {},
+    onOpenDocumentSettings: () -> Unit = onOpenUisSettings,
 ) {
+    val documentFolderState by documentStore.status.collectAsStateWithLifecycle()
+    val documentAccountGeneration by (courseDocumentsRepository?.accountGeneration ?: remember { kotlinx.coroutines.flow.MutableStateFlow(0L) }).collectAsStateWithLifecycle()
+    val documentsContext = androidx.compose.ui.platform.LocalContext.current
+    val downloads = remember(documentStore, documentAccountGeneration) { com.kpyruy.takt.core.data.CourseDocumentDownloads(documentsContext, documentStore, documentAccountGeneration) }
     val course by remember(repository, courseId) { repository.observeCourse(courseId) }.collectAsStateWithLifecycle(initialValue = null)
     val allCourses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val gradeItems by remember(gradeRepository, courseId) { gradeRepository.observeItems(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -112,6 +129,7 @@ fun SubjectDetailScreen(
     var showIconPicker by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableStateOf(if (initialTab == "grades") "tasks" else initialTab) }
+    if (guidedTab != null) LaunchedEffect(guidedTab) { selectedTab = guidedTab }
     // The navigation entry owns editor state; canonical UIS adoption can change courseId mid-draft.
     var showAddGrade by rememberSaveable { mutableStateOf(false) }
     var editingGradeId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -166,10 +184,14 @@ fun SubjectDetailScreen(
                 TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onClick = {
                     if (selectedTab == "exam") selectedTab = "overview" else onBack()
                 }, modifier = Modifier.testTag("subject-header-back"))
-                IconButton(onClick = { showIconPicker = true }, modifier = Modifier.size(48.dp)
-                    .testTag("subject-header-avatar").semantics {
+                val avatarInteraction = remember { MutableInteractionSource() }
+                Box(modifier = Modifier.size(56.dp).taktPressFeedback(avatarInteraction)
+                    .clip(RoundedCornerShape(13.dp))
+                    .clickable(interactionSource = avatarInteraction, indication = null, role = Role.Button,
+                        onClick = { showIconPicker = true })
+                    .testTag("subject-header-avatar").tourTarget("subject-icon").semantics {
                         contentDescription = t("Змінити іконку предмета")
-                    }) { CourseAvatar(item, Modifier.size(48.dp)) }
+                    }) { CourseAvatar(item, Modifier.fillMaxSize()) }
                 Text(item.title, Modifier.weight(1f).testTag("subject-header-title"),
                     fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -183,14 +205,14 @@ fun SubjectDetailScreen(
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         TaktSegmentedTabs(labels = tabs.map(::subjectTabLabel), selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0),
-            onSelected = { selectedTab = tabs[it] })
+            onSelected = { selectedTab = tabs[it] }, modifier = Modifier.tourTarget("subject-tabs"))
 
         AnimatedContent(
             targetState = selectedTab,
             modifier = Modifier.weight(1f),
             transitionSpec = {
-                fadeIn(animationSpec = TaktMotion.fast()) togetherWith
-                    fadeOut(animationSpec = TaktMotion.fast())
+                fadeIn(animationSpec = TaktMotion.content()) togetherWith
+                    fadeOut(animationSpec = TaktMotion.content())
             },
             label = "course-tab",
         ) { tab ->
@@ -201,7 +223,6 @@ fun SubjectDetailScreen(
                     gradeItems = gradeItems,
                     gradeScale = gradeScale,
                     tasks = tasks,
-                    notes = notes,
                     eligibility = eligibility,
                     showFinalGrade = showFinalGrade,
                     manualGrade = manualGrade,
@@ -211,10 +232,18 @@ fun SubjectDetailScreen(
                     onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
                     onEditTask = { editingTaskId = it.id },
                     onEditGrade = { editingGradeId = it.id },
-                    onNotes = { selectedTab = "notes" },
                     onExam = { selectedTab = "exam" },
                     nextLesson = nextLesson,
                     onSettings = { showSettings = true },
+                    documentsContent = {
+                        androidx.compose.runtime.key(documentAccountGeneration) { CourseDocumentsPanel(item, allCourses.filter { it.status == CourseStatus.ENROLLED }.map { it.code }.toSet(),
+                            courseDocumentsRepository, downloads, uisManaged, authenticateTeaching, onOpenUisSettings, onOpenDocumentSettings,
+                            documentFolderState != com.kpyruy.takt.core.data.DocumentSyncStatus.DISCONNECTED && documentStore.isConnected) }
+                    },
+                    teachersContent = {
+                        CourseTeachersPanel(item, teachingRepository, settings.language, uisManaged,
+                            authenticateTeaching, onOpenUisSettings)
+                    },
                 )
                 "tasks" -> CourseTasksTab(
                     today = today,

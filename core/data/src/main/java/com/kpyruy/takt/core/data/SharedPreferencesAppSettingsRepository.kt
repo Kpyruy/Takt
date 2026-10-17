@@ -16,17 +16,35 @@ import com.kpyruy.takt.core.model.HomeWorkFilter
 import com.kpyruy.takt.core.model.SemesterPeriod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class SharedPreferencesAppSettingsRepository(
     context: Context,
+    preferencesName: String = PREFS_NAME,
 ) : AppSettingsRepository {
     private val preferences = context.applicationContext.getSharedPreferences(
-        PREFS_NAME,
+        preferencesName,
         Context.MODE_PRIVATE,
     )
 
     private val state = MutableStateFlow(read())
     override val settings = state.asStateFlow()
+    private val reminderWrites = Mutex()
+
+    override suspend fun setReminders(reminders: com.kpyruy.takt.core.model.ReminderSettings) {
+        updateReminders { reminders }
+    }
+
+    override suspend fun updateReminders(transform: (com.kpyruy.takt.core.model.ReminderSettings) -> com.kpyruy.takt.core.model.ReminderSettings) {
+        reminderWrites.withLock { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val clean = transform(state.value.reminders).normalized()
+            check(preferences.edit().putString(KEY_REMINDERS, ReminderSettingsCodec.encode(clean)).commit())
+            // Publish only after the OFF/configuration change is durable for background receivers.
+            state.update { it.copy(reminders = clean) }
+        } }
+    }
 
     override suspend fun setCancellationStyle(style: CancellationDisplayStyle) {
         preferences.edit().putString(KEY_CANCELLATION_STYLE, style.name).apply()
@@ -101,17 +119,20 @@ class SharedPreferencesAppSettingsRepository(
 
     override suspend fun setAppearance(appearance: AppSettings) {
         val clean = appearance.normalizedAppearance()
-        preferences.edit()
-            .putString(KEY_THEME_MODE, clean.themeMode.name)
-            .putString(KEY_THEME_FAMILY, clean.themeFamily.name)
-            .putString(KEY_CARD_APPEARANCE, clean.cardAppearance.name)
-            .putString(KEY_CUSTOM_THEMES, CustomThemesCodec.encode(clean.customThemes))
-            .putString(KEY_SELECTED_CUSTOM_THEME, clean.selectedCustomThemeId)
-            .apply()
-        // Only appearance is copied: an editor draft cannot overwrite newer language/UIS settings.
-        state.value = state.value.copy(themeMode = clean.themeMode, themeFamily = clean.themeFamily,
-            cardAppearance = clean.cardAppearance, customThemes = clean.customThemes,
-            selectedCustomThemeId = clean.selectedCustomThemeId)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            check(preferences.edit()
+                .putString(KEY_THEME_MODE, clean.themeMode.name)
+                .putString(KEY_THEME_FAMILY, clean.themeFamily.name)
+                .putString(KEY_CARD_APPEARANCE, clean.cardAppearance.name)
+                .putString(KEY_CUSTOM_THEMES, CustomThemesCodec.encode(clean.customThemes))
+                .putString(KEY_SELECTED_CUSTOM_THEME, clean.selectedCustomThemeId)
+                .putString(KEY_CUSTOM_WALLPAPER, clean.customWallpaper)
+                .commit())
+            // Publish after disk persistence; drafts cannot overwrite newer unrelated settings.
+            state.update { it.copy(themeMode = clean.themeMode, themeFamily = clean.themeFamily,
+                cardAppearance = clean.cardAppearance, customThemes = clean.customThemes,
+                selectedCustomThemeId = clean.selectedCustomThemeId, customWallpaper = clean.customWallpaper) }
+        }
     }
 
     override suspend fun setWeekLayout(layout: WeekLayout) {
@@ -170,10 +191,14 @@ class SharedPreferencesAppSettingsRepository(
         uisApplyProgress = preferences.getBoolean(KEY_UIS_APPLY_PROGRESS, true),
         customThemes = preferences.getString(KEY_CUSTOM_THEMES, null),
         selectedCustomThemeId = preferences.getString(KEY_SELECTED_CUSTOM_THEME, null),
+        reminders = preferences.getString(KEY_REMINDERS, null),
+        customWallpaper = preferences.getString(KEY_CUSTOM_WALLPAPER, null),
     )
 
     private companion object {
         const val PREFS_NAME = "takt_settings"
+        const val KEY_CUSTOM_WALLPAPER = "custom_wallpaper"
+        const val KEY_REMINDERS = "local_reminders_v1"
         const val KEY_CANCELLATION_STYLE = "cancellation_style"
         const val KEY_SHOW_HIDDEN = "show_hidden_lessons"
         const val KEY_PARITY_OVERRIDE = "parity_override"

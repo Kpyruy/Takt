@@ -15,6 +15,9 @@ class RoomExamRepository(
     private val database: TaktDatabase,
 ) : ExamRepository {
     private val dao = database.examDao()
+    override fun observeAllExamInfo() = database.invalidationTracker
+        .createFlow("exam_info", emitInitialState = true)
+        .map { dao.getExamInfoSnapshot().map { it.toDomain() } }
     override fun observeExamInfo(courseId: String) =
         dao.observeExamInfo(courseId).map { it?.toDomain() }
 

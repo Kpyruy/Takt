@@ -2,6 +2,11 @@ package com.kpyruy.takt.core.ui.i18n
 import com.kpyruy.takt.core.model.AppLanguage
 internal object ReviewTranslations {
  private val entries=mapOf(
+  "Викладачі й консультації" to ("Teachers and consultations" to "Vyučujúci a konzultácie"),
+  "Для викладачів нових предметів також вибери «Предмети»." to ("To include teachers for new courses, also select Courses." to "Na prenos vyučujúcich nových predmetov vyber aj Predmety."),
+  "Ім’я викладача" to ("Teacher name" to "Meno vyučujúceho"),
+  "Посада" to ("Position" to "Pracovná pozícia"),
+  "Фото недоступне" to ("Photo unavailable" to "Fotografia nie je dostupná"),
   "Обрані предмети" to ("Selected courses" to "Vybrané predmety"),
   "Повторювані заняття" to ("Recurring lessons" to "Pravidelné hodiny"),
   "Окремі заняття" to ("One-off lessons" to "Jednorazové hodiny"),

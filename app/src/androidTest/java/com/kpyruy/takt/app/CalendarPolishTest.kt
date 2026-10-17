@@ -9,20 +9,34 @@ import java.time.LocalTime
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class CalendarPolishTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    @Test fun calendarWeekStripPagesInBothDayAndWeekViews() {
+    @Before fun currentLanguageAndFixture() {
+        runBlocking {
+            val data = (compose.activity.application as TaktApplication).dataContainer
+            data.settingsRepository.setLanguage(AppLanguage.UKRAINIAN)
+            if (data.studyPlanRepository.observeCourses().first().isEmpty()) {
+                data.studyPlanRepository.addCourse("Calendar check", "CAL", 6, 1)
+            }
+        }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun dayWeekStripAndWeekPeriodArrowsChangeTheVisibleDates() {
         val today = LocalDate.now()
         compose.onNodeWithText("Календар").performClick()
         compose.onNodeWithTag("calendar-week-strip").performTouchInput { swipeLeft() }
         waitForSelectedDay(today.plusWeeks(1))
         compose.onNode(hasText("Тиждень") and hasClickAction()).performClick()
-        compose.onNodeWithTag("calendar-week-strip").performTouchInput { swipeLeft() }
-        waitForSelectedDay(today.plusWeeks(2))
+        compose.onNodeWithTag("calendar-week-strip").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Наступний період").performClick()
+        val monday = today.plusWeeks(2).with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        compose.onNodeWithTag("week-timetable-day-${monday.toEpochDay()}").assertExists()
     }
 
     @Test fun weekLayoutMenuAndDoubleTapReturnToToday() {
@@ -31,15 +45,16 @@ class CalendarPolishTest {
         val originalLayout = runBlocking { data.settingsRepository.settings.first().weekLayout }
         try {
             compose.onNodeWithText("Календар").performClick()
-            compose.onNodeWithTag("calendar-view-week").performClick()
             compose.onNodeWithTag("calendar-week-strip").performTouchInput { swipeLeft() }
             waitForSelectedDay(today.plusWeeks(1))
+            compose.onNodeWithTag("calendar-view-week").performClick()
             compose.onNodeWithTag("calendar-view-week").performTouchInput { longClick() }
             compose.onNodeWithText("Список").performClick()
             compose.waitUntil(6_000) {
                 runBlocking { data.settingsRepository.settings.first().weekLayout } == WeekLayout.COMPACT_LIST
             }
             compose.onNodeWithTag("calendar-view-week").performTouchInput { doubleClick() }
+            compose.onNodeWithTag("calendar-view-day").performClick()
             waitForSelectedDay(today)
         } finally {
             runBlocking { data.settingsRepository.setWeekLayout(originalLayout) }
@@ -49,17 +64,18 @@ class CalendarPolishTest {
     @Test fun monthShowsIndependentLessonWorkAndExamMarkers() {
         val data = (compose.activity.application as TaktApplication).dataContainer
         val today = LocalDate.now()
+        val courseId = runBlocking { data.studyPlanRepository.observeCourses().first().first().id }
         val lessonId = "month-marker-lesson"
         val taskId = "month-marker-task"
         val examId = "month-marker-exam"
         runBlocking {
             data.scheduleRepository.upsertOneOffEvent(OneOffScheduleEvent(
-                lessonId, "TPAR_6B", "Marker seminar", today,
+                lessonId, courseId, "Marker seminar", today,
                 LocalTime.of(10, 0), LocalTime.of(11, 0), type = OneOffScheduleEventType.EXTRA,
                 lessonType = LessonType.SEMINAR,
             ))
-            data.studyContentRepository.upsertTask(StudyTask(taskId, "TPAR_6B", "Marker task", null, today, false))
-            data.gradeRepository.upsertItem(GradeItem(examId, "TPAR_6B", "Marker exam",
+            data.studyContentRepository.upsertTask(StudyTask(taskId, courseId, "Marker task", null, today, false))
+            data.gradeRepository.upsertItem(GradeItem(examId, courseId, "Marker exam",
                 GradeItemType.EXAM, 0.0, 40.0, dueDate = today, completed = false))
         }
         try {
@@ -87,13 +103,19 @@ class CalendarPolishTest {
             compose.onNodeWithTag("home-tasks-filter").performClick()
             compose.onNodeWithText("7 днів").performClick()
             compose.onNodeWithText("Готово").performScrollTo().performClick()
-            compose.onNodeWithText("Найближчі 7 днів").assertExists()
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithText("Найближчі 7 днів").fetchSemanticsNodes().isNotEmpty()
+            }
             assertEquals(HomeWorkPeriod.SEVEN_DAYS,
                 runBlocking { data.settingsRepository.settings.first().homeWorkFilter.period })
             compose.onNodeWithText("Прогрес").performClick()
             compose.onNodeWithText("Найближчий крок").assertDoesNotExist()
+            // Root navigation deliberately ignores another tab switch inside 120 ms.
+            android.os.SystemClock.sleep(130)
             compose.onNodeWithText("Сьогодні").performClick()
-            compose.onNodeWithText("Найближчі 7 днів").assertExists()
+            compose.waitUntil(5_000) {
+                compose.onAllNodesWithText("Найближчі 7 днів").fetchSemanticsNodes().isNotEmpty()
+            }
         } finally {
             runBlocking { data.settingsRepository.setHomeWorkFilter(HomeWorkFilter()) }
         }

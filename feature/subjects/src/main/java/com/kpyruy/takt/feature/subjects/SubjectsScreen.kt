@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import com.kpyruy.takt.core.data.PlanningSnapshot
+import com.kpyruy.takt.core.model.GradeItem
+import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.model.AppSettings
 import androidx.compose.ui.platform.testTag
@@ -50,10 +54,16 @@ fun SubjectsScreen(
     settingsRepository: AppSettingsRepository? = null,
     onOpenSettings: () -> Unit = {},
     showAddButton: Boolean = true,
+    planning: PlanningSnapshot? = null,
 ) {
-    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val settings by remember(settingsRepository) { settingsRepository?.settings ?: flowOf(AppSettings()) }
-        .collectAsStateWithLifecycle(initialValue = AppSettings())
+    // Root navigation already owns a complete hot snapshot. Reuse it instead of starting
+    // one course query and two more per card on each visit, with empty interim rows.
+    val courses = planning?.courses ?: remember(repository) { repository.observeCourses() }
+        .collectAsStateWithLifecycle(initialValue = emptyList()).value
+    val settings = planning?.settings ?: remember(settingsRepository) { settingsRepository?.settings ?: flowOf(AppSettings()) }
+        .collectAsStateWithLifecycle(initialValue = AppSettings()).value
+    val gradesByCourse = remember(planning?.assessments) { planning?.assessments?.groupBy { it.courseId } }
+    val tasksByCourse = remember(planning?.tasks) { planning?.tasks?.groupBy { it.courseId } }
     val currentSemester = settings.effectiveCurrentSemester(courses)
     val visible = remember(courses, settings, currentSemester) {
         courses.filter { course ->
@@ -74,7 +84,12 @@ fun SubjectsScreen(
             LazyColumn(Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(9.dp), contentPadding = PaddingValues(bottom = 120.dp)) {
                 items(visible, key = { it.id }) { course ->
-                    SubjectProgressCard(course, gradeRepository, studyContentRepository) { onCourseClick(course.id) }
+                    Box(if (course.id == visible.first().id) Modifier.tourTarget("subjects-list") else Modifier) {
+                    SubjectProgressCard(course, gradeRepository, studyContentRepository,
+                        loadedGradeItems = if (planning != null) gradesByCourse?.get(course.id).orEmpty() else null,
+                        loadedTasks = if (planning != null) tasksByCourse?.get(course.id).orEmpty() else null,
+                        onClick = { onCourseClick(course.id) })
+                    }
                 }
                 if (visible.isEmpty()) item {
                     Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -95,11 +110,13 @@ private fun SubjectProgressCard(
     course: Course,
     gradeRepository: GradeRepository,
     studyContentRepository: StudyContentRepository,
+    loadedGradeItems: List<GradeItem>? = null,
+    loadedTasks: List<StudyTask>? = null,
     onClick: () -> Unit,
 ) {
-    val gradeItems by remember(gradeRepository, course.id) { gradeRepository.observeItems(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val tasks by remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }.collectAsStateWithLifecycle(initialValue = null)
+    val gradeItems = loadedGradeItems ?: remember(gradeRepository, course.id) { gradeRepository.observeItems(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList()).value
+    val tasks = loadedTasks ?: remember(studyContentRepository, course.id) { studyContentRepository.observeTasks(course.id) }.collectAsStateWithLifecycle(initialValue = emptyList()).value
+    val manualGrade = if (course.officialGrade == null) remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }.collectAsStateWithLifecycle(initialValue = null).value else null
 
     val coursework = CourseWork.scoredItems(tasks, gradeItems)
         .filterNot { it.type == GradeItemType.EXAM }

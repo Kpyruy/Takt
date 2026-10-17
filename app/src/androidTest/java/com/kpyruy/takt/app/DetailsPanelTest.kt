@@ -13,10 +13,22 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kpyruy.takt.core.data.AppSettingsRepository
+import com.kpyruy.takt.core.data.RoomScheduleRepository
+import com.kpyruy.takt.core.data.SharedPreferencesAppSettingsRepository
+import com.kpyruy.takt.core.database.CourseEntity
+import com.kpyruy.takt.core.database.TaktDatabase
+import com.kpyruy.takt.core.model.AppSettings
 import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.model.LessonType
+import com.kpyruy.takt.core.model.ScheduleRecurrence
+import com.kpyruy.takt.core.model.ScheduleRule
+import com.kpyruy.takt.core.model.SemesterPeriod
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.theme.TaktTheme
@@ -27,7 +39,14 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 
 /** Catches the old inline cascade, lost modal drafts, and saving invalid hidden categories. */
 class DetailsPanelTest {
@@ -204,6 +223,73 @@ class DetailsPanelTest {
         compose.onNodeWithTag("grade-maximum").performTextReplacement("25")
         save()
         compose.runOnIdle { assertEquals(initial.copy(maxPoints = 25.0), saved) }
+    }
+
+    @Test fun changingDateModeDoesNotDiscardUnresolvedWeekOrChosenOccurrence() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, TaktDatabase::class.java).build()
+        val schedule = RoomScheduleRepository(database)
+        val start = LocalDate.of(2026, 9, 14)
+        val target = LocalDate.of(2026, 10, 29)
+        val settings = object : AppSettingsRepository by SharedPreferencesAppSettingsRepository(context) {
+            override val settings = MutableStateFlow(AppSettings(semesterPeriods = mapOf(2 to
+                SemesterPeriod(studyStart = start, studyEnd = LocalDate.of(2026, 12, 11)))))
+        }
+        var saved: GradeItem? = null
+        var visible by mutableStateOf(true)
+        try {
+            runBlocking {
+                database.courseDao().insertAll(listOf(CourseEntity("course", "CODE", "Course", 5, 2,
+                    "enrolled", "COMPULSORY", null)))
+                schedule.upsertRules(listOf(
+                    ScheduleRule("lecture", "course", "Course", DayOfWeek.MONDAY,
+                        LocalTime.of(8, 0), LocalTime.of(9, 50), ScheduleRecurrence.WEEKLY),
+                    ScheduleRule("seminar", "course", "Course", DayOfWeek.THURSDAY,
+                        LocalTime.of(13, 0), LocalTime.of(14, 50), ScheduleRecurrence.WEEKLY,
+                        lessonType = LessonType.SEMINAR),
+                ))
+            }
+            compose.setContent {
+                TaktTheme {
+                    if (visible) AddGradeItemForm("course", academicSemester = 2, scheduleRepository = schedule,
+                        settingsRepository = settings, initialTitle = "Scheduled quiz",
+                        modifier = Modifier.verticalScroll(rememberScrollState()), onSave = { saved = it })
+                }
+            }
+            compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
+            openDetails()
+            compose.onNodeWithTag("grade-date-mode-SCHEDULE").performClick()
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-teaching-week").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("grade-teaching-week").performScrollTo().performClick()
+            compose.onNodeWithTag("grade-week-7").performScrollTo().performClick()
+            val occurrence = "grade-week-occurrence-seminar-${target.toEpochDay()}"
+            compose.onNodeWithTag(occurrence).assertExists()
+            nativeBack()
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag(occurrence).fetchSemanticsNodes().isEmpty() }
+            compose.onNodeWithTag("grade-date-mode-DATE").performClick()
+            compose.onNodeWithTag("grade-teaching-week").assertDoesNotExist()
+            compose.onNodeWithTag("grade-date-mode-SCHEDULE").performClick()
+            compose.onNodeWithTag("grade-teaching-week").assertTextContains("7", substring = true)
+            done(); save()
+            compose.onNodeWithTag("grade-details-tab-WHEN").assertIsSelected()
+            compose.onNodeWithTag("grade-date-mode-SCHEDULE").assertIsSelected()
+            compose.runOnIdle { assertNull(saved) }
+            compose.onNodeWithTag("grade-week-lesson-trigger").performScrollTo().performClick()
+            compose.onNodeWithTag(occurrence).performScrollTo().performClick()
+            compose.onNodeWithTag("grade-date-mode-DATE").performClick()
+            compose.onNodeWithTag("grade-explicit-date").assertTextContains("29.10.2026")
+            compose.onNodeWithTag("grade-date-mode-SCHEDULE").performClick()
+            done(); save()
+            compose.runOnIdle {
+                assertEquals(target, saved?.dueDate)
+                assertEquals("seminar", saved?.lessonId)
+                assertFalse(saved!!.completed)
+            }
+        } finally {
+            compose.runOnIdle { visible = false }
+            compose.waitForIdle()
+            database.close()
+        }
     }
 
     private fun openDetails() {

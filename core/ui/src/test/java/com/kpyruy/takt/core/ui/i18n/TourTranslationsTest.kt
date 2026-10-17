@@ -6,6 +6,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TourTranslationsTest {
+    @Test fun renderedSlovakSampleNamesAndFinalControlNeverFallBackToUkrainian() {
+        val original = TaktI18n.language
+        try {
+            TaktI18n.use(AppLanguage.SLOVAK)
+            assertEquals("Fyzika", t("Фізика"))
+            assertEquals("Dokončiť", t("Завершити"))
+        } finally { TaktI18n.use(original) }
+    }
     @Test fun everyNewIconHasEnglishAndSlovakSearchableMetadata() {
         for (language in listOf(AppLanguage.ENGLISH, AppLanguage.SLOVAK)) {
             CourseIcons.all.drop(110).forEach {

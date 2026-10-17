@@ -22,10 +22,11 @@ data class BackupPayload(
     val courseNotes: List<BackupCourseNote> = emptyList(),
     val examInfo: List<BackupExamInfo> = emptyList(),
     val examMaterials: List<BackupExamMaterial> = emptyList(),
+    val teaching: BackupTeaching? = null,
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 9
+        const val CURRENT_VERSION = 10
     }
 }
 
@@ -206,6 +207,8 @@ data class BackupSettings(
     val uisApplyProgressAutomatically: Boolean = true,
     val customThemes: List<BackupCustomColorTheme> = emptyList(),
     val selectedCustomThemeId: String? = null,
+    val wallpaperRecorded: Boolean = false,
+    val wallpaper: BackupWallpaper? = null,
     val reminders: BackupReminderSettings = BackupReminderSettings(),
 )
 
@@ -228,6 +231,7 @@ data class BackupHomeWorkFilter(
     val includeUndated: Boolean = true,
     val fromDate: String? = null,
     val toDate: String? = null,
+    val courseIds: List<String> = emptyList(),
 )
 
 object BackupPayloadCodec {
@@ -246,6 +250,9 @@ object BackupPayloadCodec {
         require(payload.version in 1..BackupPayload.CURRENT_VERSION) {
             "Unsupported Takt backup version: ${payload.version}"
         }
+        payload.teaching?.validated()
+        payload.settings.wallpaper?.decodedBytes()
+        require(payload.settings.wallpaper == null || payload.settings.wallpaperRecorded) { "Invalid wallpaper metadata" }
         val courseIds = payload.courses.map { it.id }.toSet()
         require(payload.courses.size == courseIds.size) { "Backup contains duplicate course IDs" }
         require(payload.courseIdAliases.map { it.oldId }.distinct().size == payload.courseIdAliases.size &&

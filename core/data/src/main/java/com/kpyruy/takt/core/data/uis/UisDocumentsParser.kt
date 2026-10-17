@@ -92,10 +92,11 @@ internal object UisDocumentsParser {
                 "id", "download" -> false
                 "lang" -> value !in setOf("en", "sk", "cz")
                 "ds", "on" -> value !in setOf("0", "1")
+                "z" -> download == null || value != "1"
                 in pageParameters -> !value.matches(Regex("[0-9]{1,8}"))
                 else -> true
             } }) return null
-        if (download != null && parameters.keys.any { it !in setOf("id", "download", "lang", "ds", "on") }) return null
+        if (download != null && parameters.keys.any { it !in setOf("id", "download", "lang", "ds", "on", "z") }) return null
         return Link(id, download, url, parameters)
     }
     private fun decode(value: String): String? = runCatching { URLDecoder.decode(value, "UTF-8") }.getOrNull()

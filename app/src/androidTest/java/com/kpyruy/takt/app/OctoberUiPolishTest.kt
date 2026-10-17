@@ -15,6 +15,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
+import kotlin.math.abs
 
 /** Real routes at phone-like width; fixture changes are explicitly emulator-only. */
 class OctoberUiPolishTest {
@@ -92,6 +93,7 @@ class OctoberUiPolishTest {
     @Test fun subjectsProgressAndCalendarRespectRequestedStructure() {
         seed()
         runBlocking { data.settingsRepository.setLanguage(AppLanguage.SLOVAK) }
+        compose.waitForIdle()
         root(t("Предмети"))
         compose.onNodeWithText(t("Усі семестри")).assertDoesNotExist()
         compose.onNodeWithContentDescription(t("Обрати семестр")).assertDoesNotExist()
@@ -103,17 +105,68 @@ class OctoberUiPolishTest {
         root(t("Прогрес"))
         capture("progress-plan")
         compose.onNodeWithTag("progress-screen").performScrollToNode(hasTestTag("semester-toggle-4"))
-        compose.onNodeWithText(t("1 активний предмет")).assertExists()
+        compose.onNodeWithTag("semester-active-count-4", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("progress-screen").performScrollToIndex(0)
         compose.onNode(hasText(t("Активні")) and hasClickAction()).performClick()
+        assertStatusAlignment()
         capture("progress-active")
         compose.onNodeWithTag("progress-screen").performScrollToIndex(0)
         compose.onNode(hasText(t("Здані")) and hasClickAction()).performClick()
+        assertStatusAlignment()
         capture("progress-completed")
+        compose.onNodeWithTag("progress-screen").performScrollToIndex(0)
+        compose.onNodeWithTag("progress-menu").performClick()
+        compose.onNodeWithTag("progress-search-open").performClick()
+        compose.onNodeWithTag("progress-search-query").performTextInput("FYZI")
+        compose.onNodeWithTag("progress-search-result-glass-physics").assertExists().performClick()
+        compose.onNodeWithText("Základy štatistiky").assertExists()
+        val titleBounds = compose.onNodeWithTag("subject-header-title").fetchSemanticsNode().boundsInRoot
+        for (tag in listOf("subject-header-back", "subject-header-menu", "subject-header-avatar")) {
+            val bounds = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+            assertTrue("$tag must align with the title", abs(bounds.center.y - titleBounds.center.y) < 1f)
+        }
+        val avatar = compose.onNodeWithTag("subject-header-avatar").fetchSemanticsNode().boundsInRoot
+        val metadata = compose.onNodeWithTag("subject-header-metadata").fetchSemanticsNode().boundsInRoot
+        assertEquals(avatar.left, metadata.left, 1f)
+        for (label in listOf("Огляд", "Задачі", "Екзамен", "Нотатки")) {
+            val tab = compose.onNode(hasText(t(label)) and SemanticsMatcher.expectValue(
+                androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab))
+            tab.assertIsDisplayed()
+            val layouts = mutableListOf<TextLayoutResult>()
+            compose.onNode(hasText(t(label)) and hasAnyAncestor(SemanticsMatcher.expectValue(
+                androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)),
+                useUnmergedTree = true).performSemanticsAction(
+                androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            assertEquals("A subject tab must keep its word together", 1, layouts.single().lineCount)
+        }
+        capture("subject-header")
+        compose.onNode(hasText(t("Екзамен")) and hasClickAction()).performClick()
+        compose.onNodeWithTag("exam-target-A").performScrollTo()
+        for (letter in listOf("A", "B", "C", "D", "E")) {
+            val button = compose.onNodeWithTag("exam-target-$letter").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+            val text = compose.onNodeWithText(letter, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            assertEquals(button.center.x, text.center.x, 1f)
+            assertEquals(button.center.y, text.center.y, 1f)
+        }
+        capture("exam-targets")
+        back(); back()
         root(t("Календар"))
         compose.onNode(hasText(t("Місяць")) and hasClickAction()).performClick()
         val today = LocalDate.now()
         compose.onNodeWithTag("month-day-${today.toEpochDay()}").assertIsDisplayed()
+        val weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
+        val cells = (0L..6L).map {
+            compose.onNodeWithTag("month-day-${weekStart.plusDays(it).toEpochDay()}").fetchSemanticsNode().boundsInRoot
+        }
+        // A seven-way split of physical pixels may distribute a one-pixel remainder.
+        cells.forEach { assertEquals(cells.first().width, it.width, 1f) }
+        for (date in (0L..6L).map(weekStart::plusDays)) {
+            val cell = compose.onNodeWithTag("month-day-${date.toEpochDay()}")
+            val numeral = compose.onNode(hasText(date.dayOfMonth.toString()) and
+                hasAnyAncestor(hasTestTag("month-day-${date.toEpochDay()}")), useUnmergedTree = true)
+            assertEquals(cell.fetchSemanticsNode().boundsInRoot.center.x,
+                numeral.fetchSemanticsNode().boundsInRoot.center.x, 1f)
+        }
         capture("calendar-month")
         compose.onNode(hasText(t("День")) and hasClickAction()).performClick()
         capture("calendar-day")
@@ -121,10 +174,111 @@ class OctoberUiPolishTest {
         capture("calendar-week")
     }
 
+    @Test fun customThemeCreateEditDeleteApplyAndBackupAreDurable() {
+        seed()
+        runBlocking {
+            data.settingsRepository.setLanguage(AppLanguage.ENGLISH)
+            data.settingsRepository.setAppearance(data.settingsRepository.settings.first().copy(
+                customThemes = emptyList(), selectedCustomThemeId = null))
+        }
+        compose.waitForIdle()
+        openAppearance()
+        capture("appearance-lighting")
+        compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-create").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-name").performScrollTo().performTextInput("Ocean review")
+        compose.onNodeWithTag("theme-hex").performScrollTo().performTextReplacement("#007E91")
+        compose.onNodeWithTag("theme-save").performClick()
+        compose.onNodeWithTag("palette-popup-apply").performClick()
+        compose.onNodeWithText(t("Стиль карток")).performScrollTo()
+        capture("appearance-card-styles")
+        compose.onNodeWithText(t("Застосувати вигляд")).performClick()
+        compose.waitForIdle()
+        val created = settings().customThemes.single()
+        assertEquals("Ocean review", created.name)
+        assertEquals("#007E91", created.primaryHex)
+        assertEquals(created.id, settings().selectedCustomThemeId)
+        val durable = SharedPreferencesAppSettingsRepository(instrumentation.targetContext)
+        assertEquals(created, runBlocking { durable.settings.first() }.selectedCustomTheme)
+        back()
+        compose.activityRule.scenario.recreate()
+        openAppearance()
+        compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
+        compose.onNodeWithTag("appearance-color-custom-${created.id}").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("theme-edit-${created.id}").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-name").performScrollTo().performTextReplacement("Lagoon review")
+        compose.onNodeWithTag("theme-hex").performScrollTo().performTextReplacement("#147D64")
+        compose.onNodeWithTag("theme-save").performClick()
+        capture("appearance-custom-theme")
+        compose.onNodeWithTag("palette-popup-apply").performClick()
+        compose.onNodeWithText(t("Застосувати вигляд")).performClick()
+        compose.waitForIdle()
+        val edited = settings().customThemes.single()
+        assertEquals(created.id, edited.id)
+        assertEquals("Lagoon review", edited.name)
+        assertEquals("#147D64", edited.primaryHex)
+        val backup = runBlocking { data.backupRepository.exportJson() }
+        back()
+        openAppearance()
+        compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-delete-${created.id}").performScrollTo().performClick()
+        compose.onNodeWithTag("palette-popup-apply").performClick()
+        compose.onNodeWithText(t("Застосувати вигляд")).performClick()
+        compose.waitForIdle()
+        assertTrue(settings().customThemes.isEmpty())
+        assertNull(settings().selectedCustomThemeId)
+        val before = settings()
+        runBlocking {
+            data.backupRepository.importSelectedJson(backup, data.backupRepository.exportJson(),
+                setOf(BackupSection.APPEARANCE))
+        }
+        compose.waitForIdle()
+        val restored = settings()
+        assertEquals(edited, restored.selectedCustomTheme)
+        assertEquals(before.language, restored.language)
+        assertEquals(before.uisAutoSync, restored.uisAutoSync)
+        assertEquals(before.currentSemester, restored.currentSemester)
+        assertEquals(edited, runBlocking {
+            SharedPreferencesAppSettingsRepository(instrumentation.targetContext).settings.first()
+        }.selectedCustomTheme)
+    }
+
+    private fun assertStatusAlignment() {
+        val nodes = compose.onAllNodes(hasTestTagPrefix("status-"), useUnmergedTree = true).fetchSemanticsNodes()
+            .filter { it.boundsInRoot.width > 0f && it.boundsInRoot.height > 0f }
+        assertTrue("Expected several progress status columns", nodes.size >= 2)
+        nodes.forEach { assertEquals(nodes.first().boundsInRoot.center.x, it.boundsInRoot.center.x, 1f) }
+    }
+
+    private fun hasTestTagPrefix(prefix: String) = SemanticsMatcher("Tag begins with $prefix") {
+        it.config.getOrElse(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { "" }.startsWith(prefix)
+    }
+
+    private fun settings() = runBlocking { data.settingsRepository.settings.first() }
+    private fun openAppearance() {
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription(t("Налаштування")).performClick()
+        compose.onNode(hasText(t("Вигляд")) and hasClickAction()).performScrollTo().performClick()
+    }
+
     private fun root(label: String) = compose.onAllNodes(hasText(label) and hasClickAction()).onLast().performClick()
     private fun back() { compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }; compose.waitForIdle() }
     private fun capture(name: String) {
+        compose.mainClock.advanceTimeBy(600)
         compose.waitForIdle(); instrumentation.waitForIdleSync()
+        // The Material dismiss label follows the Activity's native locale, not Takt's dictionary.
+        // Dismiss the emulator fixture's reminder through its actual control before capturing.
+        val dismissId = compose.activity.resources.getIdentifier("m3c_snackbar_dismiss", "string", compose.activity.packageName)
+        if (dismissId != 0) {
+            val labels = listOf(java.util.Locale.ENGLISH, java.util.Locale("uk"), java.util.Locale("sk")).map { locale ->
+                val config = android.content.res.Configuration(compose.activity.resources.configuration).apply { setLocale(locale) }
+                compose.activity.createConfigurationContext(config).getString(dismissId)
+            }
+            val matcher = labels.map { hasContentDescription(it) }.reduce { a, b -> a or b }
+            val dismiss = compose.onAllNodes(matcher)
+            if (dismiss.fetchSemanticsNodes().size == 1) dismiss.onFirst().performClick()
+        }
+        compose.waitForIdle()
         android.os.SystemClock.sleep(300)
         val bitmap = instrumentation.uiAutomation.takeScreenshot()
         instrumentation.targetContext.openFileOutput("oct13-$name.png", 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

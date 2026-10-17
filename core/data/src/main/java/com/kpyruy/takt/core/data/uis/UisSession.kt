@@ -6,6 +6,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.supervisorScope
+import java.util.concurrent.atomic.AtomicBoolean
 import java.time.LocalDate
 import com.kpyruy.takt.core.model.SemesterPeriod
 
@@ -52,6 +56,55 @@ class UisSession {
         val current = client ?: error("UIS session is not connected")
         check(mutableState.value == UisResult.CONNECTED)
         return withContext(Dispatchers.IO) { current.readCourseLessons(code) }
+    }
+
+    internal suspend fun readCourseTeachers(course: com.kpyruy.takt.core.model.Course, refresh: Boolean): List<com.kpyruy.takt.core.model.CourseTeacher> {
+        val current = client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        return try { withContext(Dispatchers.IO) { current.readCourseTeachers(
+            course.syllabusUrl?.let(UisTeachingLinks::subjectId) ?: course.id.substringAfterLast(':'),
+            course.code,
+            course.id.takeIf { it.matches(Regex("uis:[1-9][0-9]*:[1-9][0-9]*")) }?.split(':')?.get(1),
+            refresh) } }
+        catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
+    }
+    internal suspend fun readCourseDocuments(code: String, activeCodes: Set<String>, refresh: Boolean): com.kpyruy.takt.core.model.CourseDocumentListing {
+        val current = client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        return try { withContext(Dispatchers.IO) { current.readCourseDocuments(code, activeCodes, refresh) } }
+        catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
+    }
+    internal suspend fun downloadCourseDocument(document: com.kpyruy.takt.core.model.CourseDocumentFile, output: java.io.OutputStream): com.kpyruy.takt.core.model.DownloadedCourseDocument {
+        val current = client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        return supervisorScope {
+            val transferCancelled = AtomicBoolean(false)
+            val worker = async(Dispatchers.IO) { current.downloadCourseDocument(document, output, transferCancelled) }
+            try {
+                worker.await()
+            } catch (cancelled: CancellationException) {
+                transferCancelled.set(true)
+                current.cancelActiveRequest()
+                // Keep the caller's account/repository locks until no worker can write to its output.
+                withContext(NonCancellable) { worker.join() }
+                throw cancelled
+            } catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) {
+                if (client === current) disconnect()
+                throw expired
+            }
+        }
+    }
+
+    internal suspend fun readTeacherProfile(personId: String, language: com.kpyruy.takt.core.model.AppLanguage): com.kpyruy.takt.core.model.TeacherProfile {
+        val current = client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        return try { withContext(Dispatchers.IO) { current.readTeacherProfile(personId, language) } }
+        catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
+    }
+    internal suspend fun readTeacherPhoto(personId: String): ByteArray? {
+        val current = client ?: return null
+        if (mutableState.value != UisResult.CONNECTED) return null
+        return withContext(Dispatchers.IO) { current.readTeacherPhoto(personId) }
     }
 
     internal suspend fun readStudyContext(studyId: String, periodId: String): Pair<SemesterPeriod, List<com.kpyruy.takt.core.data.uis.UisTimetableItem>> {

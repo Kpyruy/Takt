@@ -20,9 +20,9 @@ import org.junit.Test
 /** Explicit opt-in: a real OS alarm, real background BroadcastReceiver and NotificationManager. */
 class ReminderDeliveryEndToEndTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
-    @Test fun realAlarmPostsWhileActivityIsInBackground() = runBlocking {
+    @Test fun realAlarmPostsWhileActivityIsInBackground() = runBlocking<Unit> {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        assumeTrue(instrumentation.arguments.getString("reminderSystemAlarm") == "true")
+        assumeTrue(InstrumentationRegistry.getArguments().getString("reminderSystemAlarm") == "true")
         val app = compose.activity.application as TaktApplication
         val data = app.dataContainer
         val context = instrumentation.targetContext
@@ -56,7 +56,18 @@ class ReminderDeliveryEndToEndTest {
             assertEquals(ReminderChannels.EVENT, posted.notification.channelId)
             assertFalse("Delivered alarm must be consumed", app.reminderCoordinator.readPlannedAlarms().any { it.id == reminder.id })
             assertTrue(instrumentation.uiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS))
-            SystemClock.sleep(450)
+            fun containsTitle(node: android.view.accessibility.AccessibilityNodeInfo?): Boolean {
+                if (node == null) return false
+                if (node.text?.contains(event.title) == true) return true
+                return (0 until node.childCount).any { containsTitle(node.getChild(it)) }
+            }
+            val shadeDeadline = SystemClock.elapsedRealtime() + 5_000
+            while (!containsTitle(instrumentation.uiAutomation.rootInActiveWindow) && SystemClock.elapsedRealtime() < shadeDeadline) {
+                SystemClock.sleep(100)
+            }
+            assertTrue("Delivered reminder must also be visible in the Android notification shade",
+                containsTitle(instrumentation.uiAutomation.rootInActiveWindow))
+            SystemClock.sleep(400)
             val picture = instrumentation.uiAutomation.takeScreenshot()
             context.openFileOutput("reminder-os-delivered.png", 0).use { picture.compress(Bitmap.CompressFormat.PNG, 100, it) }
             picture.recycle()

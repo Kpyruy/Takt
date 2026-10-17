@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Checklist
@@ -32,6 +34,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.Notifications
 import com.kpyruy.takt.core.ui.components.TaktIconButton
 import com.kpyruy.takt.core.ui.components.TaktPrimaryButton as Button
 import androidx.compose.material3.Icon
@@ -77,20 +80,23 @@ fun SettingsScreen(
     authenticateDevice: DeviceAuthenticationRequest,
     appReleaseRepository: AppReleaseRepository,
     onBack: () -> Unit,
+    onStartTour: () -> Unit = {},
+    guidedPage: String? = null,
 ) {
-    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
     var backupReview by remember { mutableStateOf<BackupReviewState?>(null) }
-    var showAppearance by remember { mutableStateOf(false) }
+    var showAppearance by remember { mutableStateOf(guidedPage == "appearance") }
     var showLanguage by remember { mutableStateOf(false) }
     var showCalendar by remember { mutableStateOf(false) }
-    var showTasks by remember { mutableStateOf(false) }
-    var showPeriods by remember { mutableStateOf(false) }
+    var showTasks by remember { mutableStateOf(guidedPage == "filters") }
+    var showNotifications by remember { mutableStateOf(guidedPage == "reminders") }
+    var showPeriods by remember { mutableStateOf(guidedPage == "periods") }
     var showUniversityAccount by remember { mutableStateOf(false) }
     var showUisAutoSync by remember { mutableStateOf(false) }
-    var showDocuments by remember { mutableStateOf(false) }
+    var showDocuments by remember { mutableStateOf(guidedPage == "documents") }
     var showAppUpdates by remember { mutableStateOf(false) }
     val releaseState by appReleaseRepository.state.collectAsStateWithLifecycle()
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
@@ -233,6 +239,12 @@ fun SettingsScreen(
         return
     }
 
+    if (showNotifications) {
+        NotificationsSettingsPage(settings.reminders,
+            onChange = { scope.launch { settingsRepository.updateReminders(it) } },
+            onBack = { showNotifications = false })
+        return
+    }
     if (showTasks) {
         TaskSettingsPage(
             filter = settings.homeWorkFilter,
@@ -271,7 +283,7 @@ fun SettingsScreen(
 
     if (showDocuments) {
         DocumentsSettingsPage(onBack = { showDocuments = false }) {
-        SectionCard {
+        SectionCard(modifier = Modifier.tourTarget("settings-documents")) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.size(9.dp).background(
                     if (documentStatus == DocumentSyncStatus.READY) MaterialTheme.colorScheme.primary
@@ -293,7 +305,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            OutlinedButton(onClick = { folderLauncher.launch(null) }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { folderLauncher.launch(android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents")) }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t("Підключити Documents") else t("Змінити папку"))
             }
             if (documentStatus == DocumentSyncStatus.CONFLICT) {
@@ -365,7 +377,16 @@ fun SettingsScreen(
             },
         )
 
+        SettingsGroup(t("Допомога")) {
+            SettingsNavigationTile(title = t("Екскурсія по Takt"),
+                icon = Icons.Outlined.School, onClick = onStartTour)
+        }
         SettingsGroup(t("Під себе")) {
+        SettingsNavigationTile(
+            title = t("Сповіщення"),
+            icon = Icons.Outlined.Notifications,
+            onClick = { showNotifications = true },
+        )
         SettingsNavigationTile(
             title = t("Вигляд"),
             icon = Icons.Outlined.Palette,

@@ -27,6 +27,7 @@ import com.kpyruy.takt.core.data.AppSettingsRepository
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.model.GradeItemType
+import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.model.OneOffScheduleEventType
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -155,12 +156,15 @@ fun CreateItemScreen(
             CreateItemType.EVENT,
             CreateItemType.REMINDER -> OneOffEventForm(
                 courses = courses,
-                initialDate = LocalDate.now(),
+                initialDate = draft?.dueDate ?: LocalDate.now(),
                 initialType = if (type == CreateItemType.REMINDER) {
                     OneOffScheduleEventType.REMINDER
                 } else {
                     OneOffScheduleEventType.EXTRA
                 },
+                initialCourseId = courseId ?: draft?.courseId,
+                initialLessonType = if (type == CreateItemType.REMINDER) LessonType.UNSPECIFIED
+                    else draft?.lessonType?.takeUnless { it == LessonType.UNSPECIFIED } ?: LessonType.EVENT,
                 initialTitle = draft?.title.orEmpty(),
                 initialStartTime = draft?.startTime,
                 initialEndTime = draft?.endTime,

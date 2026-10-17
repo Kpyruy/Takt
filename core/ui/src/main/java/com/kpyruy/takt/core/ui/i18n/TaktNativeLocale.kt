@@ -19,9 +19,9 @@ internal fun TaktNativeLocale(content: @Composable () -> Unit) {
         Configuration(original).apply { setLocales(LocaleList(locale)) }
     }
     val localized = remember(context, configuration) {
-        val resources = context.createConfigurationContext(configuration).resources
+        val localizedResources = context.createConfigurationContext(configuration).resources
         object : ContextWrapper(context) {
-            override fun getResources() = resources
+            override fun getResources() = localizedResources
         }
     }
     CompositionLocalProvider(LocalConfiguration provides configuration, LocalContext provides localized, content = content)

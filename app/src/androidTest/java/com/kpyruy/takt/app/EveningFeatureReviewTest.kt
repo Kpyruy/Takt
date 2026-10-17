@@ -23,8 +23,9 @@ class EveningFeatureReviewTest {
         runBlocking {
             data.seedLiquidGlassReview()
             data.settingsRepository.setReminders(ReminderSettings())
-            data.settingsRepository.setLanguage(AppLanguage.SLOVAK)
-            data.settingsRepository.setThemeMode(AppThemeMode.DARK)
+            val args = InstrumentationRegistry.getArguments()
+            data.settingsRepository.setLanguage(AppLanguage.valueOf(args.getString("reviewLanguage") ?: "SLOVAK"))
+            data.settingsRepository.setThemeMode(AppThemeMode.valueOf(args.getString("reviewTheme") ?: "DARK"))
             data.settingsRepository.setThemeFamily(ThemeFamily.PURPLE)
             data.studyPlanRepository.setIcon("glass-physics", "Speed")
             data.awaitRestoredPlanning()
@@ -80,6 +81,9 @@ class EveningFeatureReviewTest {
     }
     private fun root(key: String) = compose.onAllNodes(hasText(t(key)) and hasClickAction()).onLast().performClick()
     private fun hideKeyboard() {
+        // Text input can finish before Android has published the new IME insets.
+        instrumentation.waitForIdleSync()
+        android.os.SystemClock.sleep(300)
         if (compose.activity.window.decorView.rootWindowInsets.isVisible(android.view.WindowInsets.Type.ime())) {
             nativeBack()
         }
@@ -100,6 +104,7 @@ class EveningFeatureReviewTest {
     private fun capture(name: String) {
         compose.mainClock.advanceTimeBy(700);compose.waitForIdle();instrumentation.waitForIdleSync();android.os.SystemClock.sleep(400)
         val b = instrumentation.uiAutomation.takeScreenshot()
-        instrumentation.targetContext.openFileOutput("evening-$name.png", 0).use { b.compress(Bitmap.CompressFormat.PNG,100,it) };b.recycle()
+        val prefix = InstrumentationRegistry.getArguments().getString("reviewPrefix") ?: "evening"
+        instrumentation.targetContext.openFileOutput("$prefix-$name.png", 0).use { b.compress(Bitmap.CompressFormat.PNG,100,it) };b.recycle()
     }
 }

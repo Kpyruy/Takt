@@ -56,8 +56,8 @@ internal fun CourseStatus.icon(): ImageVector = when (this) {
 
 @Composable
 internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository, onOpen: () -> Unit, onStatus: () -> Unit) {
-    val manualGrade by remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }
-        .collectAsStateWithLifecycle(initialValue = null)
+    val manualGrade = if (course.officialGrade == null) remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }
+        .collectAsStateWithLifecycle(initialValue = null).value else null
     val grade = course.officialGrade ?: manualGrade
     // Reserve the same date-capable column for every status, including icon-only rows.
     val statusColumnWidth = 88.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)

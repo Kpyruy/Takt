@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.room.ktx)
     implementation(libs.coroutines.core)
     implementation(libs.serialization.json)
+    implementation("androidx.core:core:1.15.0")
     implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jsoup:jsoup:1.18.3")

@@ -78,37 +78,15 @@ internal fun GlobalAddContent(
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(Modifier.fillMaxWidth().tourTarget("add-actions"), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(t("Додати"), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
                 TaktIconButton(Icons.Outlined.Close, t("Закрити"), onDismiss)
             }
             val actions = CreateItemType.entries.filter { allowCourseCreation || it != CreateItemType.COURSE }
-            actions.chunked(columns).forEach { pair ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    pair.forEach { type ->
-                        val tint = type.actionTint()
-                        GlassSurface(Modifier.weight(1f).testTag("global-add-${type.name}").clickable(role = Role.Button) {
-                            haptics.tick()
-                            onCreate(type)
-                        }) {
-                            Column(Modifier.fillMaxWidth().heightIn(min = 88.dp).padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Box(Modifier.size(32.dp).glassSurface(tint = tint.copy(alpha = .16f)),
-                                        contentAlignment = Alignment.Center) {
-                                        Icon(type.icon(), null, Modifier.size(20.dp), tint = tint)
-                                    }
-                                    Text(type.label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                                }
-                                // Description gets the entire tile width instead of a narrow icon-side column.
-                                Text(type.actionHint(), style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
+            Column(Modifier.fillMaxWidth().tourTarget("add-actions"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                actions.take(6).chunked(columns).forEach { pair -> AddActionRow(pair, onCreate) }
             }
+            actions.drop(6).chunked(columns).forEach { pair -> AddActionRow(pair, onCreate) }
             GlassSurface(Modifier.fillMaxWidth().clickable(role = Role.Button) { haptics.tick(); onQuickAdd() }) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -118,6 +96,36 @@ internal fun GlobalAddContent(
                     }
                     Text(t("Швидке додавання"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun AddActionRow(pair: List<CreateItemType>, onCreate: (CreateItemType) -> Unit) {
+    val haptics = rememberTaktHaptics()
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        pair.forEach { type ->
+            val tint = type.actionTint()
+            GlassSurface(Modifier.weight(1f).testTag("global-add-${type.name}").clickable(role = Role.Button) {
+                haptics.tick()
+                onCreate(type)
+            }) {
+                Column(Modifier.fillMaxWidth().heightIn(min = 88.dp).padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.size(32.dp).glassSurface(tint = tint.copy(alpha = .16f)),
+                            contentAlignment = Alignment.Center) {
+                            Icon(type.icon(), null, Modifier.size(20.dp), tint = tint)
+                        }
+                        Text(type.label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    }
+                    // Description gets the entire tile width instead of a narrow icon-side column.
+                    Text(type.actionHint(), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

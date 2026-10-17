@@ -83,6 +83,7 @@ class UniversityAccountRepository(
     private val studyPlanRepository: StudyPlanRepository? = null,
     private val scheduleRepository: ScheduleRepository? = null,
     val settingsRepository: AppSettingsRepository? = null,
+    teachingStore: TeachingStore = TeachingStore(),
 ) {
     val session = com.kpyruy.takt.core.data.uis.UisSession()
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -133,6 +134,44 @@ class UniversityAccountRepository(
             UisLessonOption(item.key, item.day, item.start, item.end, item.room, item.lessonType, item.date)
         }
     }
+    private val teachingCache = CachedCourseTeachingRepository(
+        store = teachingStore,
+        loadTeachers = { course, refresh -> autoMutex.withLock {
+            ensureTeachingSession()
+            session.readCourseTeachers(course, refresh)
+        } },
+        loadProfile = { id, language -> autoMutex.withLock {
+            ensureTeachingSession()
+            session.readTeacherProfile(id, language)
+        } },
+        loadPhoto = { id -> autoMutex.withLock { session.readTeacherPhoto(id) } },
+    )
+    val teachingRepository: CourseTeachingRepository get() = teachingCache
+    private val documentsCache = CachedCourseDocumentsRepository(
+        load = { course, activeCodes, refresh -> autoMutex.withLock {
+            ensureTeachingSession()
+            session.readCourseDocuments(course.code, activeCodes, refresh)
+        } },
+        stream = { document, output -> autoMutex.withLock {
+            ensureTeachingSession()
+            session.downloadCourseDocument(document, output)
+        } },
+    )
+    val courseDocumentsRepository: CourseDocumentsRepository get() = documentsCache
+
+
+    /** Called only from the unlocked app; keystore requirements are unchanged. */
+    private suspend fun ensureTeachingSession() {
+        if (!hasAccount.value) throw TeachingAuthenticationRequired()
+        if (session.state.value != UisResult.CONNECTED) {
+            val credentials = try { readAfterAuthentication() }
+                catch (_: Exception) { throw TeachingAuthenticationRequired() }
+                ?: throw TeachingAuthenticationRequired()
+            session.login(credentials)
+        }
+        if (session.state.value != UisResult.CONNECTED) throw TeachingSessionUnavailable()
+    }
+
     private var pendingSubjectByEventId: Map<String, String> = emptyMap()
     private var pendingAutoSections: Set<UisSyncSection>? = null
     private val autoMutex = Mutex()
@@ -646,6 +685,8 @@ class UniversityAccountRepository(
                 .putString(CIPHERTEXT, Base64.encodeToString(ciphertext, Base64.NO_WRAP))
                 .putString(IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
             if (!sameAccount) {
+                teachingCache.clear()
+                documentsCache.clear()
                 edit.remove(EARNED_CREDITS).remove(REQUIRED_CREDITS).remove(INITIAL_IMPORT_DONE)
                     .remove(PROGRESS_BASELINE).remove(AUTO_INVALID_DAY)
                 UisSyncSection.entries.forEach { edit.remove("uis_auto_last_${it.name}") }
@@ -678,6 +719,8 @@ class UniversityAccountRepository(
 
     /** Call only after a successful device authentication. */
     fun remove() {
+        teachingCache.clear()
+        documentsCache.clear()
         session.disconnect()
         pendingAutoSections = null
         dismissPreview()

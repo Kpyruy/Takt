@@ -50,7 +50,6 @@ internal fun CourseOverviewTab(
     gradeItems: List<GradeItem>,
     gradeScale: GradeScale,
     tasks: List<StudyTask>,
-    notes: List<CourseNote>,
     eligibility: ExamEligibility,
     showFinalGrade: Boolean,
     manualGrade: GradeLetter?,
@@ -58,10 +57,11 @@ internal fun CourseOverviewTab(
     onTaskCompleted: (StudyTask, Boolean) -> Unit,
     onEditTask: (StudyTask) -> Unit,
     onEditGrade: (GradeItem) -> Unit,
-    onNotes: () -> Unit,
     onExam: () -> Unit,
     nextLesson: com.kpyruy.takt.core.model.ResolvedScheduleEvent? = null,
     onSettings: (() -> Unit)? = null,
+    teachersContent: @Composable () -> Unit = {},
+    documentsContent: @Composable () -> Unit = {},
 ) {
     val allGradedWork = CourseWork.scoredItems(tasks, gradeItems)
     val projection = GradeProjection.calculate(allGradedWork, gradeScale)
@@ -143,17 +143,7 @@ internal fun CourseOverviewTab(
                 }
             }
         }
-        SubjectPanel {
-            Row(Modifier.fillMaxWidth().clickable(onClick = onNotes), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(t("Нотатки"), style = MaterialTheme.typography.titleMedium)
-                Text(t("Усі нотатки ›"), color = MaterialTheme.colorScheme.primary)
-            }
-            if (notes.isEmpty()) SmallText(t("Нотатки та матеріали предмета"))
-            notes.take(2).forEach { note ->
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                ResourceRow(note.title, note.content.take(85), onNotes)
-            }
-        }
+        teachersContent()
         if (hasExam) SubjectPanel { ResourceRow(t("Підготовка до екзамену"), t("Дата й цільова оцінка"), onExam) }
         if (showFinalGrade && course.gradingType != CourseGradingType.PASS_FAIL && course.officialGrade == null) {
             ManualGradeSection(manualGrade, onManualGradeChange)
@@ -161,6 +151,7 @@ internal fun CourseOverviewTab(
         course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; SubjectPanel {
             ResourceRow(t("Програма предмета"), course.code) { runCatching { uriHandler.openUri(url) } }
         } }
+        documentsContent()
         onSettings?.let { open ->
             SubjectPanel {
                 Row(Modifier.fillMaxWidth().clickable(onClick = open).heightIn(min = 48.dp),

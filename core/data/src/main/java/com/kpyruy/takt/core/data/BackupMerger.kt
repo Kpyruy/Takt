@@ -5,7 +5,7 @@ import java.util.Locale
 /** Each selection names the source to take from a backup; unselected sections stay local. */
 enum class BackupSection {
     SUBJECTS, ICONS, PROGRESS, SCHEDULE, PERIODS, MATERIALS,
-    LANGUAGE, APPEARANCE, CURRENT_SEMESTER, PREFERENCES,
+    LANGUAGE, APPEARANCE, CURRENT_SEMESTER, PREFERENCES, TEACHERS,
 }
 
 object BackupMerger {
@@ -15,7 +15,7 @@ object BackupMerger {
         return BackupSection.entries.filterTo(mutableSetOf()) { section ->
             !sameReviewData(merge(local, incoming, setOf(section)), local) ||
                 (section in setOf(BackupSection.ICONS, BackupSection.PROGRESS,
-                    BackupSection.SCHEDULE, BackupSection.MATERIALS) &&
+                    BackupSection.SCHEDULE, BackupSection.MATERIALS, BackupSection.TEACHERS) &&
                     !sameReviewData(merge(local, incoming, setOf(BackupSection.SUBJECTS, section)), subjectsOnly))
         }
     }
@@ -26,9 +26,11 @@ object BackupMerger {
         fun normalizedSettings(value: BackupSettings) = value.copy(
             reminders = value.reminders.toModel().toBackup(),
             semesterPeriods = value.semesterPeriods.sortedBy { it.semester },
-            homeWorkFilter = value.homeWorkFilter.copy(types = value.homeWorkFilter.types.sorted()),
+            homeWorkFilter = value.homeWorkFilter.copy(types = value.homeWorkFilter.types.sorted(), courseIds = value.homeWorkFilter.courseIds.sorted()),
+            wallpaperRecorded = true,
+            wallpaper = value.wallpaper?.copy(name = ""),
         )
-        return sameItems(a.courses, b.courses) &&
+        return (a.teaching ?: BackupTeaching()) == (b.teaching ?: BackupTeaching()) && sameItems(a.courses, b.courses) &&
             sameItems(a.scheduleRules, b.scheduleRules) &&
             sameItems(a.oneOffEvents, b.oneOffEvents) &&
             sameItems(a.lessonAbsences, b.lessonAbsences) &&
@@ -88,12 +90,16 @@ object BackupMerger {
         val fileSettings = incoming.settings
         val other = BackupSection.PREFERENCES in fromBackup
         val settings = phoneSettings.copy(
+            wallpaperRecorded = if (BackupSection.APPEARANCE in fromBackup && fileSettings.wallpaperRecorded) true else phoneSettings.wallpaperRecorded,
+            wallpaper = if (BackupSection.APPEARANCE in fromBackup && fileSettings.wallpaperRecorded) fileSettings.wallpaper else phoneSettings.wallpaper,
             reminders = if (other) fileSettings.reminders else phoneSettings.reminders,
             cancellationStyle = if (other) fileSettings.cancellationStyle else phoneSettings.cancellationStyle,
             showHiddenLessons = if (other) fileSettings.showHiddenLessons else phoneSettings.showHiddenLessons,
             parityOverride = if (other) fileSettings.parityOverride else phoneSettings.parityOverride,
             weekLayout = if (other) fileSettings.weekLayout else phoneSettings.weekLayout,
-            homeWorkFilter = if (other) fileSettings.homeWorkFilter else phoneSettings.homeWorkFilter,
+            homeWorkFilter = if (other) fileSettings.homeWorkFilter.copy(
+                courseId = mapped(fileSettings.homeWorkFilter.courseId),
+                courseIds = fileSettings.homeWorkFilter.courseIds.mapNotNull(::mapped).distinct()) else phoneSettings.homeWorkFilter,
             uisProgressFrequency = if (other) fileSettings.uisProgressFrequency else phoneSettings.uisProgressFrequency,
             uisSubjectFrequency = if (other) fileSettings.uisSubjectFrequency else phoneSettings.uisSubjectFrequency,
             uisPeriodFrequency = if (other) fileSettings.uisPeriodFrequency else phoneSettings.uisPeriodFrequency,
@@ -119,6 +125,17 @@ object BackupMerger {
                 else phoneSettings.semesterPeriods,
         )
         return local.copy(
+            teaching = if (BackupSection.TEACHERS in fromBackup && incoming.teaching != null) {
+                val old = local.teaching ?: BackupTeaching()
+                val codes = destinationByCode.keys
+                val teams = incoming.teaching.teams.filter { teachingCode(it.courseCode) in codes }
+                val replacedCodes = teams.map { teachingCode(it.courseCode) }.toSet()
+                val mergedTeams = (old.teams.filterNot { teachingCode(it.courseCode) in replacedCodes } + teams).takeLast(128)
+                val ids = mergedTeams.flatMap { it.teachers }.map { it.personId }.toSet()
+                val profiles = incoming.teaching.profiles.filter { it.personId in ids }
+                val keys = profiles.map { it.personId to it.language }.toSet()
+                BackupTeaching(mergedTeams, (old.profiles.filterNot { (it.personId to it.language) in keys } + profiles).takeLast(256))
+            } else local.teaching,
             courses = courses,
             scheduleRules = if (schedule) incoming.scheduleRules.map { it.copy(courseId = mapped(it.courseId)) } else local.scheduleRules,
             oneOffEvents = if (schedule) incoming.oneOffEvents.map { it.copy(courseId = mapped(it.courseId)) } else local.oneOffEvents,

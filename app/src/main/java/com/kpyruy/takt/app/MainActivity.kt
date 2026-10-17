@@ -26,6 +26,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.luminance
@@ -57,7 +58,6 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         deviceAuthenticator = DeviceAuthenticator(this)
         enableEdgeToEdge()
-        window.decorView.post { window.preferResponsiveDisplay() }
 
         val taktApplication = application as TaktApplication
         val dataContainer = taktApplication.dataContainer
@@ -66,7 +66,9 @@ class MainActivity : FragmentActivity() {
         window.setBackgroundDrawable(taktWindowBackgroundColor(initialSettings, systemDark).toDrawable())
         TaktI18n.use(initialSettings.language)
         setContent {
+            PreferResponsiveDisplay(window)
             var showOnboarding by remember { mutableStateOf<Boolean?>(null) }
+            var showGuidedTour by rememberSaveable { mutableStateOf(false) }
             val scope = rememberCoroutineScope()
             LaunchedEffect(dataContainer) {
                 showOnboarding = dataContainer.firstRunRepository.shouldShow()
@@ -81,8 +83,8 @@ class MainActivity : FragmentActivity() {
                     requestUnlock()
                 }
             }
-            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding, appEntry) {
-                if (hasUniversityAccount && taktApplication.deviceUnlocked && foreground && showOnboarding == false) {
+            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding, showGuidedTour, appEntry) {
+                if (hasUniversityAccount && taktApplication.deviceUnlocked && foreground && showOnboarding == false && !showGuidedTour) {
                     val repository = dataContainer.universityAccountRepository
                     val outcome = try { repository.runAutoSyncIfDue() }
                     catch (cancelled: CancellationException) { throw cancelled }
@@ -103,19 +105,15 @@ class MainActivity : FragmentActivity() {
             }
 
             LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground,
-                showOnboarding, appEntry, releaseState.automaticChecks) {
-                if ((!hasUniversityAccount || taktApplication.deviceUnlocked) && foreground && showOnboarding == false) {
+                showOnboarding, showGuidedTour, appEntry, releaseState.automaticChecks) {
+                if ((!hasUniversityAccount || taktApplication.deviceUnlocked) && foreground && showOnboarding == false && !showGuidedTour) {
                     taktApplication.appReleaseRepository.check()
                 }
             }
 
             TaktTheme(settings = settings) {
-                val lightSystemBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
-                SideEffect {
-                    WindowCompat.getInsetsController(window, window.decorView).apply {
-                        isAppearanceLightStatusBars = lightSystemBars
-                        isAppearanceLightNavigationBars = lightSystemBars
-                    }
+                if (showOnboarding != true || (hasUniversityAccount && !taktApplication.deviceUnlocked)) {
+                    TaktSystemBars(window)
                 }
                 TaktGlassBackground(modifier = Modifier.fillMaxSize(),
                     enabled = showOnboarding != true || (hasUniversityAccount && !taktApplication.deviceUnlocked)) {
@@ -123,12 +121,14 @@ class MainActivity : FragmentActivity() {
                         hasUniversityAccount && !taktApplication.deviceUnlocked -> DeviceLockScreen(unlockMessage, ::requestUnlock)
                         showOnboarding == true -> FirstRunScreen(
                             settings = settings,
+                            onSystemBarBackground = { window.applyTaktSystemBars(it) },
                             universityAccountRepository = dataContainer.universityAccountRepository,
                             authenticateDevice = ::authenticateForAccount,
-                            onFinish = { appearance -> scope.launch {
+                            onFinish = { appearance, startTour -> scope.launch {
                                 dataContainer.settingsRepository.setAppearance(appearance)
                                 dataContainer.settingsRepository.setLanguage(appearance.language)
                                 dataContainer.firstRunRepository.complete()
+                                showGuidedTour = startTour
                                 showOnboarding = false
                             } },
                             onRestore = { uri ->
@@ -148,6 +148,9 @@ class MainActivity : FragmentActivity() {
                                 }.getOrElse { it.message ?: t("Не вдалося відновити дані") }
                             },
                         )
+                        showOnboarding == false && showGuidedTour -> GuidedTourScreen(
+                            dataContainer, settings, taktApplication.appReleaseRepository, ::authenticateForAccount,
+                            onFinish = { showGuidedTour = false })
                         showOnboarding == false -> TaktApp(
                             planningSnapshot = dataContainer.planningSnapshot,
                             repository = dataContainer.studyPlanRepository,
@@ -161,6 +164,7 @@ class MainActivity : FragmentActivity() {
                             universityAccountRepository = dataContainer.universityAccountRepository,
                             authenticateDevice = ::authenticateForAccount,
                             appReleaseRepository = taktApplication.appReleaseRepository,
+                            onStartTour = { showGuidedTour = true },
                         )
                         else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()

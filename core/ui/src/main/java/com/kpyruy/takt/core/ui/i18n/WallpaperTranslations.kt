@@ -4,6 +4,7 @@ import com.kpyruy.takt.core.model.AppLanguage
 
 internal object WallpaperTranslations {
     private val entries = mapOf(
+        "Стандартний фон" to ("Built-in background" to "Vstavané pozadie"),
         "Фон" to ("Background" to "Pozadie"),
         "Твій простір" to ("Your space" to "Tvoj priestor"),
         "Твій день у власному настрої" to ("Your day, your atmosphere" to "Tvoj deň, tvoja atmosféra"),

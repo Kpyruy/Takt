@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.data
 
 interface BackupRepository {
+    val changes: kotlinx.coroutines.flow.Flow<Unit> get() = kotlinx.coroutines.flow.emptyFlow()
     suspend fun exportJson(): String
     suspend fun importJson(raw: String)
 

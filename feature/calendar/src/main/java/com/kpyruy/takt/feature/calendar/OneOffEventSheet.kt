@@ -26,6 +26,7 @@ import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.ui.components.LessonTypeSelector
 import com.kpyruy.takt.core.ui.components.CourseLinkSelector
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.OneOffScheduleEvent
 import com.kpyruy.takt.core.model.OneOffScheduleEventType
@@ -69,7 +70,7 @@ fun OneOffEventForm(
     initialType: OneOffScheduleEventType = OneOffScheduleEventType.EXTRA,
     initialTitle: String = "",
     initialCourseId: String? = null,
-    initialLessonType: LessonType = LessonType.UNSPECIFIED,
+    initialLessonType: LessonType = if (initialType == OneOffScheduleEventType.EXTRA) LessonType.EVENT else LessonType.UNSPECIFIED,
     initialStartTime: LocalTime? = null,
     initialEndTime: LocalTime? = null,
     initialRoom: String = "",
@@ -121,22 +122,21 @@ fun OneOffEventForm(
         }
 
         if (!isReminder) {
-        CourseLinkSelector(courses, linkedCourseId) { course ->
-            if (title.isBlank() || title == courses.firstOrNull { it.id == linkedCourseId }?.title) title = course?.title.orEmpty()
-            linkedCourseId = course?.id
-        }
-        LessonTypeSelector(lessonType) { lessonType = it }
-
+            CourseLinkSelector(courses, linkedCourseId) { course ->
+                if (title.isBlank() || title == courses.firstOrNull { it.id == linkedCourseId }?.title) title = course?.title.orEmpty()
+                linkedCourseId = course?.id
+            }
+            LessonTypeSelector(lessonType) { lessonType = it }
         }
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
             label = { Text(if (isReminder) t("Що нагадати") else t("Назва")) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("oneoff-title"),
             singleLine = true,
         )
 
-        if (!isReminder) {
+        if (!isReminder && lessonType != LessonType.EVENT) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = type == OneOffScheduleEventType.EXTRA,
@@ -149,9 +149,9 @@ fun OneOffEventForm(
                     label = { Text(t("Блокова акція")) },
                 )
             }
-        } else {
+        } else if (isReminder) {
             Text(
-                t("Це нагадування відображається всередині Takt; системне Android-сповіщення не створюється."),
+                t("Сповіщення для нагадувань можна налаштувати в «Під себе» → «Сповіщення»."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -164,7 +164,7 @@ fun OneOffEventForm(
                 date = it
                 error = null
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("oneoff-date"),
         )
 
         Row(
@@ -196,8 +196,8 @@ fun OneOffEventForm(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(t("Аудиторія")) },
-                modifier = Modifier.fillMaxWidth(),
+                label = { Text(if (lessonType == LessonType.EVENT) t("Місце") else t("Аудиторія")) },
+                modifier = Modifier.fillMaxWidth().testTag("oneoff-room"),
                 singleLine = true,
             )
         }
@@ -226,12 +226,12 @@ fun OneOffEventForm(
                         startTime = startTime,
                         endTime = endTime,
                         room = if (isReminder) null else room.trim().ifBlank { null },
-                        type = type,
+                        type = if (!isReminder && lessonType == LessonType.EVENT) OneOffScheduleEventType.EXTRA else type,
                     )
                 )
             },
             enabled = title.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("oneoff-save"),
         ) {
             Text(if (initialEvent == null) t("Додати") else t("Оновити"))
         }

@@ -2,6 +2,8 @@ package com.kpyruy.takt.core.ui.i18n
 
 /** Ukrainian source phrases are stable lookup keys for Slovak UI text. */
 internal val skTranslations: Map<String, String> = mapOf(
+    "Місце" to "Miesto",
+    "Сповіщення для нагадувань можна налаштувати в «Під себе» → «Сповіщення»." to "Upozornenia nastavíš v Prispôsobenie → Upozornenia.",
     "Коли" to "Kedy",
     "Результат" to "Výsledok",
     "Умови" to "Podmienky",

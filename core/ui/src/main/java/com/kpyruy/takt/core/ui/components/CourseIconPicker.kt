@@ -1,6 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
 import com.kpyruy.takt.core.ui.i18n.t
+import com.kpyruy.takt.core.ui.i18n.tf
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -43,7 +44,7 @@ fun CourseIconPicker(selectedKey: String?, onSelect: (String?) -> Unit, onDismis
                 Text(t("Іконка предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                 IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити іконки")) }
             }
-            Text(t("${CourseIcons.all.size} іконок · обери свою"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tf("%d іконок · обери свою", CourseIcons.all.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TaktTextField(query, { query = it }, Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 placeholder = { Text(t("Пошук іконки")) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +43,7 @@ import com.kpyruy.takt.core.data.UisLessonOption
 import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
-import com.kpyruy.takt.core.ui.components.LessonTypeIcon
+import com.kpyruy.takt.core.ui.components.LessonTypeSelector
 import com.kpyruy.takt.core.ui.components.glassSurface
 import com.kpyruy.takt.core.ui.components.taktPressFeedback
 import com.kpyruy.takt.core.ui.components.CourseLinkSelector
@@ -141,10 +140,9 @@ fun AddLessonForm(
     var recurrence by remember(editingId) {
         mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
     }
-    var typeMenuExpanded by remember { mutableStateOf(false) }
     var repeatMenuExpanded by remember { mutableStateOf(false) }
     val linkedCourse = courses.firstOrNull { it.id == linkedCourseId }
-    val savedTitle = linkedCourse?.title ?: title
+    val savedTitle = if (lessonType == LessonType.EVENT) title else linkedCourse?.title ?: title
     var showTimeError by remember { mutableStateOf(false) }
     var uisLessons by remember { mutableStateOf<List<UisLessonOption>>(emptyList()) }
     var uisLoading by remember { mutableStateOf(false) }
@@ -225,40 +223,20 @@ fun AddLessonForm(
                 }
             }
         }
-        if (linkedCourse == null) OutlinedTextField(
+        if (linkedCourse == null || lessonType == LessonType.EVENT) OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(t("Назва предмета")) },
+            label = { Text(if (lessonType == LessonType.EVENT) t("Назва") else t("Назва предмета")) },
             modifier = Modifier.fillMaxWidth().testTag("lesson-custom-title"),
             singleLine = true,
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(t("Тип заняття"), style = MaterialTheme.typography.titleSmall)
-            Box(Modifier.fillMaxWidth()) {
-                LessonChoiceTrigger(t(lessonType.label), "lesson-type-trigger", { typeMenuExpanded = true }) {
-                    if (lessonType == LessonType.UNSPECIFIED) Icon(Icons.Outlined.HelpOutline, null)
-                    else LessonTypeIcon(lessonType)
-                }
-                TaktChoiceMenu(typeMenuExpanded, onDismissRequest = { typeMenuExpanded = false }) {
-                    LessonType.entries.forEach { option ->
-                        TaktChoiceMenuItem(text = { Text(t(option.label)) },
-                            modifier = Modifier.testTag("lesson-type-${option.name}").semantics { selected = lessonType == option },
-                            leadingIcon = {
-                                if (option == LessonType.UNSPECIFIED) Icon(Icons.Outlined.HelpOutline, null)
-                                else LessonTypeIcon(option)
-                            },
-                            trailingIcon = { if (lessonType == option) Icon(Icons.Outlined.Check, null) },
-                            onClick = { lessonType = option; typeMenuExpanded = false })
-                    }
-                }
-            }
-        }
+        LessonTypeSelector(lessonType) { lessonType = it }
 
         OutlinedTextField(
             value = room,
             onValueChange = { room = it },
-            label = { Text(t("Аудиторія")) },
+            label = { Text(if (lessonType == LessonType.EVENT) t("Місце") else t("Аудиторія")) },
             modifier = Modifier.fillMaxWidth().testTag("lesson-room"),
             singleLine = true,
         )

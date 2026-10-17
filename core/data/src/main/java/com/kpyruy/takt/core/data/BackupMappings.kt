@@ -281,6 +281,7 @@ internal fun BackupExamMaterial.toEntity() = ExamMaterialEntity(
 )
 
 internal fun AppSettings.toBackup() = BackupSettings(
+    reminders = reminders.toBackup(),
     cancellationStyle = cancellationStyle.name,
     showHiddenLessons = showHiddenLessons,
     parityOverride = parityOverride.name,
@@ -304,7 +305,9 @@ internal fun AppSettings.toBackup() = BackupSettings(
     uisApplyProgressAutomatically = uisAutoSync.applyProgressAutomatically,
 )
 
-internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null) = AppSettings(
+internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null, localWallpaper: String? = null) = AppSettings(
+    customWallpaper = com.kpyruy.takt.core.model.normalizeWallpaperReference(localWallpaper),
+    reminders = reminders.toModel(),
     customThemes = customThemes.map {
         com.kpyruy.takt.core.model.CustomColorTheme(it.id, it.name, it.primaryHex, it.secondaryHex, it.tertiaryHex)
     },
@@ -370,6 +373,7 @@ internal fun List<BackupSemesterPeriod>.toModel(): Map<Int, SemesterPeriod> = ma
 }.toMap()
 
 internal fun HomeWorkFilter.toBackup() = BackupHomeWorkFilter(
+    courseIds = courseIds.sorted(),
     period = period.name,
     courseId = courseId,
     types = types.map { it?.name ?: "TASK" }.sorted(),
@@ -380,6 +384,7 @@ internal fun HomeWorkFilter.toBackup() = BackupHomeWorkFilter(
 )
 
 internal fun BackupHomeWorkFilter.toModel() = HomeWorkFilter(
+    courseIds = courseIds.filter(String::isNotBlank).toSet(),
     period = when (period) {
         "SEVEN_CLASS_DAYS" -> HomeWorkPeriod.SEVEN_DAYS
         else -> runCatching { HomeWorkPeriod.valueOf(period) }.getOrDefault(HomeWorkPeriod.FOURTEEN_DAYS)

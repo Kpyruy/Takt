@@ -9,6 +9,8 @@ import android.net.Uri
 import com.kpyruy.takt.core.model.normalizeWallpaperReference
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,7 +21,7 @@ class WallpaperStore(context: Context) {
     private val app = context.applicationContext
     private val directory get() = File(app.filesDir, "wallpapers").also { check(it.isDirectory || it.mkdirs()) }
 
-    suspend fun import(uri: Uri, keepReference: String?): String = imports.withLock { withContext(Dispatchers.IO) {
+    suspend fun importImage(uri: Uri, keepReference: String?): String = imports.withLock { withContext(Dispatchers.IO) {
         val directory = directory
         val temporary = File.createTempFile("import-", ".tmp", directory)
         var decoded: Bitmap? = null
@@ -32,6 +34,7 @@ class WallpaperStore(context: Context) {
                 val buffer = ByteArray(32 * 1024)
                 var total = 0L
                 while (true) {
+                    currentCoroutineContext().ensureActive()
                     val count = input.read(buffer)
                     if (count < 0) break
                     total += count
@@ -44,6 +47,7 @@ class WallpaperStore(context: Context) {
             WallpaperImageLimits.outputSize(options.outWidth, options.outHeight)
             options.inJustDecodeBounds = false
             options.inPreferredConfig = Bitmap.Config.ARGB_8888
+            options.inMutable = true
             options.inSampleSize = 1
             while (maxOf(options.outWidth, options.outHeight) / options.inSampleSize > WallpaperImageLimits.MAX_EDGE) {
                 options.inSampleSize *= 2
@@ -69,18 +73,14 @@ class WallpaperStore(context: Context) {
             val result = if (width == rotated.width && height == rotated.height) rotated
                 else Bitmap.createScaledBitmap(rotated, width, height, true)
             bounded = result
-            // Composite transparent formats onto a neutral background before JPEG encoding.
-            val opaque = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            try {
-                android.graphics.Canvas(opaque).apply {
-                    drawColor(android.graphics.Color.rgb(96, 104, 112))
-                    drawBitmap(result, 0f, 0f, null)
-                }
-                temporary.outputStream().use { output ->
-                    check(opaque.compress(Bitmap.CompressFormat.JPEG, 90, output))
-                    output.fd.sync()
-                }
-            } finally { opaque.recycle() }
+            // Flatten transparency in place; do not allocate a third full-size pixel buffer.
+            android.graphics.Canvas(result).drawColor(android.graphics.Color.rgb(96, 104, 112),
+                android.graphics.PorterDuff.Mode.DST_OVER)
+            result.setHasAlpha(false)
+            temporary.outputStream().use { output ->
+                check(result.compress(Bitmap.CompressFormat.JPEG, 90, output))
+                output.fd.sync()
+            }
             val reference = "wallpaper-${UUID.randomUUID()}.jpg"
             val destination = File(directory, reference)
             check(temporary.renameTo(destination))
@@ -99,6 +99,34 @@ class WallpaperStore(context: Context) {
             decoded?.recycle()
         }
     } }
+
+    suspend fun exportWallpaper(reference: String?): BackupWallpaper? = withContext(Dispatchers.IO) {
+        val safe = normalizeWallpaperReference(reference) ?: return@withContext null
+        val file = File(directory, safe)
+        if (!file.isFile) return@withContext null
+        BackupWallpaper.fromBytes(file.readBytes())
+    }
+
+    /** Restore already-normalized owned pixels byte-for-byte, without repeated JPEG degradation. */
+    suspend fun restoreWallpaper(photo: BackupWallpaper, keepReference: String?): String = imports.withLock {
+        withContext(Dispatchers.IO) {
+            val bytes = photo.decodedBytes()
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            require(options.outWidth in 1..2048 && options.outHeight in 1..2048) { "Invalid wallpaper dimensions" }
+            requireNotNull(BitmapFactory.decodeByteArray(bytes, 0, bytes.size)).recycle()
+            val temporary = File.createTempFile("restore-", ".tmp", directory)
+            try {
+                temporary.outputStream().use { it.write(bytes); it.fd.sync() }
+                currentCoroutineContext().ensureActive()
+                val reference = "wallpaper-${UUID.randomUUID()}.jpg"
+                check(temporary.renameTo(File(directory, reference)))
+                directory.listFiles()?.filter { it.name != reference && it.name != normalizeWallpaperReference(keepReference) }
+                    ?.forEach { it.delete() }
+                reference
+            } finally { temporary.delete() }
+        }
+    }
 
     private companion object { val imports = Mutex() }
 }

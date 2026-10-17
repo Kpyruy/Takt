@@ -1,6 +1,7 @@
 package com.kpyruy.takt.app
 
 import android.graphics.Bitmap
+import com.kpyruy.takt.core.ui.components.TaktTourSemantics
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -30,13 +31,13 @@ class SlovakTourCorrectionsTest {
     }
 
     private fun phase(value: String) = compose.waitUntil(8_000) {
-        compose.onNodeWithTag("guided-tour").fetchSemanticsNode().config[SemanticsProperties.StateDescription].endsWith(":$value")
+        compose.onNodeWithTag("guided-tour").fetchSemanticsNode().config[TaktTourSemantics.Playback].endsWith(":$value")
     }
     private fun ready() = compose.waitUntil(8_000) {
         compose.onAllNodesWithTag("tour-next").fetchSemanticsNodes().any { !it.config.contains(SemanticsProperties.Disabled) }
     }
     private fun calendarState(): String = compose.onNodeWithTag("calendar-screen", useUnmergedTree = true)
-        .fetchSemanticsNode().config[SemanticsProperties.StateDescription]
+        .fetchSemanticsNode().config[TaktTourSemantics.CalendarState]
 
     @Test fun wholeRenderedTourIsSlovakAndItsDemonstrationsActuallyPerformTheirActions() {
         val original = runBlocking { data.backupRepository.exportJson() }

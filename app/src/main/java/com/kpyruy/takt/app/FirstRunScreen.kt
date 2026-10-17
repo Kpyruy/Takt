@@ -134,9 +134,10 @@ internal fun FirstRunScreen(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets.safeDrawing,
             bottomBar = {
-                    Column(Modifier.fillMaxWidth().clipToBounds().glassSurface(TaktSheetMaterialShape)
+                    Column(Modifier.fillMaxWidth().clipToBounds().glassSurface(TaktSheetMaterialShape, extendBackdrop = step == 2)
                         .testTag("onboarding-footer").navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = 20.dp).padding(top = if (step == 2) 16.dp else 12.dp,
+                            bottom = if (step == 2) 28.dp else 12.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         TaktPrimaryButton(
                             onClick = {

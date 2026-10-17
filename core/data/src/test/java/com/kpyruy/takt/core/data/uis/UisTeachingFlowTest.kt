@@ -27,11 +27,14 @@ class UisTeachingFlowTest {
                     path.contains("predmet=$current;") -> javaClass.getResource("/teaching/syllabus.html")!!.readText()
                     else -> return MockResponse().setResponseCode(400)
                 }
-                return MockResponse().setBody("<a href='/system/logout.pl'>Logout</a>" + html)
+                return MockResponse().setBody("<a href='/system/logout.pl'>Logout</a><a href='/auth/student/moje_studium.pl'>Study</a>" + html)
             }
         }
         server.start()
         val client = UisClient(server.url("/"))
+        val http = client.javaClass.getDeclaredField("http").apply { isAccessible = true }.get(client) as okhttp3.OkHttpClient
+        http.cookieJar.saveFromResponse(server.url("/"), listOf(okhttp3.Cookie.Builder()
+            .name("UISAuth").value("local-fixture").domain(server.url("/").host).path("/").build()))
         val course = Course("uis:210634:441154", "TPAR_6B", "Hardware", 5, 3, CourseStatus.ENROLLED,
             syllabusUrl = "https://is.stuba.sk/auth/katalog/syllabus.pl?predmet=441154")
         val repository = CachedCourseTeachingRepository({ c, refresh ->

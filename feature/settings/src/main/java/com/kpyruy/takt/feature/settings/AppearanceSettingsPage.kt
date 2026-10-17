@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface as SolidSurface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,8 +42,10 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 @Composable
 internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, onApply: (AppSettings) -> Unit) {
     BackHandler(onBack = onBack)
-    var draft by remember { mutableStateOf(settings.normalizedAppearance()) }
-    val changed = draft.themeMode != settings.themeMode || draft.themeFamily != settings.themeFamily ||
+    var wallpaperDraft by rememberSaveable { mutableStateOf(settings.customWallpaper) }
+    var draft by remember { mutableStateOf(settings.normalizedAppearance().copy(customWallpaper = wallpaperDraft)) }
+    var importingWallpaper by remember { mutableStateOf(false) }
+    val changed = draft.customWallpaper != settings.customWallpaper || draft.themeMode != settings.themeMode || draft.themeFamily != settings.themeFamily ||
         draft.cardAppearance != settings.cardAppearance || draft.customThemes != settings.customThemes ||
         draft.selectedCustomThemeId != settings.selectedCustomThemeId
     Scaffold(
@@ -50,7 +53,7 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             Surface(shadowElevation = 10.dp) {
-                Button(onClick = { onApply(draft.normalizedAppearance()) }, enabled = changed,
+                Button(onClick = { onApply(draft.normalizedAppearance()) }, enabled = changed && !importingWallpaper,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp)) {
                     Text(if (changed) t("Застосувати вигляд") else t("Вигляд застосовано"))
                 }
@@ -66,6 +69,7 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
             AppearanceLightingChoices(draft, { draft = it })
             SettingsSectionTitle(t("Палітра"))
             AppearanceThemeChoices(draft, { draft = it })
+            AppearanceWallpaperMenu(draft, settings.customWallpaper, { draft = it; wallpaperDraft = it.customWallpaper }, { importingWallpaper = it })
             SettingsSectionTitle(t("Стиль карток"))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(

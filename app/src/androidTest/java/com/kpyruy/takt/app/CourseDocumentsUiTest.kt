@@ -5,7 +5,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.documentfile.provider.DocumentFile
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
@@ -17,6 +16,7 @@ import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.feature.settings.SettingsScreen
 import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -46,16 +46,18 @@ class CourseDocumentsUiTest {
         val assets = instrumentation.context.assets
         val pdf = assets.open("course-document.pdf").use { it.readBytes() }
         var revision = 1
-        val currentBytes get() = if (revision == 1) pdf else pdf + "\n% revision 2\n".toByteArray()
+        fun currentBytes() = if (revision == 1) pdf else pdf + "\n% revision 2\n".toByteArray()
         fun fixture(name: String) = assets.open(name).bufferedReader().use { it.readText() }
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {
                 val path = request.path.orEmpty(); requests.add(path)
-                if (path == "/auth/dok_server/slozka.pl?id=287891;download=319089") {
+                if (path == "/auth/dok_server/slozka.pl?id=287891;download=319089")
+                    return MockResponse().setResponseCode(302).setHeader("Location", server.url("/auth/dok_server/./slozka.pl?id=287891;download=319089;z=1"))
+                if (path == "/auth/dok_server/slozka.pl?id=287891;download=319089;z=1") {
                     downloads.incrementAndGet()
                     return MockResponse().setHeader("Content-Type", "application/pdf")
                         .setHeader("Content-Disposition", "attachment; filename=lecture.pdf")
-                        .setBody(okio.Buffer().write(currentBytes))
+                        .setBody(okio.Buffer().write(currentBytes()))
                 }
                 val html = when (path) {
                     "/auth/dok_server/?lang=en" -> fixture("root.html")
@@ -115,21 +117,23 @@ class CourseDocumentsUiTest {
                 TaktTheme(settings) { TaktGlassBackground {
                     SettingsScreen(data.settingsRepository, data.backupRepository, data.documentStore,
                         data.studyPlanRepository, data.universityAccountRepository, { _, reply -> reply(DeviceAuthenticationResult.CANCELLED) },
-                        data.appReleaseRepository, {}, guidedPage = "documents")
+                        (compose.activity.application as TaktApplication).appReleaseRepository, {}, guidedPage = "documents")
                 } }
             } }
-            compose.onNodeWithText("Pripojiť Documents").performScrollTo().performClick()
+            compose.onNodeWithText("Pripojiť dokumenty").performScrollTo().performClick()
             val device = UiDevice.getInstance(instrumentation)
-            val use = device.wait(Until.findObject(By.textMatches("(?i)use this folder")), 8_000)
+            val use = device.wait(Until.findObject(By.text(java.util.regex.Pattern.compile("use this folder", java.util.regex.Pattern.CASE_INSENSITIVE))), 8_000)
             assertNotNull("System folder picker should open Documents", use)
             use.click()
-            val allow = device.wait(Until.findObject(By.textMatches("(?i)allow")), 5_000)
+            val allow = device.wait(Until.findObject(By.text(java.util.regex.Pattern.compile("allow", java.util.regex.Pattern.CASE_INSENSITIVE))), 5_000)
             if (allow != null) allow.click()
             compose.waitUntil(10_000) { data.documentStore.isConnected }
             subject()
             compose.onNodeWithTag("document-download-319089").performScrollTo().performClick()
             compose.waitUntil(8_000) { downloads.get() == 1 && compose.onAllNodesWithContentDescription("Uložené").fetchSemanticsNodes().isNotEmpty() }
-            val course = runBlocking { kotlinx.coroutines.flow.first(data.studyPlanRepository.observeCourses()).first { it.code == "FYZI_6B" } }
+            compose.onNodeWithTag("documents-folder-required").assertDoesNotExist()
+            compose.onNodeWithTag("documents-retry").assertDoesNotExist()
+            val course = runBlocking { data.studyPlanRepository.observeCourses().first().first { it.code == "FYZI_6B" } }
             val doc = runBlocking { repository.documents(course, setOf("FYZI_6B", "TPAR_6B")).files.first { it.documentId == "319089" } }
             val store = CourseDocumentDownloads(compose.activity, data.documentStore, repository.accountGeneration.value)
             val firstUri = runBlocking { store.saved(course, doc) }!!
@@ -140,16 +144,58 @@ class CourseDocumentsUiTest {
             compose.onNodeWithContentDescription("Aktualizovať").performClick()
             compose.waitUntil(8_000) { requests.count { it == "/auth/dok_server/?lang=en" } >= 2 }
             compose.onNodeWithTag("document-download-319089").performScrollTo().performClick()
-            compose.waitUntil(8_000) { downloads.get() == 2 }
+            compose.waitUntil(8_000) { downloads.get() == 2 && runBlocking { store.saved(course, doc) } != firstUri }
             compose.waitForIdle()
             val secondUri = runBlocking { store.saved(course, doc) }!!
             assertNotEquals(firstUri, secondUri)
-            assertArrayEquals(currentBytes, compose.activity.contentResolver.openInputStream(secondUri)!!.use { it.readBytes() })
+            assertArrayEquals(currentBytes(), compose.activity.contentResolver.openInputStream(secondUri)!!.use { it.readBytes() })
             // Public copies are intentional and cannot be silently overwritten by a teacher update.
             assertArrayEquals(pdf, compose.activity.contentResolver.openInputStream(firstUri)!!.use { it.readBytes() })
+            var opened: android.content.Intent? = null
+            val monitor = object : android.app.Instrumentation.ActivityMonitor() {
+                override fun onStartActivity(intent: android.content.Intent): android.app.Instrumentation.ActivityResult? {
+                    if (intent.action == android.content.Intent.ACTION_VIEW && intent.type == "application/pdf") {
+                        opened = android.content.Intent(intent)
+                        return android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_CANCELED, null)
+                    }
+                    return null
+                }
+            }
+            instrumentation.addMonitor(monitor)
+            try {
+                compose.onNodeWithTag("course-document-319089").performScrollTo().performClick()
+                compose.waitUntil(5_000) { opened != null }
+                assertEquals("content", opened!!.data!!.scheme)
+                assertTrue(opened!!.flags and android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+                assertArrayEquals(currentBytes(), compose.activity.contentResolver.openInputStream(opened!!.data!!)!!.use { it.readBytes() })
+                assertEquals("Opening again after refresh must reuse the refreshed preview", 2, downloads.get())
+            } finally { instrumentation.removeMonitor(monitor) }
+            // Teaching metadata updates must reach the actual connected SAF backup without a Room/settings change.
+            val savedTeaching = data.teachingStore.snapshot.value
+            val teaching = BackupTeaching(
+                listOf(BackupTeachingTeam("FYZI_6B", listOf(BackupTeacher("71659", "Review teacher")))),
+                listOf(BackupTeacherProfile("71659", "SLOVAK", "Review teacher", consultationHours = "Monday 10:00")),
+            )
+            val tree = android.net.Uri.parse(compose.activity.getSharedPreferences("takt_documents", 0).getString("tree_uri", null)!!)
+            val treeId = android.provider.DocumentsContract.getTreeDocumentId(tree)
+            val backupId = treeId + (if (treeId.endsWith(":Documents")) "/Takt/data.json" else "/data.json")
+            val backupUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, backupId)
+            try {
+                data.teachingStore.replace(teaching)
+                runBlocking { data.documentStore.saveCurrentToDocuments() }
+                data.teachingStore.replace(teaching.copy(profiles = teaching.profiles.map { it.copy(consultationHours = "Tuesday 12:00") }))
+                compose.waitUntil(8_000) {
+                    runCatching {
+                        val raw = compose.activity.contentResolver.openInputStream(backupUri)!!.bufferedReader().use { it.readText() }
+                        BackupPayloadCodec.decode(raw).teaching?.profiles?.single()?.consultationHours == "Tuesday 12:00"
+                    }.getOrDefault(false)
+                }
+            } finally { data.teachingStore.replace(savedTeaching) }
             assertTrue(requests.none { it.contains("tree_config_ajax") || it.contains("oznacit") })
-            compose.activity.contentResolver.delete(firstUri, null, null)
-            compose.activity.contentResolver.delete(secondUri, null, null)
+            repoType.getDeclaredMethod("clear").invoke(repository)
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("course-documents-sheet").fetchSemanticsNodes().isEmpty() }
+            android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, firstUri)
+            android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, secondUri)
         } finally { clientType.getDeclaredMethod("close").invoke(client); server.shutdown() }
     }
 

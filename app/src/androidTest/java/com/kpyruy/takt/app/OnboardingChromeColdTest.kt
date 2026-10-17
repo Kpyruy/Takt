@@ -9,11 +9,18 @@ import com.kpyruy.takt.core.model.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 
 class OnboardingChromeColdTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    private var previousComplete: Boolean? = null
+    @After fun restoreSetupFlag() {
+        previousComplete?.let {
+            compose.activity.getSharedPreferences("takt_onboarding", 0).edit().putBoolean("complete", it).commit()
+        }
+    }
     @Test fun unsavedDarkDraftOwnsSystemBarsAndFooterAfterColdSetup() {
         assumeTrue(android.os.Build.HARDWARE == "ranchu")
         val data = (compose.activity.application as TaktApplication).dataContainer
@@ -23,7 +30,9 @@ class OnboardingChromeColdTest {
             data.settingsRepository.setThemeFamily(ThemeFamily.BLUE)
             data.settingsRepository.setLanguage(AppLanguage.SLOVAK)
         }
-        compose.activity.getSharedPreferences("takt_onboarding", 0).edit().putBoolean("complete", false).commit()
+        val setup = compose.activity.getSharedPreferences("takt_onboarding", 0)
+        previousComplete = setup.getBoolean("complete", false)
+        setup.edit().putBoolean("complete", false).commit()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithTag("welcome-local").performScrollTo().performClick()
         compose.onNodeWithTag("onboarding-theme-DARK").performScrollTo().performClick()

@@ -16,7 +16,10 @@ class GuidedTourTest {
     private val data get() = (compose.activity.application as TaktApplication).dataContainer
 
     @Before fun language() {
-        runBlocking { data.settingsRepository.setLanguage(AppLanguage.UKRAINIAN) }
+        runBlocking {
+            data.settingsRepository.setLanguage(AppLanguage.UKRAINIAN)
+            data.settingsRepository.setThemeMode(com.kpyruy.takt.core.model.AppThemeMode.LIGHT)
+        }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
     }
 
@@ -31,12 +34,23 @@ class GuidedTourTest {
         start()
         GuidedTourStep.entries.forEach { step ->
             compose.onNodeWithTag("tour-card-${step.name}").assertIsDisplayed()
+            compose.waitUntil(8_000) { compose.onAllNodesWithTag("tour-next").fetchSemanticsNodes().any {
+                !it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled)
+            } }
             compose.waitUntil(5_000) { compose.onAllNodesWithTag("tour-spotlight").fetchSemanticsNodes().isNotEmpty() }
             val card = compose.onNodeWithTag("tour-card-${step.name}").fetchSemanticsNode().boundsInRoot
             val target = compose.onNodeWithTag("tour-spotlight").fetchSemanticsNode().boundsInRoot
             assertFalse("${step.name}: card covers its target", card.overlaps(target))
             screenshot("tour-${step.name}.png")
-            compose.onNodeWithTag("tour-next").performClick()
+            if (step == GuidedTourStep.entries.last()) {
+                compose.mainClock.autoAdvance = false
+                try {
+                    compose.onNodeWithTag("tour-next").performClick()
+                    compose.mainClock.advanceTimeBy(500)
+                    screenshot("tour-confetti.png")
+                    compose.mainClock.advanceTimeBy(3000)
+                } finally { compose.mainClock.autoAdvance = true }
+            } else compose.onNodeWithTag("tour-next").performClick()
         }
         compose.onNodeWithTag("tour-completed").assertIsDisplayed()
         compose.onNodeWithText("Приємного користування аплікацією").assertIsDisplayed()
@@ -89,6 +103,8 @@ class GuidedTourTest {
     }
 
     private fun screenshot(name: String) {
+        compose.waitForIdle()
+        android.os.SystemClock.sleep(80) // Let SurfaceFlinger present the tested Compose frame.
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val bitmap = instrumentation.uiAutomation.takeScreenshot()
         instrumentation.targetContext.openFileOutput(name, 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

@@ -26,27 +26,31 @@ class FollowUpChromeTest {
             data.settingsRepository.setThemeMode(AppThemeMode.DARK)
             data.settingsRepository.setThemeFamily(ThemeFamily.PURPLE)
             val sample = data.database.courseDao().observeAll().first().first()
-            data.database.courseDao().insertAll((1..12).map { sample.copy(id = "follow-$it", title = "Predmet $it", semester = 3, status = "enrolled") })
+            data.database.courseDao().insertAll((1..12).map { sample.copy(id = "follow-$it", title = "Я Predmet $it", semester = 3, status = "enrolled") })
             data.gradeRepository.observeItems("glass-physics").first().forEach { data.gradeRepository.deleteItem(it.id) }
             data.studyContentRepository.observeTasks("glass-physics").first().forEach { data.studyContentRepository.deleteTask(it.id) }
             data.gradeRepository.upsertItem(GradeItem("follow-score", "glass-physics", "Test", GradeItemType.TEST, 17.0, 20.0, completed = true))
             data.awaitRestoredPlanning()
         }
         compose.waitForIdle()
+        dismissConnectionPrompt()
     }
-    @Test fun subjectsHeaderTransitionsAndCourseworkRemainsSeventeenOfTwenty() {
+    @Test fun subjectsUsesNormalHeaderWhileCourseworkRemainsSeventeenOfTwenty() {
         start()
         root("Предмети")
-        compose.onNodeWithTag("subjects-glass-header").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "clear"))
-        capture("subjects-clear")
+        compose.onNodeWithTag("subjects-glass-header").assertDoesNotExist()
+        val headerBefore = compose.onNodeWithTag("subjects-header").fetchSemanticsNode().boundsInRoot
+        capture("subjects-normal")
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(8)
-        compose.onNodeWithTag("subjects-glass-header").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "glass"))
-        capture("subjects-glass")
+        compose.onNodeWithTag("subjects-glass-header").assertDoesNotExist()
+        assertEquals(headerBefore, compose.onNodeWithTag("subjects-header").fetchSemanticsNode().boundsInRoot)
+        capture("subjects-normal-scrolled")
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
         compose.onNode(hasText(t("Екзамен")) and hasClickAction()).performClick()
         compose.onNodeWithTag("exam-available-metric").assertDoesNotExist()
-        compose.onNodeWithTag("exam-semester-metric").assert(hasText("17", substring = true) and hasText("/ 20", substring = true))
+        compose.onNode(hasText("17") and hasAnyAncestor(hasTestTag("exam-semester-metric"))).assertExists()
+        compose.onNode(hasText("/ 20") and hasAnyAncestor(hasTestTag("exam-semester-metric"))).assertExists()
         capture("exam-coursework")
     }
     @Test fun weekHidesDayStripPinchesAndStillScrollsWithOneFinger() {
@@ -70,7 +74,6 @@ class FollowUpChromeTest {
         }
         val scaled = grid.fetchSemanticsNode().config[SemanticsProperties.StateDescription].removeSuffix("%").toInt()
         assertTrue("Pinch must scale the temporal grid", scaled > 100)
-        val day = java.time.LocalDate.now()
         val event = compose.onNodeWithTag("week-timetable-event-glass-lecture")
         val before = event.fetchSemanticsNode().boundsInRoot.left
         compose.onNodeWithTag("week-timetable-days").performTouchInput { swipeLeft(durationMillis = 450) }
@@ -78,10 +81,67 @@ class FollowUpChromeTest {
         assertTrue("One-finger horizontal scrolling must remain enabled", after < before)
         capture("week-zoomed")
     }
+    @Test fun captureNewFormsPaletteAndNoteReader() {
+        start()
+        root("Предмети")
+        compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Нотатки")) and SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)).performClick()
+        capture("notes-preview")
+        compose.onNodeWithTag("note-preview-glass-formulas").performClick()
+        compose.onNodeWithTag("note-reader").assertIsDisplayed()
+        capture("note-reader")
+        compose.onNodeWithTag("note-reader-close").performClick()
+        compose.onNodeWithTag("subject-header-back").performClick()
+        compose.onNodeWithTag("root-add").performClick()
+        capture("add-menu")
+        compose.onNodeWithTag("global-add-CLASS").performClick()
+        compose.onNodeWithTag("lesson-type-trigger").performScrollTo().performClick()
+        capture("lesson-type-menu")
+        nativeBack()
+        nativeBack()
+        compose.onNodeWithTag("root-add").performClick()
+        compose.onNodeWithTag("global-add-TEST").performClick()
+        compose.onAllNodes(hasText("Фізика") and hasClickAction()).onLast().performScrollTo().performClick()
+        capture("assessment-compact")
+        compose.onNodeWithTag("grade-maximum").performClick()
+        compose.onNodeWithTag("grade-maximum").performTextInput("20")
+        capture("assessment-keyboard")
+        nativeBack()
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        capture("assessment-details")
+        compose.onNodeWithTag("grade-details-done").performClick()
+        nativeBack()
+        root("Предмети")
+        compose.onNodeWithTag("subjects-settings").performClick()
+        compose.onNode(hasText(t("Вигляд")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-create").performScrollTo()
+        compose.onNodeWithTag("palette-live-preview").assertIsDisplayed()
+        capture("palette-pinned")
+    }
+    private fun nativeBack() {
+        instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+        compose.waitForIdle()
+        instrumentation.waitForIdleSync()
+    }
+    private fun dismissConnectionPrompt() {
+        val dismissId = compose.activity.resources.getIdentifier("m3c_snackbar_dismiss", "string", compose.activity.packageName)
+        if (dismissId != 0) {
+            val labels = listOf(java.util.Locale.ENGLISH, java.util.Locale("sk"), java.util.Locale("uk")).map {
+                compose.activity.createConfigurationContext(android.content.res.Configuration(compose.activity.resources.configuration).apply { setLocale(it) }).getString(dismissId)
+            }
+            val nodes = compose.onAllNodes(labels.map { hasContentDescription(it) }.reduce { a,b -> a or b })
+            compose.waitUntil(7_000) { nodes.fetchSemanticsNodes().isNotEmpty() }
+            nodes.onFirst().performClick()
+        }
+    }
     private fun root(key: String) = compose.onAllNodes(hasText(t(key)) and hasClickAction()).onLast().performClick()
     private fun capture(name: String) {
         compose.mainClock.advanceTimeBy(500); compose.waitForIdle()
+        compose.waitForIdle()
         instrumentation.waitForIdleSync()
+        // Android dialog/window transitions use the compositor clock, outside Compose's test clock.
+        android.os.SystemClock.sleep(400)
         val bitmap = instrumentation.uiAutomation.takeScreenshot()
         instrumentation.targetContext.openFileOutput("follow-$name.png", 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()

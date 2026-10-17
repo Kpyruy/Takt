@@ -109,9 +109,11 @@ fun TaktApp(
     universityAccountRepository: UniversityAccountRepository,
     authenticateDevice: DeviceAuthenticationRequest,
     appReleaseRepository: AppReleaseRepository,
+    onStartTour: () -> Unit = {},
 ) {
     val releaseState by appReleaseRepository.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
+    var settingsEntryPage by remember { mutableStateOf<String?>(null) }
     val snapshotState = planningSnapshot.collectAsStateWithLifecycle()
     val availableCourses by remember(snapshotState) {
         derivedStateOf(structuralEqualityPolicy()) { snapshotState.value?.courses }
@@ -231,7 +233,8 @@ fun TaktApp(
     var actionEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
 
     fun navigateRoot(destination: Destination) {
-        if (destination.route == currentRoute) return
+        // Read the live destination: a stale composition must not push the same root twice.
+        if (destination.route == navController.currentBackStackEntry?.destination?.route) return
         navController.navigate(destination.route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
@@ -299,7 +302,7 @@ fun TaktApp(
             },
             modifier = Modifier.padding(if (showRootNavigation) androidx.compose.foundation.layout.PaddingValues(
                 top = padding.calculateTopPadding(), bottom = 0.dp) else padding)
-                .consumeWindowInsets(padding).captureTaktContentBackdrop().testTag("root-content"),
+                .consumeWindowInsets(padding).captureTaktContentBackdrop(enabled = showRootNavigation).testTag("root-content"),
         ) {
             composable(Destination.HOME.route) {
                 HomeScreen(
@@ -354,6 +357,8 @@ fun TaktApp(
                 )
             }
             composable(SETTINGS_ROUTE) {
+                val requestedPage = remember { settingsEntryPage }
+                LaunchedEffect(Unit) { settingsEntryPage = null }
                 SettingsScreen(
                     settingsRepository = settingsRepository,
                     backupRepository = backupRepository,
@@ -363,6 +368,8 @@ fun TaktApp(
                     authenticateDevice = authenticateDevice,
                     appReleaseRepository = appReleaseRepository,
                     onBack = { navController.popBackStack() },
+                    onStartTour = onStartTour,
+                    guidedPage = requestedPage,
                 )
             }
             composable(
@@ -384,6 +391,11 @@ fun TaktApp(
                     documentStore = documentStore,
                     uisManaged = uisAccount,
                     courseId = resolvedId,
+                    teachingRepository = universityAccountRepository.teachingRepository,
+                    courseDocumentsRepository = universityAccountRepository.courseDocumentsRepository,
+                    authenticateTeaching = authenticateDevice,
+                    onOpenUisSettings = { settingsEntryPage = null; navController.navigate(SETTINGS_ROUTE) },
+                    onOpenDocumentSettings = { settingsEntryPage = "documents"; navController.navigate(SETTINGS_ROUTE) },
                     initialTab = when (entry.arguments?.getString("tab")) {
                         "tasks", "grades" -> "tasks"
                         "exam" -> "exam"

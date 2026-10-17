@@ -10,6 +10,11 @@ class CalendarViewMotionTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun dayAndMonthMoveTogetherRatherThanTeleporting() {
+        kotlinx.coroutines.runBlocking {
+            (compose.activity.application as TaktApplication).dataContainer.settingsRepository
+                .setLanguage(com.kpyruy.takt.core.model.AppLanguage.UKRAINIAN)
+        }
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
         compose.onAllNodes(hasText("Календар") and hasClickAction()).onLast().performClick()
         compose.onNodeWithTag("calendar-week-strip").assertIsDisplayed()
         val dayX = compose.onNodeWithTag("calendar-week-strip").fetchSemanticsNode().positionInRoot.x

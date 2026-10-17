@@ -13,10 +13,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TaktIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(onClick = onClick, modifier = modifier.size(48.dp)) {
+fun TaktIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    IconButton(onClick = onClick, modifier = modifier.size(48.dp), enabled = enabled) {
         Box(Modifier.size(40.dp).glassSurface(CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription, Modifier.size(21.dp), tint = MaterialTheme.colorScheme.onSurface)
+            Icon(icon, contentDescription, Modifier.size(21.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .38f))
         }
     }
 }

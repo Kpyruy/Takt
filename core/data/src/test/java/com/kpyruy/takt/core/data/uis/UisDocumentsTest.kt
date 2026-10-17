@@ -7,6 +7,7 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.launch
 
 class UisDocumentsTest {
     private val server = MockWebServer().apply { start() }
@@ -70,6 +71,33 @@ class UisDocumentsTest {
         assertFalse(listing.truncated)
     }
 
+    @Test fun followsTheSuppliedSameAttachmentRedirectAndStreamsTheActualWordDocument() {
+        connect()
+        val bytes = javaClass.getResourceAsStream("/documents/Laboratorne_cvicenie.doc")!!.readBytes()
+        assertEquals(39936, bytes.size)
+        server.enqueue(MockResponse().setResponseCode(302).setHeader("Location",
+            server.url("/auth/dok_server/./slozka.pl?id=288920;download=318624;z=1")))
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/msword")
+            .setHeader("Content-Disposition", "attachment; filename=\"Laboratorne_cvicenie.doc\"")
+            .setBody(okio.Buffer().write(bytes)))
+        val output = ByteArrayOutputStream()
+        val actual = client.downloadCourseDocument(CourseDocumentFile("288920", "318624", "Laboratórne cvičenie", "application/msword"), output)
+        assertArrayEquals(bytes, output.toByteArray())
+        assertEquals("Laboratorne_cvicenie.doc", actual.fileName)
+        assertEquals("application/msword", actual.mimeType)
+        assertEquals(39936L, actual.byteCount)
+        assertEquals("/auth/dok_server/slozka.pl?id=288920;download=318624", server.takeRequest().path)
+        assertEquals("/auth/dok_server/slozka.pl?id=288920;download=318624;z=1", server.takeRequest().path)
+    }
+
+    @Test fun redirectFlagCannotEnableFolderActionsOrUnknownValues() {
+        val base = server.url("/auth/dok_server/")
+        for (query in listOf("id=10;z=1", "id=10;download=20;z=0", "id=10;download=20;z=2",
+            "id=10;download=20;z=1;z=1", "id=10;download=20;z=1;delete=1")) {
+            assertNull(query, UisDocumentsParser.link("slozka.pl?$query", base))
+        }
+    }
+
     @Test fun streamsBinaryAndUsesUtf8DispositionFilename() {
         connect()
         server.enqueue(MockResponse().setHeader("Content-Type", "application/pdf")
@@ -93,6 +121,66 @@ class UisDocumentsTest {
         server.enqueue(MockResponse().setResponseCode(302).setHeader("Location", "https://elsewhere.example/file.pdf"))
         assertTrue(runCatching { client.downloadCourseDocument(document, out) }.isFailure)
         assertEquals(0, out.size())
+    }
+
+    @Test fun traversalCapReportsTruncationAndNeverRequestsTheNextPage() {
+        connect()
+        server.enqueue(page("""<a href="slozka.pl?id=10">FYZI_6B Physics</a>"""))
+        repeat(40) { n -> server.enqueue(page("""<a rel="next" href="slozka.pl?id=10;strana=${n + 2}">Next</a>""")) }
+        val result = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"))
+        assertTrue(result.truncated)
+        assertEquals(45, server.requestCount)
+    }
+
+    @Test fun oversizedDocumentFailsBeforeAnyBytesReachTheDestination() {
+        connect()
+        server.enqueue(MockResponse().setBody("%PDF-1.7\n" + "x".repeat(600))
+            .setHeader("Content-Type", "application/pdf").setHeader("Content-Length", 60L * 1024 * 1024))
+        val output = ByteArrayOutputStream()
+        val error = runCatching { client.downloadCourseDocument(CourseDocumentFile("10", "20", "Lecture", "application/pdf"), output) }.exceptionOrNull()
+        assertTrue(error?.message.orEmpty().contains("50 MiB"))
+        assertEquals(0, output.size())
+    }
+
+    @Test fun serverRedirectCannotTurnAFolderListingIntoAnUnrelatedFacultyCrawl() {
+        connect()
+        server.enqueue(page("""<a href="slozka.pl?id=10">FYZI_6B Physics</a>"""))
+        server.enqueue(MockResponse().setResponseCode(302).setHeader("Location", "/auth/dok_server/slozka.pl?id=999"))
+        assertTrue(runCatching { client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B")) }.isFailure)
+        assertEquals(6, server.requestCount)
+    }
+
+    @Test fun alreadyCancelledTransferCannotIssueARequestOrWriteBytes() {
+        connect()
+        val output = ByteArrayOutputStream()
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(true)
+        val failure = runCatching { client.downloadCourseDocument(
+            CourseDocumentFile("10", "20", "Lecture", "application/pdf"), output, cancelled) }.exceptionOrNull()
+        assertTrue(failure is java.io.InterruptedIOException)
+        assertEquals(4, server.requestCount)
+        assertEquals(0, output.size())
+    }
+
+    @Test fun cancellingSessionDownloadInterruptsTheBlockedRequestAndKeepsSessionUsable() = kotlinx.coroutines.runBlocking {
+        connect()
+        val session = UisSession()
+        UisSession::class.java.getDeclaredField("client").apply { isAccessible = true }.set(session, client)
+        @Suppress("UNCHECKED_CAST")
+        val state = UisSession::class.java.getDeclaredField("mutableState").apply { isAccessible = true }
+            .get(session) as kotlinx.coroutines.flow.MutableStateFlow<UisResult>
+        state.value = UisResult.CONNECTED
+        server.enqueue(MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE))
+        val output = ByteArrayOutputStream()
+        val job = launch(kotlinx.coroutines.Dispatchers.Default) {
+            session.downloadCourseDocument(CourseDocumentFile("10", "20", "Lecture", "application/pdf"), output)
+        }
+        assertNotNull(server.takeRequest(3, java.util.concurrent.TimeUnit.SECONDS))
+        job.cancel()
+        kotlinx.coroutines.withTimeout(2_000) { job.join() }
+        assertEquals(UisResult.CONNECTED, session.state.value)
+        assertEquals(0, output.size())
+        server.enqueue(page(""))
+        assertEquals(UisResult.CONNECTED, client.checkSession())
     }
 
     @Test fun expiredRootIsAuthenticationFailureRatherThanEmptyDocuments() {

@@ -18,6 +18,6 @@ internal class NavigationTapGate(private val cooldownMs: Long, private val nowMs
 /** Shared by a whole rail so alternating different buttons cannot bypass its cooldown. */
 @Composable
 fun rememberTabSwitchGuard(): (() -> Unit) -> Unit {
-    val gate = remember { NavigationTapGate(TaktMotion.NavigationMs.toLong(), SystemClock::elapsedRealtime) }
+    val gate = remember { NavigationTapGate(TaktMotion.NavigationTapCooldownMs.toLong(), SystemClock::elapsedRealtime) }
     return remember(gate) { { action -> if (gate.tryAcquire()) action() } }
 }

@@ -190,6 +190,7 @@ class TaktDocumentStore(
             merge(
                 database.invalidationTracker.createFlow(*tables, emitInitialState = false).map { Unit },
                 settingsRepository.settings.map { Unit },
+                backupRepository.changes,
             ).debounce(350).collect {
                 runCatching { syncIfChanged() }.onFailure { _status.value = DocumentSyncStatus.ERROR }
             }
@@ -244,6 +245,22 @@ class TaktDocumentStore(
             throw error
         }
         TaktMaterialReference.encode(folderName, target.name ?: fileName)
+    }
+
+    /** Store an explicit UIS download beside this course's existing materials. */
+    suspend fun saveDownloadedDocument(courseCode: String, source: java.io.File, name: String, mime: String): Uri = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            val root = requireRoot()
+            val code = CourseDocumentPaths.courseFolder(courseCode)
+            val folder = root.findFile(code) ?: root.createDirectory(code) ?: error("Не вдалося створити папку предмета")
+            val target = folder.createFile(mime, CourseDocumentPaths.fileName(name)) ?: error("Не вдалося створити файл")
+            try {
+                source.inputStream().use { input -> resolver.openOutputStream(target.uri, "wt").use { output ->
+                    copyCancellable(input, requireNotNull(output))
+                } }
+                target.uri
+            } catch (failure: Throwable) { target.delete(); throw failure }
+        }
     }
 
     suspend fun resolve(uri: String): Uri? = withContext(Dispatchers.IO) {
@@ -316,7 +333,7 @@ class TaktDocumentStore(
     private fun hash(raw: String) = MessageDigest.getInstance("SHA-256")
         .digest(raw.toByteArray()).joinToString("") { "%02x".format(it) }
     private fun sameData(a: String, b: String) =
-        BackupPayloadCodec.decode(a).copy(version = 0) == BackupPayloadCodec.decode(b).copy(version = 0)
+        sameDocumentBackupData(a, b)
 
     private fun isPristine(raw: String): Boolean = BackupPayloadCodec.decode(raw).hasNoUserContent()
 

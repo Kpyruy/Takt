@@ -139,7 +139,7 @@ fun QuickAddSheet(
                     title = it
                     error = null
                 },
-                label = { Text(if (type == QuickAddType.CLASS) t("Назва пари") else t("Назва")) },
+                label = { Text(if (type == QuickAddType.CLASS && lessonType != com.kpyruy.takt.core.model.LessonType.EVENT) t("Назва пари") else t("Назва")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )

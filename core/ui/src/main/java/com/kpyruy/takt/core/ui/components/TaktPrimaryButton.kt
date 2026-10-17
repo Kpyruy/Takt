@@ -36,8 +36,8 @@ fun TaktPrimaryButton(
     Button(
         onClick = onClick, enabled = enabled, shape = shape,
         modifier = modifier.heightIn(min = 52.dp)
-            .shadow(if (enabled) 8.dp else 0.dp, shape, spotColor = primary.copy(alpha = .35f))
-            .clip(shape).background(Brush.verticalGradient(colors))
+            .shadow(if (enabled) 8.dp else 0.dp, shape, clip = true, spotColor = primary.copy(alpha = .35f))
+            .background(Brush.verticalGradient(colors))
             .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = .72f), Color.White.copy(alpha = .18f))), shape),
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White,
             disabledContainerColor = Color.Transparent),

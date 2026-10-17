@@ -24,17 +24,18 @@ internal class GuidedTourData(appearance: AppSettings, today: LocalDate = LocalD
     private val events = listOf(0L, 1L, 3L).flatMap { offset ->
         listOf(
             OneOffScheduleEvent("tour-physics-$offset", courses[0].id, courses[0].title, today.plusDays(offset),
-                LocalTime.of(9, 0), LocalTime.of(10, 30), "T 101", OneOffScheduleEventType.EVENT, LessonType.LECTURE),
+                LocalTime.of(9, 0), LocalTime.of(10, 30), "T 101", OneOffScheduleEventType.EXTRA, LessonType.LECTURE),
             OneOffScheduleEvent("tour-code-$offset", courses[1].id, courses[1].title, today.plusDays(offset),
-                LocalTime.of(11, 0), LocalTime.of(12, 30), "T 205", OneOffScheduleEventType.EVENT, LessonType.LAB),
+                LocalTime.of(11, 0), LocalTime.of(12, 30), "T 205", OneOffScheduleEventType.EXTRA, LessonType.LAB),
         )
     }
     private val tasks = listOf(StudyTask("tour-task", courses[0].id, t("Лабораторна робота"), null,
         today.plusDays(2), false, requiredForExam = true, maxPoints = 20.0, minimumPointsForExam = 10.0))
     private val notes = listOf(CourseNote("tour-note", courses[0].id, t("Матеріали до заняття"),
-        t("Тут можна зберігати конспект, файли та корисні посилання."), 0L))
-    val planning = MutableStateFlow<PlanningSnapshot?>(PlanningSnapshot(courses, emptyList(), emptyList(), events,
-        emptyList(), tasks, emptyList(), settings.value))
+        t("Тут можна зберігати конспект, файли та корисні посилання."), today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()))
+    val snapshot = PlanningSnapshot(courses, emptyList(), emptyList(), events,
+        emptyList(), tasks, emptyList(), settings.value)
+    val planning = MutableStateFlow<PlanningSnapshot?>(snapshot)
 
     override fun observeCourses() = flowOf(courses)
     override fun observeSemester(semester: Int) = flowOf(courses.filter { it.semester == semester })

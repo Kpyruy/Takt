@@ -6,6 +6,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.activity.compose.LocalActivity
+import com.kpyruy.takt.core.ui.components.TaktIconButton
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.*
@@ -21,7 +24,13 @@ import com.kpyruy.takt.core.ui.i18n.t
 
 @Composable
 internal fun DeviceLockScreen(message: String?, onUnlock: () -> Unit) {
+    val activity = LocalActivity.current
     Box(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.Center) {
+        Row(Modifier.fillMaxWidth().align(Alignment.TopCenter), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), { activity?.finish() })
+            Text("Takt", style = MaterialTheme.typography.titleLarge)
+        }
         GlassSurface(Modifier.fillMaxWidth()) {
             Column(
                 Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 36.dp),

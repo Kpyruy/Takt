@@ -42,7 +42,10 @@ data class HomeWorkFilter(
     val includeUndated: Boolean = true,
     val fromDate: LocalDate? = null,
     val toDate: LocalDate? = null,
-)
+    val courseIds: Set<String> = emptySet(),
+) {
+    val selectedCourseIds: Set<String> get() = courseIds.ifEmpty { courseId?.let(::setOf).orEmpty() }
+}
 
 object HomeWorkPlanner {
     fun overdue(
@@ -88,7 +91,7 @@ object HomeWorkPlanner {
     }
 
     private fun matchesCourseAndType(entry: HomeWorkEntry, filter: HomeWorkFilter) =
-        (filter.courseId == null || entry.courseId == filter.courseId) &&
+        (filter.selectedCourseIds.isEmpty() || entry.courseId in filter.selectedCourseIds) &&
             (filter.types.isEmpty() || entry.type in filter.types ||
                 (entry.type == GradeItemType.MIDTERM && GradeItemType.TEST in filter.types) ||
                 (entry.type == GradeItemType.TEST && GradeItemType.MIDTERM in filter.types))

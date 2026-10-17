@@ -1,6 +1,8 @@
 package com.kpyruy.takt.feature.calendar
 
 import com.kpyruy.takt.core.ui.components.tourTarget
+import com.kpyruy.takt.core.ui.components.BindTaktTourAction
+import com.kpyruy.takt.core.ui.components.LocalTaktTourActions
 import com.kpyruy.takt.core.ui.i18n.t
 
 import android.os.SystemClock
@@ -76,6 +78,16 @@ internal fun CalendarViewTabs(
     var weekMenuExpanded by remember { mutableStateOf(false) }
     var lastTapIndex by remember { mutableIntStateOf(-1) }
     var lastTapAt by remember { mutableLongStateOf(0L) }
+    fun openWeekMenu() {
+        if (selectedIndex == 1) weekMenuExpanded = true else switchTab {
+            onSelected(1)
+            weekMenuExpanded = true
+        }
+    }
+    BindTaktTourAction("calendar-week-menu") { openWeekMenu() }
+    BindTaktTourAction("calendar-close-menu") { weekMenuExpanded = false }
+    BindTaktTourAction("calendar-week-list") { weekMenuExpanded = false; onWeekLayoutSelected(WeekLayout.COMPACT_LIST) }
+    BindTaktTourAction("calendar-week-timetable") { weekMenuExpanded = false; onWeekLayoutSelected(WeekLayout.TIMETABLE) }
     val density = LocalDensity.current
     val labels = listOf(t("День"), t("Тиждень"), t("Місяць"))
     val textStyle = MaterialTheme.typography.titleSmall
@@ -99,37 +111,35 @@ internal fun CalendarViewTabs(
             val selected = index == selectedIndex
             val bringIntoView = remember { BringIntoViewRequester() }
             LaunchedEffect(selected, scrollable) { if (selected && scrollable) bringIntoView.bringIntoView() }
+            fun tapView() {
+                val now = SystemClock.uptimeMillis()
+                if (selected && lastTapIndex == index && now - lastTapAt <= ViewConfiguration.getDoubleTapTimeout()) {
+                    haptics.tick()
+                    onDoubleTap(index)
+                    lastTapAt = 0L
+                } else if (!selected) {
+                    switchTab {
+                        haptics.tick()
+                        onSelected(index)
+                        lastTapIndex = index
+                        lastTapAt = now
+                    }
+                } else {
+                    lastTapIndex = index
+                    lastTapAt = now
+                }
+            }
+            BindTaktTourAction("calendar-tap-${viewKeys[index]}") { tapView() }
             Box(
                 modifier = (if (scrollable) Modifier.widthIn(min = neededWidth.coerceAtLeast(88.dp)) else Modifier.weight(1f))
                     .height(42.dp)
                     .bringIntoViewRequester(bringIntoView)
                     .then(if (selected) Modifier.glassSurface(RoundedCornerShape(21.dp), MaterialTheme.colorScheme.primaryContainer) else Modifier)
-                    .testTag("calendar-view-${viewKeys[index]}")
+                    .testTag("calendar-view-${viewKeys[index]}").tourTarget("calendar-mode-${viewKeys[index]}")
                     .semantics { this.selected = selected }
                     .combinedClickable(
                         role = Role.Tab,
-                        onClick = {
-                            val now = SystemClock.uptimeMillis()
-                            if (selected && lastTapIndex == index &&
-                                now - lastTapAt <= ViewConfiguration.getDoubleTapTimeout()
-                            ) {
-                                haptics.tick()
-                                onDoubleTap(index)
-                                lastTapAt = 0L
-                            } else {
-                                if (!selected) {
-                                    switchTab {
-                                        haptics.tick()
-                                        onSelected(index)
-                                        lastTapIndex = index
-                                        lastTapAt = now
-                                    }
-                                } else {
-                                    lastTapIndex = index
-                                    lastTapAt = now
-                                }
-                            }
-                        },
+                        onClick = ::tapView,
                         onLongClick = if (index == 1) {
                             {
                                 lastTapAt = 0L
@@ -154,12 +164,7 @@ internal fun CalendarViewTabs(
                     )
                     if (index == 1) {
                         IconButton(
-                            onClick = {
-                                if (selected) weekMenuExpanded = true else switchTab {
-                                    onSelected(index)
-                                    weekMenuExpanded = true
-                                }
-                            },
+                            onClick = ::openWeekMenu,
                             modifier = Modifier.size(28.dp).tourTarget("calendar-week-layout"),
                         ) {
                             Icon(Icons.Default.KeyboardArrowDown, t("Вибрати вигляд тижня"), Modifier.size(19.dp))
@@ -167,13 +172,16 @@ internal fun CalendarViewTabs(
                     }
                 }
                 if (index == 1) {
-                    DropdownMenu(expanded = weekMenuExpanded, onDismissRequest = { weekMenuExpanded = false }) {
+                    DropdownMenu(expanded = weekMenuExpanded, onDismissRequest = { weekMenuExpanded = false },
+                        focusable = LocalTaktTourActions.current == null,
+                        modifier = Modifier.tourTarget("calendar-week-menu-popup")) {
                         listOf(
                             WeekLayout.TIMETABLE to t("Таймтейбл"),
                             WeekLayout.COMPACT_LIST to t("Список"),
                         ).forEach { (layout, title) ->
                             DropdownMenuItem(
                                 text = { Text(title) },
+                                modifier = Modifier.tourTarget(if (layout == WeekLayout.TIMETABLE) "calendar-week-timetable" else "calendar-week-list"),
                                 onClick = {
                                     weekMenuExpanded = false
                                     onWeekLayoutSelected(layout)

@@ -31,7 +31,10 @@ fun TaktContentBackdropHost(modifier: Modifier = Modifier, content: @Composable 
 
 /** Apply once to the content sibling beneath fixed navigation/header, never to the chrome itself. */
 @Composable
-fun Modifier.captureTaktContentBackdrop(): Modifier {
+fun Modifier.captureTaktContentBackdrop(enabled: Boolean = true): Modifier {
+    // Details/settings/create have no content-sampling navigation. Keep their NavHost
+    // and state intact, but do not record an unused GPU display list on every draw.
+    if (!enabled) return this
     val source = LocalTaktContentBackdrop.current ?: return this
     return onGloballyPositioned { source.origin = it.positionOnScreen() }.drawWithContent {
         source.layer.record { this@drawWithContent.drawContent() }

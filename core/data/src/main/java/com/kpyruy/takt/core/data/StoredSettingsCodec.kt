@@ -39,6 +39,8 @@ object StoredSettingsCodec {
         uisApplyProgress: Boolean = true,
         customThemes: String? = null,
         selectedCustomThemeId: String? = null,
+        reminders: String? = null,
+        customWallpaper: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
@@ -74,6 +76,8 @@ object StoredSettingsCodec {
             ),
             customThemes = CustomThemesCodec.decode(customThemes),
             selectedCustomThemeId = selectedCustomThemeId,
+            reminders = ReminderSettingsCodec.decode(reminders),
+            customWallpaper = customWallpaper,
         ).normalizedAppearance()
     }
 

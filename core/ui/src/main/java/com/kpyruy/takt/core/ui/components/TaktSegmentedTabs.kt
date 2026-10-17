@@ -38,6 +38,7 @@ fun TaktSegmentedTabs(
 ) {
     if (labels.isEmpty()) return
     val haptics = rememberTaktHaptics()
+    val switchTab = com.kpyruy.takt.core.ui.motion.rememberTabSwitchGuard()
     val density = LocalDensity.current
     val style = MaterialTheme.typography.labelMedium
     val measurer = rememberTextMeasurer()
@@ -51,10 +52,10 @@ fun TaktSegmentedTabs(
         val scrollable = density.fontScale > 1.15f || labelWidth + labelPadding * 2 > available
         val width = if (scrollable) (labelWidth + labelPadding * 2).coerceAtLeast(88.dp) else available
         val selected = selectedIndex.coerceIn(labels.indices)
-        val offset by androidx.compose.animation.core.animateDpAsState((width + 3.dp) * selected,
-            androidx.compose.animation.core.spring(dampingRatio = .82f, stiffness = 420f), label = "segment-lens")
+        val offset = androidx.compose.animation.core.animateDpAsState((width + 3.dp) * selected,
+            com.kpyruy.takt.core.ui.motion.TaktMotion.menu(), label = "segment-lens")
         Box(Modifier.fillMaxWidth().then(if (scrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier).padding(horizontal = 4.dp)) {
-            Box(Modifier.offset(x = offset).width(width).height(48.dp).padding(vertical = 4.dp)
+            Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.value.roundToPx(), 0) }.width(width).height(48.dp).padding(vertical = 4.dp)
                 .glassSurface(androidx.compose.foundation.shape.RoundedCornerShape(10.dp), MaterialTheme.colorScheme.primaryContainer))
             Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 labels.forEachIndexed { index, label ->
@@ -64,7 +65,7 @@ fun TaktSegmentedTabs(
                     Box(Modifier.then(tabTag?.let { Modifier.testTag(it(index)) } ?: Modifier).width(width).height(48.dp).bringIntoViewRequester(bringIntoView)
                         .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).taktPressFeedback(source)
                         .selectable(index == selected, interactionSource = source, indication = null, role = Role.Tab, onClick = {
-                            if (index != selected) { haptics.tick(); onSelected(index) }
+                            if (index != selected) switchTab { haptics.tick(); onSelected(index) }
                         }), contentAlignment = Alignment.Center) {
                         Text(label, Modifier.padding(horizontal = labelPadding, vertical = 12.dp), style = style,
                             maxLines = 1, softWrap = false,

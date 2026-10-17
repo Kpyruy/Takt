@@ -49,12 +49,28 @@ class TaktDataContainer(context: Context) {
         RoomStudyContentRepository(database)
     val examRepository: ExamRepository =
         RoomExamRepository(database)
+    val teachingStore = TeachingStore(java.io.File(context.filesDir, "teaching.json"))
     val universityAccountRepository = UniversityAccountRepository(context, studyPlanRepository,
-        scheduleRepository, settingsRepository)
+        scheduleRepository, settingsRepository, teachingStore)
     val planningSnapshot: StateFlow<PlanningSnapshot?> = observePlanningSnapshot(
-        studyPlanRepository, scheduleRepository, studyContentRepository, gradeRepository, settingsRepository,
+        studyPlanRepository, scheduleRepository, studyContentRepository, gradeRepository, settingsRepository, examRepository,
     ).map<PlanningSnapshot, PlanningSnapshot?> { it }
         .stateIn(scope, SharingStarted.Eagerly, null)
+
+    val reminderCoordinator = ReminderCoordinator(context.applicationContext, planningSnapshot, ::readPlanningSnapshot)
+
+    /** Fresh source read for cold-process reminder validation; caller runs on IO. */
+    suspend fun readPlanningSnapshot(): PlanningSnapshot = PlanningSnapshot(
+        courses = studyPlanRepository.observeCourses().first(),
+        absences = scheduleRepository.observeAbsences().first(),
+        rules = scheduleRepository.observeRules().first(),
+        oneOffEvents = scheduleRepository.observeOneOffEvents().first(),
+        exceptions = scheduleRepository.observeExceptions().first(),
+        tasks = studyContentRepository.observeAllTasks().first(),
+        assessments = gradeRepository.observeAllItems().first(),
+        settings = settingsRepository.settings.value,
+        examInfos = examRepository.observeAllExamInfo().first(),
+    )
 
     /** Wait for the shared first frame to catch up after an onboarding restore. */
     suspend fun awaitRestoredPlanning() {
@@ -67,11 +83,12 @@ class TaktDataContainer(context: Context) {
             tasks = studyContentRepository.observeAllTasks().first(),
             assessments = gradeRepository.observeAllItems().first(),
             settings = settingsRepository.settings.first(),
+            examInfos = examRepository.observeAllExamInfo().first(),
         )
         withTimeoutOrNull(5_000L) { planningSnapshot.first { it == expected } }
     }
     val backupRepository: BackupRepository =
-        RoomBackupRepository(database, settingsRepository)
+        RoomBackupRepository(database, settingsRepository, WallpaperStore(context.applicationContext), teachingStore)
     val documentStore = TaktDocumentStore(context.applicationContext, database, backupRepository, settingsRepository)
     val firstRunRepository = FirstRunRepository(context.applicationContext, this)
 }

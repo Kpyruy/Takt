@@ -17,6 +17,12 @@ import kotlinx.coroutines.flow.StateFlow
 interface AppSettingsRepository {
     val settings: StateFlow<AppSettings>
 
+    /** Notification settings are independent of selective appearance restore. */
+    suspend fun setReminders(reminders: com.kpyruy.takt.core.model.ReminderSettings)
+
+    /** Evaluates transform against the latest durable reminders under the writer lock. */
+    suspend fun updateReminders(transform: (com.kpyruy.takt.core.model.ReminderSettings) -> com.kpyruy.takt.core.model.ReminderSettings)
+
     suspend fun setCancellationStyle(style: CancellationDisplayStyle)
     suspend fun setShowHiddenLessons(show: Boolean)
     suspend fun setParityOverride(override: ParityOverride)

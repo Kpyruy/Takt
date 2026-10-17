@@ -10,6 +10,10 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
 import com.kpyruy.takt.core.ui.components.tourTarget
+import com.kpyruy.takt.core.ui.components.BindTaktTourAction
+import com.kpyruy.takt.core.ui.components.LocalTaktTourActions
+import androidx.compose.ui.semantics.semantics
+import com.kpyruy.takt.core.ui.components.TaktTourSemantics
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -131,7 +135,9 @@ fun CalendarScreen(
         viewMode = CalendarViewMode.entries[guidedViewMode.coerceIn(0, 2)]
     }
 
-    val weekLayout = guidedWeekLayout ?: settings.weekLayout
+    val demonstration = LocalTaktTourActions.current != null
+    var demonstrationWeekLayout by remember { mutableStateOf(WeekLayout.TIMETABLE) }
+    val weekLayout = guidedWeekLayout ?: if (demonstration) demonstrationWeekLayout else settings.weekLayout
     val dates = remember(weekStart) { (0L..6L).map(weekStart::plusDays) }
     val week = selectedDate.get(WeekFields.ISO.weekOfWeekBasedYear())
     val parity = settings.effectiveParity(selectedDate)
@@ -194,6 +200,8 @@ fun CalendarScreen(
         visibleMonth = YearMonth.from(date)
     }
 
+    BindTaktTourAction("calendar-select-date") { selectDate(LocalDate.ofEpochDay(it)) }
+
     fun navigatePrevious() {
         when (viewMode) {
             CalendarViewMode.DAY -> selectDate(selectedDate.minusDays(1))
@@ -235,7 +243,8 @@ fun CalendarScreen(
     }
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize().testTag("calendar-screen")
+            .then(if (demonstration) Modifier.semantics { this[TaktTourSemantics.CalendarState] = "${viewMode.name}:${selectedDate}:${weekLayout.name}" } else Modifier)
             .padding(horizontal = 20.dp).padding(top = 18.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -253,7 +262,10 @@ fun CalendarScreen(
                 viewMode = CalendarViewMode.entries[it]
                 selectDate(today)
             },
-            onWeekLayoutSelected = { layout -> scope.launch { settingsRepository.setWeekLayout(layout) } },
+            onWeekLayoutSelected = { layout ->
+                if (demonstration) demonstrationWeekLayout = layout
+                else scope.launch { settingsRepository.setWeekLayout(layout) }
+            },
             modifier = Modifier.fillMaxWidth().tourTarget("calendar-modes"),
         )
 

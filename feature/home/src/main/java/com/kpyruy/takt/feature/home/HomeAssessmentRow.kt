@@ -14,7 +14,10 @@ import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
-import com.kpyruy.takt.core.ui.components.glassSurface
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.outlined.Science
@@ -45,8 +48,11 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Box(Modifier.size(40.dp).glassSurface(tint = subjectColor), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = subjectColor)
+            val iconShape = RoundedCornerShape(13.dp)
+            Box(Modifier.size(40.dp).clip(iconShape)
+                .background(subjectColor.copy(alpha = .16f), iconShape)
+                .border(.75.dp, subjectColor.copy(alpha = .28f), iconShape), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = subjectColor, modifier = Modifier.testTag("home-assessment-glyph-${item.id}"))
             }
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.titleSmall)

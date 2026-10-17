@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 
 /** Extend the material past the viewport; its bottom stroke is clipped, not painted over. */
-internal object TaktSheetMaterialShape : Shape {
+object TaktSheetMaterialShape : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
         RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp).createOutline(
             Size(size.width, size.height + with(density) { 2.dp.toPx() }), layoutDirection, density)

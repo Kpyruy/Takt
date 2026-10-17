@@ -15,6 +15,49 @@ class UisClientTest {
     private fun page(body: String) = MockResponse().setBody(body)
     private fun redirect(path: String) = MockResponse().setResponseCode(302).setHeader("Location", path)
 
+    @Test fun readsTeachingAndPersonContactsThroughTheAuthenticatedCanonicalEndpoints() {
+        server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
+        server.enqueue(redirect("/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))
+        server.enqueue(page(authenticated))
+        assertEquals(UisResult.CONNECTED, client.login("student", "password"))
+        val syllabus = javaClass.getResource("/teaching/syllabus.html")!!.readText()
+        val profile = javaClass.getResource("/teaching/person.html")!!.readText()
+        server.enqueue(page(authenticated + syllabus))
+        val teachers = client.readCourseTeachers("441254")
+        assertEquals(4, teachers.size)
+        server.enqueue(page(authenticated + profile))
+        val person = client.readTeacherProfile("71659", com.kpyruy.takt.core.model.AppLanguage.ENGLISH)
+        assertEquals("T02 4.108", person.officeNumber)
+        repeat(4) { server.takeRequest() }
+        val syllabusRequest = server.takeRequest()
+        assertEquals("/auth/katalog/syllabus.pl?predmet=441254;lang=en", syllabusRequest.path)
+        assertTrue(syllabusRequest.getHeader("Cookie")!!.contains("UISAuth=fake"))
+        assertEquals("/auth/lide/clovek.pl?id=71659;zalozka=1;lang=en", server.takeRequest().path)
+        server.enqueue(page("<html>Login form</html>"))
+        assertTrue(runCatching { client.readCourseTeachers("441254") }.exceptionOrNull() is com.kpyruy.takt.core.data.TeachingAuthenticationRequired)
+    }
+
+    @Test fun progressSyllabusWinsOverStoredPlanSyllabusForTheSameCourse() {
+        server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
+        server.enqueue(redirect("/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))
+        server.enqueue(page(authenticated))
+        assertEquals(UisResult.CONNECTED, client.login("student", "password"))
+        val plan = """<form name="formular"><input name="obdobi" value="741">
+            <select name="studium"><option value="210634" selected>Study</option></select></form>
+            <table id="tmtab_1"><tr><td colspan="6">3rd semester</td></tr><tr>
+            <td><a href="/auth/katalog/syllabus.pl?predmet=441154">TPAR_6B</a></td>
+            <td>Hardware</td><td>exam</td><td>5</td><td>1x</td><td>ENROLLED</td></tr></table>"""
+        server.enqueue(page(authenticated + plan)); server.enqueue(page(authenticated + plan))
+        client.readStudyPlan()
+        server.enqueue(page(authenticated + """<table><tr><th>Code</th><th>Course name</th><th>Result</th><th>Entered</th></tr>
+            <tr><td>TPAR_6B</td><td><a href="/auth/katalog/syllabus.pl?predmet=441254">Hardware</a></td><td></td><td></td></tr></table>"""))
+        client.readStudyResults("210634", "741")
+        server.enqueue(page(authenticated + javaClass.getResource("/teaching/syllabus.html")!!.readText()))
+        assertEquals(listOf("71659", "116374", "111582", "2758"), client.readCourseTeachers("441154").map { it.personId })
+        repeat(7) { server.takeRequest() }
+        assertEquals("/auth/katalog/syllabus.pl?predmet=441254;lang=en", server.takeRequest().path)
+    }
+
     @Test fun findsSubjectByCodeThenLoadsItsTimetableOptions() {
         server.enqueue(page(login)); server.enqueue(page("""{"need2FA":"false"}"""))
         server.enqueue(redirect("/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))

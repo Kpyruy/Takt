@@ -40,6 +40,24 @@ class UisTeachingParserTest {
         assertEquals("Utorok 10:00–11:00\nŠtvrtok po dohode", profile.consultationHours)
     }
 
+    @Test fun actualSlovakProfileLabelsRetainOfficePhoneAndConsultations() {
+        val person = UisTeachingParser.profile(fixture("vrabel-sk.html"), "2758")
+        assertEquals("robert.vrabel@stuba.sk", person.universityEmail)
+        assertEquals("vrabelr@is.stuba.sk", person.systemEmail)
+        assertEquals("T02 3.110", person.officeNumber)
+        assertEquals("+421 906 068 440", person.officePhone)
+        assertEquals("štvrtok 8.00-10.00 (prípadne iný termín po dohode)", person.consultationHours)
+    }
+
+    @Test fun suppliedEnglishProfilesRetainBothOfficesAndConsultingHours() {
+        val vrabel = UisTeachingParser.profile(fixture("vrabel-en.html"), "2758")
+        assertEquals("T02 3.110", vrabel.officeNumber)
+        assertEquals("štvrtok 8.00-10.00 (prípadne iný termín po dohode)", vrabel.consultationHours)
+        val noga = UisTeachingParser.profile(fixture("noga-en.html"), "10084")
+        assertEquals("NC 210", noga.officeNumber)
+        assertNull(noga.consultationHours)
+    }
+
     @Test fun noConsultationHoursAreInventedFromCourseWorkload() {
         val html = "<h1>Example</h1><p>Identification number: 123</p><p>Consultations: 13 hours</p>"
         assertNull(UisTeachingParser.profile(html, "123").consultationHours)

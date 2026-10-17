@@ -40,7 +40,7 @@ class UisSetupFooterTest {
             }
         }
         try {
-            compose.onNodeWithTag("welcome-connect").performScrollTo().performClick()
+            compose.onNodeWithTag("welcome-uis").performScrollTo().performClick()
             compose.onNodeWithTag("onboarding-primary").performClick()
             compose.onNodeWithTag("uis-password").performScrollTo().performClick().performTextInput("example-only")
             compose.waitUntil(5_000) { imeVisible() }
@@ -56,6 +56,21 @@ class UisSetupFooterTest {
             android.os.SystemClock.sleep(100)
             val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
             compose.activity.openFileOutput("correction-sk-uis-footer.png", 0).use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val skip = compose.onNodeWithText("Začnite bez prehliadky").fetchSemanticsNode().boundsInRoot
+            // Inspect rendered rows below the secondary action, including the navigation inset.
+            // Skip the gesture handle in the center; a material cutoff is a full-width edge.
+            var largestJump = 0.0
+            for (y in (skip.bottom.toInt() + 4).coerceAtLeast(1) until screenshot.height - 2) {
+                var delta = 0L; var samples = 0
+                for (x in 12 until screenshot.width - 12 step 6) {
+                    if (x in screenshot.width * 3 / 10..screenshot.width * 7 / 10) continue
+                    val a = screenshot.getPixel(x, y - 1); val b = screenshot.getPixel(x, y)
+                    for (shift in listOf(0, 8, 16)) { delta += kotlin.math.abs(((a ushr shift) and 255) - ((b ushr shift) and 255)); samples++ }
+                }
+                largestJump = maxOf(largestJump, delta.toDouble() / samples)
+            }
+            android.util.Log.i("TaktFooterPixels", "Largest rendered row jump below actions: $largestJump")
+            assertTrue("No horizontal material cutoff below the actions: $largestJump", largestJump < 2.5)
             screenshot.recycle()
         } finally { sandbox.getSharedPreferences("takt_university_account", 0).edit().clear().commit() }
     }

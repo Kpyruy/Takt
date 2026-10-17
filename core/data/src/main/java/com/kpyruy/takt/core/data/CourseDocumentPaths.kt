@@ -3,7 +3,6 @@ package com.kpyruy.takt.core.data
 internal object CourseDocumentPaths {
     fun courseFolder(code: String) = code.replace(Regex("[^A-Za-z0-9_.-]"), "_")
         .trim('.', '_', '-').take(60).ifBlank { "course" }
-    fun downloadsPath(code: String) = "Download/Takt/${courseFolder(code)}/"
     fun fileName(name: String): String {
         val safe = name.filterNot { it == '/' || it == '\\' || it.isISOControl() }.trim().trimStart('.')
         if (safe.isBlank()) return "document"

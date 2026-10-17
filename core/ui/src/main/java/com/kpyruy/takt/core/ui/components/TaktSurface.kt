@@ -35,6 +35,6 @@ fun TaktSurface(
     if (border != null) pane = pane.border(border, shape)
     if (onClick != null) pane = pane.clickable(enabled = enabled, onClick = onClick)
     CompositionLocalProvider(LocalContentColor provides contentColor) {
-        Box(pane) { content() }
+        Box(pane, propagateMinConstraints = true) { content() }
     }
 }

@@ -3,20 +3,28 @@ package com.kpyruy.takt.feature.settings
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.*
+import com.kpyruy.takt.core.model.AppSettings
+import com.kpyruy.takt.core.model.AppThemeMode
+import com.kpyruy.takt.core.model.CardAppearance
+import com.kpyruy.takt.core.model.CustomColorTheme
 import com.kpyruy.takt.core.model.LessonType
+import com.kpyruy.takt.core.model.ThemeFamily
 import com.kpyruy.takt.core.ui.components.GlassSurface
+import com.kpyruy.takt.core.ui.components.TaktGlassBackground
+import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.ui.i18n.t
 import kotlinx.coroutines.Dispatchers
@@ -87,30 +95,101 @@ private fun BackupChangeRow(title: String, timing: String, detail: String, chang
 
 @Composable
 internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings, sourceName: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        AppearanceSource(phone, t("Телефон"), Modifier.weight(1f), "backup-appearance-phone")
-        AppearanceSource(file, sourceName, Modifier.weight(1f), "backup-appearance-file")
+    val phonePreview = remember(phone) { phone.appearancePreviewSettings() }
+    val filePreview = remember(file) { file.appearancePreviewSettings() }
+    val phonePhoto = backupPreviewPhoto(phone.wallpaper)
+    val filePhoto = backupPreviewPhoto(file.wallpaper)
+    // Each property owns one shared row, so longer names and missing photos cannot shift the comparison.
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        AppearanceComparisonRow(
+            left = { Text(t("Телефон"), Modifier.testTag("backup-appearance-phone"), style = MaterialTheme.typography.labelLarge) },
+            right = { Text(sourceName, Modifier.testTag("backup-appearance-file"), style = MaterialTheme.typography.labelLarge) },
+        )
+        AppearanceComparisonRow(
+            left = { Text(appearanceThemeName(phonePreview), style = MaterialTheme.typography.titleMedium) },
+            right = { Text(appearanceThemeName(filePreview), style = MaterialTheme.typography.titleMedium) },
+        )
+        AppearanceComparisonRow(
+            left = { AppearancePalette(phonePreview, "backup-appearance-phone-palette") },
+            right = { AppearancePalette(filePreview, "backup-appearance-file-palette") },
+        )
+        AppearanceComparisonRow(
+            left = { Text(appearanceModeName(phonePreview), style = MaterialTheme.typography.bodySmall) },
+            right = { Text(appearanceModeName(filePreview), style = MaterialTheme.typography.bodySmall) },
+        )
+        Text(t("Стиль карток"), style = MaterialTheme.typography.labelLarge)
+        AppearanceComparisonRow(
+            left = { AppearanceMaterial(phonePreview, phonePhoto, "backup-appearance-phone-material") },
+            right = { AppearanceMaterial(filePreview, filePhoto, "backup-appearance-file-material") },
+        )
+        AppearanceComparisonRow(
+            left = { Text(appearanceMaterialName(phonePreview), style = MaterialTheme.typography.bodySmall) },
+            right = { Text(appearanceMaterialName(filePreview), style = MaterialTheme.typography.bodySmall) },
+        )
+        Text(t("Фон"), style = MaterialTheme.typography.labelLarge)
+        AppearanceComparisonRow(
+            left = { AppearanceWallpaper(phone, phonePreview, phonePhoto, "backup-appearance-phone-background") },
+            right = { AppearanceWallpaper(file, filePreview, filePhoto, "backup-appearance-file-background") },
+        )
+        AppearanceComparisonRow(
+            left = { Text(appearanceWallpaperName(phone), style = MaterialTheme.typography.bodySmall) },
+            right = { Text(appearanceWallpaperName(file), style = MaterialTheme.typography.bodySmall) },
+        )
+        if (phone.customThemes.isNotEmpty() || file.customThemes.isNotEmpty()) {
+            Text(t("Збережені теми"), style = MaterialTheme.typography.labelLarge)
+            AppearanceComparisonRow(
+                left = { Text(phone.customThemes.joinToString(", ") { it.name }.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall) },
+                right = { Text(file.customThemes.joinToString(", ") { it.name }.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall) },
+            )
+        }
     }
 }
 
 @Composable
-private fun AppearanceSource(settings: BackupSettings, sourceName: String, modifier: Modifier, tag: String) {
-    val custom = settings.customThemes.firstOrNull { it.id == settings.selectedCustomThemeId }
-    val family = t(when (settings.themeFamily) { "GREEN" -> "Зелена"; "PURPLE" -> "Фіолетова"; "WARM" -> "Тепла"; "MONOCHROME" -> "Монохром"; else -> "Синя" })
-    Column(modifier.testTag(tag), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-        Text(sourceName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(custom?.name?.takeIf(String::isNotBlank) ?: family, style = MaterialTheme.typography.titleMedium)
-        if (custom != null) Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            listOfNotNull(custom.primaryHex, custom.secondaryHex, custom.tertiaryHex).forEach { hex ->
-                val color = runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(MaterialTheme.colorScheme.primary)
-                Surface(Modifier.size(22.dp), shape = RoundedCornerShape(8.dp), color = color) {}
+private fun AppearanceComparisonRow(left: @Composable () -> Unit, right: @Composable () -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.weight(1f)) { left() }
+        Box(Modifier.weight(1f)) { right() }
+    }
+}
+
+@Composable
+private fun AppearancePalette(settings: AppSettings, tag: String) {
+    TaktTheme(settings) {
+        Row(Modifier.testTag(tag), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            val colors = MaterialTheme.colorScheme
+            listOf(colors.primary, colors.secondary, colors.tertiary).forEach { color ->
+                Surface(Modifier.size(26.dp), shape = RoundedCornerShape(9.dp), color = color) {}
             }
         }
-        Text(t(when (settings.themeMode) { "DARK" -> "Темна"; "LIGHT" -> "Світла"; else -> "Як телефон" }), style = MaterialTheme.typography.bodySmall)
-        Text(t(when (settings.cardAppearance) { "GLASS" -> "Скло"; "TONAL_FILLED" -> "Заливка"; else -> "Підняті" }), style = MaterialTheme.typography.bodySmall)
-        val photo = settings.wallpaper
-        val bitmap by produceState<Bitmap?>(null, photo?.sha256) {
-            value = withContext(Dispatchers.Default) { if (photo == null) null else runCatching {
+    }
+}
+
+@Composable
+private fun AppearanceMaterial(settings: AppSettings, photo: Bitmap?, tag: String) {
+    TaktTheme(settings) {
+        // TaktGlassBackground fills its constraints; always give a miniature a bounded parent.
+        Box(Modifier.fillMaxWidth().height(116.dp).clip(RoundedCornerShape(14.dp)).testTag(tag)) {
+            TaktGlassBackground(Modifier.matchParentSize(), photoPreview = photo) {
+                GlassSurface(Modifier.align(Alignment.Center).padding(12.dp).fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(t("Заняття"), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        Box(Modifier.fillMaxWidth(.7f).height(5.dp).clip(RoundedCornerShape(3.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = .5f)))
+                        Box(Modifier.fillMaxWidth(.45f).height(5.dp).clip(RoundedCornerShape(3.dp))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .35f)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun backupPreviewPhoto(photo: BackupWallpaper?): Bitmap? {
+    val bitmap by produceState<Bitmap?>(null, photo?.sha256) {
+        value = withContext(Dispatchers.Default) {
+            if (photo == null) null else runCatching {
                 val bytes = photo.decodedBytes()
                 val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
@@ -118,12 +197,60 @@ private fun AppearanceSource(settings: BackupSettings, sourceName: String, modif
                 while (maxOf(options.outWidth, options.outHeight) / options.inSampleSize > 360) options.inSampleSize *= 2
                 options.inJustDecodeBounds = false
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
-            }.getOrNull() }
+            }.getOrNull()
         }
-        val ready = bitmap
-        if (ready != null) Image(ready.asImageBitmap(), t("Фон"), Modifier.fillMaxWidth().aspectRatio(.9f).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
-        Text(t(if (photo != null) "Власне фото" else if (settings.wallpaperRecorded) "Вбудований фон" else "Фото не включено в цю копію"), style = MaterialTheme.typography.bodySmall)
-        if (settings.customThemes.isNotEmpty()) Text(t("Збережені теми") + ": " + settings.customThemes.joinToString(", ") { it.name }, style = MaterialTheme.typography.bodySmall)
+    }
+    return bitmap
+}
+
+@Composable
+private fun AppearanceWallpaper(source: BackupSettings, settings: AppSettings, bitmap: Bitmap?, tag: String) {
+    val photo = source.wallpaper
+    TaktTheme(settings) {
+        Box(Modifier.fillMaxWidth().height(156.dp).clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant).testTag(tag), contentAlignment = Alignment.Center) {
+            val ready = bitmap
+            when {
+                ready != null -> Image(ready.asImageBitmap(), t("Власне фото"), Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+                photo == null && source.wallpaperRecorded -> TaktGlassBackground(Modifier.matchParentSize()) {}
+                else -> Text(t(if (photo != null) "Фото недоступне" else "Фото не включено в цю копію"),
+                    Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
+            }
+        }
     }
 }
+
+/** Preview only portable appearance fields; a backup never contains a local wallpaper reference. */
+private fun BackupSettings.appearancePreviewSettings() = AppSettings(
+    cardAppearance = runCatching { CardAppearance.valueOf(cardAppearance) }.getOrDefault(CardAppearance.ELEVATED),
+    themeFamily = runCatching { ThemeFamily.valueOf(themeFamily) }.getOrDefault(ThemeFamily.BLUE),
+    themeMode = runCatching { AppThemeMode.valueOf(themeMode) }.getOrDefault(AppThemeMode.SYSTEM),
+    customThemes = customThemes.map { CustomColorTheme(it.id, it.name, it.primaryHex, it.secondaryHex, it.tertiaryHex) },
+    selectedCustomThemeId = selectedCustomThemeId,
+).normalizedAppearance()
+
+@Composable
+private fun appearanceThemeName(settings: AppSettings): String = settings.selectedCustomTheme?.name ?: t(when (settings.themeFamily) {
+    ThemeFamily.GREEN -> "Зелена"; ThemeFamily.PURPLE -> "Фіолетова"; ThemeFamily.WARM -> "Тепла"
+    ThemeFamily.MONOCHROME -> "Монохром"; ThemeFamily.ROSE -> "Рожева"; ThemeFamily.AMBER -> "Бурштинова"
+    ThemeFamily.CYAN -> "Блакитна"; ThemeFamily.BLUE -> "Синя"
+})
+
+@Composable
+private fun appearanceModeName(settings: AppSettings): String = t(when (settings.themeMode) {
+    AppThemeMode.DARK -> "Темна"; AppThemeMode.LIGHT -> "Світла"; AppThemeMode.SYSTEM -> "Як телефон"
+})
+
+@Composable
+private fun appearanceMaterialName(settings: AppSettings): String = t(when (settings.cardAppearance) {
+    CardAppearance.GLASS -> "Скло"; CardAppearance.TONAL_FILLED -> "Заливка"; CardAppearance.ELEVATED -> "Підняті"
+})
+
+@Composable
+private fun appearanceWallpaperName(settings: BackupSettings): String = t(when {
+    settings.wallpaper != null -> "Власне фото"
+    settings.wallpaperRecorded -> "Вбудований фон"
+    else -> "Фото не включено в цю копію"
+})
+
 private fun time(value: Int) = if (value in 0..1440) "%02d:%02d".format(value / 60, value % 60) else "—"

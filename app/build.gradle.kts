@@ -34,11 +34,27 @@ android {
         matchingFallbacks += listOf("debug")
     }
 
+    // Same install identity as the local preview, with production runtime behavior.
+    // Release dependencies also package their baseline profiles; debuggable previews
+    // stay available for instrumentation and source inspection.
+    buildTypes.create("glassOptimized") {
+        initWith(buildTypes.getByName("release"))
+        isDebuggable = false
+        isMinifyEnabled = false
+        signingConfig = signingConfigs.getByName("debug")
+        applicationIdSuffix = ".glass"
+        versionNameSuffix = "+glass.preview"
+        manifestPlaceholders["appLabel"] = "Takt Glass"
+        matchingFallbacks += listOf("release")
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     sourceSets.getByName("androidTest").assets.srcDir("$rootDir/core/database/schemas")
+    sourceSets.getByName("androidTest").assets.srcDir("$rootDir/core/data/src/test/resources/teaching")
+    sourceSets.getByName("androidTest").assets.srcDir("$rootDir/core/data/src/test/resources/documents")
     buildFeatures { compose = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 
@@ -79,7 +95,10 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     androidTestImplementation(libs.room.runtime)
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    androidTestImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
     debugImplementation(libs.compose.ui.test.manifest)
     add("glassPreviewImplementation", libs.compose.ui.test.manifest)
 }

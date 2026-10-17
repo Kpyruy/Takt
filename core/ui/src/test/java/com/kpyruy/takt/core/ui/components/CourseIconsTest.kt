@@ -31,37 +31,12 @@ class CourseIconsTest {
         assertEquals(listOf("Atom", "School"), builds)
     }
 
-    @Test fun metadataCopyKeepsTheVectorLazyAndSharesTheCachedValue() {
-        val builds = mutableListOf<String>()
-        val original = option("Atom", "Фізика атом", "Наука", builds)
-        val renamed = original.copy(label = "Атом")
-
-        assertEquals("Атом", renamed.label)
-        assertEquals(emptyList<String>(), builds)
-        assertSame(original.vector, renamed.vector)
-        assertEquals(listOf("Atom"), builds)
-    }
-
-    @Test fun existingVectorConstructorCopyAndDestructuringRemainCompatible() {
-        val vector = vector("Atom")
-        val original = CourseIconOption("Atom", "Фізика атом", "Наука", vector)
-        val (key, label, category, destructuredVector) = original
-        assertEquals("Atom", key)
-        assertEquals("Фізика атом", label)
-        assertEquals("Наука", category)
-        assertSame(vector, destructuredVector)
-        assertEquals(original, original.copy())
-        assertEquals(original.hashCode(), original.copy().hashCode())
-        val replacement = vector("Replacement")
-        assertSame(replacement, original.copy(vector = replacement).vector)
-    }
-
     @Test fun storedKeysStillResolveAndPickerKeepsItsCatalogueOrder() {
         val options = CourseIcons.all
-        assertEquals(110, options.size)
+        assertEquals(180, options.size)
         assertEquals(options.size, options.map { it.key }.distinct().size)
         assertEquals(listOf("School", "MenuBook", "AutoStories"), options.take(3).map { it.key })
-        assertEquals(listOf("StarOutline", "FavoriteBorder", "Diamond"), options.takeLast(3).map { it.key })
+        assertEquals(listOf("StarOutline", "FavoriteBorder", "Diamond"), options.slice(107..109).map { it.key })
         assertEquals(
             listOf("Навчання", "Наука", "Технології", "Інженерія", "Економіка", "Мови й творчість", "Спорт та інше"),
             options.map { it.category }.distinct(),

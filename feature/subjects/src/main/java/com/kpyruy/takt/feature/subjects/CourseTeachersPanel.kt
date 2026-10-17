@@ -27,16 +27,19 @@ internal fun CourseTeachersPanel(
     authenticate: (String, (DeviceAuthenticationResult) -> Unit) -> Unit,
     onSettings: () -> Unit,
 ) {
-    var teachers by remember(course.id, connected) { mutableStateOf<List<CourseTeacher>?>(null) }
+    var teachers by remember(course.id, connected) { mutableStateOf(repository?.savedTeachers(course)) }
     var error by remember(course.id, connected) { mutableStateOf<Throwable?>(null) }
     var loading by remember { mutableStateOf(false) }
     var reload by remember(course.id) { mutableIntStateOf(0) }
     var selected by remember(course.id, connected) { mutableStateOf<CourseTeacher?>(null) }
     val hasSyllabus = course.syllabusUrl != null || course.id.startsWith("uis:")
+    LaunchedEffect(course.id, repository, connected) {
+        repository?.changes?.collect { teachers = repository.savedTeachers(course) }
+    }
     LaunchedEffect(course.id, course.syllabusUrl, repository, connected, reload) {
         if (repository == null || !connected || !hasSyllabus) return@LaunchedEffect
         loading = true; error = null
-        try { teachers = repository.teachers(course, refresh = reload > 0) }
+        try { teachers = repository.teachers(course, refresh = true) }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure }
         finally { loading = false }
@@ -51,7 +54,7 @@ internal fun CourseTeachersPanel(
         }
         when {
             !hasSyllabus -> SmallText(t("Викладачі з’являться після імпорту предмета з UIS."))
-            !connected || repository == null -> {
+            (!connected || repository == null) && teachers == null -> {
                 SmallText(t("Підключи UIS, щоб переглядати викладачів і контакти."))
                 TextButton(onClick = onSettings) { Text(t("Відкрити налаштування")) }
             }

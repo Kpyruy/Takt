@@ -60,6 +60,26 @@ internal object UisTeachingParser {
         return teachers.values.toList()
     }
 
+    /** Only links next to a course code in the progress table identify this period's syllabus. */
+    fun progressSyllabi(html: String): Map<String, String> {
+        val result = linkedMapOf<String, String>()
+        Jsoup.parse(html).select("table").forEach { table ->
+            val headings = table.selectFirst("tr:has(th)")?.select("th")?.map { normalized(it.text()) }
+                ?: return@forEach
+            val codeIndex = headings.indexOf("code")
+            if (codeIndex < 0) return@forEach
+            table.select("tr").forEach row@{ row ->
+                val cells = row.children().filter { it.tagName() == "td" }
+                val code = cells.getOrNull(codeIndex)?.text()?.trim()?.uppercase(Locale.ROOT) ?: return@row
+                if (!code.matches(Regex("[A-Z0-9_.-]{2,32}"))) return@row
+                val ids = cells.flatMap { it.select("a[href]") }
+                    .mapNotNull { UisTeachingLinks.subjectId(it.attr("href")) }.distinct()
+                if (ids.size == 1) result.putIfAbsent(code, ids.single())
+            }
+        }
+        return result
+    }
+
     fun profile(html: String, expectedId: String): TeacherProfile {
         require(UisTeachingLinks.validId(expectedId))
         val doc = Jsoup.parse(html)
@@ -94,9 +114,9 @@ internal object UisTeachingParser {
             universityEmail = field("University e-mail", "Univerzitný e-mail", "Univerzitní e-mail")?.let(::email),
             systemEmail = field("E-mail in the information system", "E-mail v informačnom systéme", "E-mail v informačním systému", "E-mail v IS")?.let(::email),
             officeAddress = field("Office address", "Adresa pracoviska", "Adresa pracoviště", "Adresa kancelárie"),
-            officeNumber = field("Office number", "Číslo kancelárie", "Číslo kanceláře", "Miestnosť", "Místnost"),
-            officePhone = field("Office phone number", "Telefón do kancelárie", "Telefón na pracovisko", "Telefon do kanceláře", "Telefón"),
-            consultationHours = field("Office hours", "Consultation hours", "Konzultačné hodiny", "Konzultační hodiny"),
+            officeNumber = field("Office number", "Označenie kancelárie", "Číslo kancelárie", "Číslo kanceláře", "Miestnosť", "Místnost"),
+            officePhone = field("Office phone number", "Telefón do zamestnania", "Telefón do kancelárie", "Telefón na pracovisko", "Telefon do kanceláře", "Telefón"),
+            consultationHours = field("Office hours", "Consultation hours", "Consulting hours", "Konzultačné hodiny", "Konzultační hodiny"),
             mailboxLastChecked = mailbox)
     }
 

@@ -6,10 +6,20 @@ import com.kpyruy.takt.core.model.CourseDocumentListing
 import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.DownloadedCourseDocument
 import java.io.OutputStream
+import java.security.SecureRandom
+import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+private val defaultDocumentsGeneration = MutableStateFlow(0L).asStateFlow()
+// A fresh process starts in a random positive range; instances and account changes are monotonic within it.
+private val documentsGenerationSequence = AtomicLong(SecureRandom().nextLong().ushr(2) + 1)
+
 interface CourseDocumentsRepository {
+    val accountGeneration: StateFlow<Long> get() = defaultDocumentsGeneration
     suspend fun documents(course: Course, activeCourseCodes: Set<String>, refresh: Boolean = false): CourseDocumentListing
     suspend fun download(document: CourseDocumentFile, output: OutputStream): DownloadedCourseDocument
 }
@@ -21,10 +31,16 @@ internal class CachedCourseDocumentsRepository(
 ) : CourseDocumentsRepository {
     private val mutex = Mutex()
     private val monitor = Any()
-    private var generation = 0L
+    private val mutableAccountGeneration = MutableStateFlow(documentsGenerationSequence.incrementAndGet())
+    override val accountGeneration: StateFlow<Long> = mutableAccountGeneration.asStateFlow()
+    private var generation = mutableAccountGeneration.value
     private val listings = linkedMapOf<String, CourseDocumentListing>()
 
-    fun clear() = synchronized(monitor) { generation++; listings.clear() }
+    fun clear() = synchronized(monitor) {
+        generation = documentsGenerationSequence.incrementAndGet()
+        listings.clear()
+        mutableAccountGeneration.value = generation
+    }
 
     override suspend fun documents(course: Course, activeCourseCodes: Set<String>, refresh: Boolean): CourseDocumentListing = mutex.withLock {
         if (course.status != CourseStatus.ENROLLED || course.code !in activeCourseCodes)

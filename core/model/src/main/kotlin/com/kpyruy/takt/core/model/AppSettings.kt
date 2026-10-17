@@ -108,13 +108,16 @@ data class AppSettings(
     val uisAutoSync: UisAutoSyncSettings = UisAutoSyncSettings(),
     val customThemes: List<CustomColorTheme> = emptyList(),
     val selectedCustomThemeId: String? = null,
+    val reminders: ReminderSettings = ReminderSettings(),
+    /** App-private imported file name; never a picker URI or a portable backup field. */
+    val customWallpaper: String? = null,
 ) {
     val selectedCustomTheme: CustomColorTheme?
         get() = customThemes.firstOrNull { it.id == selectedCustomThemeId }?.normalizedOrNull()
 
     fun normalizedAppearance(): AppSettings {
         val themes = normalizeCustomThemes(customThemes)
-        return copy(customThemes = themes,
+        return copy(customThemes = themes, customWallpaper = normalizeWallpaperReference(customWallpaper),
             selectedCustomThemeId = selectedCustomThemeId?.takeIf { id -> themes.any { it.id == id } })
     }
 
@@ -168,4 +171,9 @@ data class AppSettings(
         }
         return events.filter { it.status != ScheduleEventStatus.CANCELLED }
     }
+}
+
+/** Only store-owned immutable file names may be resolved under the wallpaper directory. */
+fun normalizeWallpaperReference(value: String?): String? = value?.takeIf {
+    it.matches(Regex("wallpaper-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.jpg"))
 }

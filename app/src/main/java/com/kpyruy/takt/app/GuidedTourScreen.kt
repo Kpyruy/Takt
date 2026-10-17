@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
@@ -46,8 +48,23 @@ internal fun GuidedTourScreen(
     var confirmExit by rememberSaveable { mutableStateOf(false) }
     val step = GuidedTourStep.entries.firstOrNull { it.name == stepId } ?: GuidedTourStep.entries.first()
     val example = remember(settings.language) { GuidedTourData(settings) }
-    val targets = remember { TaktTourTargets() }
-    var origin by remember { mutableStateOf(Offset.Zero) }
+    val scenes = remember { GuidedTourStep.entries.map { it.scene }.distinct().associateWith { TourSceneSession() } }
+    var replay by rememberSaveable { mutableIntStateOf(0) }
+    var visits by rememberSaveable { mutableIntStateOf(0) }
+    var demoBusy by remember { mutableStateOf(step.hasDemonstration) }
+    var demoPhase by remember { mutableStateOf("IDLE") }
+    val session = scenes.getValue(step.scene)
+    LaunchedEffect(step, replay, confirmExit) {
+        if (confirmExit || !step.hasDemonstration) { demoBusy = false; demoPhase = "IDLE"; return@LaunchedEffect }
+        demoBusy = true
+        try {
+            visits++
+            runTourDemonstration(step, session, visits) { demoPhase = it }
+        } finally {
+            session.actions.performIfPresent("calendar-close-menu")
+            demoBusy = false
+        }
+    }
 
     if (completed) {
         TourCelebration(onFinish)
@@ -55,30 +72,44 @@ internal fun GuidedTourScreen(
         return
     }
 
-    CompositionLocalProvider(LocalTaktTourTargets provides targets,
+    CompositionLocalProvider(
         LocalCourseIconKeys provides example.courses.associate { it.id to it.iconKey },
         LocalCourseCodeKeys provides example.courses.associate { it.id to it.code }) {
-        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)
-            .onGloballyPositioned { origin = it.positionInWindow() }.testTag("guided-tour")) {
-            TaktContentBackdropHost {
-                // Background controls are demonstrative. All touch and accessibility input goes to the tour card.
-                AnimatedContent(step.scene, Modifier.fillMaxSize().clearAndSetSemantics {},
-                    transitionSpec = { (fadeIn(TaktMotion.content()) + slideInHorizontally(TaktMotion.menu()) { it / 8 })
-                        .togetherWith(fadeOut(TaktMotion.content())) }, label = "tour-scene") { scene ->
-                    TourScene(scene, step, example, data, appReleaseRepository, authenticateDevice)
+        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).testTag("guided-tour")
+            .semantics { this[TaktTourSemantics.Playback] = "${step.name}:$demoPhase" }) {
+            // A scene owns both its explanation and graphics recording throughout a transition.
+            AnimatedContent(targetState = step, contentKey = { it.scene }, modifier = Modifier.fillMaxSize(),
+                transitionSpec = { (fadeIn(TaktMotion.content()) + slideInHorizontally(TaktMotion.menu()) { it / 8 })
+                    .togetherWith(fadeOut(TaktMotion.content())) }, label = "tour-scene") { shown ->
+                val shownSession = scenes.getValue(shown.scene)
+                var origin by remember { mutableStateOf(Offset.Zero) }
+                CompositionLocalProvider(LocalTaktTourTargets provides shownSession.targets,
+                    LocalTaktTourActions provides shownSession.actions) {
+                    Box(Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionOnScreen() }
+                        .testTag("tour-scene-${shown.scene}")) {
+                        TaktContentBackdropHost {
+                            Box(Modifier.fillMaxSize().clearAndSetSemantics {}) {
+                                TourScene(shown.scene, shown, example, data, appReleaseRepository, authenticateDevice)
+                            }
+                        }
+                        Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures { } })
+                        TourSpotlight(
+                            step = shown,
+                            bounds = shownSession.targets.bounds(shown.target)?.translate(-origin),
+                            nextEnabled = !shown.hasDemonstration || (shown == step && !demoBusy),
+                            onReplay = if (shown.hasDemonstration) ({ replay++ }) else null,
+                            onBack = { if (shown == step && step.ordinal > 0) stepId = GuidedTourStep.entries[step.ordinal - 1].name },
+                            onNext = {
+                                if (shown == step) {
+                                    if (step == GuidedTourStep.entries.last()) completed = true
+                                    else stepId = GuidedTourStep.entries[step.ordinal + 1].name
+                                }
+                            },
+                            onExit = { shownSession.actions.performIfPresent("calendar-close-menu"); confirmExit = true },
+                        )
+                    }
                 }
             }
-            Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures { } })
-            TourSpotlight(
-                step = step,
-                bounds = targets.bounds(step.target)?.translate(-origin),
-                onBack = { if (step.ordinal > 0) stepId = GuidedTourStep.entries[step.ordinal - 1].name },
-                onNext = {
-                    if (step == GuidedTourStep.entries.last()) completed = true
-                    else stepId = GuidedTourStep.entries[step.ordinal + 1].name
-                },
-                onExit = { confirmExit = true },
-            )
         }
     }
     // Register after feature-screen handlers, so system Back always asks before leaving the tour.
@@ -114,8 +145,7 @@ private fun TourScene(
             .captureTaktContentBackdrop(enabled = root)) {
             when (scene) {
                 "home" -> HomeScreen(example.planning, example, example, {}, {}, true, {}, {}, {})
-                "calendar" -> CalendarScreen(example.planning, example, example, {}, {}, {}, guidedViewMode = step.tab,
-                    guidedWeekLayout = if (step == GuidedTourStep.CALENDAR_LAYOUT) com.kpyruy.takt.core.model.WeekLayout.COMPACT_LIST else null)
+                "calendar" -> CalendarScreen(example.planning, example, example, {}, {}, {}, guidedViewMode = step.tab)
                 "subjects" -> SubjectsScreen(repository = example, gradeRepository = example,
                     studyContentRepository = example, onCourseClick = {}, onAddCourse = {}, showAddButton = false,
                     settingsRepository = example, planning = example.snapshot)

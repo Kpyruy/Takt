@@ -2,6 +2,7 @@ package com.kpyruy.takt.feature.studyplan
 
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
+import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kpyruy.takt.core.data.PlanningSnapshot
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.data.GradeRepository
 import com.kpyruy.takt.core.data.UniversityAccountRepository
@@ -45,9 +47,11 @@ fun StudyPlanScreen(
     universityAccountRepository: UniversityAccountRepository,
     onCourseClick: (String) -> Unit,
     onAddCourse: () -> Unit,
+    planning: PlanningSnapshot? = null,
+    guidedFilter: Int? = null,
 ) {
-    val courses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
-    val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+    val courses = planning?.courses ?: remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList()).value
+    val settings = planning?.settings ?: settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings()).value
     val earned = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits } }
     val plannedCredits = remember(courses) { courses.filter { it.status == CourseStatus.FULFILLED ||
         it.status == CourseStatus.ENROLLED || it.status == CourseStatus.PLANNED }.sumOf { it.credits } }
@@ -64,6 +68,7 @@ fun StudyPlanScreen(
     }
     var expandedSemesters by rememberSaveable(currentSemester) { mutableStateOf(currentSemester?.let(::setOf) ?: emptySet()) }
     var filter by rememberSaveable { mutableIntStateOf(0) }
+    if (guidedFilter != null) androidx.compose.runtime.LaunchedEffect(guidedFilter) { filter = guidedFilter }
     var editingCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     var iconCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -145,7 +150,7 @@ fun StudyPlanScreen(
             }
             Spacer(Modifier.height(16.dp))
             TaktSegmentedTabs(listOf(t("План"), t("Активні"), t("Здані")), filter, { filter = it },
-                railCornerRadius = 12.dp)
+                railCornerRadius = 12.dp, modifier = Modifier.tourTarget("progress-tabs"))
             Spacer(Modifier.height(12.dp))
         }
         if (filter != 0) {

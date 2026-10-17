@@ -32,10 +32,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.data.BackupPayloadCodec
 import com.kpyruy.takt.core.data.BackupMerger
 import com.kpyruy.takt.core.data.BackupSection
+import com.kpyruy.takt.core.data.BackupPayload
+import com.kpyruy.takt.core.data.BackupTeaching
+import com.kpyruy.takt.core.data.BackupTeacher
 import com.kpyruy.takt.core.ui.components.CourseIcons
 import com.kpyruy.takt.core.ui.components.ScreenHeader
 import com.kpyruy.takt.core.ui.components.SectionCard
@@ -79,12 +83,6 @@ fun BackupReviewPage(
             Text(t("Дані збігаються"), style = MaterialTheme.typography.titleMedium)
             Text(t("У файлі немає змін для перенесення на телефон."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-        } else SectionCard {
-            Text(t("Обери джерело для кожної частини"), style = MaterialTheme.typography.titleMedium)
-            Text(t("Позначено — взяти з файлу. Без позначки — залишити на телефоні."),
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(t("Наприклад: можна взяти розклад з файлу, а прогрес і предмети залишити з телефона."),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         if (BackupSection.SUBJECTS in differing) BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, sourceName, t("Предмети"),
@@ -168,18 +166,7 @@ fun BackupReviewPage(
         }
         if (BackupSection.SCHEDULE in differing) BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, sourceName, t("Розклад"),
             t("Телефон: ${local.scheduleRules.size + local.oneOffEvents.size} · $sourceName: ${source.scheduleRules.size + source.oneOffEvents.size}")) {
-            val localRules = local.scheduleRules.associateBy { it.id }
-            val sourceRules = source.scheduleRules.associateBy { it.id }
-            val localEvents = local.oneOffEvents.associateBy { it.id }
-            val sourceEvents = source.oneOffEvents.associateBy { it.id }
-            source.scheduleRules.filter { localRules[it.id] != it }.take(6).forEach {
-                Text("${if (it.id in localRules) "~" else "+"} ${it.dayOfWeek} · ${it.startMinute / 60}:${(it.startMinute % 60).toString().padStart(2, '0')} · ${it.title}")
-            }
-            source.oneOffEvents.filter { localEvents[it.id] != it }.take(4).forEach {
-                Text("${if (it.id in localEvents) "~" else "+"} ${it.title}")
-            }
-            local.scheduleRules.filter { it.id !in sourceRules }.take(3).forEach { Text("− ${it.title}") }
-            local.oneOffEvents.filter { it.id !in sourceEvents }.take(3).forEach { Text("− ${it.title}") }
+            BackupScheduleChanges(local, source)
             Text(t("Вибір розкладу замінить локальні заняття, зміни й відвідування."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -198,8 +185,15 @@ fun BackupReviewPage(
         }
         if (BackupSection.MATERIALS in differing) BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t("Нотатки й матеріали"),
             t("Нотатки: ${local.courseNotes.size} → ${source.courseNotes.size}; матеріали: ${local.examMaterials.size} → ${source.examMaterials.size}")) {
+            BackupNoteChanges(local, source)
             Text(t("Нотатки й матеріали зіставляються за кодом предмета."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (BackupSection.TEACHERS in differing) BackupChoice(
+            BackupSection.TEACHERS, selected, ::toggle, sourceName, t("Викладачі й консультації"), "") {
+            val sections = setOf(BackupSection.TEACHERS) +
+                if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
+            BackupTeachingChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
         if (BackupSection.LANGUAGE in differing) BackupChoice(
             BackupSection.LANGUAGE, selected, ::toggle, sourceName, t("Мова"), "") {
@@ -213,12 +207,7 @@ fun BackupReviewPage(
         }
         if (BackupSection.APPEARANCE in differing) BackupChoice(
             BackupSection.APPEARANCE, selected, ::toggle, sourceName, t("Вигляд"), "") {
-            BackupSettingChange(t("Освітлення"), themeModeName(local.settings.themeMode),
-                themeModeName(source.settings.themeMode))
-            BackupSettingChange(t("Палітра"), themeFamilyName(local.settings.themeFamily),
-                themeFamilyName(source.settings.themeFamily))
-            BackupSettingChange(t("Стиль карток"), cardAppearanceName(local.settings.cardAppearance),
-                cardAppearanceName(source.settings.cardAppearance))
+            BackupAppearanceChanges(local.settings, source.settings, sourceName)
         }
         if (BackupSection.CURRENT_SEMESTER in differing) BackupChoice(
             BackupSection.CURRENT_SEMESTER, selected, ::toggle, sourceName, t("Поточний семестр"), "") {
@@ -227,25 +216,12 @@ fun BackupReviewPage(
         }
         if (BackupSection.PREFERENCES in differing) BackupChoice(
             BackupSection.PREFERENCES, selected, ::toggle, sourceName, t("Інші налаштування"), "") {
-            val phone = local.settings
-            val file = source.settings
-            if (phone.cancellationStyle != file.cancellationStyle) Text(t("Скасовані заняття"))
-            if (phone.showHiddenLessons != file.showHiddenLessons) Text(t("Приховані заняття"))
-            if (phone.parityOverride != file.parityOverride) Text(t("Парність тижня"))
-            if (phone.weekLayout != file.weekLayout) Text(t("Вигляд тижня"))
-            if (phone.homeWorkFilter != file.homeWorkFilter) Text(t("Фільтри задач"))
-            if (phone.uisProgressFrequency != file.uisProgressFrequency ||
-                phone.uisSubjectFrequency != file.uisSubjectFrequency ||
-                phone.uisPeriodFrequency != file.uisPeriodFrequency ||
-                phone.uisTimetableFrequency != file.uisTimetableFrequency ||
-                phone.uisApplyProgressAutomatically != file.uisApplyProgressAutomatically) {
-                Text(t("Автооновлення UIS"))
-            }
+            val sections = setOf(BackupSection.PREFERENCES) +
+                if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
+            BackupPreferenceChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (differing.isNotEmpty()) {
-            Text(t("Після застосування підключений сейф Documents/Takt оновиться автоматично."),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = { scope.launch {
                 applying = true
                 runCatching { onApply(selected) }.onSuccess { onBack() }
@@ -262,21 +238,22 @@ fun BackupReviewPage(
 private fun BackupChoice(section: BackupSection, selected: Set<BackupSection>, onToggle: (BackupSection) -> Unit,
     sourceName: String, title: String, summary: String, detail: @Composable () -> Unit) {
     var expanded by remember(section) { mutableStateOf(false) }
-    SectionCard {
-        Row(Modifier.fillMaxWidth().clickable { onToggle(section) }, verticalAlignment = Alignment.CenterVertically) {
+    SectionCard(Modifier.testTag("backup-section-${section.name}")) {
+        Row(Modifier.fillMaxWidth().testTag("backup-choice-${section.name}").clickable { onToggle(section) }, verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = section in selected, onCheckedChange = null)
+            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(if (section in selected) t("Взяти з ") + sourceName else t("Залишити на телефоні"),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (section in selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            IconButton(onClick = { expanded = !expanded }) {
+            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("backup-expand-${section.name}")) {
                 Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, t("Переглянути зміни"))
             }
         }
         if (summary.isNotBlank()) Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        AnimatedVisibility(expanded) { Column { detail() } }
+        AnimatedVisibility(expanded) { Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { detail() } }
     }
 }
 
@@ -291,6 +268,71 @@ private fun BackupIcon(key: String?) {
             modifier = Modifier.padding(8.dp).size(20.dp))
     }
 }
+
+@Composable
+private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, sourceName: String) {
+    val phone = local.teaching ?: BackupTeaching()
+    val file = result.teaching ?: BackupTeaching()
+    if (phone == file) {
+        Text(t("Для викладачів нових предметів також вибери «Предмети»."),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    fun code(value: String) = value.trim().uppercase(Locale.ROOT)
+    val phoneTeams = phone.teams.associateBy { code(it.courseCode) }
+    val fileTeams = file.teams.associateBy { code(it.courseCode) }
+    (phoneTeams.keys + fileTeams.keys).sorted().forEach { courseCode ->
+        val old = phoneTeams[courseCode]
+        val new = fileTeams[courseCode]
+        if (old != new) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("$courseCode · ${t("Викладачі")}", style = MaterialTheme.typography.titleSmall)
+            Text("${t("Телефон")}: ${teacherTeamLabel(old?.teachers.orEmpty())}")
+            Text("$sourceName: ${teacherTeamLabel(new?.teachers.orEmpty())}")
+        }
+    }
+    val phoneProfiles = phone.profiles.associateBy { it.personId to it.language }
+    val fileProfiles = file.profiles.associateBy { it.personId to it.language }
+    (phoneProfiles.keys + fileProfiles.keys).sortedBy { key ->
+        (fileProfiles[key]?.name ?: phoneProfiles[key]?.name).orEmpty() + key.second
+    }.forEach { key ->
+        val old = phoneProfiles[key]
+        val new = fileProfiles[key]
+        if (old != new) Column(Modifier.testTag("backup-teacher-profile-${key.first}-${key.second}"),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val courseCodes = (phone.teams + file.teams).filter { team -> team.teachers.any { it.personId == key.first } }
+                .map { code(it.courseCode) }.distinct().sorted()
+            Text(listOfNotNull((new ?: old)?.name, courseCodes.joinToString(" · ").takeIf { it.isNotBlank() },
+                languageName(key.second)).joinToString(" · "), style = MaterialTheme.typography.titleSmall)
+            val fields = listOf(
+                Triple(t("Ім’я викладача"), old?.name, new?.name),
+                Triple(t("Посада"), old?.position, new?.position),
+                Triple(t("Університетська пошта"), old?.universityEmail, new?.universityEmail),
+                Triple(t("Пошта UIS"), old?.systemEmail, new?.systemEmail),
+                Triple(t("Адреса"), old?.officeAddress, new?.officeAddress),
+                Triple(t("Кабінет"), old?.officeNumber, new?.officeNumber),
+                Triple(t("Телефон кабінету"), old?.officePhone, new?.officePhone),
+                Triple(t("Консультаційні години"), old?.consultationHours, new?.consultationHours),
+                Triple(t("Остання перевірка університетської пошти"), old?.mailboxLastChecked, new?.mailboxLastChecked),
+            )
+            fields.filter { it.second != it.third }.forEach { (label, a, b) ->
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${t("Телефон")}: ${a ?: t("Не вказано")}")
+                Text("$sourceName: ${b ?: t("Не вказано")}")
+            }
+        }
+    }
+}
+
+private fun teacherTeamLabel(teachers: List<BackupTeacher>): String = teachers.joinToString("; ") { teacher ->
+    val roles = teacher.roles.map { role -> t(when (role.lowercase(Locale.ROOT)) {
+        "examiner", "skúšajúci", "zkoušející" -> "Екзаменатор"
+        "instructor", "cvičiaci", "cvičící" -> "Практичні заняття"
+        "lecturer", "prednášajúci", "přednášející" -> "Лекції"
+        "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Відповідальний за предмет"
+        else -> role
+    }) }
+    (listOf(teacher.name) + roles + teacher.languages).joinToString(" · ")
+}.ifBlank { t("Не вказано") }
 
 @Composable
 private fun BackupSettingChange(label: String, phone: String, file: String) {

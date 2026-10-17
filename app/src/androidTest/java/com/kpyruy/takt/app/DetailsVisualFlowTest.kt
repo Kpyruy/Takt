@@ -1,8 +1,6 @@
 package com.kpyruy.takt.app
 
 import android.graphics.Bitmap
-import android.content.Context
-import android.view.inputmethod.InputMethodManager
 import android.view.WindowInsets
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -105,10 +103,11 @@ class DetailsVisualFlowTest {
         compose.waitUntil(5_000) { runBlocking { data.gradeRepository.observeItems("glass-physics").first().single { it.id == saved.id }.isAwaitingResult } }
     }
     private fun hideKeyboard() {
-        compose.activityRule.scenario.onActivity {
-            (it.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(it.window.decorView.windowToken, 0)
+        // The focused field may belong to the details dialog, so the Activity token is insufficient.
+        if (compose.activity.window.decorView.rootWindowInsets.isVisible(WindowInsets.Type.ime())) {
+            instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+            compose.waitUntil(5_000) { !compose.activity.window.decorView.rootWindowInsets.isVisible(WindowInsets.Type.ime()) }
         }
-        compose.waitUntil(5_000) { !compose.activity.window.decorView.rootWindowInsets.isVisible(WindowInsets.Type.ime()) }
     }
     private fun root(key: String) = compose.onAllNodes(hasText(t(key)) and hasClickAction()).onLast().performClick()
     private fun dismissConnectionPrompt() {

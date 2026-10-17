@@ -24,7 +24,7 @@ class WallpaperStoreTest {
             bitmap.eraseColor(android.graphics.Color.MAGENTA)
             source.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             bitmap.recycle()
-            val reference = WallpaperStore(context).import(Uri.fromFile(source), actualApplied)
+            val reference = WallpaperStore(context).importImage(Uri.fromFile(source), actualApplied)
             imported = File(File(context.filesDir, "wallpapers"), reference)
             assertTrue(imported.isFile)
             source.delete()
@@ -34,6 +34,9 @@ class WallpaperStoreTest {
             assertEquals(2f, owned.width.toFloat() / owned.height, .01f)
             owned.recycle()
             repository.setAppearance(repository.settings.value.copy(customWallpaper = reference))
+            assertEquals(reference, SharedPreferencesAppSettingsRepository(context, prefs).settings.value.customWallpaper)
+            repository.setLanguage(com.kpyruy.takt.core.model.AppLanguage.SLOVAK)
+            repository.setThemeMode(com.kpyruy.takt.core.model.AppThemeMode.DARK)
             assertEquals(reference, SharedPreferencesAppSettingsRepository(context, prefs).settings.value.customWallpaper)
             repository.setAppearance(repository.settings.value.copy(customWallpaper = null))
             assertNull(SharedPreferencesAppSettingsRepository(context, prefs).settings.value.customWallpaper)
@@ -50,7 +53,7 @@ class WallpaperStoreTest {
         try {
             source.writeText("not an image")
             try {
-                WallpaperStore(context).import(Uri.fromFile(source), null)
+                WallpaperStore(context).importImage(Uri.fromFile(source), null)
                 fail("Malformed image accepted")
             } catch (_: IllegalArgumentException) { }
         } finally { source.delete() }

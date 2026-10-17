@@ -1,6 +1,7 @@
 package com.kpyruy.takt.app
 
 import android.graphics.Bitmap
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -25,6 +26,13 @@ class EveningGlassReviewTest {
             data.settingsRepository.setLanguage(AppLanguage.SLOVAK)
             data.settingsRepository.setThemeMode(AppThemeMode.DARK)
             data.settingsRepository.setThemeFamily(ThemeFamily.MONOCHROME)
+            data.settingsRepository.setAppearance(data.settingsRepository.settings.first().copy(
+                customThemes = emptyList(), selectedCustomThemeId = null))
+            val courses = data.database.courseDao().observeAll().first()
+            data.database.courseDao().insertAll(courses.map { row ->
+                if (row.id.startsWith("glass-4-") || row.id.startsWith("glass-5-")) row.copy(status = "enrolled") else row
+            })
+            data.awaitRestoredPlanning()
         }
         compose.waitForIdle()
     }
@@ -33,7 +41,8 @@ class EveningGlassReviewTest {
         root("Предмети")
         capture("subjects-before")
         val before = compose.onNodeWithTag("subjects-glass-header").captureToImage()
-        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(2)
+        compose.onNode(hasScrollToIndexAction()).performTouchInput { swipeUp(durationMillis = 650) }
+        compose.waitForIdle()
         val after = compose.onNodeWithTag("subjects-glass-header").captureToImage()
         val first = before.toPixelMap(); val second = after.toPixelMap()
         var changes = 0
@@ -62,9 +71,8 @@ class EveningGlassReviewTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
         compose.onNode(hasText(t("Екзамен")) and hasClickAction()).performClick()
-        val a = compose.onNodeWithTag("exam-semester-metric").fetchSemanticsNode().boundsInRoot
-        val b = compose.onNodeWithTag("exam-available-metric").fetchSemanticsNode().boundsInRoot
-        assertEquals(a.height, b.height, 1f)
+        compose.onNodeWithTag("exam-semester-metric").assertIsDisplayed()
+        compose.onNodeWithTag("exam-available-metric").assertDoesNotExist()
         capture("exam-metrics")
     }
     @Test fun threeRolePickerUpdatesLiveCancelsAndPersistsThroughBackup() {
@@ -79,7 +87,7 @@ class EveningGlassReviewTest {
             compose.onNodeWithTag("theme-color-$role").performScrollTo().performClick()
             val hex = compose.onNodeWithTag("theme-picker-hex").performScrollTo()
             hex.performTextReplacement(color)
-            compose.onNodeWithTag("theme-picker-apply").performScrollTo().performClick()
+            compose.onNodeWithTag("theme-picker-apply").performClick()
         }
         compose.onNodeWithTag("theme-color-SECONDARY").performScrollTo().performClick()
         val initial = hex()
@@ -89,10 +97,10 @@ class EveningGlassReviewTest {
         compose.onNodeWithTag("theme-picker-hue").performScrollTo().performTouchInput { swipeLeft(durationMillis = 400) }
         assertNotEquals("Dragging must update live HEX", initial, hex())
         capture("color-picker")
-        compose.onNodeWithTag("theme-picker-cancel").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-picker-cancel").performClick()
         compose.onNodeWithTag("theme-color-SECONDARY").performScrollTo().performClick()
         assertEquals(initial, hex())
-        compose.onNodeWithTag("theme-picker-cancel").performScrollTo().performClick()
+        compose.onNodeWithTag("theme-picker-cancel").performClick()
         compose.onNodeWithTag("theme-save").performClick()
         capture("custom-palette")
         compose.onNodeWithTag("palette-popup-apply").performClick()
@@ -126,7 +134,88 @@ class EveningGlassReviewTest {
         compose.waitForIdle()
         capture("navigation-final")
     }
+    @Test fun connectedSubtitleIsLocalizedAndAutomaticApplyIsFirst() {
+        start()
+        val field = data.documentStore.javaClass.getDeclaredField("_status").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val state = field.get(data.documentStore) as kotlinx.coroutines.flow.MutableStateFlow<DocumentSyncStatus>
+        val original = state.value
+        try {
+            state.value = DocumentSyncStatus.READY // UI-only fixture, no URI/permissions/SAF writes.
+            compose.onNodeWithContentDescription(t("Налаштування")).performClick()
+            for (language in listOf(AppLanguage.UKRAINIAN, AppLanguage.ENGLISH, AppLanguage.SLOVAK)) {
+                runBlocking { data.settingsRepository.setLanguage(language) }
+                compose.waitForIdle()
+                // The real document watcher debounces preference changes for 350 ms and
+                // correctly clears READY without a tree URI. Set this UI-only state after it.
+                android.os.SystemClock.sleep(500)
+                runBlocking { data.documentStore.resume() }
+                state.value = DocumentSyncStatus.READY
+                compose.waitForIdle()
+                val label = when (language) {
+                    AppLanguage.UKRAINIAN -> "Підключено"
+                    AppLanguage.ENGLISH -> "Connected"
+                    AppLanguage.SLOVAK -> "Pripojené"
+                }
+                compose.onNodeWithText(label).performScrollTo().assertExists()
+                capture("connected-${language.name.lowercase()}")
+            }
+            compose.onNode(hasText(t("Автооновлення UIS")) and hasClickAction()).performScrollTo().performClick()
+            val apply = compose.onNodeWithText(t("Автоматично застосовувати прогрес")).fetchSemanticsNode().boundsInRoot
+            val progress = compose.onNodeWithText(t("Прогрес")).fetchSemanticsNode().boundsInRoot
+            assertTrue(apply.top < progress.top)
+            capture("uis-toggle-first")
+        } finally { state.value = original }
+    }
+    @Test fun lessonActionsAndLongAssessmentFieldsUseThemeAndEqualBounds() {
+        start()
+        root("Календар")
+        compose.onNodeWithTag("calendar-view-week").performClick()
+        compose.onNodeWithTag("week-timetable-event-glass-lecture").performTouchInput { longClick() }
+        capture("lesson-actions")
+        compose.onNodeWithText(t("Позначити пропуск")).performClick()
+        compose.waitUntil(5_000) { runBlocking { data.scheduleRepository.observeAbsences().first().any { it.eventId == "glass-lecture" } } }
+        compose.onNodeWithTag("week-timetable-event-glass-lecture").performTouchInput { longClick() }
+        compose.onNodeWithText(t("Зняти позначку пропуску")).assertExists()
+        capture("lesson-absence-selected")
+        back()
+        root("Предмети")
+        compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Задачі")) and androidx.compose.ui.test.SemanticsMatcher.expectValue(
+            SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)).performClick()
+        compose.onNodeWithTag("course-work-glass-gate").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-minimum").performScrollTo().assertIsDisplayed()
+        val maximum = compose.onNodeWithTag("grade-maximum").fetchSemanticsNode().boundsInRoot
+        val minimum = compose.onNodeWithTag("grade-minimum").fetchSemanticsNode().boundsInRoot
+        assertTrue(maximum.height < 90 * compose.activity.resources.displayMetrics.density)
+        assertTrue(minimum.height < 90 * compose.activity.resources.displayMetrics.density)
+        capture("grade-fields")
+    }
     private fun hex() = compose.onNodeWithTag("theme-picker-hex").fetchSemanticsNode().config[SemanticsProperties.EditableText].text
+    @Test fun recordMotionAtDisplayCadence() {
+        org.junit.Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("recordGlassMotion") == "true")
+        start()
+        android.os.SystemClock.sleep(1700)
+        capture("motion-ready")
+        compose.mainClock.autoAdvance = false
+        fun frames(count: Int) {
+            repeat(count) { compose.mainClock.advanceTimeByFrame(); android.os.SystemClock.sleep(17) }
+        }
+        try {
+            frames(30)
+            for (label in listOf("Календар", "Предмети", "Прогрес", "Сьогодні", "Прогрес")) {
+                root(label); frames(36)
+            }
+            for (label in listOf("Активні", "Здані", "План")) {
+                val node = compose.onNode(hasText(t(label)) and hasClickAction())
+                node.performTouchInput { down(center) }
+                frames(12)
+                node.performTouchInput { up() }
+                frames(30)
+            }
+        } finally { compose.mainClock.autoAdvance = true; compose.waitForIdle() }
+    }
     private fun root(label: String) = compose.onAllNodes(hasText(t(label)) and hasClickAction()).onLast().performClick()
     private fun back() { compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }; compose.waitForIdle() }
     private fun capture(name: String) {

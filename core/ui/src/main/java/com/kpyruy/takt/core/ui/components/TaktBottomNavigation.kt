@@ -42,6 +42,7 @@ data class TaktNavItem(val label: String, val icon: ImageVector, val selected: B
 @Composable
 fun TaktBottomNavigation(items: List<TaktNavItem>, centerContent: (@Composable () -> Unit)? = null) {
     require(items.size == 4)
+    val switchTab = com.kpyruy.takt.core.ui.motion.rememberTabSwitchGuard()
     val selected = items.indexOfFirst { it.selected }.coerceAtLeast(0)
     val shape = RoundedCornerShape(999.dp)
     Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -50,31 +51,39 @@ fun TaktBottomNavigation(items: List<TaktNavItem>, centerContent: (@Composable (
             val centerWidth = if (centerContent != null) 56.dp else 0.dp
             val width = (maxWidth - 10.dp - centerWidth) / 4
             val target = width * selected + if (selected >= 2) centerWidth else 0.dp
-            val offset by androidx.compose.animation.core.animateDpAsState(target,
-                androidx.compose.animation.core.spring(dampingRatio = .82f, stiffness = 420f), label = "navigation-lens")
+            val offset = androidx.compose.animation.core.animateDpAsState(target,
+                TaktMotion.menu(), label = "navigation-lens")
             Box(Modifier.padding(5.dp)) {
-                Box(Modifier.offset(x = offset).width(width).height(60.dp)
+                // Read the moving position during placement, avoiding a rail recomposition
+                // on every120/144Hz frame. This offset overload also preserves RTL placement.
+                Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.value.roundToPx(), 0) }.width(width).height(60.dp)
                     .glassSurface(shape, MaterialTheme.colorScheme.primaryContainer)
                     .testTag("navigation-lens"))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     items.forEachIndexed { index, item ->
                         if (index == 2 && centerContent != null) Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) { centerContent() }
-                        val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                        val color by animateColorAsState(if (item.selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            TaktMotion.standard(), label = "navigation-content")
-                        val pop by androidx.compose.animation.core.animateFloatAsState(if (item.selected) 1.08f else 1f,
-                            androidx.compose.animation.core.spring(dampingRatio = .72f, stiffness = 550f), label = "navigation-icon")
-                        Column(Modifier.width(width).height(60.dp).clip(shape).taktPressFeedback(source)
-                            .selectable(item.selected, interactionSource = source, indication = null, role = Role.Tab, onClick = item.onClick)
-                            .padding(horizontal = 2.dp, vertical = 7.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                            Icon(item.icon, null, tint = color, modifier = Modifier.size(22.dp).graphicsLayer { scaleX = pop; scaleY = pop })
-                            Text(item.label, color = color, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 1)
-                        }
+                        NavigationTab(item, width, shape) { if (!item.selected) switchTab(item.onClick) }
                     }
                 }
             }
         }
+    }
+}
+
+/** Tint changes recompose just this item; icon scale is read only by its graphics layer. */
+@Composable
+private fun NavigationTab(item: TaktNavItem, width: androidx.compose.ui.unit.Dp, shape: RoundedCornerShape, onClick: () -> Unit) {
+    val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val color by animateColorAsState(if (item.selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        TaktMotion.standard(), label = "navigation-content")
+    val pop = androidx.compose.animation.core.animateFloatAsState(if (item.selected) 1.08f else 1f,
+        androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 400f), label = "navigation-icon")
+    Column(Modifier.width(width).height(60.dp).clip(shape).taktPressFeedback(source)
+        .selectable(item.selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
+        .padding(horizontal = 2.dp, vertical = 7.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Icon(item.icon, null, tint = color, modifier = Modifier.size(22.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value })
+        Text(item.label, color = color, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 1)
     }
 }
 
@@ -83,7 +92,7 @@ fun TaktAddFab(onClick: () -> Unit) {
     val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         Modifier.size(52.dp).glassSurface(CircleShape, MaterialTheme.colorScheme.primaryContainer)
-            .clip(CircleShape).taktPressFeedback(source).clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick).testTag("root-add"),
+            .clip(CircleShape).taktPressFeedback(source).clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick).testTag("root-add").tourTarget("add-button"),
         contentAlignment = Alignment.Center,
     ) {
         Icon(Icons.Default.Add, t("Додати"), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
