@@ -32,6 +32,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     private var stage = UisStage.LOGIN_FORM
     private val closed = AtomicBoolean(false)
     private val activeCall = AtomicReference<Call?>(null)
+    private var operationCancellation: AtomicBoolean? = null
     private val cookies = mutableListOf<Cookie>()
     private var challenge: LoginForm? = null
     private var teachingPlan: UisStudyPlan? = null
@@ -201,6 +202,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
 
     fun downloadCourseDocument(document: com.kpyruy.takt.core.model.CourseDocumentFile, output: java.io.OutputStream, cancelled: AtomicBoolean): com.kpyruy.takt.core.model.DownloadedCourseDocument {
         fun checkTransferActive() {
+            checkRequestActive()
             if (cancelled.get() || closed.get() || Thread.currentThread().isInterrupted)
                 throw InterruptedIOException("Download cancelled")
         }
@@ -295,10 +297,11 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     fun readTeacherPhoto(personId: String): ByteArray? {
         require(UisTeachingLinks.validId(personId))
         if (closed.get()) return null
+        checkRequestActive()
         val request = Request.Builder().url(origin.resolve("auth/lide/foto.pl?id=$personId")!!).build()
         val call = http.newCall(request)
         activeCall.set(call)
-        if (closed.get()) call.cancel()
+        if (closed.get() || operationCancellation?.get() == true) call.cancel()
         return call.execute().use { response ->
             if (!response.isSuccessful || response.header("Content-Type")?.substringBefore(';') !in
                 setOf("image/jpeg", "image/png", "image/webp", "image/gif")) return@use null
@@ -390,6 +393,18 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     /** Cancels the current transfer without discarding the authenticated session. */
     fun cancelActiveRequest() { activeCall.get()?.cancel() }
 
+    /** The session serializes operations and drains this block before releasing its lock. */
+    fun <T> withCancellation(cancelled: AtomicBoolean, action: () -> T): T {
+        operationCancellation = cancelled
+        return try { checkRequestActive(); action() }
+        finally { operationCancellation = null }
+    }
+
+    private fun checkRequestActive() {
+        if (closed.get() || operationCancellation?.get() == true)
+            throw InterruptedIOException("UIS request cancelled")
+    }
+
     fun close() {
         closed.set(true)
         activeCall.get()?.cancel()
@@ -440,7 +455,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     }
 
     private fun exchange(url: HttpUrl, fields: Map<String, String>? = null, referer: HttpUrl? = null, destinationAllowed: ((HttpUrl) -> Boolean)? = null): Page {
-        if (closed.get()) throw IOException("Session closed")
+        checkRequestActive()
         if (!sameOrigin(url)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
         var request = Request.Builder().url(url).header("Accept-Language", "sk")
             .header("Cache-Control", "no-store")
@@ -450,9 +465,10 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
                 post(FormBody.Builder().apply { fields.forEach { (key, value) -> add(key, value) } }.build())
             } }.build()
         repeat(6) {
+            checkRequestActive()
             val call = http.newCall(request)
             activeCall.set(call)
-            if (closed.get()) call.cancel()
+            if (closed.get() || operationCancellation?.get() == true) call.cancel()
             call.execute().use { response ->
                 if (response.code in listOf(301, 302, 303)) {
                     val next = request.url.resolve(response.header("Location") ?: error("Missing redirect"))
