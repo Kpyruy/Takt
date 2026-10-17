@@ -102,12 +102,13 @@ class UniversityAccountRepository(
     val syncPreview = mutablePreview.asStateFlow()
     private val mutableSyncAction = MutableStateFlow(UisSyncActionState())
     val syncAction = mutableSyncAction.asStateFlow()
+    private val accountOperations = UisAccountOperations()
     private val actionMutex = Mutex()
     private var retryAction: Pair<String, suspend () -> Unit>? = null
     suspend fun retrySyncAction() { retryAction?.let { performPreviewAction(it.first, it.second) } }
 
-    private suspend fun performPreviewAction(success: String, action: suspend () -> Unit) {
-        if (!actionMutex.tryLock()) return
+    private suspend fun performPreviewAction(success: String, action: suspend () -> Unit) = accountOperations.run {
+        if (!actionMutex.tryLock()) return@run
         mutableSyncAction.value = UisSyncActionState(running = true)
         retryAction = success to action
         try {
@@ -123,7 +124,7 @@ class UniversityAccountRepository(
     }
 
     /** Call from an unlocked app. The UIS session and credentials never enter a backup. */
-    suspend fun loadLessonOptions(code: String): List<UisLessonOption> = autoMutex.withLock {
+    suspend fun loadLessonOptions(code: String): List<UisLessonOption> = withAccountSession {
         check(hasAccount.value) { "UIS account is not connected" }
         if (session.state.value == UisResult.CONNECTED) session.check()
         if (session.state.value != UisResult.CONNECTED) {
@@ -137,23 +138,23 @@ class UniversityAccountRepository(
     }
     private val teachingCache = CachedCourseTeachingRepository(
         store = teachingStore,
-        loadTeachers = { course, refresh -> autoMutex.withLock {
+        loadTeachers = { course, refresh -> withAccountSession {
             ensureTeachingSession()
             session.readCourseTeachers(course, refresh)
         } },
-        loadProfile = { id, language -> autoMutex.withLock {
+        loadProfile = { id, language -> withAccountSession {
             ensureTeachingSession()
             session.readTeacherProfile(id, language)
         } },
-        loadPhoto = { id -> autoMutex.withLock { session.readTeacherPhoto(id) } },
+        loadPhoto = { id -> withAccountSession { session.readTeacherPhoto(id) } },
     )
     val teachingRepository: CourseTeachingRepository get() = teachingCache
     private val documentsCache = CachedCourseDocumentsRepository(
-        load = { course, activeCodes, refresh -> autoMutex.withLock {
+        load = { course, activeCodes, refresh -> withAccountSession {
             ensureTeachingSession()
             session.readCourseDocuments(course.code, activeCodes, refresh)
         } },
-        stream = { document, output -> autoMutex.withLock {
+        stream = { document, output -> withAccountSession {
             ensureTeachingSession()
             session.downloadCourseDocument(document, output)
         } },
@@ -183,14 +184,14 @@ class UniversityAccountRepository(
         settingsRepository?.setCourseNameLanguage(language)
     }
 
-    suspend fun signIn(credentials: UniversityCredentials) {
+    suspend fun signIn(credentials: UniversityCredentials) = accountOperations.run {
         pendingAutoSections = null
         session.login(credentials)
         if (session.state.value == UisResult.CONNECTED) preferences.edit().remove(AUTO_INVALID_DAY).apply()
         importAfterLogin()
     }
 
-    suspend fun submitCode(code: String) {
+    suspend fun submitCode(code: String) = accountOperations.run {
         session.submitCode(code)
         if (session.state.value == UisResult.CONNECTED && pendingAutoSections != null) {
             val sections = pendingAutoSections.orEmpty()
@@ -199,9 +200,9 @@ class UniversityAccountRepository(
         } else importAfterLogin()
     }
 
-    suspend fun retryImport() = importAfterLogin(manual = true)
+    suspend fun retryImport() = accountOperations.run { importAfterLogin(manual = true) }
 
-    suspend fun checkAndImport() {
+    suspend fun checkAndImport() = accountOperations.run {
         session.check()
         importAfterLogin(manual = true)
     }
@@ -212,24 +213,24 @@ class UniversityAccountRepository(
     suspend fun checkTimetableNow(): UisAutoSyncOutcome =
         fetchSelectedManually(setOf(UisSyncSection.TIMETABLE))
 
-    private suspend fun fetchSelectedManually(sections: Set<UisSyncSection>): UisAutoSyncOutcome {
-        if (mutablePreview.value != null) return UisAutoSyncOutcome.REVIEW_READY
+    private suspend fun fetchSelectedManually(sections: Set<UisSyncSection>): UisAutoSyncOutcome = accountOperations.run {
+        if (mutablePreview.value != null) return@run UisAutoSyncOutcome.REVIEW_READY
         session.check()
-        if (session.state.value != UisResult.CONNECTED) return UisAutoSyncOutcome.FAILED
-        return fetchAutomatic(sections, LocalDate.now(), applyAllowed = false)
+        if (session.state.value != UisResult.CONNECTED) return@run UisAutoSyncOutcome.FAILED
+        fetchAutomatic(sections, LocalDate.now(), applyAllowed = false)
     }
 
     /** Runs when the owner opens an unlocked app. Keystore access never runs in a background worker. */
-    suspend fun runAutoSyncIfDue(today: LocalDate = LocalDate.now()): UisAutoSyncOutcome = autoMutex.withLock {
+    suspend fun runAutoSyncIfDue(today: LocalDate = LocalDate.now()): UisAutoSyncOutcome = withAccountSession {
         if (!hasAccount.value || !preferences.getBoolean(INITIAL_IMPORT_DONE, false) ||
             mutablePreview.value != null || studyPlanRepository == null || settingsRepository == null) {
-            return@withLock UisAutoSyncOutcome.NOT_DUE
+            return@withAccountSession UisAutoSyncOutcome.NOT_DUE
         }
         if (preferences.getLong(AUTO_INVALID_DAY, Long.MIN_VALUE) == today.toEpochDay()) {
-            return@withLock UisAutoSyncOutcome.FAILED
+            return@withAccountSession UisAutoSyncOutcome.FAILED
         }
-        if (session.state.value == UisResult.SECOND_FACTOR) return@withLock UisAutoSyncOutcome.SECOND_FACTOR
-        if (session.state.value == UisResult.CONNECTING) return@withLock UisAutoSyncOutcome.NOT_DUE
+        if (session.state.value == UisResult.SECOND_FACTOR) return@withAccountSession UisAutoSyncOutcome.SECOND_FACTOR
+        if (session.state.value == UisResult.CONNECTING) return@withAccountSession UisAutoSyncOutcome.NOT_DUE
         val localCourses = studyPlanRepository.observeCourses().first()
         val settings = settingsRepository.settings.value
         val currentSemester = settings.effectiveCurrentSemester(localCourses)
@@ -240,27 +241,30 @@ class UniversityAccountRepository(
         }.toMap()
         val due = UisAutoSyncPlanner.due(today, settings.uisAutoSync, checked,
             currentPeriod?.studyStart, currentPeriod?.studyEnd, currentPeriod?.examEnd)
-        if (due.isEmpty()) return@withLock UisAutoSyncOutcome.NOT_DUE
+        if (due.isEmpty()) return@withAccountSession UisAutoSyncOutcome.NOT_DUE
         if (session.state.value == UisResult.CONNECTED) {
             session.check()
             if (session.state.value == UisResult.UNAVAILABLE ||
-                session.state.value == UisResult.UNEXPECTED_RESPONSE) return@withLock UisAutoSyncOutcome.FAILED
+                session.state.value == UisResult.UNEXPECTED_RESPONSE) return@withAccountSession UisAutoSyncOutcome.FAILED
         }
         if (session.state.value != UisResult.CONNECTED) {
             val credentials = runCatching { readAfterAuthentication() }.getOrNull()
-                ?: return@withLock UisAutoSyncOutcome.NEEDS_DEVICE_AUTH
+                ?: return@withAccountSession UisAutoSyncOutcome.NEEDS_DEVICE_AUTH
             session.login(credentials)
             if (session.state.value == UisResult.INVALID_CREDENTIALS) {
                 preferences.edit().putLong(AUTO_INVALID_DAY, today.toEpochDay()).apply()
             }
             if (session.state.value == UisResult.SECOND_FACTOR) {
                 pendingAutoSections = due
-                return@withLock UisAutoSyncOutcome.SECOND_FACTOR
+                return@withAccountSession UisAutoSyncOutcome.SECOND_FACTOR
             }
-            if (session.state.value != UisResult.CONNECTED) return@withLock UisAutoSyncOutcome.FAILED
+            if (session.state.value != UisResult.CONNECTED) return@withAccountSession UisAutoSyncOutcome.FAILED
         }
         fetchAutomatic(due, today)
     }
+
+    private suspend fun <T> withAccountSession(action: suspend () -> T): T =
+        accountOperations.run { autoMutex.withLock { action() } }
 
     private suspend fun <T> coordinated(action: suspend () -> T): T =
         if (backupCoordinator == null) action() else backupCoordinator.withStableData(action)
@@ -537,15 +541,15 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun applyAllProgress() {
-        val preview = mutablePreview.value ?: return
+    suspend fun applyAllProgress() = accountOperations.run {
+        val preview = mutablePreview.value ?: return@run
         preview.courses.forEach { applyProgress(it.id) }
         applyCredits()
     }
 
-    fun applyCredits() {
-        val preview = mutablePreview.value ?: return
-        if (UisSyncSection.PROGRESS !in preview.availableSections) return
+    suspend fun applyCredits() = accountOperations.run {
+        val preview = mutablePreview.value ?: return@run
+        if (UisSyncSection.PROGRESS !in preview.availableSections) return@run
         saveCredits(preview.earnedCredits, preview.requiredCredits)
         val baseline = readProgressBaseline()
         writeProgressBaseline(baseline.copy(earnedCredits = preview.earnedCredits,
@@ -556,9 +560,9 @@ class UniversityAccountRepository(
             localRequiredCredits = preview.requiredCredits)
     }
 
-    suspend fun applyPeriod() {
-        val preview = mutablePreview.value ?: return
-        if (UisSyncSection.PERIODS !in preview.availableSections || preview.period == null) return
+    suspend fun applyPeriod() = accountOperations.run {
+        val preview = mutablePreview.value ?: return@run
+        if (UisSyncSection.PERIODS !in preview.availableSections || preview.period == null) return@run
         val current = settingsRepository?.settings?.value?.semesterPeriods.orEmpty()
         settingsRepository?.setSemesterPeriods(current + (preview.semester to preview.period))
         refreshLocalPreview()
@@ -678,10 +682,14 @@ class UniversityAccountRepository(
     }
 
     /** Call only after a successful device authentication. */
-    fun save(login: String, password: String) {
+    suspend fun save(login: String, password: String) = accountOperations.change {
         session.disconnect()
         pendingAutoSections = null
-        dismissPreview()
+        retryAction = null
+        mutablePreview.value = null
+        mutableSyncAction.value = UisSyncActionState()
+        pendingSubjectByEventId = emptyMap()
+        mutableLastCheckOutcome.value = null
         val cleanLogin = login.trim()
         require(cleanLogin.isNotEmpty() && cleanLogin.length <= 254)
         require(password.isNotEmpty() && password.length <= 1024)
@@ -729,12 +737,16 @@ class UniversityAccountRepository(
     }
 
     /** Call only after a successful device authentication. */
-    fun remove() {
+    suspend fun remove() = accountOperations.change {
         teachingCache.clear()
         documentsCache.clear()
         session.disconnect()
         pendingAutoSections = null
-        dismissPreview()
+        retryAction = null
+        mutablePreview.value = null
+        mutableSyncAction.value = UisSyncActionState()
+        pendingSubjectByEventId = emptyMap()
+        mutableLastCheckOutcome.value = null
         check(preferences.edit().remove(CIPHERTEXT).remove(IV)
             .remove(EARNED_CREDITS).remove(REQUIRED_CREDITS).remove(INITIAL_IMPORT_DONE)
             .remove(PROGRESS_BASELINE).remove(AUTO_INVALID_DAY).apply {

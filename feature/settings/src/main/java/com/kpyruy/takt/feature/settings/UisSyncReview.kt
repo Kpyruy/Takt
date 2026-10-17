@@ -94,7 +94,7 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
             (data.localEarnedCredits != data.earnedCredits || data.localRequiredCredits != data.requiredCredits)) {
             Text(t("Кредити UIS"), style = MaterialTheme.typography.titleMedium)
             Text(t("Локально: ${data.localEarnedCredits ?: "—"} із ${data.localRequiredCredits ?: "—"}; UIS: ${data.earnedCredits ?: "—"} із ${data.requiredCredits ?: "—"}"))
-            OutlinedButton(enabled = !action.running, onClick = repository::applyCredits) { Text(t("Оновити кредити UIS")) }
+            OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyCredits() } }) { Text(t("Оновити кредити UIS")) }
         }
         if (progress.isNotEmpty()) {
             Text(t("Прогрес · ${progress.size} змін"), style = MaterialTheme.typography.titleMedium)

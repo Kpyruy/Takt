@@ -206,9 +206,11 @@ internal fun FirstRunScreen(
                                 if (hasUniversityAccount) {
                                     authenticateDevice(t("Видалити дані UIS")) { result ->
                                         if (result == DeviceAuthenticationResult.SUCCESS) {
-                                            runCatching { universityAccountRepository.remove() }
-                                                .onSuccess { useUIS = false; accountMessage = null }
-                                                .onFailure { accountMessage = t("Не вдалося видалити дані UIS") }
+                                            scope.launch {
+                                                runCatching { universityAccountRepository.remove() }
+                                                    .onSuccess { useUIS = false; accountMessage = null }
+                                                    .onFailure { accountMessage = t("Не вдалося видалити дані UIS") }
+                                            }
                                         } else accountMessage = t("Підтвердження скасовано")
                                     }
                                 } else useUIS = false
