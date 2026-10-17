@@ -192,4 +192,20 @@ class BackupMergerTest {
         assertEquals(null, BackupMerger.merge(phone, source, setOf(BackupSection.PROGRESS)).gradeItems.single().lessonId)
     }
 
+    @Test fun detachedImportedTestStillProducesADateOnlyReminder() {
+        val date = java.time.LocalDate.of(2026, 10, 22)
+        val incoming = file.copy(gradeItems = listOf(file.gradeItems.single().copy(type = "TEST", lessonId = "file-rule",
+            dueDateEpochDay = date.toEpochDay(), completed = false)))
+        val merged = BackupMerger.merge(local, incoming, setOf(BackupSection.PROGRESS))
+        val settings = com.kpyruy.takt.core.model.AppSettings(reminders = com.kpyruy.takt.core.model.ReminderSettings(enabled = true)
+            .withRule(com.kpyruy.takt.core.model.ReminderCategory.TEST, com.kpyruy.takt.core.model.ReminderRule(true, listOf(1440))))
+        val courses = listOf(com.kpyruy.takt.core.model.Course("local", "PHY", "Physics", 5, 1, com.kpyruy.takt.core.model.CourseStatus.ENROLLED))
+        val snapshot = PlanningSnapshot(courses, emptyList(), merged.scheduleRules.map { it.toEntity().toDomain() },
+            emptyList(), emptyList(), emptyList(), merged.gradeItems.map { it.toEntity().toDomain() }, settings)
+        val reminders = ReminderPlanner.plan(snapshot, java.time.Instant.parse("2026-10-14T06:00:00Z"), java.time.ZoneId.of("Europe/Bratislava"))
+            .filter { it.category == com.kpyruy.takt.core.model.ReminderCategory.TEST }
+        org.junit.Assert.assertTrue(reminders.isNotEmpty())
+        org.junit.Assert.assertTrue(reminders.all { it.dateOnly })
+    }
+
 }
