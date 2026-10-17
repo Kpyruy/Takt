@@ -86,6 +86,14 @@ object BackupMerger {
         val progress = BackupSection.PROGRESS in fromBackup
         val schedule = BackupSection.SCHEDULE in fromBackup
         val materials = BackupSection.MATERIALS in fromBackup
+        val targetRules = if (schedule) incoming.scheduleRules.map { it.copy(courseId = mapped(it.courseId)) } else local.scheduleRules
+        val targetEvents = if (schedule) incoming.oneOffEvents.map { it.copy(courseId = mapped(it.courseId)) } else local.oneOffEvents
+        val targetLessons = (targetRules.map { it.id to it.courseId } + targetEvents.map { it.id to it.courseId }).toMap()
+        fun BackupGradeItem.validLessonLink(): BackupGradeItem = if (lessonId == null ||
+            (targetLessons.containsKey(lessonId) && targetLessons[lessonId] == courseId)) this else copy(lessonId = null)
+        val targetGrades = if (progress) local.gradeItems.filterNot { covered(it.courseId) } +
+            incoming.gradeItems.mapNotNull { item -> mapped(item.courseId)?.let { item.copy(courseId = it) } }
+            else local.gradeItems
         val phoneSettings = local.settings
         val fileSettings = incoming.settings
         val other = BackupSection.PREFERENCES in fromBackup
@@ -137,13 +145,11 @@ object BackupMerger {
                 BackupTeaching(mergedTeams, (old.profiles.filterNot { (it.personId to it.language) in keys } + profiles).takeLast(256))
             } else local.teaching,
             courses = courses,
-            scheduleRules = if (schedule) incoming.scheduleRules.map { it.copy(courseId = mapped(it.courseId)) } else local.scheduleRules,
-            oneOffEvents = if (schedule) incoming.oneOffEvents.map { it.copy(courseId = mapped(it.courseId)) } else local.oneOffEvents,
+            scheduleRules = targetRules,
+            oneOffEvents = targetEvents,
             scheduleExceptions = if (schedule) incoming.scheduleExceptions else local.scheduleExceptions,
             lessonAbsences = if (schedule) incoming.lessonAbsences else local.lessonAbsences,
-            gradeItems = if (progress) local.gradeItems.filterNot { covered(it.courseId) } +
-                incoming.gradeItems.mapNotNull { item -> mapped(item.courseId)?.let { item.copy(courseId = it) } }
-                else local.gradeItems,
+            gradeItems = if (progress || schedule) targetGrades.map { it.validLessonLink() } else targetGrades,
             gradeScales = if (progress) local.gradeScales.filterNot { covered(it.courseId) } +
                 incoming.gradeScales.mapNotNull { item -> mapped(item.courseId)?.let { item.copy(courseId = it) } }
                 else local.gradeScales,

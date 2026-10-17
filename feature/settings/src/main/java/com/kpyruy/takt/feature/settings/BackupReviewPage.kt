@@ -220,6 +220,10 @@ fun BackupReviewPage(
                 if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
             BackupPreferenceChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
+        if (BackupSection.PROGRESS in selected || BackupSection.SCHEDULE in selected) {
+            Text(t("Тести без відповідного заняття залишаться з датою, але без прив’язки до заняття."),
+                modifier = Modifier.testTag("backup-lesson-link-notice"), style = MaterialTheme.typography.bodySmall)
+        }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (differing.isNotEmpty()) {
             Button(onClick = { scope.launch {

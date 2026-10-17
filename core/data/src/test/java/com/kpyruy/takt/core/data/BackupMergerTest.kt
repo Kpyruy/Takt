@@ -173,4 +173,23 @@ class BackupMergerTest {
             setOf(BackupSection.SCHEDULE))
         assertEquals(0, importCount)
     }
+    @Test fun progressOnlyDetachesUnavailableLessonRatherThanSilencingReminders() {
+        val source = file.copy(gradeItems = listOf(file.gradeItems.single().copy(type = "TEST", lessonId = "file-rule")))
+        val merged = BackupMerger.merge(local, source, setOf(BackupSection.PROGRESS))
+        assertEquals(null, merged.gradeItems.single().lessonId)
+        val together = BackupMerger.merge(local, source, setOf(BackupSection.PROGRESS, BackupSection.SCHEDULE))
+        assertEquals("file-rule", together.gradeItems.single().lessonId)
+    }
+    @Test fun scheduleReplacementDetachesLocalTestsWhoseLessonDisappeared() {
+        val phone = local.copy(gradeItems = listOf(local.gradeItems.single().copy(type = "TEST", lessonId = "local-rule")))
+        val merged = BackupMerger.merge(phone, file, setOf(BackupSection.SCHEDULE))
+        assertEquals(null, merged.gradeItems.single().lessonId)
+    }
+    @Test fun equalLessonIdsInDifferentCoursesDoNotRetainFalseAssociation() {
+        val phone = local.copy(courses = local.courses + local.courses.single().copy(id = "other", code = "OTHER"),
+            scheduleRules = listOf(local.scheduleRules.single().copy(id = "file-rule", courseId = "other")))
+        val source = file.copy(gradeItems = listOf(file.gradeItems.single().copy(type = "TEST", lessonId = "file-rule")))
+        assertEquals(null, BackupMerger.merge(phone, source, setOf(BackupSection.PROGRESS)).gradeItems.single().lessonId)
+    }
+
 }
