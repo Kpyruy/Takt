@@ -71,6 +71,9 @@ interface ScheduleDao {
     @Query("DELETE FROM schedule_exceptions WHERE id = :id")
     suspend fun deleteException(id: String)
 
+    @Query("DELETE FROM schedule_exceptions WHERE ruleId = :ruleId")
+    suspend fun deleteRuleExceptions(ruleId: String)
+
     @Query("DELETE FROM schedule_exceptions WHERE ruleId = :ruleId AND dateEpochDay = :dateEpochDay")
     suspend fun deleteExceptionForOccurrence(ruleId: String, dateEpochDay: Long)
 

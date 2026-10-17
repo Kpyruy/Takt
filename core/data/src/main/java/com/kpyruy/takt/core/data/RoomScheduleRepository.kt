@@ -117,7 +117,7 @@ class RoomScheduleRepository(
         }
     }
 
-    override suspend fun deleteOneOffEvent(id: String) {
+    override suspend fun deleteOneOffEvent(id: String) = database.withTransaction {
         dao.deleteOneOffEvent(id)
         dao.deleteEventAbsences(id, true)
     }
@@ -126,8 +126,9 @@ class RoomScheduleRepository(
         dao.upsertException(exception.toEntity())
     }
 
-    override suspend fun deleteRule(id: String) {
+    override suspend fun deleteRule(id: String) = database.withTransaction {
         dao.deleteRule(id)
+        dao.deleteRuleExceptions(id)
         dao.deleteEventAbsences(id, false)
     }
 
