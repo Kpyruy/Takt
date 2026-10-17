@@ -18,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.LocalDateStateSaver
+import com.kpyruy.takt.core.ui.components.LocalTimeStateSaver
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -36,10 +39,10 @@ fun MoveLessonSheet(
     onDismiss: () -> Unit,
     onSave: (ScheduleException) -> Unit,
 ) {
-    var targetDate by remember(event) { mutableStateOf(event.date) }
-    var startTime by remember(event) { mutableStateOf(event.startTime) }
-    var endTime by remember(event) { mutableStateOf(event.endTime) }
-    var room by remember(event) { mutableStateOf(event.room.orEmpty()) }
+    var targetDate by rememberSaveable(event.id, stateSaver = LocalDateStateSaver) { mutableStateOf(event.date) }
+    var startTime by rememberSaveable(event.id, stateSaver = LocalTimeStateSaver) { mutableStateOf(event.startTime) }
+    var endTime by rememberSaveable(event.id, stateSaver = LocalTimeStateSaver) { mutableStateOf(event.endTime) }
+    var room by rememberSaveable(event.id) { mutableStateOf(event.room.orEmpty()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     TaktFullSheet(onDismissRequest = onDismiss) {

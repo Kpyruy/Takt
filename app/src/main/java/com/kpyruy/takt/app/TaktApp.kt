@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.components.rememberSaveAction
+import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +35,8 @@ import com.kpyruy.takt.core.ui.components.LocalCourseCodeKeys
 import androidx.compose.runtime.Composable
 import com.kpyruy.takt.core.ui.components.TaktContentBackdropHost
 import com.kpyruy.takt.core.ui.components.captureTaktContentBackdrop
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.ResolvedEventStateSaver
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
@@ -128,6 +132,8 @@ fun TaktApp(
     val showRootNavigation = Destination.entries.any { it.route == currentRoute }
     val courseIconKeys = remember(courses) { courses.associate { it.id to it.iconKey } }
     val scope = rememberCoroutineScope()
+    val saves = rememberSaveAction()
+    SaveErrorDialog(saves)
     val uisAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val haptics = rememberTaktHaptics()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -230,7 +236,7 @@ fun TaktApp(
         navController.navigate(route)
     }
 
-    var actionEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
+    var actionEvent by rememberSaveable(stateSaver = ResolvedEventStateSaver) { mutableStateOf<ResolvedScheduleEvent?>(null) }
 
     fun navigateRoot(destination: Destination) {
         // Read the live destination: a stale composition must not push the same root twice.
@@ -477,21 +483,21 @@ fun TaktApp(
             uisManaged = uisAccount,
             onDismiss = { showQuickAdd = false },
             onSaveTask = {
-                scope.launch {
+                saves.launch {
                     studyContentRepository.upsertTask(it)
                     haptics.confirm()
                     showQuickAdd = false
                 }
             },
             onSaveLesson = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.upsertRule(it)
                     haptics.confirm()
                     showQuickAdd = false
                 }
             },
             onSaveNote = {
-                scope.launch {
+                saves.launch {
                     studyContentRepository.upsertNote(it)
                     haptics.confirm()
                     showQuickAdd = false

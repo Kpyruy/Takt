@@ -3,6 +3,9 @@ package com.kpyruy.takt.feature.settings
 import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.rememberSaveAction
+import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -85,19 +88,21 @@ fun SettingsScreen(
 ) {
     val settings by settingsRepository.settings.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val saves = rememberSaveAction()
+    SaveErrorDialog(saves)
     val context = LocalContext.current
     var backupMessage by remember { mutableStateOf<String?>(null) }
     var backupReview by remember { mutableStateOf<BackupReviewState?>(null) }
-    var showAppearance by remember { mutableStateOf(guidedPage == "appearance") }
-    var showLanguage by remember { mutableStateOf(false) }
-    var showCalendar by remember { mutableStateOf(false) }
-    var showTasks by remember { mutableStateOf(guidedPage == "filters") }
-    var showNotifications by remember { mutableStateOf(guidedPage == "reminders") }
-    var showPeriods by remember { mutableStateOf(guidedPage == "periods") }
-    var showUniversityAccount by remember { mutableStateOf(false) }
-    var showUisAutoSync by remember { mutableStateOf(false) }
-    var showDocuments by remember { mutableStateOf(guidedPage == "documents") }
-    var showAppUpdates by remember { mutableStateOf(false) }
+    var showAppearance by rememberSaveable { mutableStateOf(guidedPage == "appearance") }
+    var showLanguage by rememberSaveable { mutableStateOf(false) }
+    var showCalendar by rememberSaveable { mutableStateOf(false) }
+    var showTasks by rememberSaveable { mutableStateOf(guidedPage == "filters") }
+    var showNotifications by rememberSaveable { mutableStateOf(guidedPage == "reminders") }
+    var showPeriods by rememberSaveable { mutableStateOf(guidedPage == "periods") }
+    var showUniversityAccount by rememberSaveable { mutableStateOf(false) }
+    var showUisAutoSync by rememberSaveable { mutableStateOf(false) }
+    var showDocuments by rememberSaveable { mutableStateOf(guidedPage == "documents") }
+    var showAppUpdates by rememberSaveable { mutableStateOf(false) }
     val releaseState by appReleaseRepository.state.collectAsStateWithLifecycle()
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val uisPreview by universityAccountRepository.syncPreview.collectAsStateWithLifecycle()
@@ -190,7 +195,7 @@ fun SettingsScreen(
             settings = settings,
             onBack = { showAppearance = false },
             onApply = { preview ->
-                scope.launch {
+                saves.launch {
                     settingsRepository.setAppearance(preview)
                     showAppearance = false
                 }
@@ -219,11 +224,10 @@ fun SettingsScreen(
             ukrainianFallback = settings.ukrainianCourseNameFallback,
             onBack = { showLanguage = false },
             onSelected = { language ->
-                scope.launch { settingsRepository.setLanguage(language) }
-                showLanguage = false
+                saves.queue { settingsRepository.setLanguage(language); showLanguage = false }
             },
-            onCourseNameSelected = { scope.launch { settingsRepository.setCourseNameLanguage(it) } },
-            onUkrainianFallbackSelected = { scope.launch { settingsRepository.setUkrainianCourseNameFallback(it) } },
+            onCourseNameSelected = { saves.queue { settingsRepository.setCourseNameLanguage(it) } },
+            onUkrainianFallbackSelected = { saves.queue { settingsRepository.setUkrainianCourseNameFallback(it) } },
         )
         return
     }
@@ -231,17 +235,17 @@ fun SettingsScreen(
         CalendarSettingsPage(
             settings = settings,
             onBack = { showCalendar = false },
-            onCancellationStyle = { scope.launch { settingsRepository.setCancellationStyle(it) } },
-            onShowHiddenLessons = { scope.launch { settingsRepository.setShowHiddenLessons(it) } },
-            onParityOverride = { scope.launch { settingsRepository.setParityOverride(it) } },
-            onWeekLayout = { scope.launch { settingsRepository.setWeekLayout(it) } },
+            onCancellationStyle = { saves.queue { settingsRepository.setCancellationStyle(it) } },
+            onShowHiddenLessons = { saves.queue { settingsRepository.setShowHiddenLessons(it) } },
+            onParityOverride = { saves.queue { settingsRepository.setParityOverride(it) } },
+            onWeekLayout = { saves.queue { settingsRepository.setWeekLayout(it) } },
         )
         return
     }
 
     if (showNotifications) {
         NotificationsSettingsPage(settings.reminders,
-            onChange = { scope.launch { settingsRepository.updateReminders(it) } },
+            onChange = { saves.queue { settingsRepository.updateReminders(it) } },
             onBack = { showNotifications = false })
         return
     }
@@ -249,7 +253,7 @@ fun SettingsScreen(
         TaskSettingsPage(
             filter = settings.homeWorkFilter,
             onBack = { showTasks = false },
-            onChange = { scope.launch { settingsRepository.setHomeWorkFilter(it) } },
+            onChange = { saves.queue { settingsRepository.setHomeWorkFilter(it) } },
         )
         return
     }
@@ -276,7 +280,7 @@ fun SettingsScreen(
     }
     if (showUisAutoSync) {
         UisAutoSyncSettingsPage(settings.uisAutoSync,
-            onChange = { scope.launch { settingsRepository.setUisAutoSync(it) } },
+            onChange = { saves.queue { settingsRepository.setUisAutoSync(it) } },
             onBack = { showUisAutoSync = false })
         return
     }

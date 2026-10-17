@@ -1,6 +1,9 @@
 package com.kpyruy.takt.feature.calendar
 
 import com.kpyruy.takt.core.ui.i18n.t
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.LocalDateStateSaver
+import com.kpyruy.takt.core.ui.components.LocalTimeStateSaver
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
@@ -120,24 +123,24 @@ fun AddLessonForm(
     onSave: (ScheduleRule) -> Unit,
 ) {
     val editingId = initialRule?.id ?: initialOneOff?.id
-    var linkedCourseId by remember(editingId, initialCourseId) { mutableStateOf(initialRule?.courseId ?: initialOneOff?.courseId ?: initialCourseId) }
-    var lessonType by remember(editingId, initialLessonType) { mutableStateOf(initialRule?.lessonType ?: initialOneOff?.lessonType ?: initialLessonType) }
-    var title by remember(editingId, initialTitle) {
+    var linkedCourseId by rememberSaveable(editingId, initialCourseId) { mutableStateOf(initialRule?.courseId ?: initialOneOff?.courseId ?: initialCourseId) }
+    var lessonType by rememberSaveable(editingId, initialLessonType) { mutableStateOf(initialRule?.lessonType ?: initialOneOff?.lessonType ?: initialLessonType) }
+    var title by rememberSaveable(editingId, initialTitle) {
         mutableStateOf(initialRule?.title ?: initialOneOff?.title ?: initialTitle)
     }
-    var room by remember(editingId, initialRoom) {
+    var room by rememberSaveable(editingId, initialRoom) {
         mutableStateOf(initialRule?.room ?: initialOneOff?.room ?: initialRoom)
     }
-    var startTime by remember(editingId, initialStartTime) {
+    var startTime by rememberSaveable(editingId, initialStartTime, stateSaver = LocalTimeStateSaver) {
         mutableStateOf(initialRule?.startTime ?: initialOneOff?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
     }
-    var endTime by remember(editingId, initialEndTime) {
+    var endTime by rememberSaveable(editingId, initialEndTime, stateSaver = LocalTimeStateSaver) {
         mutableStateOf(initialRule?.endTime ?: initialOneOff?.endTime ?: initialEndTime ?: LocalTime.of(9, 50))
     }
-    var day by remember(editingId, initialDay) {
+    var day by rememberSaveable(editingId, initialDay) {
         mutableStateOf(initialRule?.dayOfWeek ?: initialOneOff?.date?.dayOfWeek ?: initialDay)
     }
-    var recurrence by remember(editingId) {
+    var recurrence by rememberSaveable(editingId) {
         mutableStateOf(initialRule?.recurrence ?: ScheduleRecurrence.WEEKLY)
     }
     var repeatMenuExpanded by remember { mutableStateOf(false) }
@@ -149,8 +152,8 @@ fun AddLessonForm(
     var uisLoadFailed by remember { mutableStateOf(false) }
     var uisReload by remember { mutableStateOf(0) }
     var chosenUisKey by remember { mutableStateOf<String?>(null) }
-    var isOneOff by remember(editingId, initialDate) { mutableStateOf(initialOneOff != null || initialDate != null && initialRule == null) }
-    var selectedDate by remember(editingId, initialDate) { mutableStateOf(initialOneOff?.date ?: initialDate ?: LocalDate.now()) }
+    var isOneOff by rememberSaveable(editingId, initialDate) { mutableStateOf(initialOneOff != null || initialDate != null && initialRule == null) }
+    var selectedDate by rememberSaveable(editingId, initialDate, stateSaver = LocalDateStateSaver) { mutableStateOf(initialOneOff?.date ?: initialDate ?: LocalDate.now()) }
     LaunchedEffect(linkedCourseId, uisReload) {
         uisLessons = emptyList()
         chosenUisKey = null

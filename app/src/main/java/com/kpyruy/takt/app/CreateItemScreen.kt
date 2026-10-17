@@ -1,6 +1,8 @@
 package com.kpyruy.takt.app
 
 import com.kpyruy.takt.core.ui.i18n.t
+import com.kpyruy.takt.core.ui.components.rememberSaveAction
+import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -67,7 +69,8 @@ fun CreateItemScreen(
     onSaved: () -> Unit,
 ) {
     // Saving may resume from a Room transaction; navigation and feedback belong on Main.
-    val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
+    val saves = rememberSaveAction()
+    SaveErrorDialog(saves)
     val haptics = rememberTaktHaptics()
     val settings = settingsRepository.settings.collectAsState().value
     val academicSemester = courses.firstOrNull { it.id == courseId }?.let {
@@ -138,14 +141,14 @@ fun CreateItemScreen(
                     }
                 },
                 onSaveOneOff = { event ->
-                    scope.launch {
+                    saves.launch {
                         scheduleRepository.upsertOneOffEvent(event)
                         haptics.confirm()
                         onSaved()
                     }
                 },
                 onSave = { rule ->
-                    scope.launch {
+                    saves.launch {
                         scheduleRepository.upsertRule(rule)
                         haptics.confirm()
                         onSaved()
@@ -170,7 +173,7 @@ fun CreateItemScreen(
                 initialEndTime = draft?.endTime,
                 showHeading = false,
                 onSave = { event ->
-                    scope.launch {
+                    saves.launch {
                         scheduleRepository.upsertOneOffEvent(event)
                         haptics.confirm()
                         onSaved()
@@ -186,7 +189,7 @@ fun CreateItemScreen(
                 initialRequiredForExam = draft?.requiredForExam ?: false,
                 showHeading = false,
                 onSave = { task ->
-                    scope.launch {
+                    saves.launch {
                         studyContentRepository.upsertTask(task)
                         haptics.confirm()
                         onSaved()
@@ -206,7 +209,7 @@ fun CreateItemScreen(
                 initialRequiredForExam = draft?.requiredForExam ?: false,
                 showHeading = false,
                 onSave = { item ->
-                    scope.launch {
+                    saves.launch {
                         gradeRepository.upsertItem(item)
                         haptics.confirm()
                         onSaved()
@@ -222,7 +225,7 @@ fun CreateItemScreen(
                 initialContent = draft?.details.orEmpty(),
                 showHeading = false,
                 onSave = { note ->
-                    scope.launch {
+                    saves.launch {
                         studyContentRepository.upsertNote(note)
                         haptics.confirm()
                         onSaved()

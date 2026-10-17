@@ -2,6 +2,10 @@ package com.kpyruy.takt.core.ui.i18n
 import com.kpyruy.takt.core.model.AppLanguage
 internal object ReviewTranslations {
  private val entries=mapOf(
+  "Не вдалося зберегти зміни" to ("Could not save changes" to "Zmeny sa nepodarilo uložiť"),
+  "Твої зміни залишилися у формі. Перевір вільне місце та спробуй зберегти ще раз." to ("Your changes are still in the form. Check available storage and try saving again." to "Tvoje zmeny zostali vo formulári. Skontroluj voľné miesto a skús ich uložiť znova."),
+  "Повернутися до змін" to ("Return to changes" to "Späť k zmenám"),
+  "Тести без відповідного заняття залишаться з датою, але без прив’язки до заняття." to ("Tests without a matching class will keep their date without a class link." to "Testy bez zodpovedajúcej hodiny si ponechajú dátum bez prepojenia na hodinu."),
   "Відновлення даних не завершене" to ("Data recovery is unfinished" to "Obnova údajov nie je dokončená"),
   "Перевір вільне місце на пристрої та повтори відновлення. До завершення попередні дані залишаються захищеними." to ("Check the available storage on your device and retry recovery. Your previous data remains protected until recovery finishes." to "Skontroluj voľné miesto v zariadení a zopakuj obnovu. Predchádzajúce údaje zostávajú chránené až do dokončenia obnovy."),
   "Повторити відновлення" to ("Retry recovery" to "Zopakovať obnovu"),

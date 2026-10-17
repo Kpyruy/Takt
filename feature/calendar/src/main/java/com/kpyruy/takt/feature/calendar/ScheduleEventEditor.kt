@@ -1,6 +1,12 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.ui.components.rememberSaveAction
+import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.ResolvedEventStateSaver
+import com.kpyruy.takt.core.ui.components.ScheduleRuleStateSaver
+import com.kpyruy.takt.core.ui.components.OneOffEventStateSaver
 import com.kpyruy.takt.core.data.ScheduleRepository
 import com.kpyruy.takt.core.model.*
 import java.util.UUID
@@ -15,11 +21,13 @@ fun ScheduleEventEditor(
 ) {
     val rules by scheduleRepository.observeRules().collectAsState(initial = emptyList())
     val oneOffEvents by scheduleRepository.observeOneOffEvents().collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
-    var selectedEvent by remember(event) { mutableStateOf<ResolvedScheduleEvent?>(event) }
-    var editingRule by remember { mutableStateOf<ScheduleRule?>(null) }
-    var editingOneOff by remember { mutableStateOf<OneOffScheduleEvent?>(null) }
-    var movingEvent by remember { mutableStateOf<ResolvedScheduleEvent?>(null) }
+    val saves = rememberSaveAction()
+    SaveErrorDialog(saves)
+    var showActions by rememberSaveable(event.id, event.date.toEpochDay()) { mutableStateOf(true) }
+    val selectedEvent = event.takeIf { showActions }
+    var editingRule by rememberSaveable(stateSaver = ScheduleRuleStateSaver) { mutableStateOf<ScheduleRule?>(null) }
+    var editingOneOff by rememberSaveable(stateSaver = OneOffEventStateSaver) { mutableStateOf<OneOffScheduleEvent?>(null) }
+    var movingEvent by rememberSaveable(stateSaver = ResolvedEventStateSaver) { mutableStateOf<ResolvedScheduleEvent?>(null) }
     LaunchedEffect(selectedEvent, editingRule, editingOneOff, movingEvent) {
         if (selectedEvent == null && editingRule == null && editingOneOff == null && movingEvent == null) onDismiss()
     }
@@ -30,12 +38,12 @@ fun ScheduleEventEditor(
         LessonActionsSheet(
             event = event,
             isRecurringRule = recurringRule != null,
-            onDismiss = { selectedEvent = null },
+            onDismiss = { showActions = false },
             onToggleAbsence = {
-                scope.launch { scheduleRepository.setAbsent(event, !event.isAbsent); selectedEvent = null }
+                saves.launch { scheduleRepository.setAbsent(event, !event.isAbsent); showActions = false }
             },
             onCancelOccurrence = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.upsertException(
                         ScheduleException(
                             id = UUID.randomUUID().toString(),
@@ -44,37 +52,37 @@ fun ScheduleEventEditor(
                             type = ScheduleExceptionType.CANCELLED,
                         )
                     )
-                    selectedEvent = null
+                    showActions = false
                 }
             },
             onMoveOccurrence = {
                 movingEvent = event
-                selectedEvent = null
+                showActions = false
             },
             onRestoreOccurrence = {
-                scope.launch {
+                saves.launch {
                     event.exceptionId?.let { scheduleRepository.deleteException(it) }
-                    selectedEvent = null
+                    showActions = false
                 }
             },
             onEditRule = {
                 editingRule = recurringRule
-                selectedEvent = null
+                showActions = false
             },
             onDeleteRule = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.deleteRule(event.id)
-                    selectedEvent = null
+                    showActions = false
                 }
             },
             onEditOneOff = {
                 editingOneOff = oneOff
-                selectedEvent = null
+                showActions = false
             },
             onDeleteOneOff = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.deleteOneOffEvent(event.id)
-                    selectedEvent = null
+                    showActions = false
                 }
             },
         )
@@ -87,14 +95,14 @@ fun ScheduleEventEditor(
             initialRule = rule,
             initialDate = event.date,
             onSaveOneOff = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.convertRuleToOneOff(rule.id, it)
                     editingRule = null
                 }
             },
             onDismiss = { editingRule = null },
             onSave = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.upsertRule(it)
                     editingRule = null
                 }
@@ -110,10 +118,10 @@ fun ScheduleEventEditor(
             initialDate = event.date,
             onDismiss = { editingOneOff = null },
             onSaveOneOff = {
-                scope.launch { scheduleRepository.upsertOneOffEvent(it); editingOneOff = null }
+                saves.launch { scheduleRepository.upsertOneOffEvent(it); editingOneOff = null }
             },
             onSave = {
-                scope.launch {
+                saves.launch {
                     scheduleRepository.convertOneOffToRule(event.id, it)
                     editingOneOff = null
                 }
@@ -124,7 +132,7 @@ fun ScheduleEventEditor(
             initialEvent = event,
             onDismiss = { editingOneOff = null },
             onSave = {
-                scope.launch { scheduleRepository.upsertOneOffEvent(it); editingOneOff = null }
+                saves.launch { scheduleRepository.upsertOneOffEvent(it); editingOneOff = null }
             },
         )
     }
@@ -134,7 +142,7 @@ fun ScheduleEventEditor(
             event = event,
             onDismiss = { movingEvent = null },
             onSave = { exception ->
-                scope.launch {
+                saves.launch {
                     scheduleRepository.upsertException(exception)
                     movingEvent = null
                 }

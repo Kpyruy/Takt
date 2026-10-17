@@ -1,6 +1,9 @@
 package com.kpyruy.takt.feature.calendar
 
 import com.kpyruy.takt.core.ui.i18n.t
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.LocalDateStateSaver
+import com.kpyruy.takt.core.ui.components.LocalTimeStateSaver
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
 import androidx.compose.foundation.layout.Arrangement
@@ -78,18 +81,18 @@ fun OneOffEventForm(
     showHeading: Boolean = true,
     onSave: (OneOffScheduleEvent) -> Unit,
 ) {
-    var linkedCourseId by remember(initialEvent?.id, initialCourseId) { mutableStateOf(initialEvent?.courseId ?: initialCourseId) }
-    var lessonType by remember(initialEvent?.id, initialLessonType) { mutableStateOf(initialEvent?.lessonType ?: initialLessonType) }
-    var title by remember(initialEvent?.id, initialTitle) {
+    var linkedCourseId by rememberSaveable(initialEvent?.id, initialCourseId) { mutableStateOf(initialEvent?.courseId ?: initialCourseId) }
+    var lessonType by rememberSaveable(initialEvent?.id, initialLessonType) { mutableStateOf(initialEvent?.lessonType ?: initialLessonType) }
+    var title by rememberSaveable(initialEvent?.id, initialTitle) {
         mutableStateOf(initialEvent?.title ?: initialTitle)
     }
-    var date by remember(initialEvent?.id, initialDate) {
+    var date by rememberSaveable(initialEvent?.id, initialDate, stateSaver = LocalDateStateSaver) {
         mutableStateOf(initialEvent?.date ?: initialDate)
     }
-    var startTime by remember(initialEvent?.id, initialStartTime) {
+    var startTime by rememberSaveable(initialEvent?.id, initialStartTime, stateSaver = LocalTimeStateSaver) {
         mutableStateOf(initialEvent?.startTime ?: initialStartTime ?: LocalTime.of(8, 0))
     }
-    var endTime by remember(initialEvent?.id, initialType, initialEndTime) {
+    var endTime by rememberSaveable(initialEvent?.id, initialType, initialEndTime, stateSaver = LocalTimeStateSaver) {
         mutableStateOf(
             initialEvent?.endTime
                 ?: initialEndTime
@@ -97,10 +100,10 @@ fun OneOffEventForm(
                 else LocalTime.of(9, 50)
         )
     }
-    var room by remember(initialEvent?.id, initialRoom) {
+    var room by rememberSaveable(initialEvent?.id, initialRoom) {
         mutableStateOf(initialEvent?.room ?: initialRoom)
     }
-    var type by remember(initialEvent?.id, initialType) {
+    var type by rememberSaveable(initialEvent?.id, initialType) {
         mutableStateOf(initialEvent?.type ?: initialType)
     }
     var error by remember { mutableStateOf<String?>(null) }

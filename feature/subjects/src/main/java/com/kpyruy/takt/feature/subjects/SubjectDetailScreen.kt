@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.ui.components.rememberSaveAction
+import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
@@ -124,7 +126,8 @@ fun SubjectDetailScreen(
         ExamEligibilityCalculator.calculate(tasks, gradeItems)
     }
 
-    val scope = rememberCoroutineScope()
+    val saves = rememberSaveAction()
+    SaveErrorDialog(saves)
     val haptics = rememberTaktHaptics()
     var showIconPicker by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -227,9 +230,9 @@ fun SubjectDetailScreen(
                     showFinalGrade = showFinalGrade,
                     manualGrade = manualGrade,
                     onManualGradeChange = { grade ->
-                        scope.launch { gradeRepository.setManualGrade(courseId, grade) }
+                        saves.queue { gradeRepository.setManualGrade(courseId, grade) }
                     },
-                    onTaskCompleted = { task, completed -> scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) } },
+                    onTaskCompleted = { task, completed -> saves.queue { studyContentRepository.setTaskCompleted(task.id, completed) } },
                     onEditTask = { editingTaskId = it.id },
                     onEditGrade = { editingGradeId = it.id },
                     onExam = { selectedTab = "exam" },
@@ -251,15 +254,15 @@ fun SubjectDetailScreen(
                     gradeItems = gradeItems,
                     eligibility = eligibility,
                     onCompletedChange = { task, completed ->
-                        scope.launch { studyContentRepository.setTaskCompleted(task.id, completed) }
+                        saves.queue { studyContentRepository.setTaskCompleted(task.id, completed) }
                     },
                     onEdit = { editingTaskId = it.id },
                     onDelete = { task ->
-                        scope.launch { studyContentRepository.deleteTask(task.id) }
+                        saves.queue { studyContentRepository.deleteTask(task.id) }
                     },
                     onAddTask = { showAddTask = true },
                     onEditGrade = { editingGradeId = it.id },
-                    onDeleteGrade = { grade -> scope.launch { gradeRepository.deleteItem(grade.id) } },
+                    onDeleteGrade = { grade -> saves.queue { gradeRepository.deleteItem(grade.id) } },
                     onAddGrade = { showAddGrade = true },
                 )
                 "exam" -> CourseExamTab(
@@ -271,7 +274,7 @@ fun SubjectDetailScreen(
                     examInfo = examInfo,
                     onAdmission = { selectedTab = "tasks" },
                     onSaveExamInfo = { info ->
-                        scope.launch {
+                        saves.queue {
                             examRepository.upsertExamInfo(info)
                             haptics.confirm()
                         }
@@ -282,7 +285,7 @@ fun SubjectDetailScreen(
                     documentStore = documentStore,
                     onEdit = { editingNoteId = it.id },
                     onDelete = { note ->
-                        scope.launch { studyContentRepository.deleteNote(note.id) }
+                        saves.queue { studyContentRepository.deleteNote(note.id) }
                     },
                     onAddNote = { showAddNote = true },
                 )
@@ -292,7 +295,7 @@ fun SubjectDetailScreen(
 
     if (showIconPicker) {
         com.kpyruy.takt.core.ui.components.CourseIconPicker(item.iconKey, onSelect = { key ->
-            scope.launch { repository.setIcon(item.id, key) }
+            saves.queue { repository.setIcon(item.id, key) }
             showIconPicker = false
         }, onDismiss = { showIconPicker = false })
     }
@@ -302,9 +305,9 @@ fun SubjectDetailScreen(
             uisManaged = uisManaged,
             onDismiss = { showSettings = false },
             onIcon = { showSettings = false; showIconPicker = true },
-            onStatus = { status -> if (!uisManaged) scope.launch { repository.updateStatus(item.id, status) } },
-            onGrading = { type -> scope.launch { repository.setGradingType(item.id, type) } },
-            onResult = { result -> scope.launch { repository.setPassFailResult(item.id, result) } },
+            onStatus = { status -> if (!uisManaged) saves.queue { repository.updateStatus(item.id, status) } },
+            onGrading = { type -> saves.queue { repository.setGradingType(item.id, type) } },
+            onResult = { result -> saves.queue { repository.setPassFailResult(item.id, result) } },
             onScale = { showSettings = false; showScaleEditor = true },
         )
     }
@@ -321,7 +324,7 @@ fun SubjectDetailScreen(
                 editingGradeId = null
             },
             onSave = { gradeItem ->
-                scope.launch {
+                saves.launch {
                     gradeRepository.upsertItem(gradeItem)
                     haptics.confirm()
                     showAddGrade = false
@@ -336,7 +339,7 @@ fun SubjectDetailScreen(
             initialScale = gradeScale,
             onDismiss = { showScaleEditor = false },
             onSave = { scale ->
-                scope.launch {
+                saves.launch {
                     gradeRepository.setScale(courseId, scale)
                     haptics.confirm()
                     showScaleEditor = false
@@ -354,7 +357,7 @@ fun SubjectDetailScreen(
                 editingTaskId = null
             },
             onSave = { task ->
-                scope.launch {
+                saves.launch {
                     studyContentRepository.upsertTask(task)
                     haptics.confirm()
                     showAddTask = false
@@ -375,7 +378,7 @@ fun SubjectDetailScreen(
                 editingNoteId = null
             },
             onSave = { note ->
-                scope.launch {
+                saves.launch {
                     studyContentRepository.upsertNote(note)
                     haptics.confirm()
                     showAddNote = false

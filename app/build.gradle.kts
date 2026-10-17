@@ -97,6 +97,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     androidTestImplementation(libs.room.runtime)
+    androidTestImplementation("androidx.documentfile:documentfile:1.0.1")
     androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
     debugImplementation(libs.compose.ui.test.manifest)

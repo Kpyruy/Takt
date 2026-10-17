@@ -20,7 +20,14 @@ import org.junit.Test
 class UisAccountLifecycleTest {
     @Suppress("UNCHECKED_CAST")
     @Test fun logoutCancelsAnImportPausedBeforeRoomWriteAndKeepsLocalCourses() = runBlocking {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+        org.junit.Assume.assumeTrue(android.os.Build.FINGERPRINT.contains("generic") || android.os.Build.MODEL.contains("sdk_gphone") || android.os.Build.HARDWARE == "ranchu")
+        org.junit.Assume.assumeFalse(java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.containsAlias("takt_uis_credentials_v1"))
+        val app = ApplicationProvider.getApplicationContext<Context>()
+        val prefix = "uis-lifecycle-${System.nanoTime()}"
+        val context = object : android.content.ContextWrapper(app) {
+            override fun getApplicationContext(): Context = this
+            override fun getSharedPreferences(name: String, mode: Int) = app.getSharedPreferences("$prefix-$name", mode)
+        }
         val db = Room.inMemoryDatabaseBuilder(context, TaktDatabase::class.java).build()
         val real = RoomStudyPlanRepository(db)
         val entered = CompletableDeferred<Unit>()
@@ -54,6 +61,7 @@ class UisAccountLifecycleTest {
         } finally {
             release.complete(Unit)
             account.remove()
+            context.getSharedPreferences("takt_university_account", 0).edit().clear().commit()
             db.close()
         }
     }

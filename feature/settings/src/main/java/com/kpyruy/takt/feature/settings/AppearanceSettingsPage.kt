@@ -21,6 +21,7 @@ import androidx.compose.material3.Surface as SolidSurface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +44,18 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, onApply: (AppSettings) -> Unit) {
     BackHandler(onBack = onBack)
     var wallpaperDraft by rememberSaveable { mutableStateOf(settings.customWallpaper) }
-    var draft by remember { mutableStateOf(settings.normalizedAppearance().copy(customWallpaper = wallpaperDraft)) }
+    val draftSaver = remember(settings) { listSaver<AppSettings, String>(
+        save = { value -> listOf(value.themeMode.name, value.themeFamily.name, value.cardAppearance.name,
+            value.selectedCustomThemeId.orEmpty(), value.customWallpaper.orEmpty()) + value.customThemes.flatMap {
+                listOf(it.id, it.name, it.primaryHex, it.secondaryHex.orEmpty(), it.tertiaryHex.orEmpty())
+            } },
+        restore = { values -> settings.copy(themeMode = AppThemeMode.valueOf(values[0]),
+            themeFamily = ThemeFamily.valueOf(values[1]), cardAppearance = CardAppearance.valueOf(values[2]),
+            selectedCustomThemeId = values[3].ifEmpty { null }, customWallpaper = values[4].ifEmpty { null },
+            customThemes = values.drop(5).chunked(5).map { CustomColorTheme(it[0], it[1], it[2],
+                it[3].ifEmpty { null }, it[4].ifEmpty { null }) }).normalizedAppearance() }
+    ) }
+    var draft by rememberSaveable(stateSaver = draftSaver) { mutableStateOf(settings.normalizedAppearance().copy(customWallpaper = wallpaperDraft)) }
     var importingWallpaper by remember { mutableStateOf(false) }
     val changed = draft.customWallpaper != settings.customWallpaper || draft.themeMode != settings.themeMode || draft.themeFamily != settings.themeFamily ||
         draft.cardAppearance != settings.cardAppearance || draft.customThemes != settings.customThemes ||

@@ -1,4 +1,4 @@
-name: Draft restoration UI tests
+name: Persistence and editor regression tests
 
 permissions:
   contents: read
@@ -8,8 +8,13 @@ on:
     branches: [main]
     paths:
       - 'app/src/main/**'
+      - 'app/build.gradle.kts'
       - 'feature/subjects/**'
+      - 'feature/calendar/**'
+      - 'feature/settings/**'
       - 'core/data/**'
+      - 'core/model/**'
+      - 'core/database/**'
       - 'core/ui/**'
       - 'app/src/androidTest/**'
       - 'gradle/libs.versions.toml'
@@ -18,8 +23,13 @@ on:
     branches: [main]
     paths:
       - 'app/src/main/**'
+      - 'app/build.gradle.kts'
       - 'feature/subjects/**'
+      - 'feature/calendar/**'
+      - 'feature/settings/**'
       - 'core/data/**'
+      - 'core/model/**'
+      - 'core/database/**'
       - 'core/ui/**'
       - 'app/src/androidTest/**'
       - 'gradle/libs.versions.toml'
@@ -54,7 +64,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Run all draft recreation and persistence regression tests
+      - name: Run draft, editor, migration and restore regression tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -62,7 +72,7 @@ jobs:
           target: google_apis
           emulator-boot-timeout: 180
           disable-animations: true
-          script: gradle :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kpyruy.takt.app.DraftRestorationTest -Pandroid.testInstrumentationRunnerArguments.draftReview=true --stacktrace
+          script: gradle :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kpyruy.takt.app.DraftRestorationTest,com.kpyruy.takt.app.EditorRecoveryUiTest,com.kpyruy.takt.app.DataIntegrityTest,com.kpyruy.takt.app.AssessmentStatePersistenceTest,com.kpyruy.takt.app.LessonConversionAtomicTest,com.kpyruy.takt.app.BackupAtomicRestoreTest,com.kpyruy.takt.app.DocumentFailureRecoveryTest,com.kpyruy.takt.app.UisAccountLifecycleTest -Pandroid.testInstrumentationRunnerArguments.draftReview=true -Pandroid.testInstrumentationRunnerArguments.liquidGlassReview=true --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
