@@ -84,6 +84,7 @@ class UniversityAccountRepository(
     private val scheduleRepository: ScheduleRepository? = null,
     val settingsRepository: AppSettingsRepository? = null,
     teachingStore: TeachingStore = TeachingStore(),
+    private val backupCoordinator: RoomBackupRepository? = null,
 ) {
     val session = com.kpyruy.takt.core.data.uis.UisSession()
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -110,7 +111,7 @@ class UniversityAccountRepository(
         mutableSyncAction.value = UisSyncActionState(running = true)
         retryAction = success to action
         try {
-            action()
+            coordinated { action() }
             retryAction = null
             mutableSyncAction.value = UisSyncActionState(message = success)
         } catch (cancelled: CancellationException) {
@@ -261,8 +262,16 @@ class UniversityAccountRepository(
         fetchAutomatic(due, today)
     }
 
+    private suspend fun <T> coordinated(action: suspend () -> T): T =
+        if (backupCoordinator == null) action() else backupCoordinator.withStableData(action)
+
     private suspend fun fetchAutomatic(sections: Set<UisSyncSection>, today: LocalDate,
-        applyAllowed: Boolean = true): UisAutoSyncOutcome {
+        applyAllowed: Boolean = true): UisAutoSyncOutcome = coordinated {
+        fetchAutomaticStable(sections, today, applyAllowed)
+    }
+
+    private suspend fun fetchAutomaticStable(sections: Set<UisSyncSection>, today: LocalDate,
+        applyAllowed: Boolean): UisAutoSyncOutcome {
         val study = studyPlanRepository ?: return UisAutoSyncOutcome.FAILED
         val settingsRepo = settingsRepository ?: return UisAutoSyncOutcome.FAILED
         val previous = mutableImportProgress.value
@@ -406,7 +415,9 @@ class UniversityAccountRepository(
         edit.apply()
     }
 
-    private suspend fun importAfterLogin(manual: Boolean = false) {
+    private suspend fun importAfterLogin(manual: Boolean = false) = coordinated { importAfterLoginStable(manual) }
+
+    private suspend fun importAfterLoginStable(manual: Boolean) {
         if (session.state.value != UisResult.CONNECTED || studyPlanRepository == null) return
         if (!manual && preferences.getBoolean(INITIAL_IMPORT_DONE, false)) return
         val previous = mutableImportProgress.value

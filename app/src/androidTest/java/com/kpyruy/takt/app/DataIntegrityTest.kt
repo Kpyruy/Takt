@@ -83,7 +83,7 @@ class DataIntegrityTest {
             old.version = 16
         }
         val migrated = Room.databaseBuilder(context, TaktDatabase::class.java, name)
-            .addMigrations(TaktDatabase.MIGRATION_16_17, TaktDatabase.MIGRATION_17_18).build()
+            .addMigrations(TaktDatabase.MIGRATION_16_17, TaktDatabase.MIGRATION_17_18, TaktDatabase.MIGRATION_18_19).build()
         try {
             assertEquals("local", migrated.courseDao().getAllSnapshot().single().id)
             assertEquals("Personal", migrated.studyContentDao().getNotesSnapshot().single().content)

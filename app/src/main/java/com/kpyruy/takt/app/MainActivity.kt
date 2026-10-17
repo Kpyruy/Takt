@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 import com.kpyruy.takt.core.ui.theme.taktWindowBackgroundColor
 import com.kpyruy.takt.core.ui.i18n.TaktI18n
 import com.kpyruy.takt.core.data.DocumentSyncStatus
+import com.kpyruy.takt.core.data.BackupRestoreStatus
 import com.kpyruy.takt.core.data.UisAutoSyncOutcome
 import com.kpyruy.takt.core.model.DeviceAuthenticationResult
 import kotlinx.coroutines.launch
@@ -70,9 +72,29 @@ class MainActivity : FragmentActivity() {
             var showOnboarding by remember { mutableStateOf<Boolean?>(null) }
             var showGuidedTour by rememberSaveable { mutableStateOf(false) }
             val scope = rememberCoroutineScope()
-            LaunchedEffect(dataContainer) {
-                showOnboarding = dataContainer.firstRunRepository.shouldShow()
+            val restoreStatus by dataContainer.backupRepository.restoreStatus.collectAsStateWithLifecycle()
+            var showRecovery by remember { mutableStateOf(false) }
+            LaunchedEffect(restoreStatus) {
+                if (restoreStatus == BackupRestoreStatus.RECOVERY_REQUIRED) showRecovery = true
+                if (restoreStatus == BackupRestoreStatus.READY) showRecovery = false
+                if (showOnboarding == null && restoreStatus != BackupRestoreStatus.RECOVERY_REQUIRED) {
+                    try { showOnboarding = dataContainer.firstRunRepository.shouldShow() }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { showRecovery = true }
+                }
             }
+            if (showRecovery) AlertDialog(onDismissRequest = {},
+                title = { Text(t("Відновлення даних не завершене")) },
+                text = { Text(t("Перевір вільне місце на пристрої та повтори відновлення. До завершення попередні дані залишаються захищеними.")) },
+                confirmButton = { Button(enabled = restoreStatus != BackupRestoreStatus.RESTORING, onClick = {
+                    scope.launch {
+                        try {
+                            dataContainer.backupRepository.recoverPendingRestore()
+                            if (showOnboarding == null) showOnboarding = dataContainer.firstRunRepository.shouldShow()
+                        } catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { showRecovery = true }
+                    }
+                }) { Text(t("Повторити відновлення")) } })
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
             val releaseState by taktApplication.appReleaseRepository.state.collectAsStateWithLifecycle()
             val hasUniversityAccount by dataContainer.universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
@@ -83,8 +105,8 @@ class MainActivity : FragmentActivity() {
                     requestUnlock()
                 }
             }
-            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding, showGuidedTour, appEntry) {
-                if (hasUniversityAccount && taktApplication.deviceUnlocked && foreground && showOnboarding == false && !showGuidedTour) {
+            LaunchedEffect(hasUniversityAccount, taktApplication.deviceUnlocked, foreground, showOnboarding, showGuidedTour, appEntry, restoreStatus) {
+                if (restoreStatus == BackupRestoreStatus.READY && hasUniversityAccount && taktApplication.deviceUnlocked && foreground && showOnboarding == false && !showGuidedTour) {
                     val repository = dataContainer.universityAccountRepository
                     val outcome = try { repository.runAutoSyncIfDue() }
                     catch (cancelled: CancellationException) { throw cancelled }

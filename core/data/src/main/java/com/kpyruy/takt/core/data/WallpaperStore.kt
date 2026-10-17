@@ -86,7 +86,7 @@ class WallpaperStore(context: Context) {
             check(temporary.renameTo(destination))
             published = destination
             // One applied image plus one draft, even after repeated selections or abandoned drafts.
-            directory.listFiles()?.filter { it.name != reference && it.name != normalizeWallpaperReference(keepReference) }
+            directory.listFiles()?.filter { it.name != reference && it.name != normalizeWallpaperReference(keepReference) && it.name !in restoreReferences }
                 ?.forEach { it.delete() }
             reference
         } catch (failure: Throwable) {
@@ -108,7 +108,7 @@ class WallpaperStore(context: Context) {
     }
 
     /** Restore already-normalized owned pixels byte-for-byte, without repeated JPEG degradation. */
-    suspend fun restoreWallpaper(photo: BackupWallpaper, keepReference: String?): String = imports.withLock {
+    suspend fun restoreWallpaper(photo: BackupWallpaper, keepReference: String?, preserveExisting: Boolean = false): String = imports.withLock {
         withContext(Dispatchers.IO) {
             val bytes = photo.decodedBytes()
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -116,17 +116,50 @@ class WallpaperStore(context: Context) {
             require(options.outWidth in 1..2048 && options.outHeight in 1..2048) { "Invalid wallpaper dimensions" }
             requireNotNull(BitmapFactory.decodeByteArray(bytes, 0, bytes.size)).recycle()
             val temporary = File.createTempFile("restore-", ".tmp", directory)
+            var published: File? = null
             try {
                 temporary.outputStream().use { it.write(bytes); it.fd.sync() }
                 currentCoroutineContext().ensureActive()
                 val reference = "wallpaper-${UUID.randomUUID()}.jpg"
-                check(temporary.renameTo(File(directory, reference)))
-                directory.listFiles()?.filter { it.name != reference && it.name != normalizeWallpaperReference(keepReference) }
+                val destination = File(directory, reference)
+                check(temporary.renameTo(destination))
+                published = destination
+                if (preserveExisting) {
+                    syncDirectory(directory)
+                    restoreReferences.add(reference)
+                    normalizeWallpaperReference(keepReference)?.let(restoreReferences::add)
+                }
+                if (!preserveExisting) directory.listFiles()?.filter { it.name != reference && it.name != normalizeWallpaperReference(keepReference) && it.name !in restoreReferences }
                     ?.forEach { it.delete() }
                 reference
+            } catch (failure: Throwable) {
+                published?.delete()
+                throw failure
             } finally { temporary.delete() }
         }
     }
 
-    private companion object { val imports = Mutex() }
+    /** Deletes only the immutable image staged by the failed restore, never the active/previous photo. */
+    suspend fun discardPrepared(reference: String?) = imports.withLock { withContext(Dispatchers.IO) {
+        val safe = normalizeWallpaperReference(reference) ?: return@withContext
+        restoreReferences.remove(safe)
+        val file = File(directory, safe)
+        if (file.exists()) { check(file.delete()) { "Could not remove staged wallpaper" }; syncDirectory(directory) }
+    } }
+
+    /** Run only after a durable commit/rollback decision. Keep one applied image and one draft. */
+    suspend fun finishRestore(active: String?, previous: String?, prepared: String?) = imports.withLock {
+        withContext(Dispatchers.IO) {
+            previous?.let(restoreReferences::remove)
+            prepared?.let(restoreReferences::remove)
+            val keep = normalizeWallpaperReference(active)
+            val candidates = directory.listFiles().orEmpty().filter {
+                it.name.startsWith("wallpaper-") && it.name.endsWith(".jpg") &&
+                    it.name != keep && it.name !in restoreReferences
+            }.sortedByDescending { it.lastModified() }
+            candidates.drop(1).forEach { it.delete() }
+        }
+    }
+
+    private companion object { val imports = Mutex(); val restoreReferences = mutableSetOf<String>() }
 }

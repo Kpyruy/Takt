@@ -7,6 +7,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -38,6 +41,7 @@ class TaktDataContainer(context: Context) {
             TaktDatabase.MIGRATION_15_16,
             TaktDatabase.MIGRATION_16_17,
             TaktDatabase.MIGRATION_17_18,
+            TaktDatabase.MIGRATION_18_19,
         )
         .build()
 
@@ -50,17 +54,21 @@ class TaktDataContainer(context: Context) {
     val examRepository: ExamRepository =
         RoomExamRepository(database)
     val teachingStore = TeachingStore(java.io.File(context.filesDir, "teaching.json"))
+    val backupRepository = RoomBackupRepository(database, settingsRepository, WallpaperStore(context.applicationContext), teachingStore)
     val universityAccountRepository = UniversityAccountRepository(context, studyPlanRepository,
-        scheduleRepository, settingsRepository, teachingStore)
-    val planningSnapshot: StateFlow<PlanningSnapshot?> = observePlanningSnapshot(
-        studyPlanRepository, scheduleRepository, studyContentRepository, gradeRepository, settingsRepository, examRepository,
-    ).map<PlanningSnapshot, PlanningSnapshot?> { it }
-        .stateIn(scope, SharingStarted.Eagerly, null)
+        scheduleRepository, settingsRepository, teachingStore, backupRepository)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val planningSnapshot: StateFlow<PlanningSnapshot?> = backupRepository.restoreStatus.flatMapLatest { status ->
+        if (status == BackupRestoreStatus.READY) observePlanningSnapshot(
+            studyPlanRepository, scheduleRepository, studyContentRepository, gradeRepository, settingsRepository, examRepository,
+        ).map<PlanningSnapshot, PlanningSnapshot?> { it }
+        else emptyFlow() // Retain the last good frame; do not dispose the importing Settings screen.
+    }.stateIn(scope, SharingStarted.Eagerly, null)
 
     val reminderCoordinator = ReminderCoordinator(context.applicationContext, planningSnapshot, ::readPlanningSnapshot)
 
     /** Fresh source read for cold-process reminder validation; caller runs on IO. */
-    suspend fun readPlanningSnapshot(): PlanningSnapshot = PlanningSnapshot(
+    suspend fun readPlanningSnapshot(): PlanningSnapshot = backupRepository.withStableData { PlanningSnapshot(
         courses = studyPlanRepository.observeCourses().first(),
         absences = scheduleRepository.observeAbsences().first(),
         rules = scheduleRepository.observeRules().first(),
@@ -70,7 +78,7 @@ class TaktDataContainer(context: Context) {
         assessments = gradeRepository.observeAllItems().first(),
         settings = settingsRepository.settings.value,
         examInfos = examRepository.observeAllExamInfo().first(),
-    )
+    ) }
 
     /** Wait for the shared first frame to catch up after an onboarding restore. */
     suspend fun awaitRestoredPlanning() {
@@ -87,8 +95,7 @@ class TaktDataContainer(context: Context) {
         )
         withTimeoutOrNull(5_000L) { planningSnapshot.first { it == expected } }
     }
-    val backupRepository: BackupRepository =
-        RoomBackupRepository(database, settingsRepository, WallpaperStore(context.applicationContext), teachingStore)
     val documentStore = TaktDocumentStore(context.applicationContext, database, backupRepository, settingsRepository)
     val firstRunRepository = FirstRunRepository(context.applicationContext, this)
+    init { scope.launch { runCatching { backupRepository.recoverPendingRestore() } } }
 }

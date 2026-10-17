@@ -9,6 +9,7 @@ class FirstRunRepository(context: Context, private val data: TaktDataContainer) 
     private val preferences = context.applicationContext.getSharedPreferences("takt_onboarding", Context.MODE_PRIVATE)
 
     suspend fun shouldShow(): Boolean {
+        data.backupRepository.recoverPendingRestore()
         if (preferences.getBoolean("complete", false)) return false
         val existing = data.database.courseDao().count() > 0 || data.database.scheduleDao().countRules() > 0 ||
             data.database.scheduleDao().countOneOffEvents() > 0

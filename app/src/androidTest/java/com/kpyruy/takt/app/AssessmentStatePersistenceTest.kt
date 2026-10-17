@@ -29,7 +29,7 @@ class AssessmentStatePersistenceTest {
             old.execSQL("INSERT INTO grade_items(id,courseId,title,type,earnedPoints,maxPoints,recordedAtEpochMillis,completed,requiredForExam,minimumPointsForExam) VALUES('test','course','Test','TEST',6,10,1,1,1,5)")
             old.version = 17
         }
-        val db = Room.databaseBuilder(context,TaktDatabase::class.java,name).addMigrations(TaktDatabase.MIGRATION_17_18).build()
+        val db = Room.databaseBuilder(context,TaktDatabase::class.java,name).addMigrations(TaktDatabase.MIGRATION_17_18, TaktDatabase.MIGRATION_18_19).build()
         try {
             val grades = RoomGradeRepository(db)
             val original = grades.observeItems("course").first().single()
@@ -45,7 +45,7 @@ class AssessmentStatePersistenceTest {
             backup.importJson(exported)
             assertEquals(waiting, grades.observeItems("course").first().single())
             // Real old JSON has neither field; decode defaults keep previous grading behavior.
-            val oldPayload = BackupPayloadCodec.decode("""{"version":8,"courses":[],"gradeItems":[{"id":"old","courseId":"course","title":"Old","type":"TEST","earnedPoints":7.0,"maxPoints":10.0,"recordedAtEpochMillis":1}]}""")
+            val oldPayload = BackupPayloadCodec.decode("""{"version":8,"courses":[{"id":"course","code":"CODE","title":"Course","credits":5,"semester":3,"status":"enrolled","requirementType":"COMPULSORY"}],"gradeItems":[{"id":"old","courseId":"course","title":"Old","type":"TEST","earnedPoints":7.0,"maxPoints":10.0,"recordedAtEpochMillis":1}]}""")
             assertTrue(oldPayload.gradeItems.single().contributesToGrade);assertFalse(oldPayload.gradeItems.single().awaitingResult)
         } finally { db.close();context.deleteDatabase(name) }
     }

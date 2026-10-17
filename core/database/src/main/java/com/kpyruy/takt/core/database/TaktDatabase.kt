@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
+        BackupRestoreDecision::class,
         LessonAbsenceEntity::class,
         CourseEntity::class,
         CourseIdAliasEntity::class,
@@ -22,10 +23,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExamInfoEntity::class,
         ExamMaterialEntity::class,
     ],
-    version = 18,
+    version = 19,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
+    abstract fun backupRestoreDecisionDao(): BackupRestoreDecisionDao
     abstract fun courseDao(): CourseDao
     abstract fun scheduleDao(): ScheduleDao
     abstract fun gradeDao(): GradeDao
@@ -33,6 +35,12 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS backup_restore_decision (id TEXT NOT NULL PRIMARY KEY, committed INTEGER NOT NULL)")
+            }
+        }
+
         val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE grade_items ADD COLUMN contributesToGrade INTEGER NOT NULL DEFAULT 1")

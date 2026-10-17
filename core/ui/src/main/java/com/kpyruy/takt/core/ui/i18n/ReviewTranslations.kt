@@ -2,6 +2,9 @@ package com.kpyruy.takt.core.ui.i18n
 import com.kpyruy.takt.core.model.AppLanguage
 internal object ReviewTranslations {
  private val entries=mapOf(
+  "Відновлення даних не завершене" to ("Data recovery is unfinished" to "Obnova údajov nie je dokončená"),
+  "Перевір вільне місце на пристрої та повтори відновлення. До завершення попередні дані залишаються захищеними." to ("Check the available storage on your device and retry recovery. Your previous data remains protected until recovery finishes." to "Skontroluj voľné miesto v zariadení a zopakuj obnovu. Predchádzajúce údaje zostávajú chránené až do dokončenia obnovy."),
+  "Повторити відновлення" to ("Retry recovery" to "Zopakovať obnovu"),
   "Викладачі й консультації" to ("Teachers and consultations" to "Vyučujúci a konzultácie"),
   "Для викладачів нових предметів також вибери «Предмети»." to ("To include teachers for new courses, also select Courses." to "Na prenos vyučujúcich nových predmetov vyber aj Predmety."),
   "Ім’я викладача" to ("Teacher name" to "Meno vyučujúceho"),

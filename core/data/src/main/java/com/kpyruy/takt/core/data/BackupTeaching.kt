@@ -69,23 +69,57 @@ class TeachingStore(private val file: File? = null) {
         }
     }.getOrNull() ?: BackupTeaching())
     val snapshot = mutable.asStateFlow()
+    private var durableModel = mutable.value
     private var epoch = 0L
+    private var restoring = false
+    private var recoveryBlocked = false
     @Synchronized fun generation(): Long = epoch
-    @Synchronized fun replace(value: BackupTeaching) { write(value.validated()); epoch++ }
+    @Synchronized fun replace(value: BackupTeaching) {
+        check(!restoring && !recoveryBlocked) { "Backup restore is in progress" }
+        write(value.validated()); epoch++
+    }
     @Synchronized internal fun update(expected: Long, transform: (BackupTeaching) -> BackupTeaching) {
+        check(!restoring && !recoveryBlocked) { "Backup restore is in progress" }
         check(epoch == expected) { "Teaching data changed while loading contacts" }
         write(transform(mutable.value).validated())
     }
-    private fun write(value: BackupTeaching) {
-        if (value == mutable.value) return
+    @Synchronized fun beginBackupRestore(): TeachingRestoreLease {
+        check(!restoring) { "Backup restore is already in progress" }
+        restoring = true; epoch++
+        return TeachingRestoreLease(mutable.value, file?.isFile == true)
+    }
+    inner class TeachingRestoreLease internal constructor(val before: BackupTeaching, val fileWasPresent: Boolean) {
+        private var persisted = before
+        fun persist(value: BackupTeaching) = synchronized(this@TeachingStore) {
+            write(value.validated(), publish = false, force = true); persisted = value
+        }
+        fun undo(value: BackupTeaching, wasPresent: Boolean) = synchronized(this@TeachingStore) {
+            if (file != null && !wasPresent) {
+                if (file.exists()) { check(file.delete()) { "Could not undo teaching file" }; syncDirectory(file.parentFile!!) }
+            } else write(value.validated(), publish = false, force = true)
+            persisted = value; durableModel = value
+        }
+        fun reloadPersisted() = synchronized(this@TeachingStore) {
+            persisted = if (file == null) durableModel else if (!file.exists()) BackupTeaching()
+                else { require(file.length() <= 4_000_000); json.decodeFromString<BackupTeaching>(file.readText()).validated() }
+        }
+        fun publishAndRelease() = synchronized(this@TeachingStore) {
+            mutable.value = persisted; restoring = false; recoveryBlocked = false
+        }
+        fun releaseWithoutPublishing() = synchronized(this@TeachingStore) { restoring = false; recoveryBlocked = true }
+    }
+    private fun write(value: BackupTeaching, publish: Boolean = true, force: Boolean = false) {
+        if (!force && value == mutable.value) return
         file?.let { target ->
             target.parentFile?.mkdirs()
             val pending = File(target.path + ".pending")
             try {
                 FileOutputStream(pending).use { output -> output.write(json.encodeToString(value).toByteArray(Charsets.UTF_8)); output.fd.sync() }
                 check(pending.renameTo(target)) { "Could not save teaching data" }
+                if (force) syncDirectory(target.parentFile!!)
             } finally { pending.delete() }
         }
-        mutable.value = value
+        durableModel = value
+        if (publish) mutable.value = value
     }
 }

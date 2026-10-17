@@ -53,7 +53,7 @@ class PreferencesReviewUiTest {
 
     @Test fun otherPreferencesShowIndividualValuesAndResolvePortableCourseSelections() {
         val local = BackupPayload(courses = listOf(BackupCourse("phone-physics", "PHY", "Fyzika", 6, 1,
-            "enrolled", "MANDATORY")), settings = BackupSettings())
+            "enrolled", "COMPULSORY")), settings = BackupSettings())
         val source = local.copy(courses = local.courses.map { it.copy(id = "file-physics") },
             settings = local.settings.copy(cancellationStyle = "HIDDEN", showHiddenLessons = true,
                 parityOverride = "ODD", weekLayout = "COMPACT_LIST",
@@ -90,7 +90,7 @@ class PreferencesReviewUiTest {
 
     @Test fun teachingBackupReviewShowsCourseTeamAndBothConsultationHours() {
         val local = BackupPayload(courses = listOf(BackupCourse("physics", "PHY", "Fyzika", 6, 1,
-            "enrolled", "MANDATORY")), teaching = BackupTeaching(
+            "enrolled", "COMPULSORY")), teaching = BackupTeaching(
             teams = listOf(BackupTeachingTeam("PHY", listOf(BackupTeacher("12345", "Anna Nová", listOf("lecturer"))))),
             profiles = listOf(BackupTeacherProfile("12345", "SLOVAK", "Anna Nová", consultationHours = "Pondelok 10:00")),
         ))
