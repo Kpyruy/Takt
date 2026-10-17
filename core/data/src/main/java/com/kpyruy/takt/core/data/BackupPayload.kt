@@ -247,22 +247,6 @@ object BackupPayloadCodec {
         val document = json.parseToJsonElement(raw).jsonObject
         require("courses" in document) { "Backup is missing courses section" }
         val payload = json.decodeFromJsonElement<BackupPayload>(document)
-        require(payload.version in 1..BackupPayload.CURRENT_VERSION) {
-            "Unsupported Takt backup version: ${payload.version}"
-        }
-        payload.teaching?.validated()
-        payload.settings.wallpaper?.decodedBytes()
-        require(payload.settings.wallpaper == null || payload.settings.wallpaperRecorded) { "Invalid wallpaper metadata" }
-        val courseIds = payload.courses.map { it.id }.toSet()
-        require(payload.courses.size == courseIds.size) { "Backup contains duplicate course IDs" }
-        require(payload.courseIdAliases.map { it.oldId }.distinct().size == payload.courseIdAliases.size &&
-            payload.courseIdAliases.all { it.oldId.isNotBlank() && it.oldId !in courseIds && it.courseId in courseIds }) {
-            "Backup contains invalid course redirects"
-        }
-        require(payload.courseImportDecisions.distinct().size == payload.courseImportDecisions.size &&
-            payload.courseImportDecisions.all { it in courseIds && isCanonicalUisCourseId(it) }) {
-            "Backup contains invalid UIS import choices"
-        }
-        return payload
+        return payload.validated()
     }
 }

@@ -8,7 +8,9 @@ class LessonAbsenceBackupTest {
     private val course = BackupCourse("c", "C", "Course", 5, 1, "enrolled", "COMPULSORY")
     @Test fun absencesRoundTripThroughJsonAndEntity() {
         val entity = LessonAbsenceEntity("r", 20719, false)
-        val payload = BackupPayload(courses = listOf(course), lessonAbsences = listOf(entity.toBackup()))
+        val payload = BackupPayload(courses = listOf(course),
+            scheduleRules = listOf(BackupScheduleRule("r", "c", "Lesson", 1, 480, 540, "WEEKLY")),
+            lessonAbsences = listOf(entity.toBackup()))
         assertEquals(entity, BackupPayloadCodec.decode(BackupPayloadCodec.encode(payload)).lessonAbsences.single().toEntity())
     }
     @Test fun oldBackupHasNoAbsences() {

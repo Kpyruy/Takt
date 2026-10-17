@@ -24,7 +24,7 @@ class TeachingPersistenceTest {
             assertEquals("Monday 10:00", restarted.savedProfile(teacher, AppLanguage.SLOVAK)?.consultationHours)
             assertTrue(runCatching { restarted.teachers(course, true) }.isFailure)
             assertEquals(listOf(teacher), restarted.savedTeachers(course))
-            assertEquals(store.snapshot.value, BackupPayloadCodec.decode(BackupPayloadCodec.encode(BackupPayload(teaching = store.snapshot.value))).teaching)
+            assertEquals(store.snapshot.value, BackupPayloadCodec.decode(BackupPayloadCodec.encode(BackupPayload(courses = listOf(BackupCourse(course.id, course.code, course.title, course.credits, course.semester, course.status.storageValue, course.requirementType.name)), teaching = store.snapshot.value))).teaching)
         } finally { file.delete() }
     }
     @Test fun savedTeamIsReadableWhileRefreshIsPendingAndUpdatedWhenFinished() = runBlocking {

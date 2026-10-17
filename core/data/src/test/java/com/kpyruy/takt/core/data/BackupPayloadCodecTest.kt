@@ -73,7 +73,7 @@ class BackupPayloadCodecTest {
                     completed = true,
                     requiredForExam = true,
                     minimumPointsForExam = 12.0,
-                    lessonId = "physics-friday-rule",
+                    lessonId = "physics-friday",
                     durationMinutes = 45,
                 )
             ),
@@ -120,7 +120,7 @@ class BackupPayloadCodecTest {
             examInfo = listOf(
                 BackupExamInfo(
                     courseId = "FYZI_6B",
-                    gradeItemId = "exam-grade",
+                    gradeItemId = "grade-1",
                     dateEpochDay = 20838L,
                     startMinute = 570,
                     endMinute = 660,
