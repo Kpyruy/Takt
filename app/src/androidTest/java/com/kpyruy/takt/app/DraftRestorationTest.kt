@@ -2,18 +2,22 @@ package com.kpyruy.takt.app
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.os.Build
+import android.os.SystemClock
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import com.kpyruy.takt.core.model.AppLanguage
 import com.kpyruy.takt.core.model.CourseNote
-import com.kpyruy.takt.core.model.CourseStatus
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.model.NoteAttachment
 import com.kpyruy.takt.core.model.StudyTask
+import com.kpyruy.takt.core.ui.i18n.TaktI18n
+import com.kpyruy.takt.core.ui.motion.TaktMotion
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -23,7 +27,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.format.FormatStyle
 
 /** Real Activity recreation checks; opt in only on a disposable emulator with -e draftReview true. */
 class DraftRestorationTest {
@@ -32,19 +36,18 @@ class DraftRestorationTest {
     private val courseId = "FYZI_6B"
     private val prefix = "Draft review "
     private val date get() = LocalDate.now()
+    private var lastGradeTabTap = 0L
 
     @Before fun prepareDisposableFixture() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("draftReview") == "true")
+        assumeTrue(Build.FINGERPRINT.contains("generic") || Build.MODEL.contains("sdk_gphone") || Build.HARDWARE == "ranchu")
         runBlocking {
+            // seedIfNeeded deliberately preserves populated data; reset this opt-in emulator fixture
+            // so a preceding Glass review (with different course IDs) cannot change the test routes.
+            data.database.clearAllTables()
             data.seedIfNeeded()
+            data.settingsRepository.setCurrentSemester(3)
             data.settingsRepository.setLanguage(AppLanguage.UKRAINIAN)
-            data.studyPlanRepository.updateStatus(courseId, CourseStatus.ENROLLED)
-            data.studyContentRepository.observeTasks(courseId).first()
-                .filter { it.title.startsWith(prefix) }.forEach { data.studyContentRepository.deleteTask(it.id) }
-            data.gradeRepository.observeItems(courseId).first()
-                .filter { it.title.startsWith(prefix) }.forEach { data.gradeRepository.deleteItem(it.id) }
-            data.studyContentRepository.observeNotes(courseId).first()
-                .filter { it.title.startsWith(prefix) }.forEach { data.studyContentRepository.deleteNote(it.id) }
         }
         compose.waitForIdle()
     }
@@ -114,7 +117,7 @@ class DraftRestorationTest {
         openSubjectWork("Завдання без балів")
         fillTask()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("Нове завдання").assertExists()
+        compose.onNode(hasText("Додати завдання") and !hasClickAction()).assertExists()
         assertTaskDraft()
         assertNoTaskSaved()
         save()
@@ -127,7 +130,7 @@ class DraftRestorationTest {
         fillGrade()
         compose.activityRule.scenario.recreate()
         assertGradeDraft()
-        compose.onNodeWithText("Додати оцінювання").assertExists()
+        compose.onNode(hasText("Додати тест") and !hasClickAction()).assertExists()
         assertNoGradeSaved()
         saveGrade()
         compose.waitUntil(5_000) { grades().count { it.title == prefix + "test" } == 1 }
@@ -139,7 +142,7 @@ class DraftRestorationTest {
         fillNote()
         addLink()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("Нова нотатка").assertExists()
+        compose.onNode(hasText("Додати нотатку") and !hasClickAction()).assertExists()
         assertNoteDraft()
         compose.onNodeWithText("Lecture reference").assertExists()
         assertNoNoteSaved()
@@ -183,13 +186,13 @@ class DraftRestorationTest {
         fillTask()
         fill("Отримано", "7")
         fill("Максимум", "30")
-        fill("Мінімум", "6")
+        fill("Мінімум балів для допуску", "6")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("Редагувати завдання").assertExists()
         assertTaskDraft()
         field("Отримано").assertTextContains("7")
         field("Максимум").assertTextContains("30")
-        field("Мінімум").assertTextContains("6")
+        field("Мінімум балів для допуску").assertTextContains("6")
         assertEquals(original, tasks().single { it.id == original.id })
         save("Оновити")
         compose.waitUntil(5_000) { tasks().any { it.id == original.id && it.title == prefix + "task" } }
@@ -228,14 +231,23 @@ class DraftRestorationTest {
         val application = compose.activity.application as TaktApplication
         compose.runOnIdle { application.deviceUnlocked = true }
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        compose.onNodeWithText("Додати фото або файл").performScrollTo().performClick()
+        compose.onNodeWithText("Додати файл").performScrollTo().performClick()
         // The real DocumentsUI picker (or its folder permission step) leaves our Activity.
         compose.waitUntil(5_000) {
             instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString()
                 ?.let { it != instrumentation.targetContext.packageName } == true
         }
-        assertTrue(instrumentation.uiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK))
-        compose.waitForIdle()
+        val device = UiDevice.getInstance(instrumentation)
+        device.waitForIdle()
+        // DocumentsUI remembers its last folder. Back first walks up that folder stack;
+        // cancel the picker completely before asserting on the returning app's draft.
+        var backs = 0
+        while (device.currentPackageName != instrumentation.targetContext.packageName && backs < 10) {
+            assertTrue(device.pressBack())
+            device.waitForIdle()
+            backs++
+        }
+        waitForNoteForm()
         assertNoteDraft()
         compose.onNodeWithText("Lecture reference").assertExists()
         assertTrue(application.deviceUnlocked)
@@ -246,9 +258,7 @@ class DraftRestorationTest {
         }
         instrumentation.targetContext.startActivity(Intent(instrumentation.targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-        compose.waitUntil(5_000) {
-            runCatching { field("Заголовок").fetchSemanticsNode() }.isSuccess
-        }
+        waitForNoteForm()
         assertNoteDraft()
         compose.onNodeWithText("Lecture reference").assertExists()
         assertTrue(application.deviceUnlocked)
@@ -277,7 +287,7 @@ class DraftRestorationTest {
     private fun selectDate(label: String) {
         compose.onNodeWithText(label).performScrollTo().performTouchInput { click() }
         // Material's calendar exposes full dates through semantics, not day-number Text.
-        val accessibleDate = date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.US))
+        val accessibleDate = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(TaktI18n.locale))
         compose.onNode(hasText(accessibleDate, substring = true) and hasClickAction()).performClick()
         compose.onNode(hasText("Готово") and hasClickAction() and !hasTestTag("grade-details-done")).performClick()
     }
@@ -332,7 +342,15 @@ class DraftRestorationTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
     }
-    private fun gradeTab(name: String) = compose.onNodeWithTag("grade-details-tab-$name").performClick()
+    private fun gradeTab(name: String) {
+        // Compose's virtual clock does not advance the navigation guard's elapsedRealtime clock.
+        // Keep successive semantic clicks outside the same real tap-cooldown window.
+        compose.waitUntil(5_000) {
+            SystemClock.elapsedRealtime() - lastGradeTabTap >= TaktMotion.NavigationTapCooldownMs
+        }
+        compose.onNodeWithTag("grade-details-tab-$name").performClick().assertIsSelected()
+        lastGradeTabTap = SystemClock.elapsedRealtime()
+    }
     private fun doneGradeDetails() {
         compose.onNodeWithTag("grade-details-done").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isEmpty() }
@@ -342,6 +360,11 @@ class DraftRestorationTest {
     private fun fillNote() {
         fill("Заголовок", prefix + "note")
         fill("Нотатка", "Keep the lecture notes")
+    }
+    private fun waitForNoteForm() {
+        compose.waitUntil(5_000) {
+            runCatching { field("Заголовок").fetchSemanticsNode() }.isSuccess
+        }
     }
     private fun assertNoteDraft() {
         field("Заголовок").assertTextContains(prefix + "note")
