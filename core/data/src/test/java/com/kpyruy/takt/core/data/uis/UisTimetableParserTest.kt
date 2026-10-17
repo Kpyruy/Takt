@@ -52,4 +52,9 @@ class UisTimetableParserTest {
         rejects("<p>New page layout</p>")
     }
 
+    @Test fun renamedBlockLabelWithMissingFootnoteIsRejected() {
+        val unknownBlock = weekly.replace("<a href='syllabus.pl?predmet=101'>Physics</a>", "Bloková výučba <sup>(7)</sup>")
+        rejects(table(unknownBlock))
+    }
+
 }

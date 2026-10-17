@@ -47,7 +47,8 @@ internal object UisTimetableParser {
             val start = parseTime(cells[1].text())
             val end = parseTime(cells[2].text())
             if (day == null || start == null || end == null || end <= start) { rejected++; return@mapNotNull null }
-            val block = cells[3].text().startsWith("Block class", true)
+            val block = cells[3].text().startsWith("Block class", true) ||
+                (cells[3].selectFirst("sup") != null && cells[3].selectFirst("a[href*=predmet=]") == null)
             val noteNumber = cells[3].selectFirst("sup")?.text()?.trim()
                 ?.removeSurrounding("(", ")")?.toIntOrNull()
             val note = if (block) notes[noteNumber] else null
