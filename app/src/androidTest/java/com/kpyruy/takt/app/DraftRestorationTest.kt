@@ -23,6 +23,8 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.After
+import androidx.lifecycle.Lifecycle
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
@@ -35,6 +37,8 @@ class DraftRestorationTest {
     private val data get() = (compose.activity.application as TaktApplication).dataContainer
     private val courseId = "FYZI_6B"
     private val prefix = "Draft review "
+    private var testActivity: MainActivity? = null
+    private var restoreDocumentsTree: (() -> Unit)? = null
     private val date get() = LocalDate.now()
     private var lastGradeTabTap = 0L
 
@@ -231,38 +235,73 @@ class DraftRestorationTest {
         val application = compose.activity.application as TaktApplication
         compose.runOnIdle { application.deviceUnlocked = true }
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        compose.onNodeWithText("Додати файл").performScrollTo().performClick()
-        // The real DocumentsUI picker (or its folder permission step) leaves our Activity.
-        compose.waitUntil(5_000) {
-            instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString()
-                ?.let { it != instrumentation.targetContext.packageName } == true
+        val activity = compose.activity
+        testActivity = activity
+        // Exercise the fresh-install folder-picker branch regardless of a preceding suite's grant.
+        val preferences = instrumentation.targetContext.getSharedPreferences("takt_documents", 0)
+        val originalTree = preferences.getString("tree_uri", null)
+        assertTrue(preferences.edit().remove("tree_uri").commit())
+        restoreDocumentsTree = {
+            assertTrue(preferences.edit().apply {
+                if (originalTree == null) remove("tree_uri") else putString("tree_uri", originalTree)
+            }.commit())
+            runBlocking { application.dataContainer.documentStore.resume() }
         }
-        val device = UiDevice.getInstance(instrumentation)
-        device.waitForIdle()
-        // DocumentsUI remembers its last folder. Back first walks up that folder stack;
-        // cancel the picker completely before asserting on the returning app's draft.
-        var backs = 0
-        while (device.currentPackageName != instrumentation.targetContext.packageName && backs < 10) {
-            assertTrue(device.pressBack())
-            device.waitForIdle()
-            backs++
-        }
+        val fileFilter = android.content.IntentFilter(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); addDataType("*/*") }
+        val treeFilter = android.content.IntentFilter(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        val monitors = listOf(instrumentation.addMonitor(fileFilter, null, false), instrumentation.addMonitor(treeFilter, null, false))
+        try {
+            compose.onNodeWithText("Додати файл").performScrollTo().performClick()
+            // A fresh device opens the tree picker; an already-connected one opens the file picker.
+            // Accessibility root package can remain cached/null while the system picker owns focus.
+            compose.waitUntil(5_000) { monitors.any { it.hits > 0 } && !activity.hasWindowFocus() }
+            returnToApp(activity)
+        } finally { monitors.forEach(instrumentation::removeMonitor) }
         waitForNoteForm()
         assertNoteDraft()
         compose.onNodeWithText("Lecture reference").assertExists()
         assertTrue(application.deviceUnlocked)
         assertTrue(instrumentation.uiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME))
-        compose.waitUntil(5_000) {
-            instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString()
-                ?.let { it != instrumentation.targetContext.packageName } == true
-        }
+        compose.waitUntil(5_000) { !activity.hasWindowFocus() }
         instrumentation.targetContext.startActivity(Intent(instrumentation.targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+        compose.waitUntil(5_000) { foreground(activity) }
         waitForNoteForm()
         assertNoteDraft()
         compose.onNodeWithText("Lecture reference").assertExists()
         assertTrue(application.deviceUnlocked)
         assertNoNoteSaved()
+    }
+
+    private fun foreground(activity: MainActivity) =
+        activity.hasWindowFocus() && activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+
+    private fun returnToApp(activity: MainActivity) {
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        repeat(10) {
+            if (foreground(activity)) return
+            assertTrue(device.pressBack())
+            val until = android.os.SystemClock.elapsedRealtime() + 1_000
+            while (!foreground(activity) && android.os.SystemClock.elapsedRealtime() < until) android.os.SystemClock.sleep(50)
+        }
+        assertTrue("System picker did not return focus to the app", foreground(activity))
+    }
+
+    @After fun restoreForegroundAfterExternalUi() {
+        // Cleanup also runs on assertion failure; a picker must never poison the next Activity.
+        try {
+            val activity = testActivity ?: return
+            if (activity.isDestroyed || foreground(activity)) return
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            try { returnToApp(activity) }
+            finally {
+                if (!foreground(activity)) {
+                    instrumentation.targetContext.startActivity(Intent(instrumentation.targetContext, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                    UiDevice.getInstance(instrumentation).waitForIdle()
+                }
+            }
+        } finally { restoreDocumentsTree?.invoke() }
     }
 
     private fun openGlobal(label: String) {
