@@ -6,13 +6,23 @@ Version 0.3.0 is an early release. Takt is built with Kotlin and Jetpack Compose
 
 ## Screenshots
 
-| Today | Week list |
+| Today | Weekly schedule |
 | :---: | :---: |
-| <img src="docs/screenshots/today.png" alt="Today's classes and upcoming tasks" width="260"> | <img src="docs/screenshots/week-list.png" alt="Calendar week list with classes and tasks" width="260"> |
-| Exam | Progress |
-| <img src="docs/screenshots/exam.png" alt="Exam preparation and target grade" width="260"> | <img src="docs/screenshots/progress.png" alt="Study plan and semester progress" width="260"> |
+| <img src="docs/screenshots/today.png" alt="Takt 0.3.0 Today screen with a class timeline, breaks and upcoming work" width="260"><br>Classes, breaks, deadlines and task filters. | <img src="docs/screenshots/week-list.png" alt="Takt 0.3.0 weekly list grouping classes and tasks by day" width="260"><br>A weekly overview of classes and upcoming work. |
+| Exam preparation | Study progress |
+| <img src="docs/screenshots/exam.png" alt="Exam date, target grade, points needed and eligibility requirements" width="260"><br>Target grades, achievable points and exam eligibility. | <img src="docs/screenshots/progress.png" alt="Study plan with credit totals, semesters and subject status" width="260"><br>Credits, semesters and subject completion in one place. |
+| Course notes | Custom themes |
+| <img src="docs/screenshots/notes.png" alt="Course notes with readable previews and a saved lecture link" width="260"><br>Course notes with previews, links and attachments. | <img src="docs/screenshots/appearance.png" alt="Named custom theme Blue hour with a live appearance preview" width="260"><br>Named themes with a live preview before applying. |
 
-These screenshots show version 0.2.0 with English example data on a Pixel 7 emulator. A new installation starts with an empty study plan, not the example schedule.
+Captured from the signed **0.3.0** release on an Android 15 Pixel 6 emulator, using English and fictional study data. A new installation starts with an empty study plan, not the example schedule.
+
+## What's new in 0.3.0
+
+- Liquid Glass interface with updated navigation, calendar, subject pages and notes.
+- Named custom color themes, personal background images and three card styles. Appearance and background images are included in backups.
+- STU UIS course documents with file names and downloads to the connected `Documents/Takt/<COURSE_CODE>` folder.
+- Cached course teachers and consultation hours that refresh in the background and travel with backups.
+- Safer backup validation and restore recovery, prompt UIS request cancellation, and editor drafts that remain available after failed saves or activity recreation.
 
 ## Install
 
