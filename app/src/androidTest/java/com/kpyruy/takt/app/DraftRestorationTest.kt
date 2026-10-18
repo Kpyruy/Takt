@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -251,7 +252,10 @@ class DraftRestorationTest {
         val treeFilter = android.content.IntentFilter(Intent.ACTION_OPEN_DOCUMENT_TREE)
         val monitors = listOf(instrumentation.addMonitor(fileFilter, null, false), instrumentation.addMonitor(treeFilter, null, false))
         try {
-            compose.onNodeWithText("Додати файл").performScrollTo().performClick()
+            // This suite tests draft lifetime, not hit targets. On compact CI screens the
+            // disconnected Documents snackbar can overlap scrolled controls above the IME.
+            compose.onNode(hasText("Додати файл") and hasClickAction()).performScrollTo()
+                .performSemanticsAction(SemanticsActions.OnClick) { assertTrue(it()) }
             // A fresh device opens the tree picker; an already-connected one opens the file picker.
             // Accessibility root package can remain cached/null while the system picker owns focus.
             compose.waitUntil(5_000) { monitors.any { it.hits > 0 } && !activity.hasWindowFocus() }
@@ -324,7 +328,8 @@ class DraftRestorationTest {
     private fun field(label: String) = compose.onNode(hasText(label) and hasSetTextAction())
     private fun fill(label: String, value: String) = field(label).performScrollTo().performTextReplacement(value)
     private fun selectDate(label: String) {
-        compose.onNodeWithText(label).performScrollTo().performTouchInput { click() }
+        compose.onNode(hasText(label) and hasClickAction()).performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick) { assertTrue(it()) }
         // Material's calendar exposes full dates through semantics, not day-number Text.
         val accessibleDate = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(TaktI18n.locale))
         compose.onNode(hasText(accessibleDate, substring = true) and hasClickAction()).performClick()
@@ -335,7 +340,8 @@ class DraftRestorationTest {
         fill("Назва", prefix + "task")
         fill("Опис", "Keep this description")
         selectDate("Дедлайн")
-        compose.onNodeWithText("Потрібно для допуску до екзамену").performScrollTo().performClick()
+        compose.onNode(hasText("Потрібно для допуску до екзамену") and hasClickAction()).performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick) { assertTrue(it()) }
     }
     private fun assertTaskDraft() {
         field("Назва").assertTextContains(prefix + "task")

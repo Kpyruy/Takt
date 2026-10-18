@@ -1,6 +1,7 @@
 package com.kpyruy.takt.app
 
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.activity.compose.setContent
 import com.kpyruy.takt.core.data.*
@@ -80,7 +81,8 @@ class EditorRecoveryUiTest {
             data.awaitRestoredPlanning()
         }
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithTag("home-lesson-editor-rule").performScrollTo().performTouchInput { longClick() }
+        compose.onNodeWithTag("home-lesson-editor-rule").performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnLongClick) { assertTrue(it()) }
         compose.onNodeWithText("Перенести цю пару").performClick()
         compose.onNode(hasText("Аудиторія") and hasSetTextAction()).performScrollTo().performTextReplacement("Draft room")
         compose.activityRule.scenario.recreate()
@@ -103,7 +105,8 @@ class EditorRecoveryUiTest {
             data.awaitRestoredPlanning()
         }
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithTag("home-lesson-edit-rule").performScrollTo().performTouchInput { longClick() }
+        compose.onNodeWithTag("home-lesson-edit-rule").performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnLongClick) { assertTrue(it()) }
         compose.onNodeWithText("Редагувати").performClick()
         compose.onNodeWithTag("lesson-room").performScrollTo().performTextReplacement("Edited room")
         compose.activityRule.scenario.recreate()
