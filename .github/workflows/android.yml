@@ -33,7 +33,7 @@ jobs:
       - name: Domain unit tests
         run: gradle :core:model:test --stacktrace
       - name: Android unit tests
-        run: gradle :core:data:testDebugUnitTest :app:testDebugUnitTest --stacktrace
+        run: gradle :core:data:testDebugUnitTest :core:ui:testDebugUnitTest :feature:home:testDebugUnitTest :feature:studyplan:testDebugUnitTest :app:testDebugUnitTest --stacktrace
       - name: Lint debug
         run: gradle :app:lintDebug --stacktrace
       - name: Build debug APK
