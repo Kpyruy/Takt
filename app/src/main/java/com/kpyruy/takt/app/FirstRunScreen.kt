@@ -103,6 +103,8 @@ internal fun FirstRunScreen(
     var finishing by remember { mutableStateOf(false) }
     var restoreMessage by remember { mutableStateOf<String?>(null) }
     val hasUniversityAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
+    val initialImportComplete by universityAccountRepository.initialImportComplete.collectAsStateWithLifecycle()
+    val importProgress by universityAccountRepository.importProgress.collectAsStateWithLifecycle()
     var useUIS by rememberSaveable { mutableStateOf(universityAccountRepository.hasAccount.value) }
     var accountMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -149,7 +151,8 @@ internal fun FirstRunScreen(
                                     else -> { finishing = true; onFinish(draft, true) }
                                 }
                             },
-                            enabled = !finishing && (step != 1 || !useUIS || hasUniversityAccount),
+                            enabled = !finishing && (step != 1 || !useUIS ||
+                                hasUniversityAccount && initialImportComplete && !importProgress.running),
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("onboarding-primary"),
                         ) {
                             Text(if (step < 2) t("Next") else t("Start the tour"))

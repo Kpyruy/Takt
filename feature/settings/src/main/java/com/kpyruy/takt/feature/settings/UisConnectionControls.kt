@@ -35,6 +35,7 @@ internal fun UisConnectionControls(
     val failure by repository.session.failure.collectAsStateWithLifecycle()
     val state by repository.session.state.collectAsStateWithLifecycle()
     val importProgress by repository.importProgress.collectAsStateWithLifecycle()
+    val initialImportComplete by repository.initialImportComplete.collectAsStateWithLifecycle()
     val preview by repository.syncPreview.collectAsStateWithLifecycle()
     val lastCheck by repository.lastCheckOutcome.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -84,7 +85,7 @@ internal fun UisConnectionControls(
                 scope.launch { repository.submitCode(entered) }
             }, enabled = code.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text(t("Confirm code")) }
         }
-        UisResult.CONNECTED -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        UisResult.CONNECTED -> if (initialImportComplete && !importProgress.running && !authenticating) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { scope.launch { repository.checkProgressNow() } },
                 enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
                 Text(t("Check UIS progress"))
@@ -106,5 +107,5 @@ internal fun UisConnectionControls(
             Text(t("Close UIS session"))
         }
     }
-    UisSyncReview(repository)
+    if (initialImportComplete && !importProgress.running) UisSyncReview(repository)
 }

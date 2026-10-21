@@ -91,6 +91,8 @@ class UniversityAccountRepository(
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
     private val activeState = MutableStateFlow(preferences.contains(CIPHERTEXT))
     val hasAccount = activeState.asStateFlow()
+    private val mutableInitialImportComplete = MutableStateFlow(preferences.getBoolean(INITIAL_IMPORT_DONE, false))
+    val initialImportComplete = mutableInitialImportComplete.asStateFlow()
     private val mutableImportProgress = MutableStateFlow(UisImportProgress(
         earnedCredits = preferences.getInt(EARNED_CREDITS, -1).takeIf { it >= 0 },
         requiredCredits = preferences.getInt(REQUIRED_CREDITS, -1).takeIf { it >= 0 },
@@ -469,10 +471,9 @@ class UniversityAccountRepository(
             val importedIds = studyPlanRepository.observeCourses().first().map { it.id }.toSet()
             val preparedRules = rules.map { it.copy(courseId = it.courseId?.takeIf(importedIds::contains)) }
             val preparedOneOffs = oneOffs.map { it.copy(courseId = it.courseId?.takeIf(importedIds::contains)) }
-            if (first && localRules.isEmpty() && localOneOffs.isEmpty() &&
-                (preparedRules.map { it.id to it.courseId } + preparedOneOffs.map { it.id to it.courseId })
-                    .all { (id, courseId) -> pendingSubjectByEventId[id] == null || courseId != null }) {
-                scheduleRepository?.replaceSchedule(preparedRules, preparedOneOffs)
+            scheduleRepository?.let { schedule ->
+                importInitialUisTimetable(first, localRules, localOneOffs, preparedRules, preparedOneOffs,
+                    schedule::replaceSchedule)
             }
             if (first && (localPeriod == null || localPeriod.isEmpty)) {
                 val current = settingsRepository?.settings?.value?.semesterPeriods.orEmpty()
@@ -492,8 +493,6 @@ class UniversityAccountRepository(
             writeProgressBaseline(baseline.copy(statuses = known, passFailResults = knownResults,
                 earnedCredits = if (count > 0) plan.earnedCredits else baseline.earnedCredits,
                 requiredCredits = if (count > 0) plan.requiredCredits else baseline.requiredCredits))
-            preferences.edit().putBoolean(INITIAL_IMPORT_DONE, true).apply()
-            markChecked(UisSyncSection.entries.toSet(), LocalDate.now())
             mutablePreview.value = UisSyncPreview(courses, localCourses, semester, period, localPeriod,
                 rules, oneOffs, localRules, localOneOffs, plan.earnedCredits, plan.requiredCredits,
                 preferences.getInt(EARNED_CREDITS, -1).takeIf { it >= 0 },
@@ -508,6 +507,9 @@ class UniversityAccountRepository(
                 earnedCredits = preferences.getInt(EARNED_CREDITS, -1).takeIf { it >= 0 },
                 requiredCredits = preferences.getInt(REQUIRED_CREDITS, -1).takeIf { it >= 0 },
             )
+            preferences.edit().putBoolean(INITIAL_IMPORT_DONE, true).apply()
+            markChecked(UisSyncSection.entries.toSet(), LocalDate.now())
+            mutableInitialImportComplete.value = true
         } catch (cancelled: CancellationException) {
             mutableImportProgress.value = previous
             throw cancelled
@@ -713,6 +715,7 @@ class UniversityAccountRepository(
             check(edit.commit()) { "Could not save UIS credentials" }
             if (!sameAccount) settingsRepository?.setUisCurrentSemester(null)
             activeState.value = true
+            if (!sameAccount) mutableInitialImportComplete.value = false
             mutableImportProgress.value = if (sameAccount) mutableImportProgress.value.copy(
                 running = false, importedCourses = null, error = null,
             ) else UisImportProgress()
@@ -755,6 +758,7 @@ class UniversityAccountRepository(
         keyStore.deleteEntry(KEY_ALIAS)
         settingsRepository?.setUisCurrentSemester(null)
         activeState.value = false
+        mutableInitialImportComplete.value = false
         mutableImportProgress.value = UisImportProgress()
     }
 
@@ -834,4 +838,20 @@ private fun UisSyncPreview.hasRelevantDifferences(): Boolean {
     if (UisSyncSection.TIMETABLE in availableSections &&
         (rules.toSet() != localRules.toSet() || oneOffEvents.toSet() != localOneOffEvents.toSet())) return true
     return false
+}
+
+/** A first connection fills an empty timetable in one step, including classes without a plan match.
+ * Their UIS title remains usable with a null course link. Existing local schedules require review.
+ */
+internal suspend fun importInitialUisTimetable(
+    firstImport: Boolean,
+    localRules: List<ScheduleRule>,
+    localEvents: List<OneOffScheduleEvent>,
+    remoteRules: List<ScheduleRule>,
+    remoteEvents: List<OneOffScheduleEvent>,
+    replaceSchedule: suspend (List<ScheduleRule>, List<OneOffScheduleEvent>) -> Unit,
+): Boolean {
+    if (!firstImport || localRules.isNotEmpty() || localEvents.isNotEmpty()) return false
+    replaceSchedule(remoteRules, remoteEvents)
+    return true
 }

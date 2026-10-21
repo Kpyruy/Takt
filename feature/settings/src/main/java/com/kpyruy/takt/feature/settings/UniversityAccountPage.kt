@@ -54,7 +54,9 @@ fun UniversityAccountPage(
     onBack: () -> Unit,
 ) {
     val preview by repository.syncPreview.collectAsStateWithLifecycle()
-    if (preview != null) {
+    val initialImportComplete by repository.initialImportComplete.collectAsStateWithLifecycle()
+    val importProgress by repository.importProgress.collectAsStateWithLifecycle()
+    if (preview != null && initialImportComplete && !importProgress.running) {
         UisPreviewPage(repository, onBack)
         return
     }
@@ -85,6 +87,7 @@ fun UniversityAccountForm(
 ) {
     val hasAccount by repository.hasAccount.collectAsStateWithLifecycle()
     val sessionState by repository.session.state.collectAsStateWithLifecycle()
+    val importProgress by repository.importProgress.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -92,7 +95,7 @@ fun UniversityAccountForm(
     var message by remember { mutableStateOf<String?>(null) }
     var authenticating by remember { mutableStateOf(false) }
     var firstCourseLanguage by remember { mutableStateOf(CourseNameLanguage.ENGLISH) }
-    val busy = authenticating || sessionState == UisResult.CONNECTING
+    val busy = authenticating || importProgress.running || sessionState == UisResult.CONNECTING
 
     LaunchedEffect(repository) {
         if (repository.hasAccount.value) {

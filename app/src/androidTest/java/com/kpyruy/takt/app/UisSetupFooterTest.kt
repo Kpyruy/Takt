@@ -28,7 +28,8 @@ class UisSetupFooterTest {
                 context.getSharedPreferences("tour_ui_fixture_$name", mode)
         }
         sandbox.getSharedPreferences("takt_university_account", 0).edit().clear()
-            .putString("credentials", "noncredential-ui-fixture").commit()
+            .putString("credentials", "noncredential-ui-fixture")
+            .putBoolean("uis_initial_import_done", true).commit()
         val account = UniversityAccountRepository(sandbox)
         assertTrue(account.hasAccount.value)
         compose.activityRule.scenario.onActivity { activity ->
