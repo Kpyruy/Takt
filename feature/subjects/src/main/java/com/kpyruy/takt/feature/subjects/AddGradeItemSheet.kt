@@ -191,23 +191,7 @@ fun AddGradeItemForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
 
-        val detailsInteraction = remember { MutableInteractionSource() }
-        val detailsShape = RoundedCornerShape(18.dp)
-        TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(detailsInteraction).clip(detailsShape)
-            .clickable(interactionSource = detailsInteraction, indication = null, role = Role.Button,
-                onClick = { detailsVisible = true })
-            .testTag("grade-details-trigger"), shape = detailsShape) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Icons.Outlined.Tune, null)
-                Column(Modifier.weight(1f)) {
-                    Text(t("Details"), style = MaterialTheme.typography.titleSmall)
-                    Text(t("Date, result and assessment rules"), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Icon(Icons.Outlined.ChevronRight, null)
-            }
-        }
+        WorkDetailsButton { detailsVisible = true }
         if (errorTab == null) error?.let {
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.testTag("grade-form-error"))
@@ -377,14 +361,14 @@ private fun GradeTypeSelector(selected: GradeItemType, onSelected: (GradeItemTyp
     var expanded by remember { mutableStateOf(false) }
     val choices = listOf(
         GradeItemType.TEST to t("Test"), GradeItemType.LAB to t("Laboratory"),
-        GradeItemType.SEMINAR to t("Seminar"), GradeItemType.HOMEWORK to t("Homework (short)"),
+        GradeItemType.HOMEWORK to t("Homework (short)"),
         GradeItemType.PROJECT to t("Project"), GradeItemType.ORAL to t("Oral"),
         GradeItemType.EXAM to t("Exam"), GradeItemType.OTHER to t("Other"),
     )
     Box(Modifier.fillMaxWidth()) {
         GradeChoiceTrigger("grade-type-trigger", { expanded = true },
             icon = { GradeTypeIcon(selected) },
-            text = { Text(choices.first { it.first == selected }.second) })
+            text = { Text(choices.firstOrNull { it.first == selected }?.second ?: t(selected.label)) })
         TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
             choices.forEach { (option, label) ->
                 TaktChoiceMenuItem(text = { Text(label) }, leadingIcon = { GradeTypeIcon(option) },

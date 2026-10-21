@@ -72,7 +72,7 @@ jobs:
           target: google_apis
           emulator-boot-timeout: 180
           disable-animations: true
-          script: gradle :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kpyruy.takt.app.DraftRestorationTest,com.kpyruy.takt.app.EditorRecoveryUiTest,com.kpyruy.takt.app.DataIntegrityTest,com.kpyruy.takt.app.AssessmentStatePersistenceTest,com.kpyruy.takt.app.LessonConversionAtomicTest,com.kpyruy.takt.app.BackupAtomicRestoreTest,com.kpyruy.takt.app.DocumentFailureRecoveryTest,com.kpyruy.takt.app.UisAccountLifecycleTest -Pandroid.testInstrumentationRunnerArguments.draftReview=true -Pandroid.testInstrumentationRunnerArguments.liquidGlassReview=true --stacktrace
+          script: gradle :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kpyruy.takt.app.DraftRestorationTest,com.kpyruy.takt.app.EditorRecoveryUiTest,com.kpyruy.takt.app.DataIntegrityTest,com.kpyruy.takt.app.AssessmentStatePersistenceTest,com.kpyruy.takt.app.LessonConversionAtomicTest,com.kpyruy.takt.app.BackupAtomicRestoreTest,com.kpyruy.takt.app.DocumentFailureRecoveryTest,com.kpyruy.takt.app.UisAccountLifecycleTest,com.kpyruy.takt.app.HomeworkEditorUiTest,com.kpyruy.takt.app.HomeEventMaterialUiTest,com.kpyruy.takt.app.UisInitialImportOnboardingTest,com.kpyruy.takt.app.UisSetupFooterTest -Pandroid.testInstrumentationRunnerArguments.draftReview=true -Pandroid.testInstrumentationRunnerArguments.liquidGlassReview=true --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:

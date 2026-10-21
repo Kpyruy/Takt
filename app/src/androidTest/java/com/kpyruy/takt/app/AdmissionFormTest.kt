@@ -65,18 +65,19 @@ class AdmissionFormTest {
         compose.runOnIdle { assertEquals(45, saved?.durationMinutes) }
     }
 
-    @Test fun newOrdinaryTaskHasNoSecondPointEntry() {
+    @Test fun ordinaryHomeworkCanSaveWithoutPointsFromTheSharedDetailsLayout() {
         var saved: StudyTask? = null
         compose.setContent {
+            com.kpyruy.takt.core.ui.i18n.TaktI18n.use(com.kpyruy.takt.core.model.AppLanguage.UKRAINIAN)
             MaterialTheme { AddTaskForm(modifier = Modifier.verticalScroll(rememberScrollState()), courseId = "FYZI_6B", onSave = { saved = it }) }
         }
-
-        compose.onNode(hasText("Назва") and hasSetTextAction()).performScrollTo().performTextInput("Lab report")
-        compose.onNodeWithText("Потрібно для допуску до екзамену").performClick()
-        compose.onNodeWithText("Бали (необов’язково)").assertDoesNotExist()
-        compose.onNodeWithText("Максимум").assertDoesNotExist()
-        compose.onNodeWithText("Зберегти").performScrollTo().performClick()
-
+        compose.onNodeWithTag("task-title").performTextInput("Lab report")
+        compose.onNodeWithTag("task-maximum").assertExists()
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RULES").performClick()
+        compose.onNodeWithTag("task-required").performClick()
+        doneDetails()
+        compose.onNodeWithTag("task-save").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(null, saved?.earnedPoints)
             assertEquals(null, saved?.maxPoints)

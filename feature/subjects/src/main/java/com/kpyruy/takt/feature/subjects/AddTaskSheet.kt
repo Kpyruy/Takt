@@ -1,62 +1,35 @@
 package com.kpyruy.takt.feature.subjects
 
-import com.kpyruy.takt.core.ui.i18n.t
-
-import com.kpyruy.takt.core.ui.components.TaktFullSheet
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import com.kpyruy.takt.core.ui.components.TaktPrimaryButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import com.kpyruy.takt.core.ui.components.TaktTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
-import com.kpyruy.takt.core.ui.components.TaktDatePickerField
+import com.kpyruy.takt.core.ui.components.*
+import com.kpyruy.takt.core.ui.i18n.t
 import java.time.LocalDate
 import java.util.UUID
-import com.kpyruy.takt.core.ui.components.glassSurface
-import androidx.compose.foundation.shape.RoundedCornerShape
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskSheet(
-    courseId: String,
-    initialTask: StudyTask? = null,
-    onDismiss: () -> Unit,
-    onSave: (StudyTask) -> Unit,
-) {
+fun AddTaskSheet(courseId: String, initialTask: StudyTask? = null, onDismiss: () -> Unit, onSave: (StudyTask) -> Unit) {
     TaktFullSheet(onDismissRequest = onDismiss) {
-        AddTaskForm(
-            courseId = courseId,
-            initialTask = initialTask,
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 28.dp),
-            onSave = onSave,
-        )
+        AddTaskForm(courseId, initialTask, modifier = Modifier.fillMaxWidth()
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp), onSave = onSave)
     }
 }
 
+/** Same compact work-editor layout; existing task IDs, descriptions and optional scores stay intact. */
 @Composable
 fun AddTaskForm(
     courseId: String,
@@ -69,164 +42,84 @@ fun AddTaskForm(
     showHeading: Boolean = true,
     onSave: (StudyTask) -> Unit,
 ) {
-    var title by rememberSaveable(initialTask?.id, initialTitle) {
-        mutableStateOf(initialTask?.title ?: initialTitle)
-    }
-    var description by rememberSaveable(initialTask?.id, initialDescription) {
-        mutableStateOf(initialTask?.description ?: initialDescription)
-    }
-    var dueDate by rememberSaveable(initialTask?.id, initialDueDate) {
-        mutableStateOf(initialTask?.dueDate ?: initialDueDate)
-    }
-    var requiredForExam by rememberSaveable(initialTask?.id, initialRequiredForExam) {
-        mutableStateOf(initialTask?.requiredForExam ?: initialRequiredForExam)
-    }
+    var title by rememberSaveable(initialTask?.id, initialTitle) { mutableStateOf(initialTask?.title ?: initialTitle) }
+    var description by rememberSaveable(initialTask?.id, initialDescription) { mutableStateOf(initialTask?.description ?: initialDescription) }
+    var dueDate by rememberSaveable(initialTask?.id, initialDueDate) { mutableStateOf(initialTask?.dueDate ?: initialDueDate) }
+    var requiredForExam by rememberSaveable(initialTask?.id, initialRequiredForExam) { mutableStateOf(initialTask?.requiredForExam ?: initialRequiredForExam) }
     var completed by rememberSaveable(initialTask?.id) { mutableStateOf(initialTask?.completed ?: false) }
-    var earnedText by rememberSaveable(initialTask?.id) {
-        mutableStateOf(initialTask?.earnedPoints?.toTaskPointText().orEmpty())
-    }
-    var maxText by rememberSaveable(initialTask?.id) {
-        mutableStateOf(initialTask?.maxPoints?.toTaskPointText().orEmpty())
-    }
-    var minimumText by rememberSaveable(initialTask?.id) {
-        mutableStateOf(initialTask?.minimumPointsForExam?.toTaskPointText().orEmpty())
-    }
+    var earnedText by rememberSaveable(initialTask?.id) { mutableStateOf(initialTask?.earnedPoints?.toTaskPointText().orEmpty()) }
+    var maxText by rememberSaveable(initialTask?.id) { mutableStateOf(initialTask?.maxPoints?.toTaskPointText().orEmpty()) }
+    var minimumText by rememberSaveable(initialTask?.id) { mutableStateOf(initialTask?.minimumPointsForExam?.toTaskPointText().orEmpty()) }
+    var detailsVisible by rememberSaveable(initialTask?.id) { mutableStateOf(false) }
+    var detailsTab by rememberSaveable(initialTask?.id) { mutableStateOf(GradeDetailsTab.WHEN) }
+    var errorTab by rememberSaveable(initialTask?.id) { mutableStateOf<GradeDetailsTab?>(null) }
     var error by rememberSaveable(initialTask?.id) { mutableStateOf<String?>(null) }
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        if (showHeading) {
-            Text(
-                if (initialTask == null) t("Add a task") else t("Edit task"),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-        }
-        TaktTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text(t("Name")) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        TaktTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text(t("Description")) },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 2,
-        )
-        TaktDatePickerField(
-            label = t("Deadline"),
-            value = dueDate,
-            onValueChange = { dueDate = it },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (dueDate != null) {
-            TextButton(onClick = { dueDate = null }) { Text(t("No deadline")) }
-        }
-
-        if (initialTask?.maxPoints == null) Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
-            value = completed,
-            role = Role.Switch,
-            onValueChange = { completed = it },
-        ).padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Work done"), Modifier.weight(1f))
-            Switch(completed, onCheckedChange = null)
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
-                value = requiredForExam,
-                role = Role.Checkbox,
-                onValueChange = { requiredForExam = it },
-            ).padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(checked = requiredForExam, onCheckedChange = null)
-            Text(t("Required for the exam"))
-        }
-
-        if (initialTask?.maxPoints != null) {
-            Text(t("Points (previously created task)"), style = MaterialTheme.typography.titleSmall)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TaktTextField(
-                    value = earnedText,
-                    onValueChange = { earnedText = it; error = null },
-                    label = { Text(t("Received")) },
-                    enabled = maxText.isNotBlank(),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
-                )
-                TaktTextField(
-                    value = maxText,
-                    onValueChange = {
-                        maxText = it
-                        if (it.isBlank()) { earnedText = ""; minimumText = "" }
-                        error = null
-                    },
-                    label = { Text(t("Maximum")) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    isError = error != null,
-                )
-            }
-            if (requiredForExam && maxText.isNotBlank()) {
-                TaktTextField(
-                    value = minimumText,
-                    onValueChange = { minimumText = it; error = null },
-                    label = { Text(t("Minimum points for exam eligibility")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = error != null,
-                )
+    fun invalid(tab: GradeDetailsTab, message: String) { error = message; errorTab = tab; detailsTab = tab; detailsVisible = true }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        if (showHeading) Text(t(if (initialTask == null) "Add a task" else "Edit task"), style = MaterialTheme.typography.headlineMedium)
+        TaktTextField(title, { title = it; error = null }, label = { Text(t("Name")) },
+            modifier = Modifier.fillMaxWidth().testTag("task-title"), singleLine = true)
+        Text(t("Type"), style = MaterialTheme.typography.titleSmall)
+        TaktSurface(Modifier.fillMaxWidth().testTag("task-type-HOMEWORK"), shape = RoundedCornerShape(16.dp)) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Outlined.Assignment, null)
+                Text(t("Homework"))
             }
         }
-
-        error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
-
-        TaktPrimaryButton(
-            onClick = {
-                val maxInput = maxText.trim().takeIf { it.isNotEmpty() }
-                val max = maxInput?.replace(',', '.')?.toDoubleOrNull()
-                val earnedInput = earnedText.trim().takeIf { maxInput != null && it.isNotEmpty() }
-                val earned = earnedInput?.replace(',', '.')?.toDoubleOrNull()
-                val minimumInput = minimumText.trim().takeIf { requiredForExam && maxInput != null && it.isNotEmpty() }
-                val minimum = minimumInput?.replace(',', '.')?.toDoubleOrNull()
-                when {
-                    maxInput != null && (max == null || !max.isFinite() || max <= 0.0) ->
-                        error = t("Maximum must be a number greater than 0.")
-                    earnedInput != null && (earned == null || !earned.isFinite() || earned < 0.0 || earned > (max ?: 0.0)) ->
-                        error = t("The obtained points should be from 0 to the maximum.")
-                    minimumInput != null && (minimum == null || !minimum.isFinite() || minimum < 0.0 || minimum > (max ?: 0.0)) ->
-                        error = t("The minimum must be from 0 to the maximum of points.")
-                    else -> onSave(
-                        StudyTask(
-                            id = initialTask?.id ?: UUID.randomUUID().toString(),
-                            courseId = courseId,
-                            title = title.trim(),
-                            description = description.trim().ifBlank { null },
-                            dueDate = dueDate,
-                            completed = earned != null || completed,
-                            requiredForExam = requiredForExam,
-                            earnedPoints = earned,
-                            maxPoints = max,
-                            minimumPointsForExam = minimum,
-                        )
-                    )
+        TaktTextField(maxText, {
+            maxText = it; error = null
+            if (it.isBlank()) { earnedText = ""; minimumText = "" }
+        }, label = { Text(t("Maximum")) }, supportingText = { Text(t("Leave empty for ungraded homework.")) },
+            modifier = Modifier.fillMaxWidth().testTag("task-maximum"), singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), isError = error != null && errorTab == null)
+        WorkDetailsButton { detailsVisible = true }
+        if (errorTab == null) error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        TaktPrimaryButton(onClick = {
+            error = null; errorTab = null
+            val max = maxText.takeIf(String::isNotBlank)?.replace(',', '.')?.toDoubleOrNull()
+            val earned = earnedText.takeIf(String::isNotBlank)?.replace(',', '.')?.toDoubleOrNull()
+            val minimumInput = minimumText.takeIf { requiredForExam && it.isNotBlank() }
+            val minimum = minimumInput?.replace(',', '.')?.toDoubleOrNull()
+            when {
+                maxText.isNotBlank() && (max == null || !max.isFinite() || max <= 0.0) -> error = t("Maximum must be greater than 0.")
+                earnedText.isNotBlank() && (earned == null || !earned.isFinite() || earned < 0.0 || max == null || earned > max) ->
+                    invalid(GradeDetailsTab.RESULT, t("The obtained points cannot exceed the maximum."))
+                minimumInput != null && (minimum == null || !minimum.isFinite() || minimum < 0.0 || max == null || minimum > max) ->
+                    invalid(GradeDetailsTab.RULES, t("The minimum must be from 0 to the maximum of points."))
+                else -> onSave(StudyTask(initialTask?.id ?: UUID.randomUUID().toString(), courseId, title.trim(),
+                    description.trim().ifBlank { null }, dueDate, earned != null || completed, requiredForExam,
+                    earned, max, minimum))
+            }
+        }, enabled = title.isNotBlank(), modifier = Modifier.fillMaxWidth().testTag("task-save")) {
+            Text(t(if (initialTask == null) "Save" else "Update"))
+        }
+    }
+    if (detailsVisible) GradeDetailsSheet(detailsTab, { detailsTab = it }, { detailsVisible = false }, error.takeIf { errorTab == detailsTab }) {
+        when (detailsTab) {
+            GradeDetailsTab.WHEN -> {
+                TaktTextField(description, { description = it }, label = { Text(t("Description")) },
+                    modifier = Modifier.fillMaxWidth().testTag("task-description"), minLines = 2)
+                TaktDatePickerField(t("Deadline"), dueDate, { dueDate = it }, Modifier.fillMaxWidth().testTag("task-date"))
+                if (dueDate != null) TextButton(onClick = { dueDate = null }) { Text(t("No deadline")) }
+            }
+            GradeDetailsTab.RESULT -> {
+                GradeRuleToggle("task-completed", "Work done", completed) {
+                    completed = it
+                    if (!it) earnedText = ""
                 }
-            },
-            enabled = title.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(if (initialTask == null) t("Save") else t("Update"))
+                if (maxText.isNotBlank()) TaktTextField(earnedText, { earnedText = it; error = null },
+                    label = { Text(t("Received")) }, modifier = Modifier.fillMaxWidth().testTag("task-earned"),
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            }
+            GradeDetailsTab.RULES -> {
+                GradeRuleToggle("task-required", "Required for the exam", requiredForExam) { requiredForExam = it }
+                if (requiredForExam && maxText.isNotBlank()) TaktTextField(minimumText, { minimumText = it; error = null },
+                    label = { Text(t("Minimum points for exam eligibility")) }, modifier = Modifier.fillMaxWidth().testTag("task-minimum"),
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            }
         }
     }
 }
 
-private fun Double.toTaskPointText(): String =
-    if (this % 1.0 == 0.0) toInt().toString() else toString()
+private fun Double.toTaskPointText() = if (this % 1.0 == 0.0) toLong().toString() else toString()

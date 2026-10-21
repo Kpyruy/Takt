@@ -189,15 +189,22 @@ class DraftRestorationTest {
         compose.onNodeWithContentDescription("Дії завдання").performScrollTo().performClick()
         compose.onNodeWithText("Редагувати").performClick()
         fillTask()
-        fill("Отримано", "7")
         fill("Максимум", "30")
+        openGradeDetails()
+        gradeTab("RESULT")
+        fill("Отримано", "7")
+        gradeTab("RULES")
         fill("Мінімум балів для допуску", "6")
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("Редагувати завдання").assertExists()
         assertTaskDraft()
-        field("Отримано").assertTextContains("7")
         field("Максимум").assertTextContains("30")
+        openGradeDetails()
+        gradeTab("RESULT")
+        field("Отримано").assertTextContains("7")
+        gradeTab("RULES")
         field("Мінімум балів для допуску").assertTextContains("6")
+        doneGradeDetails()
         assertEquals(original, tasks().single { it.id == original.id })
         save("Оновити")
         compose.waitUntil(5_000) { tasks().any { it.id == original.id && it.title == prefix + "task" } }
@@ -338,17 +345,23 @@ class DraftRestorationTest {
     private fun assertDate(label: String) = compose.onNodeWithText(label).assertTextContains(date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
     private fun fillTask() {
         fill("Назва", prefix + "task")
+        openGradeDetails()
+        gradeTab("WHEN")
         fill("Опис", "Keep this description")
         selectDate("Дедлайн")
-        compose.onNode(hasText("Потрібно для допуску до екзамену") and hasClickAction()).performScrollTo()
-            .performSemanticsAction(SemanticsActions.OnClick) { assertTrue(it()) }
+        gradeTab("RULES")
+        compose.onNodeWithTag("task-required").performClick()
+        doneGradeDetails()
     }
     private fun assertTaskDraft() {
-        field("Назва").assertTextContains(prefix + "task")
+        if (compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isEmpty()) openGradeDetails()
+        gradeTab("RULES")
+        compose.onNodeWithTag("task-required").assertIsOn()
+        gradeTab("WHEN")
         field("Опис").assertTextContains("Keep this description")
         assertDate("Дедлайн")
-        compose.onNode(hasText("Потрібно для допуску до екзамену") and
-            SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On)).assertExists()
+        doneGradeDetails()
+        field("Назва").assertTextContains(prefix + "task")
     }
     private fun fillGrade() {
         fill("Назва", prefix + "test")
@@ -383,7 +396,8 @@ class DraftRestorationTest {
         compose.onNodeWithTag("grade-maximum").assertTextContains("20")
     }
     private fun openGradeDetails() {
-        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick) { assertTrue(it()) }
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
     }
