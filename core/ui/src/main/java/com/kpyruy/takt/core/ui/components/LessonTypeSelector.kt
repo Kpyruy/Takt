@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -73,7 +74,8 @@ private fun LessonChoiceIcon(type: LessonType) {
 }
 
 @Composable
-fun LessonTypeIcon(type: LessonType, modifier: Modifier = Modifier.size(16.dp)) {
+fun LessonTypeIcon(type: LessonType, modifier: Modifier = Modifier.size(16.dp),
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
     val vector = when (type) {
         LessonType.UNSPECIFIED -> return
         LessonType.LECTURE -> Icons.Outlined.School
@@ -82,5 +84,5 @@ fun LessonTypeIcon(type: LessonType, modifier: Modifier = Modifier.size(16.dp)) 
         LessonType.LAB -> Icons.Outlined.Science
         LessonType.EVENT -> Icons.Outlined.Event
     }
-    Icon(vector, t(type.label), modifier, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    Icon(vector, t(type.label), modifier, tint = tint)
 }

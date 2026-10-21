@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -292,7 +293,7 @@ fun Modifier.glassSurface(
     val tonal = appearance == CardAppearance.TONAL_FILLED
     val glass = appearance == CardAppearance.GLASS
     if (!glass) {
-        val fill = if (tint != Color.Unspecified) tint else if (tonal) colors.primaryContainer else colors.surface
+        val fill = opaqueSurfaceFill(if (tonal) colors.primaryContainer else colors.surface, tint)
         return this.shadow(if (tonal) 0.dp else 7.dp, shape, clip = true)
             .background(fill)
             .border(1.dp, if (tonal) colors.primary.copy(alpha = .18f) else colors.outlineVariant, shape)
@@ -362,6 +363,12 @@ fun Modifier.glassSurface(
                 drawOutline(outline, rim, style = Stroke(1.4.dp.toPx()))
             }
         }
+}
+
+/** A tonal accent changes the material's colour, never its opacity over wallpaper. */
+internal fun opaqueSurfaceFill(base: Color, tint: Color): Color {
+    val opaqueBase = base.copy(alpha = 1f)
+    return if (tint == Color.Unspecified) opaqueBase else tint.compositeOver(opaqueBase)
 }
 
 /** Keep luminance and the neutral highlights while adapting the silk to the selected palette. */

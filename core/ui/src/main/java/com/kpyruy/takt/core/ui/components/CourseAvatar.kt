@@ -7,19 +7,26 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.Course
+import com.kpyruy.takt.core.model.LessonType
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
+import com.kpyruy.takt.core.ui.theme.readableAccentColor
+import com.kpyruy.takt.core.ui.theme.LocalTaktCardAppearance
+import com.kpyruy.takt.core.model.CardAppearance
 
 val LocalCourseCodeKeys = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 
@@ -29,13 +36,33 @@ val LocalCourseIconKeys = staticCompositionLocalOf<Map<String, String?>> { empty
 fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
     val color = taktSubjectColor(course.id)
     val icon = CourseIcons.find(course.iconKey)
+    SubjectAvatar(color, modifier) { foreground ->
+        if (icon != null) Icon(icon.vector, t(icon.label), Modifier.size(26.dp), tint = foreground)
+        else Text(course.code.substringBefore("_").take(2), color = foreground, fontSize = 14.sp, lineHeight = 18.sp,
+            fontWeight = FontWeight.SemiBold, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
+    }
+}
+
+/** Unlinked events use the same restrained tile and readable subject-colour glyph as courses. */
+@Composable
+fun EventAvatar(type: LessonType, subjectKey: String, modifier: Modifier = Modifier) {
+    val color = taktSubjectColor(subjectKey)
+    SubjectAvatar(color, modifier) { foreground ->
+        LessonTypeIcon(type.takeUnless { it == LessonType.UNSPECIFIED } ?: LessonType.EVENT,
+            Modifier.size(26.dp), tint = foreground)
+    }
+}
+
+@Composable
+private fun SubjectAvatar(color: Color, modifier: Modifier, content: @Composable BoxScope.(Color) -> Unit) {
     val shape = RoundedCornerShape(13.dp)
+    val base = if (LocalTaktCardAppearance.current == CardAppearance.TONAL_FILLED)
+        MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val foreground = readableAccentColor(color, color.copy(alpha = .16f).compositeOver(base))
     // A restrained subject-colour tile avoids the white glass rim around this small icon.
     Box(modifier.size(46.dp).clip(shape).background(color.copy(alpha = .16f), shape)
         .border(.75.dp, color.copy(alpha = .28f), shape), contentAlignment = Alignment.Center) {
-        if (icon != null) Icon(icon.vector, t(icon.label), Modifier.size(26.dp), tint = color)
-        else Text(course.code.substringBefore("_").take(2), color = color, fontSize = 14.sp, lineHeight = 18.sp,
-            fontWeight = FontWeight.SemiBold, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
+        content(foreground)
     }
 }
 

@@ -24,7 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import com.kpyruy.takt.core.ui.components.CourseInlineIcon
-import com.kpyruy.takt.core.ui.components.LessonTypeIcon
+import com.kpyruy.takt.core.ui.components.EventAvatar
 import com.kpyruy.takt.core.ui.components.LessonTestBadge
 import com.kpyruy.takt.core.model.LessonType
 import androidx.compose.ui.platform.testTag
@@ -182,7 +182,8 @@ fun HomeScreen(
                         .padding(8.dp).alpha(if (visual.muted) .85f else 1f),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (course != null) CourseAvatar(course, Modifier.size(40.dp))
-                        else Box(Modifier.size(42.dp).glassSurface(tint = subjectColor), contentAlignment = Alignment.Center) { LessonTypeIcon(event.lessonType) }
+                        else EventAvatar(event.lessonType, event.courseId ?: event.title,
+                            Modifier.testTag("home-event-avatar-${event.id}").size(40.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(event.title, style = MaterialTheme.typography.titleMedium,
                                 textDecoration = if (cancelled && settings.cancellationStyle == CancellationDisplayStyle.STRIKETHROUGH) TextDecoration.LineThrough else null)
