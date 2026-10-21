@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter
 import java.time.LocalDate
 import androidx.compose.ui.graphics.compositeOver
 import com.kpyruy.takt.core.ui.theme.readableAccentColor
+import com.kpyruy.takt.core.ui.components.EntityIconTile
 import com.kpyruy.takt.core.ui.components.GlassSurface
 import com.kpyruy.takt.core.ui.components.glassSurface
 import androidx.compose.foundation.clickable
@@ -72,9 +73,8 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Surface(shape = RoundedCornerShape(12.dp), color = accent.copy(alpha = 0.16f)) {
-                    Icon(icon, contentDescription = null, tint = accentText,
-                        modifier = Modifier.padding(10.dp).size(22.dp))
+                EntityIconTile(accent, Modifier.size(42.dp)) { foreground ->
+                    Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(22.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium,

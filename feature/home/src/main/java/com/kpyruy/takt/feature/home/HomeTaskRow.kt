@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SwipeCompletionBox
+import com.kpyruy.takt.core.ui.components.EntityIconTile
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -48,10 +49,12 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
             .glassSurface(tint = if (overdue) MaterialTheme.colorScheme.errorContainer else androidx.compose.ui.graphics.Color.Unspecified)
             .padding(8.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
-                modifier = Modifier.size(40.dp).glassSurface(tint = MaterialTheme.colorScheme.primaryContainer)) {
-                Icon(if (task.completed) Icons.Outlined.CheckCircle else Icons.Outlined.Assignment,
-                    task.title, tint = MaterialTheme.colorScheme.primary)
+            EntityIconTile(MaterialTheme.colorScheme.primary, Modifier.size(40.dp)) { foreground ->
+                IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
+                    modifier = Modifier.size(40.dp)) {
+                    Icon(if (task.completed) Icons.Outlined.CheckCircle else Icons.Outlined.Assignment,
+                        task.title, tint = foreground)
+                }
             }
             Column(Modifier.weight(1f)) {
                 Text(task.title, style = MaterialTheme.typography.titleSmall,

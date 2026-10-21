@@ -36,7 +36,7 @@ val LocalCourseIconKeys = staticCompositionLocalOf<Map<String, String?>> { empty
 fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
     val color = taktSubjectColor(course.id)
     val icon = CourseIcons.find(course.iconKey)
-    SubjectAvatar(color, modifier) { foreground ->
+    EntityIconTile(color, modifier) { foreground ->
         if (icon != null) Icon(icon.vector, t(icon.label), Modifier.size(26.dp), tint = foreground)
         else Text(course.code.substringBefore("_").take(2), color = foreground, fontSize = 14.sp, lineHeight = 18.sp,
             fontWeight = FontWeight.SemiBold, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
@@ -47,14 +47,15 @@ fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
 @Composable
 fun EventAvatar(type: LessonType, subjectKey: String, modifier: Modifier = Modifier) {
     val color = taktSubjectColor(subjectKey)
-    SubjectAvatar(color, modifier) { foreground ->
+    EntityIconTile(color, modifier) { foreground ->
         LessonTypeIcon(type.takeUnless { it == LessonType.UNSPECIFIED } ?: LessonType.EVENT,
             Modifier.size(26.dp), tint = foreground)
     }
 }
 
+/** Shared rounded-square, opaque icon tile for courses, events and academic work. */
 @Composable
-private fun SubjectAvatar(color: Color, modifier: Modifier, content: @Composable BoxScope.(Color) -> Unit) {
+fun EntityIconTile(color: Color, modifier: Modifier = Modifier, content: @Composable BoxScope.(Color) -> Unit) {
     val shape = RoundedCornerShape(13.dp)
     val base = if (LocalTaktCardAppearance.current == CardAppearance.TONAL_FILLED)
         MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
