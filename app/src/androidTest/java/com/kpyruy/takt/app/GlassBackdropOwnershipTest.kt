@@ -41,8 +41,8 @@ class GlassBackdropOwnershipTest {
         val app = compose.activity.application as TaktApplication
         runBlocking { app.dataContainer.settingsRepository.setLanguage(AppLanguage.ENGLISH) }
         compose.waitForIdle()
-        compose.onNodeWithContentDescription(t("Налаштування")).performClick()
-        compose.onNode(hasText(t("Вигляд")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(t("Settings")).performClick()
+        compose.onNode(hasText(t("Appearance")) and hasClickAction()).performScrollTo().performClick()
         compose.onNode(hasText("Dark") and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
         compose.onAllNodesWithTag("glass-wallpaper").assertCountEquals(1)

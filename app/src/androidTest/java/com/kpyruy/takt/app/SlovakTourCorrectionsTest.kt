@@ -26,8 +26,8 @@ class SlovakTourCorrectionsTest {
             data.settingsRepository.setThemeFamily(ThemeFamily.BLUE)
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
-        compose.onAllNodesWithContentDescription(t("Налаштування")).onFirst().performClick()
-        compose.onNodeWithText(t("Екскурсія по Takt")).performScrollTo().performClick()
+        compose.onAllNodesWithContentDescription(t("Settings")).onFirst().performClick()
+        compose.onNodeWithText(t("Tour of Takt")).performScrollTo().performClick()
     }
 
     private fun phase(value: String) = compose.waitUntil(8_000) {
@@ -60,8 +60,8 @@ class SlovakTourCorrectionsTest {
             if (step == GuidedTourStep.CALENDAR_LAYOUT) {
                 phase("MENU_OPEN")
                 compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
-                compose.onNodeWithText(t("Таймтейбл")).assertIsDisplayed()
-                compose.onNodeWithText(t("Список")).assertIsDisplayed()
+                compose.onNodeWithText(t("Schedule timetable")).assertIsDisplayed()
+                compose.onNodeWithText(t("List")).assertIsDisplayed()
                 capture("correction-sk-popup.png")
                 phase("LIST_SELECTED")
                 assertTrue(calendarState().endsWith(WeekLayout.COMPACT_LIST.name))

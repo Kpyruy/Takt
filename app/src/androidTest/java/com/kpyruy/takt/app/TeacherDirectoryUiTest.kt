@@ -100,7 +100,7 @@ class TeacherDirectoryUiTest {
         val universityIntent = teacherEmailIntent("martin.barton@stuba.sk", "71659")
         assertEquals("martin.barton@stuba.sk", universityIntent.data!!.schemeSpecificPart)
         // ModalBottomSheet owns its dialog window, so dismiss through its actual control.
-        compose.onNodeWithContentDescription(com.kpyruy.takt.core.ui.i18n.t("Закрити")).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(com.kpyruy.takt.core.ui.i18n.t("Close")).performScrollTo().performClick()
         compose.onNodeWithTag("teacher-profile").assertDoesNotExist()
         compose.onNodeWithText("Poznámky").performClick()
         compose.onNodeWithText("This note belongs only in Notes").assertIsDisplayed()

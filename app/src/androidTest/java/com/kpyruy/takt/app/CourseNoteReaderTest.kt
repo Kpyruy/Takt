@@ -91,8 +91,8 @@ class CourseNoteReaderTest {
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("note-reader").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("note-reader").assertDoesNotExist()
-        compose.onNodeWithContentDescription(t("Дії нотатки")).performClick()
-        compose.onNodeWithText(t("Редагувати")).performClick()
+        compose.onNodeWithContentDescription(t("Note actions")).performClick()
+        compose.onNodeWithText(t("Edit")).performClick()
         compose.onNodeWithTag("note-reader").assertDoesNotExist()
         compose.runOnIdle { assertEquals(1, edits); assertEquals(0, deletes) }
     }
@@ -101,7 +101,7 @@ class CourseNoteReaderTest {
         fixture()
         compose.onNodeWithTag("note-preview-${note.id}").performClick()
         compose.onNodeWithTag("note-reader-actions").performClick()
-        compose.onNodeWithText(t("Редагувати")).performClick()
+        compose.onNodeWithText(t("Edit")).performClick()
         compose.onNodeWithTag("note-reader").assertDoesNotExist()
         compose.runOnIdle { assertEquals(1, edits); assertEquals(0, deletes) }
     }

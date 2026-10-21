@@ -35,7 +35,7 @@ class NativePickerLocaleTest {
             val month = date.month.getDisplayName(TextStyle.FULL_STANDALONE, TaktI18n.locale)
             compose.onAllNodesWithText(month, substring = true, ignoreCase = true)
                 .onFirst().assertIsDisplayed()
-            compose.onNodeWithText(t("Скасувати")).performClick()
+            compose.onNodeWithText(t("Cancel")).performClick()
         }
     }
 }

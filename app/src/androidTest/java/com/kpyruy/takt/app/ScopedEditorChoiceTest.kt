@@ -59,14 +59,14 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
         compose.onNodeWithTag("lesson-type-LAB").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t(LessonType.LAB.label))
-        compose.onNodeWithText(t("Зберегти")).performScrollTo().performClick()
+        compose.onNodeWithText(t("Save")).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(course.id, saved?.courseId)
             assertEquals(course.title, saved?.title)
             assertEquals(LessonType.LAB, saved?.lessonType)
         }
         compose.onNodeWithTag("course-link-trigger").performScrollTo().performClick()
-        compose.onNodeWithText(t("Без прив’язки")).performClick()
+        compose.onNodeWithText(t("Without binding")).performClick()
         compose.onNodeWithTag("lesson-custom-title").assertTextContains("Kept custom draft")
     }
 
@@ -88,8 +88,8 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("lesson-repeat-ODD_WEEKS").assertIsSelected()
         compose.onNodeWithTag("lesson-repeat-once").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-once-date").assertExists()
-        compose.onNodeWithText(t("Повторювану пару буде замінено одним заняттям.")).assertDoesNotExist()
-        compose.onNodeWithText(t("Оновити")).performScrollTo().performClick()
+        compose.onNodeWithText(t("The recurring lesson will be replaced with a single lesson.")).assertDoesNotExist()
+        compose.onNodeWithText(t("Update")).performScrollTo().performClick()
         compose.runOnIdle {
             assertTrue(recurring.isEmpty())
             assertEquals(initial.id, once.single().id)
@@ -100,7 +100,7 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("lesson-repeat-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-repeat-EVEN_WEEKS").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-once-date").assertDoesNotExist()
-        compose.onNodeWithText(t("Оновити")).performScrollTo().performClick()
+        compose.onNodeWithText(t("Update")).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(1, once.size)
             assertEquals(initial.id, recurring.single().id)
@@ -139,7 +139,7 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("grade-type-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
         compose.onNodeWithTag("grade-type-LAB").performScrollTo().performClick()
-        compose.onNodeWithTag("grade-type-trigger").assertTextContains(t("Лаба"))
+        compose.onNodeWithTag("grade-type-trigger").assertTextContains(t("Laboratory"))
         compose.onNodeWithTag("grade-type-trigger").performClick()
         compose.onNodeWithTag("grade-type-TEST").performScrollTo().performClick()
         compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
@@ -200,7 +200,7 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("grade-maximum").performScrollTo().performTextReplacement("20")
         openDetails()
         tab("RULES")
-        compose.onNodeWithTag("grade-minimum").performScrollTo().assertTextContains(t("Мінімум"))
+        compose.onNodeWithTag("grade-minimum").performScrollTo().assertTextContains(t("Minimum"))
         assertTrue(compose.onNodeWithTag("grade-minimum").getUnclippedBoundsInRoot().run { bottom - top } <= 80.dp)
     }
 
@@ -281,7 +281,7 @@ class ScopedEditorChoiceTest {
             compose.onNodeWithTag("grade-save").performScrollTo().performClick()
             compose.runOnIdle { assertNull(saved) }
             compose.onNodeWithTag("grade-details-tab-WHEN").assertIsSelected()
-            compose.onNodeWithTag("grade-details-error").assertTextContains(t("Обери пару цього тижня або вкажи дату."))
+            compose.onNodeWithTag("grade-details-error").assertTextContains(t("Choose a lesson this week or enter a date."))
             compose.onNodeWithTag("grade-week-lesson-trigger").performScrollTo().performClick()
             compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
             compose.onNodeWithTag(occurrenceTag).performScrollTo().performClick()

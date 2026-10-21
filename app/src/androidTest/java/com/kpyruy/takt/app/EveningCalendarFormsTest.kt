@@ -133,7 +133,7 @@ class EveningCalendarFormsTest {
         compose.onNodeWithTag("lesson-repeat-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-repeat-once").performScrollTo().assertIsSelected().performClick()
         compose.onNodeWithTag("lesson-once-date").assertExists()
-        compose.onNodeWithText(t("Оновити")).performScrollTo().performClick()
+        compose.onNodeWithText(t("Update")).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(initial, saved)
             assertNull(savedRule)
@@ -199,7 +199,7 @@ class EveningCalendarFormsTest {
             compose.onNodeWithTag("grade-save").performScrollTo().performClick()
             compose.runOnIdle { assertNull("Two occurrences must not silently select the first lesson", saved) }
             compose.onNodeWithTag("grade-details-tab-WHEN").assertIsSelected()
-            compose.onNodeWithTag("grade-details-error").assertTextContains(t("Обери пару цього тижня або вкажи дату."))
+            compose.onNodeWithTag("grade-details-error").assertTextContains(t("Choose a lesson this week or enter a date."))
             compose.onNodeWithTag("grade-week-lesson-trigger").performScrollTo().performClick()
             compose.onNodeWithTag("grade-week-occurrence-seminar-${target.toEpochDay()}").performScrollTo().performClick()
             doneDetails()

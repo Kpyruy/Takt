@@ -28,7 +28,7 @@ class LiquidGlassInsetsTest {
     @Test fun saveActionCanBeReachedAboveKeyboard() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-add").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("root-add").performClick()
-        compose.onNodeWithText(t("Предмет")).performClick()
+        compose.onNodeWithText(t("Subject")).performClick()
         compose.onNodeWithTag("course-title").performClick().performTextInput("Keyboard review")
         compose.onNodeWithTag("save-course").performScrollTo().assertIsDisplayed()
         val view = compose.activity.window.decorView

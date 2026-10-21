@@ -55,8 +55,8 @@ class OctoberUiPolishTest {
         for (language in listOf(AppLanguage.UKRAINIAN, AppLanguage.ENGLISH, AppLanguage.SLOVAK)) {
             runBlocking { data.settingsRepository.setLanguage(language) }
             compose.waitForIdle()
-            compose.onNodeWithContentDescription(t("Налаштування")).performClick()
-            compose.onNode(hasText(t("Автооновлення UIS")) and hasClickAction()).performScrollTo().performClick()
+            compose.onNodeWithContentDescription(t("Settings")).performClick()
+            compose.onNode(hasText(t("Automatic UIS updates")) and hasClickAction()).performScrollTo().performClick()
             for (label in listOf("Прогрес", "Предмети", "Розклад")) {
                 val node = compose.onNodeWithText(t(label))
                 node.performScrollTo()
@@ -66,16 +66,16 @@ class OctoberUiPolishTest {
             }
             capture("${language.name.lowercase()}-uis-sync")
             back()
-            compose.onNode(hasText(t("Оновлення додатка")) and hasClickAction()).performScrollTo().performClick()
-            compose.onNodeWithText(t("Раз на добу під час відкриття Takt. Перевіряється лише публічний реліз на GitHub.")).assertDoesNotExist()
+            compose.onNode(hasText(t("App updates")) and hasClickAction()).performScrollTo().performClick()
+            compose.onNodeWithText(t("Once a day when opening Takt. Checks the public GitHub release.")).assertDoesNotExist()
             val time = compose.onAllNodes(hasText(":52", substring = true)).fetchSemanticsNodes()
             assertTrue("24-hour time missing", time.isNotEmpty())
             compose.onAllNodes(hasText(" PM", substring = true) or hasText(" AM", substring = true)).assertCountEquals(0)
             capture("${language.name.lowercase()}-updates")
             back()
-            compose.onNode(hasText(t("Мова")) and hasClickAction()).performScrollTo().performClick()
-            val first = compose.onNodeWithText(t("Мова застосунку"))
-            val second = compose.onNodeWithText(t("Мова назв предметів"))
+            compose.onNode(hasText(t("Language")) and hasClickAction()).performScrollTo().performClick()
+            val first = compose.onNodeWithText(t("Application language"))
+            val second = compose.onNodeWithText(t("Course name language"))
             val a = mutableListOf<TextLayoutResult>(); val b = mutableListOf<TextLayoutResult>()
             first.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(a) }
             second.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(b) }
@@ -83,8 +83,8 @@ class OctoberUiPolishTest {
             capture("${language.name.lowercase()}-language")
             back()
             compose.onNode(hasText("Documents/Takt") and hasClickAction()).performScrollTo().performClick()
-            compose.onNodeWithText(t("Експортувати JSON")).assertExists()
-            compose.onNodeWithText(t("Вибрані дані застосовано й збережено.")).assertDoesNotExist()
+            compose.onNodeWithText(t("Export JSON")).assertExists()
+            compose.onNodeWithText(t("Selected data applied and saved.")).assertDoesNotExist()
             capture("${language.name.lowercase()}-backup")
             back(); back()
         }
@@ -94,24 +94,24 @@ class OctoberUiPolishTest {
         seed()
         runBlocking { data.settingsRepository.setLanguage(AppLanguage.SLOVAK) }
         compose.waitForIdle()
-        root(t("Предмети"))
-        compose.onNodeWithText(t("Усі семестри")).assertDoesNotExist()
-        compose.onNodeWithContentDescription(t("Обрати семестр")).assertDoesNotExist()
-        compose.onNodeWithContentDescription(t("Знайти предмет")).assertDoesNotExist()
-        compose.onNodeWithContentDescription(t("Налаштування")).performClick()
-        compose.onNodeWithText(t("Мова")).assertExists()
+        root(t("Subjects"))
+        compose.onNodeWithText(t("All semesters")).assertDoesNotExist()
+        compose.onNodeWithContentDescription(t("Choose a semester")).assertDoesNotExist()
+        compose.onNodeWithContentDescription(t("Find a subject")).assertDoesNotExist()
+        compose.onNodeWithContentDescription(t("Settings")).performClick()
+        compose.onNodeWithText(t("Language")).assertExists()
         back()
         capture("subjects")
-        root(t("Прогрес"))
+        root(t("Progress"))
         capture("progress-plan")
         compose.onNodeWithTag("progress-screen").performScrollToNode(hasTestTag("semester-toggle-4"))
         compose.onNodeWithTag("semester-active-count-4", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("progress-screen").performScrollToIndex(0)
-        compose.onNode(hasText(t("Активні")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Active")) and hasClickAction()).performClick()
         assertStatusAlignment()
         capture("progress-active")
         compose.onNodeWithTag("progress-screen").performScrollToIndex(0)
-        compose.onNode(hasText(t("Здані")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Completed")) and hasClickAction()).performClick()
         assertStatusAlignment()
         capture("progress-completed")
         compose.onNodeWithTag("progress-screen").performScrollToIndex(0)
@@ -140,7 +140,7 @@ class OctoberUiPolishTest {
             assertEquals("A subject tab must keep its word together", 1, layouts.single().lineCount)
         }
         capture("subject-header")
-        compose.onNode(hasText(t("Екзамен")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Exam")) and hasClickAction()).performClick()
         compose.onNodeWithTag("exam-target-A").performScrollTo()
         for (letter in listOf("A", "B", "C", "D", "E")) {
             val button = compose.onNodeWithTag("exam-target-$letter").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
@@ -150,8 +150,8 @@ class OctoberUiPolishTest {
         }
         capture("exam-targets")
         back(); back()
-        root(t("Календар"))
-        compose.onNode(hasText(t("Місяць")) and hasClickAction()).performClick()
+        root(t("Calendar"))
+        compose.onNode(hasText(t("Month")) and hasClickAction()).performClick()
         val today = LocalDate.now()
         compose.onNodeWithTag("month-day-${today.toEpochDay()}").assertIsDisplayed()
         val weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
@@ -168,9 +168,9 @@ class OctoberUiPolishTest {
                 numeral.fetchSemanticsNode().boundsInRoot.center.x, 1f)
         }
         capture("calendar-month")
-        compose.onNode(hasText(t("День")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Day")) and hasClickAction()).performClick()
         capture("calendar-day")
-        compose.onNode(hasText(t("Тиждень")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t("Week")) and hasClickAction()).performClick()
         capture("calendar-week")
     }
 
@@ -190,9 +190,9 @@ class OctoberUiPolishTest {
         compose.onNodeWithTag("theme-hex").performScrollTo().performTextReplacement("#007E91")
         compose.onNodeWithTag("theme-save").performClick()
         compose.onNodeWithTag("palette-popup-apply").performClick()
-        compose.onNodeWithText(t("Стиль карток")).performScrollTo()
+        compose.onNodeWithText(t("Card style")).performScrollTo()
         capture("appearance-card-styles")
-        compose.onNodeWithText(t("Застосувати вигляд")).performClick()
+        compose.onNodeWithText(t("Apply appearance")).performClick()
         compose.waitForIdle()
         val created = settings().customThemes.single()
         assertEquals("Ocean review", created.name)
@@ -211,7 +211,7 @@ class OctoberUiPolishTest {
         compose.onNodeWithTag("theme-save").performClick()
         capture("appearance-custom-theme")
         compose.onNodeWithTag("palette-popup-apply").performClick()
-        compose.onNodeWithText(t("Застосувати вигляд")).performClick()
+        compose.onNodeWithText(t("Apply appearance")).performClick()
         compose.waitForIdle()
         val edited = settings().customThemes.single()
         assertEquals(created.id, edited.id)
@@ -223,7 +223,7 @@ class OctoberUiPolishTest {
         compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
         compose.onNodeWithTag("theme-delete-${created.id}").performScrollTo().performClick()
         compose.onNodeWithTag("palette-popup-apply").performClick()
-        compose.onNodeWithText(t("Застосувати вигляд")).performClick()
+        compose.onNodeWithText(t("Apply appearance")).performClick()
         compose.waitForIdle()
         assertTrue(settings().customThemes.isEmpty())
         assertNull(settings().selectedCustomThemeId)
@@ -257,8 +257,8 @@ class OctoberUiPolishTest {
     private fun settings() = runBlocking { data.settingsRepository.settings.first() }
     private fun openAppearance() {
         compose.waitForIdle()
-        compose.onNodeWithContentDescription(t("Налаштування")).performClick()
-        compose.onNode(hasText(t("Вигляд")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(t("Settings")).performClick()
+        compose.onNode(hasText(t("Appearance")) and hasClickAction()).performScrollTo().performClick()
     }
 
     private fun root(label: String) = compose.onAllNodes(hasText(label) and hasClickAction()).onLast().performClick()

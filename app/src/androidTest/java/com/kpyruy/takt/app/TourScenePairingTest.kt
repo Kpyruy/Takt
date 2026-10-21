@@ -15,8 +15,8 @@ class TourScenePairingTest {
     @Test fun subjectExplanationTravelsWithSubjectsDuringCalendarTransition() {
         runBlocking { (compose.activity.application as TaktApplication).dataContainer.settingsRepository.setLanguage(AppLanguage.SLOVAK) }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
-        compose.onAllNodesWithContentDescription(t("Налаштування")).onFirst().performClick()
-        compose.onNodeWithText(t("Екскурсія по Takt")).performScrollTo().performClick()
+        compose.onAllNodesWithContentDescription(t("Settings")).onFirst().performClick()
+        compose.onNodeWithText(t("Tour of Takt")).performScrollTo().performClick()
         repeat(6) {
             compose.waitUntil(8_000) { compose.onAllNodesWithTag("tour-next").fetchSemanticsNodes().any { it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled).not() } }
             compose.onNodeWithTag("tour-next").performClick()
