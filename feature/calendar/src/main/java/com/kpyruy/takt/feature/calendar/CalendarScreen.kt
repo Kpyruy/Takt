@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -249,7 +250,7 @@ fun CalendarScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ScreenHeader(
-            title = t("Calendar"),
+            title = t(UiKey.TEXT_CALENDAR),
             subtitle = headerSubtitle,
             action = { CalendarPeriodArrows(::navigatePrevious, ::navigateNext) },
         )
@@ -369,7 +370,7 @@ fun CalendarScreen(
                         val datedAssessments = assessmentsByDate[selectedDate].orEmpty()
                         if (deadlines.isNotEmpty() || datedAssessments.isNotEmpty()) {
                             SectionCard {
-                                Text(t("Deadlines"), style = MaterialTheme.typography.titleMedium)
+                                Text(t(UiKey.TEXT_DEADLINES), style = MaterialTheme.typography.titleMedium)
                                 deadlines.forEachIndexed { index, task ->
                                     if (index > 0) HorizontalDivider()
                                     CalendarDeadlineRow(
@@ -445,9 +446,9 @@ private fun SelectedDayAgenda(
 
         if (events.isEmpty()) {
             SectionCard {
-                Text(t("There are no classes on this day"))
+                Text(t(UiKey.TEXT_THERE_ARE_NO_CLASSES_ON_THIS_DAY))
                 Text(
-                    t("Add a class or one-off event with the + button at the bottom right."),
+                    t(UiKey.TEXT_ADD_A_CLASS_OR_ONE_OFF_EVENT_WITH_THE_BUTTON_AT_THE_BOTTOM_RIGHT),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

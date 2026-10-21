@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -41,8 +42,8 @@ class GlassBackdropOwnershipTest {
         val app = compose.activity.application as TaktApplication
         runBlocking { app.dataContainer.settingsRepository.setLanguage(AppLanguage.ENGLISH) }
         compose.waitForIdle()
-        compose.onNodeWithContentDescription(t("Settings")).performClick()
-        compose.onNode(hasText(t("Appearance")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(t(UiKey.TEXT_SETTINGS)).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_APPEARANCE)) and hasClickAction()).performScrollTo().performClick()
         compose.onNode(hasText("Dark") and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
         compose.onAllNodesWithTag("glass-wallpaper").assertCountEquals(1)

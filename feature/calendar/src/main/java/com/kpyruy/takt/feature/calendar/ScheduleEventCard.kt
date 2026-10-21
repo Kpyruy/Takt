@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.clickable
@@ -63,11 +64,11 @@ fun ScheduleEventCard(
                 }
             }
             when (event.status) {
-                ScheduleEventStatus.ONE_OFF -> StatusPill(t("Block"))
-                ScheduleEventStatus.MOVED -> StatusPill(t("Rescheduled"))
+                ScheduleEventStatus.ONE_OFF -> StatusPill(t(UiKey.TEXT_BLOCK))
+                ScheduleEventStatus.MOVED -> StatusPill(t(UiKey.TEXT_RESCHEDULED))
                 ScheduleEventStatus.CANCELLED -> {
                     if (cancellationStyle != CancellationDisplayStyle.STRIKETHROUGH) {
-                        StatusPill(t("Cancelled"))
+                        StatusPill(t(UiKey.TEXT_CANCELLED))
                     }
                 }
                 ScheduleEventStatus.NORMAL -> Unit

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -69,42 +71,42 @@ fun BackupReviewPage(
     var applying by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val sourceName = if (review.source == BackupReviewSource.DOCUMENTS) "Documents/Takt" else t("File")
+    val sourceName = if (review.source == BackupReviewSource.DOCUMENTS) "Documents/Takt" else t(UiKey.TEXT_FILE)
     val localByCode = local.courses.associateBy { it.code.uppercase(Locale.ROOT) }
     fun toggle(section: BackupSection) {
         selected = if (section in selected) selected - section else selected + section
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenHeader(title = t("Compare data"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
+        ScreenHeader(title = t(UiKey.TEXT_COMPARE_DATA), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack)
         })
         if (differing.isEmpty()) SectionCard {
-            Text(t("Data matches"), style = MaterialTheme.typography.titleMedium)
-            Text(t("The file has no changes to bring to the phone."),
+            Text(t(UiKey.TEXT_DATA_MATCHES), style = MaterialTheme.typography.titleMedium)
+            Text(t(UiKey.TEXT_THE_FILE_HAS_NO_CHANGES_TO_BRING_TO_THE_PHONE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        if (BackupSection.SUBJECTS in differing) BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, sourceName, t("Subjects"),
-            t("Phone: ${local.courses.size} · ${sourceName}: ${source.courses.size}")) {
+        if (BackupSection.SUBJECTS in differing) BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, sourceName, t(UiKey.TEXT_SUBJECTS),
+            t(uiMessage(UiKey.FORMAT_PHONE_VALUE_VALUE_VALUE, local.courses.size, sourceName, source.courses.size))) {
             source.courses.mapNotNull { course ->
                 val old = localByCode[course.code.uppercase(Locale.ROOT)]
                 if (old == null) "+ ${course.code} · ${course.title}"
                 else buildList {
-                    if (old.title != course.title) add(t("Name"))
-                    if (old.titleEn != course.titleEn) add("English")
-                    if (old.titleSk != course.titleSk) add("Slovenčina")
-                    if (old.credits != course.credits) add(t("Credits"))
-                    if (old.semester != course.semester) add(t("Semester"))
-                    if (old.requirementType != course.requirementType) add(t("Type"))
-                    if (old.gradingType != course.gradingType) add(t("Assessment"))
-                    if (old.syllabusUrl != course.syllabusUrl) add(t("Course syllabus"))
+                    if (old.title != course.title) add(t(UiKey.COMMON_NAME))
+                    if (old.titleEn != course.titleEn) add(t(UiKey.TEXT_ENGLISH))
+                    if (old.titleSk != course.titleSk) add(t(UiKey.TEXT_SLOVEN_INA))
+                    if (old.credits != course.credits) add(t(UiKey.TEXT_CREDITS_2A6B24AD))
+                    if (old.semester != course.semester) add(t(UiKey.TEXT_SEMESTER_A83EF1C1))
+                    if (old.requirementType != course.requirementType) add(t(UiKey.WORK_TYPE))
+                    if (old.gradingType != course.gradingType) add(t(UiKey.TEXT_ASSESSMENT_7808EEEB))
+                    if (old.syllabusUrl != course.syllabusUrl) add(t(UiKey.TEXT_COURSE_SYLLABUS))
                 }.takeIf { it.isNotEmpty() }?.let { "${course.code} · ${it.joinToString(", ")}" }
             }.take(8).forEach { Text(it) }
-            Text(t("Courses absent from the file stay on the phone."),
+            Text(t(UiKey.TEXT_COURSES_ABSENT_FROM_THE_FILE_STAY_ON_THE_PHONE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (BackupSection.ICONS in differing) {
-                Text(t("Choose course icons separately below."),
+                Text(t(UiKey.TEXT_CHOOSE_COURSE_ICONS_SEPARATELY_BELOW),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -112,10 +114,10 @@ fun BackupReviewPage(
             val phone = localByCode[file.code.uppercase(Locale.ROOT)]
             if (phone?.iconKey == file.iconKey) null else phone to file
         }
-        if (BackupSection.ICONS in differing) BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t("Course icons"),
-            t("Different: ") + changedIcons.size) {
+        if (BackupSection.ICONS in differing) BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t(UiKey.TEXT_COURSE_ICONS),
+            t(UiKey.TEXT_DIFFERENT) + changedIcons.size) {
             if (changedIcons.isEmpty()) {
-                Text(t("Icons match or are absent in both sources."),
+                Text(t(UiKey.TEXT_ICONS_MATCH_OR_ARE_ABSENT_IN_BOTH_SOURCES),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             changedIcons.take(6).forEach { (phone, file) ->
@@ -128,15 +130,15 @@ fun BackupReviewPage(
                         style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Text(t("Left: phone. Right: file. You can import icons without replacing courses or progress."),
+            Text(t(UiKey.TEXT_LEFT_PHONE_RIGHT_FILE_YOU_CAN_IMPORT_ICONS_WITHOUT_REPLACING_C_BD902093),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (BackupSection.PROGRESS in differing) BackupChoice(BackupSection.PROGRESS, selected, ::toggle, sourceName, t("Progress"),
+        if (BackupSection.PROGRESS in differing) BackupChoice(BackupSection.PROGRESS, selected, ::toggle, sourceName, t(UiKey.TEXT_PROGRESS),
             "") {
             val sections = if (BackupSection.SUBJECTS in selected)
                 setOf(BackupSection.SUBJECTS, BackupSection.PROGRESS) else setOf(BackupSection.PROGRESS)
             val preview = BackupMerger.merge(local, source, sections)
-            Text(t("Grades: ${local.gradeItems.size} → ${preview.gradeItems.size}; tasks: ${local.studyTasks.size} → ${preview.studyTasks.size}"),
+            Text(t(uiMessage(UiKey.FORMAT_GRADES_VALUE_VALUE_TASKS_VALUE_VALUE, local.gradeItems.size, preview.gradeItems.size, local.studyTasks.size, preview.studyTasks.size)),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             preview.courses.mapNotNull { result ->
                 val old = localByCode[result.code.uppercase(Locale.ROOT)]
@@ -158,81 +160,81 @@ fun BackupReviewPage(
             local.studyTasks.filter { it.id !in previewTasks }.take(3).forEach { Text("− ${it.title}") }
             if (preview.gradeItems == local.gradeItems && preview.studyTasks == local.studyTasks &&
                 preview.courses == local.courses && BackupSection.SUBJECTS !in selected) {
-                Text(t("To import progress for new courses, also select Courses."),
+                Text(t(UiKey.TEXT_TO_IMPORT_PROGRESS_FOR_NEW_COURSES_ALSO_SELECT_COURSES),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(t("Statuses, grades and tasks update only for courses with the same code."),
+            Text(t(UiKey.TEXT_STATUSES_GRADES_AND_TASKS_UPDATE_ONLY_FOR_COURSES_WITH_THE_SAME_CODE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (BackupSection.SCHEDULE in differing) BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, sourceName, t("Timetable"),
-            t("Phone: ${local.scheduleRules.size + local.oneOffEvents.size} · ${sourceName}: ${source.scheduleRules.size + source.oneOffEvents.size}")) {
+        if (BackupSection.SCHEDULE in differing) BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, sourceName, t(UiKey.TEXT_TIMETABLE),
+            t(uiMessage(UiKey.FORMAT_PHONE_VALUE_VALUE_VALUE, local.scheduleRules.size + local.oneOffEvents.size, sourceName, source.scheduleRules.size + source.oneOffEvents.size))) {
             BackupScheduleChanges(local, source)
-            Text(t("Choosing the timetable replaces local classes, changes and attendance."),
+            Text(t(UiKey.TEXT_CHOOSING_THE_TIMETABLE_REPLACES_LOCAL_CLASSES_CHANGES_AND_ATTENDANCE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (BackupSection.PERIODS in differing) BackupChoice(BackupSection.PERIODS, selected, ::toggle, sourceName, t("Study periods"),
-            t("Phone: ${local.settings.semesterPeriods.size} · ${sourceName}: ${source.settings.semesterPeriods.size}")) {
+        if (BackupSection.PERIODS in differing) BackupChoice(BackupSection.PERIODS, selected, ::toggle, sourceName, t(UiKey.TEXT_STUDY_PERIODS),
+            t(uiMessage(UiKey.FORMAT_PHONE_VALUE_VALUE_VALUE, local.settings.semesterPeriods.size, sourceName, source.settings.semesterPeriods.size))) {
             (local.settings.semesterPeriods.map { it.semester } + source.settings.semesterPeriods.map { it.semester })
                 .distinct().sorted().forEach { semester ->
                     val a = local.settings.semesterPeriods.firstOrNull { it.semester == semester }
                     val b = source.settings.semesterPeriods.firstOrNull { it.semester == semester }
                     if (a != b) {
-                        Text(t("Semester ${semester}"), style = MaterialTheme.typography.titleSmall)
-                        Text("${t("Phone")}: ${periodLabel(a)}")
+                        Text(t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, semester)), style = MaterialTheme.typography.titleSmall)
+                        Text("${t(UiKey.TEXT_PHONE)}: ${periodLabel(a)}")
                         Text("$sourceName: ${periodLabel(b)}")
                     }
                 }
         }
-        if (BackupSection.MATERIALS in differing) BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t("Notes and materials"),
-            t("Notes: ${local.courseNotes.size} → ${source.courseNotes.size}; materials: ${local.examMaterials.size} → ${source.examMaterials.size}")) {
+        if (BackupSection.MATERIALS in differing) BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t(UiKey.TEXT_NOTES_AND_MATERIALS),
+            t(uiMessage(UiKey.FORMAT_NOTES_VALUE_VALUE_MATERIALS_VALUE_VALUE, local.courseNotes.size, source.courseNotes.size, local.examMaterials.size, source.examMaterials.size))) {
             BackupNoteChanges(local, source)
-            Text(t("Notes and materials are matched by course code."),
+            Text(t(UiKey.TEXT_NOTES_AND_MATERIALS_ARE_MATCHED_BY_COURSE_CODE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (BackupSection.TEACHERS in differing) BackupChoice(
-            BackupSection.TEACHERS, selected, ::toggle, sourceName, t("Teachers and consultations"), "") {
+            BackupSection.TEACHERS, selected, ::toggle, sourceName, t(UiKey.TEXT_TEACHERS_AND_CONSULTATIONS), "") {
             val sections = setOf(BackupSection.TEACHERS) +
                 if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
             BackupTeachingChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
         if (BackupSection.LANGUAGE in differing) BackupChoice(
-            BackupSection.LANGUAGE, selected, ::toggle, sourceName, t("Language"), "") {
-            BackupSettingChange(t("Application language"), languageName(local.settings.language),
+            BackupSection.LANGUAGE, selected, ::toggle, sourceName, t(UiKey.TEXT_LANGUAGE), "") {
+            BackupSettingChange(t(UiKey.TEXT_APPLICATION_LANGUAGE), languageName(local.settings.language),
                 languageName(source.settings.language))
-            BackupSettingChange(t("Course name language"), courseLanguageName(local.settings.courseNameLanguage),
+            BackupSettingChange(t(UiKey.TEXT_COURSE_NAME_LANGUAGE), courseLanguageName(local.settings.courseNameLanguage),
                 courseLanguageName(source.settings.courseNameLanguage))
-            BackupSettingChange(t("When the app is in Ukrainian"),
+            BackupSettingChange(t(UiKey.TEXT_WHEN_THE_APP_IS_IN_UKRAINIAN),
                 courseLanguageName(local.settings.ukrainianCourseNameFallback),
                 courseLanguageName(source.settings.ukrainianCourseNameFallback))
         }
         if (BackupSection.APPEARANCE in differing) BackupChoice(
-            BackupSection.APPEARANCE, selected, ::toggle, sourceName, t("Appearance"), "") {
+            BackupSection.APPEARANCE, selected, ::toggle, sourceName, t(UiKey.TEXT_APPEARANCE), "") {
             BackupAppearanceChanges(local.settings, source.settings, sourceName)
         }
         if (BackupSection.CURRENT_SEMESTER in differing) BackupChoice(
-            BackupSection.CURRENT_SEMESTER, selected, ::toggle, sourceName, t("Current semester"), "") {
-            BackupSettingChange(t("Current semester"), local.settings.currentSemester?.toString() ?: t("Unspecified"),
-                source.settings.currentSemester?.toString() ?: t("Unspecified"))
+            BackupSection.CURRENT_SEMESTER, selected, ::toggle, sourceName, t(UiKey.TEXT_CURRENT_SEMESTER), "") {
+            BackupSettingChange(t(UiKey.TEXT_CURRENT_SEMESTER), local.settings.currentSemester?.toString() ?: t(UiKey.TEXT_UNSPECIFIED),
+                source.settings.currentSemester?.toString() ?: t(UiKey.TEXT_UNSPECIFIED))
         }
         if (BackupSection.PREFERENCES in differing) BackupChoice(
-            BackupSection.PREFERENCES, selected, ::toggle, sourceName, t("Other settings"), "") {
+            BackupSection.PREFERENCES, selected, ::toggle, sourceName, t(UiKey.TEXT_OTHER_SETTINGS), "") {
             val sections = setOf(BackupSection.PREFERENCES) +
                 if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
             BackupPreferenceChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
         if (BackupSection.PROGRESS in selected || BackupSection.SCHEDULE in selected) {
-            Text(t("Tests without a matching class will keep their date without a class link."),
+            Text(t(UiKey.TEXT_TESTS_WITHOUT_A_MATCHING_CLASS_WILL_KEEP_THEIR_DATE_WITHOUT_A_CLASS_LINK),
                 modifier = Modifier.testTag("backup-lesson-link-notice"), style = MaterialTheme.typography.bodySmall)
         }
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        error?.let { Text(t(it), color = MaterialTheme.colorScheme.error) }
         if (differing.isNotEmpty()) {
             Button(onClick = { scope.launch {
                 applying = true
                 runCatching { onApply(selected) }.onSuccess { onBack() }
-                    .onFailure { error = it.message?.let(::t) ?: t("Could not apply selected data") }
+                    .onFailure { error = it.message ?: uiMessage(UiKey.TEXT_COULD_NOT_APPLY_SELECTED_DATA) }
                 applying = false
             } }, enabled = selected.isNotEmpty() && !applying, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Apply selected data"))
+                Text(t(UiKey.TEXT_APPLY_SELECTED_DATA))
             }
         }
     }
@@ -248,12 +250,12 @@ private fun BackupChoice(section: BackupSection, selected: Set<BackupSection>, o
             androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(if (section in selected) t("Use ") + sourceName else t("Keep on phone"),
+                Text(if (section in selected) t(UiKey.TEXT_USE) + sourceName else t(UiKey.TEXT_KEEP_ON_PHONE),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (section in selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("backup-expand-${section.name}")) {
-                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, t("Review changes"))
+                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, t(UiKey.TEXT_REVIEW_CHANGES))
             }
         }
         if (summary.isNotBlank()) Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -278,7 +280,7 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
     val phone = local.teaching ?: BackupTeaching()
     val file = result.teaching ?: BackupTeaching()
     if (phone == file) {
-        Text(t("To include teachers for new courses, also select Courses."),
+        Text(t(UiKey.TEXT_TO_INCLUDE_TEACHERS_FOR_NEW_COURSES_ALSO_SELECT_COURSES),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
@@ -289,8 +291,8 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
         val old = phoneTeams[courseCode]
         val new = fileTeams[courseCode]
         if (old != new) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("$courseCode · ${t("Teaching team")}", style = MaterialTheme.typography.titleSmall)
-            Text("${t("Phone")}: ${teacherTeamLabel(old?.teachers.orEmpty())}")
+            Text("$courseCode · ${t(UiKey.TEXT_TEACHING_TEAM)}", style = MaterialTheme.typography.titleSmall)
+            Text("${t(UiKey.TEXT_PHONE)}: ${teacherTeamLabel(old?.teachers.orEmpty())}")
             Text("$sourceName: ${teacherTeamLabel(new?.teachers.orEmpty())}")
         }
     }
@@ -308,20 +310,20 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
             Text(listOfNotNull((new ?: old)?.name, courseCodes.joinToString(" · ").takeIf { it.isNotBlank() },
                 languageName(key.second)).joinToString(" · "), style = MaterialTheme.typography.titleSmall)
             val fields = listOf(
-                Triple(t("Teacher name"), old?.name, new?.name),
-                Triple(t("Position"), old?.position, new?.position),
-                Triple(t("University email"), old?.universityEmail, new?.universityEmail),
-                Triple(t("UIS email"), old?.systemEmail, new?.systemEmail),
-                Triple(t("Address"), old?.officeAddress, new?.officeAddress),
-                Triple(t("Office"), old?.officeNumber, new?.officeNumber),
-                Triple(t("Office phone"), old?.officePhone, new?.officePhone),
-                Triple(t("Consultation hours"), old?.consultationHours, new?.consultationHours),
-                Triple(t("University mailbox last checked"), old?.mailboxLastChecked, new?.mailboxLastChecked),
+                Triple(t(UiKey.TEXT_TEACHER_NAME), old?.name, new?.name),
+                Triple(t(UiKey.TEXT_POSITION), old?.position, new?.position),
+                Triple(t(UiKey.TEXT_UNIVERSITY_EMAIL), old?.universityEmail, new?.universityEmail),
+                Triple(t(UiKey.TEXT_UIS_EMAIL), old?.systemEmail, new?.systemEmail),
+                Triple(t(UiKey.TEXT_ADDRESS), old?.officeAddress, new?.officeAddress),
+                Triple(t(UiKey.TEXT_OFFICE), old?.officeNumber, new?.officeNumber),
+                Triple(t(UiKey.TEXT_OFFICE_PHONE), old?.officePhone, new?.officePhone),
+                Triple(t(UiKey.TEXT_CONSULTATION_HOURS), old?.consultationHours, new?.consultationHours),
+                Triple(t(UiKey.TEXT_UNIVERSITY_MAILBOX_LAST_CHECKED), old?.mailboxLastChecked, new?.mailboxLastChecked),
             )
             fields.filter { it.second != it.third }.forEach { (label, a, b) ->
                 Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("${t("Phone")}: ${a ?: t("Unspecified")}")
-                Text("$sourceName: ${b ?: t("Unspecified")}")
+                Text("${t(UiKey.TEXT_PHONE)}: ${a ?: t(UiKey.TEXT_UNSPECIFIED)}")
+                Text("$sourceName: ${b ?: t(UiKey.TEXT_UNSPECIFIED)}")
             }
         }
     }
@@ -329,14 +331,14 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
 
 private fun teacherTeamLabel(teachers: List<BackupTeacher>): String = teachers.joinToString("; ") { teacher ->
     val roles = teacher.roles.map { role -> t(when (role.lowercase(Locale.ROOT)) {
-        "examiner", "skúšajúci", "zkoušející" -> "Examiner"
-        "instructor", "cvičiaci", "cvičící" -> "Tutorials"
-        "lecturer", "prednášajúci", "přednášející" -> "Lectures"
-        "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Course supervisor"
+        "examiner", "skúšajúci", "zkoušející" -> UiKey.TEXT_EXAMINER
+        "instructor", "cvičiaci", "cvičící" -> UiKey.TEXT_TUTORIALS
+        "lecturer", "prednášajúci", "přednášející" -> UiKey.TEXT_LECTURES
+        "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> UiKey.TEXT_COURSE_SUPERVISOR
         else -> role
     }) }
     (listOf(teacher.name) + roles + teacher.languages).joinToString(" · ")
-}.ifBlank { t("Unspecified") }
+}.ifBlank { t(UiKey.TEXT_UNSPECIFIED) }
 
 @Composable
 private fun BackupSettingChange(label: String, phone: String, file: String) {
@@ -349,39 +351,39 @@ private fun BackupSettingChange(label: String, phone: String, file: String) {
 }
 
 private fun languageName(value: String): String = when (value) {
-    "UKRAINIAN" -> t("Ukrainian")
-    "ENGLISH" -> "English"
-    "SLOVAK" -> "Slovenčina"
+    "UKRAINIAN" -> t(UiKey.TEXT_UKRAINIAN)
+    "ENGLISH" -> t(UiKey.TEXT_ENGLISH)
+    "SLOVAK" -> t(UiKey.TEXT_SLOVEN_INA)
     else -> value
 }
 
 private fun courseLanguageName(value: String): String = when (value) {
-    "FOLLOW_APP" -> t("Follow app language")
-    "ENGLISH" -> "English"
-    "SLOVAK" -> "Slovenčina"
+    "FOLLOW_APP" -> t(UiKey.TEXT_FOLLOW_APP_LANGUAGE)
+    "ENGLISH" -> t(UiKey.TEXT_ENGLISH)
+    "SLOVAK" -> t(UiKey.TEXT_SLOVEN_INA)
     else -> value
 }
 
 private fun themeModeName(value: String): String = when (value) {
-    "SYSTEM" -> t("Device theme")
-    "LIGHT" -> t("Light")
-    "DARK" -> t("Dark")
+    "SYSTEM" -> t(UiKey.TEXT_DEVICE_THEME)
+    "LIGHT" -> t(UiKey.TEXT_LIGHT)
+    "DARK" -> t(UiKey.TEXT_DARK)
     else -> value
 }
 
 private fun themeFamilyName(value: String): String = when (value) {
-    "BLUE" -> t("Blue")
-    "GREEN" -> t("Green")
-    "PURPLE" -> t("Violet")
-    "WARM" -> t("Warm")
-    "MONOCHROME" -> t("Monochrome")
+    "BLUE" -> t(UiKey.TEXT_BLUE)
+    "GREEN" -> t(UiKey.TEXT_GREEN)
+    "PURPLE" -> t(UiKey.TEXT_VIOLET)
+    "WARM" -> t(UiKey.TEXT_WARM)
+    "MONOCHROME" -> t(UiKey.TEXT_MONOCHROME)
     else -> value
 }
 
 private fun cardAppearanceName(value: String): String = when (value) {
-    "GLASS" -> t("Glass")
-    "ELEVATED" -> t("Elevated")
-    "TONAL_FILLED" -> t("Filled")
+    "GLASS" -> t(UiKey.TEXT_GLASS)
+    "ELEVATED" -> t(UiKey.TEXT_ELEVATED)
+    "TONAL_FILLED" -> t(UiKey.TEXT_FILLED)
     else -> value
 }
 

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.animation.ValueAnimator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -56,13 +57,13 @@ internal fun TourCelebration(onFinish: () -> Unit) {
                     Icon(Icons.Outlined.Check, null, Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
-            Text(t("Tutorial completed"), style = MaterialTheme.typography.headlineMedium,
+            Text(t(UiKey.TEXT_TUTORIAL_COMPLETED), style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text(t("Enjoy using the app"), style = MaterialTheme.typography.bodyLarge,
+            Text(t(UiKey.TEXT_ENJOY_USING_THE_APP), style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
             TaktPrimaryButton(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("tour-done")) {
-                Text(t("Open Takt"))
+                Text(t(UiKey.TEXT_OPEN_TAKT))
             }
         }
     }

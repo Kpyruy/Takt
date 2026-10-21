@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.BackHandler
@@ -101,13 +103,13 @@ internal fun SemesterPeriodsPage(
                             val result = runCatching { onSave(drafts) }
                             saving = false
                             snackbarHostState.showSnackbar(
-                                if (result.isSuccess) t("Periods saved") else t("Periods could not be saved"),
+                                if (result.isSuccess) t(UiKey.TEXT_PERIODS_SAVED) else t(UiKey.TEXT_PERIODS_COULD_NOT_BE_SAVED),
                             )
                         }
                     },
                     enabled = changed && valid && !saving,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp),
-                ) { Text(t("Save periods")) }
+                ) { Text(t(UiKey.TEXT_SAVE_PERIODS)) }
             }
         },
     ) { insets ->
@@ -116,11 +118,11 @@ internal fun SemesterPeriodsPage(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ScreenHeader(title = t("Study periods"),
-                navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack) })
+            ScreenHeader(title = t(UiKey.TEXT_STUDY_PERIODS),
+                navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack) })
             if (onReviewDocuments != null) {
                 TextButton(onClick = onReviewDocuments) {
-                    Text(t("Review differences with Documents/Takt"))
+                    Text(t(UiKey.TEXT_REVIEW_DIFFERENCES_WITH_DOCUMENTS_TAKT))
                 }
             }
             LazyRow(Modifier.fillMaxWidth(), state = semesterListState,
@@ -133,7 +135,7 @@ internal fun SemesterPeriodsPage(
                         color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                     ) {
-                        Text(t("Semester ${semester}") + if (semester == currentSemester) t(" · now") else "",
+                        Text(t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, semester)) + if (semester == currentSemester) t(UiKey.TEXT_NOW) else "",
                             Modifier.padding(horizontal = 15.dp, vertical = 11.dp),
                             style = MaterialTheme.typography.labelLarge,
                             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
@@ -143,26 +145,26 @@ internal fun SemesterPeriodsPage(
             key(selectedSemester) {
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(t("Academic period"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_ACADEMIC_PERIOD), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                         if (draft.studyStart != null || draft.studyEnd != null) {
-                            TextButton(onClick = { updateDraft(draft.copy(studyStart = null, studyEnd = null)) }) { Text(t("Clear")) }
+                            TextButton(onClick = { updateDraft(draft.copy(studyStart = null, studyEnd = null)) }) { Text(t(UiKey.TEXT_CLEAR)) }
                         }
                     }
-                    TaktDatePickerField(t("Start of classes"), draft.studyStart,
+                    TaktDatePickerField(t(UiKey.TEXT_START_OF_CLASSES), draft.studyStart,
                         { updateDraft(draft.copy(studyStart = it)) }, Modifier.fillMaxWidth())
-                    TaktDatePickerField(t("End of classes"), draft.studyEnd,
+                    TaktDatePickerField(t(UiKey.TEXT_END_OF_CLASSES), draft.studyEnd,
                         { updateDraft(draft.copy(studyEnd = it)) }, Modifier.fillMaxWidth())
                 }
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(t("Examination period"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_EXAMINATION_PERIOD), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                         if (draft.examStart != null || draft.examEnd != null) {
-                            TextButton(onClick = { updateDraft(draft.copy(examStart = null, examEnd = null)) }) { Text(t("Clear")) }
+                            TextButton(onClick = { updateDraft(draft.copy(examStart = null, examEnd = null)) }) { Text(t(UiKey.TEXT_CLEAR)) }
                         }
                     }
-                    TaktDatePickerField(t("Beginning of exams"), draft.examStart,
+                    TaktDatePickerField(t(UiKey.TEXT_BEGINNING_OF_EXAMS), draft.examStart,
                         { updateDraft(draft.copy(examStart = it)) }, Modifier.fillMaxWidth())
-                    TaktDatePickerField(t("End of exams"), draft.examEnd,
+                    TaktDatePickerField(t(UiKey.TEXT_END_OF_EXAMS), draft.examEnd,
                         { updateDraft(draft.copy(examEnd = it)) }, Modifier.fillMaxWidth())
                 }
             }
@@ -170,19 +172,19 @@ internal fun SemesterPeriodsPage(
             val examStart = draft.examStart
             if (studyEnd != null && examStart != null && examStart > studyEnd.plusDays(1)) {
                 val days = ChronoUnit.DAYS.between(studyEnd, examStart) - 1
-                Text(t("Break between periods · ${days} days."),
+                Text(t(uiMessage(UiKey.FORMAT_BREAK_BETWEEN_PERIODS_VALUE_DAYS, days)),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!valid) {
-                Text(t("For each period, put both dates in the correct order."),
+                Text(t(UiKey.TEXT_FOR_EACH_PERIOD_PUT_BOTH_DATES_IN_THE_CORRECT_ORDER),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
-            SettingsSectionTitle(t("Assessment mode"))
+            SettingsSectionTitle(t(UiKey.TEXT_ASSESSMENT_MODE))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
-                    AssessmentPhaseMode.AUTO to t("Auto"),
-                    AssessmentPhaseMode.STUDY to t("Study"),
-                    AssessmentPhaseMode.EXAM to t("Examinations"),
+                    AssessmentPhaseMode.AUTO to t(UiKey.TEXT_AUTO),
+                    AssessmentPhaseMode.STUDY to t(UiKey.TEXT_STUDY),
+                    AssessmentPhaseMode.EXAM to t(UiKey.TEXT_EXAMINATIONS),
                 ).forEach { (mode, label) ->
                     val selected = draft.assessmentMode == mode
                     Surface(
@@ -198,7 +200,7 @@ internal fun SemesterPeriodsPage(
                     }
                 }
             }
-            Text(t("Now: ") + if (draft.assessmentPhase(now) == AssessmentPhase.EXAM) t("exams") else t("study"),
+            Text(t(UiKey.TEXT_NOW_71A21BC7) + if (draft.assessmentPhase(now) == AssessmentPhase.EXAM) t(UiKey.TEXT_EXAMS_D6BD4331) else t(UiKey.TEXT_STUDY_0C87ED81),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium)
         }

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import androidx.activity.compose.BackHandler
@@ -55,25 +56,25 @@ internal fun UisAutoSyncSettingsPage(
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ScreenHeader(title = t("Automatic UIS updates"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
+        ScreenHeader(title = t(UiKey.TEXT_AUTOMATIC_UIS_UPDATES), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack)
         })
         SectionCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SettingsSyncIcon(Icons.Outlined.AutoMode)
-                Text(t("Apply progress automatically"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Text(t(UiKey.TEXT_APPLY_PROGRESS_AUTOMATICALLY), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = settings.applyProgressAutomatically,
                     onCheckedChange = { onChange(settings.copy(applyProgressAutomatically = it)) })
             }
         }
-        FrequencyChoice(t("Progress"), Icons.Outlined.BarChart, settings.progress,
+        FrequencyChoice(t(UiKey.TEXT_PROGRESS), Icons.Outlined.BarChart, settings.progress,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
-        FrequencyChoice(t("Subjects"), Icons.Outlined.MenuBook, settings.subjects,
+        FrequencyChoice(t(UiKey.TEXT_SUBJECTS), Icons.Outlined.MenuBook, settings.subjects,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(subjects = it)) }
-        FrequencyChoice(t("Study periods"), Icons.Outlined.CalendarMonth, settings.periods,
+        FrequencyChoice(t(UiKey.TEXT_STUDY_PERIODS), Icons.Outlined.CalendarMonth, settings.periods,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(periods = it)) }
-        FrequencyChoice(t("Timetable"), Icons.Outlined.Schedule, settings.timetable,
+        FrequencyChoice(t(UiKey.TEXT_TIMETABLE), Icons.Outlined.Schedule, settings.timetable,
             listOf(UisRefreshFrequency.MANUAL, UisRefreshFrequency.TEACHING_START)) {
             onChange(settings.copy(timetable = it))
         }
@@ -118,10 +119,10 @@ private fun SettingsSyncIcon(icon: ImageVector) {
 }
 
 internal fun UisRefreshFrequency.label(): String = when (this) {
-    UisRefreshFrequency.MANUAL -> "Manual"
-    UisRefreshFrequency.EVERY_ENTRY -> "Every app entry"
-    UisRefreshFrequency.DAILY -> "Daily"
-    UisRefreshFrequency.WEEKLY -> "Every week"
-    UisRefreshFrequency.MONTHLY -> "Monthly"
-    UisRefreshFrequency.TEACHING_START -> "At the start of teaching"
+    UisRefreshFrequency.MANUAL -> UiKey.TEXT_MANUAL_B0B9FE24
+    UisRefreshFrequency.EVERY_ENTRY -> UiKey.TEXT_EVERY_APP_ENTRY
+    UisRefreshFrequency.DAILY -> UiKey.TEXT_DAILY
+    UisRefreshFrequency.WEEKLY -> UiKey.TEXT_EVERY_WEEK
+    UisRefreshFrequency.MONTHLY -> UiKey.TEXT_MONTHLY
+    UisRefreshFrequency.TEACHING_START -> UiKey.TEXT_AT_THE_START_OF_TEACHING
 }

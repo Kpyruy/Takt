@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
@@ -116,10 +117,10 @@ internal fun GuidedTourScreen(
     BackHandler { confirmExit = true }
     if (confirmExit) {
         AlertDialog(onDismissRequest = { confirmExit = false },
-            title = { Text(t("Exit the tour?")) },
-            text = { Text(t("You can return anytime: Settings → Help → Tour of Takt.")) },
-            confirmButton = { TextButton(onClick = onFinish, modifier = Modifier.testTag("tour-exit-confirm")) { Text(t("Yes, exit")) } },
-            dismissButton = { TextButton(onClick = { confirmExit = false }, modifier = Modifier.testTag("tour-exit-cancel")) { Text(t("Continue tour")) } },
+            title = { Text(t(UiKey.TEXT_EXIT_THE_TOUR)) },
+            text = { Text(t(UiKey.TEXT_YOU_CAN_RETURN_ANYTIME_SETTINGS_HELP_TOUR_OF_TAKT)) },
+            confirmButton = { TextButton(onClick = onFinish, modifier = Modifier.testTag("tour-exit-confirm")) { Text(t(UiKey.TEXT_YES_EXIT)) } },
+            dismissButton = { TextButton(onClick = { confirmExit = false }, modifier = Modifier.testTag("tour-exit-cancel")) { Text(t(UiKey.TEXT_CONTINUE_TOUR)) } },
             modifier = Modifier.glassSurface(RoundedCornerShape(28.dp)), containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
     }
 }
@@ -133,7 +134,7 @@ private fun TourScene(
     releases: AppReleaseRepository,
     authenticate: DeviceAuthenticationRequest,
 ) {
-    val labels = listOf(t("Today"), t("Calendar"), t("Subjects"), t("Progress"))
+    val labels = listOf(t(UiKey.TEXT_TODAY), t(UiKey.TEXT_CALENDAR), t(UiKey.TEXT_SUBJECTS), t(UiKey.TEXT_PROGRESS))
     val icons = listOf(TaktIcons.Home, TaktIcons.Calendar, TaktIcons.Book, TaktIcons.Progress)
     val selected = when (scene) { "home" -> 0; "calendar" -> 1; "progress" -> 3; else -> 2 }
     val root = scene in setOf("home", "calendar", "subjects", "progress")

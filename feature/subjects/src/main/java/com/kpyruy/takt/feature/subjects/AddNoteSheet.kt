@@ -1,5 +1,8 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.uiArg
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -117,7 +120,7 @@ fun AddNoteForm(
                         }.onSuccess { attachment ->
                             attachments = attachments + attachment
                             attachmentError = null
-                        }.onFailure { attachmentError = t("Failed to add file: ${t(it.message.orEmpty())}") }
+                        }.onFailure { attachmentError = uiMessage(UiKey.FORMAT_FAILED_TO_ADD_FILE_VALUE, uiArg(it.message.orEmpty())) }
                     }
                 } finally {
                     copyingFiles = false
@@ -129,34 +132,34 @@ fun AddNoteForm(
         if (uri != null) scope.launch {
             runCatching { documentStore.connect(uri) }
                 .onSuccess { filesPicker.launch(arrayOf("*/*")) }
-                .onFailure { attachmentError = t("Failed to mount folder: ${t(it.message.orEmpty())}") }
+                .onFailure { attachmentError = uiMessage(UiKey.FORMAT_FAILED_TO_MOUNT_FOLDER_VALUE, uiArg(it.message.orEmpty())) }
         }
     }
 
     if (showLinkDialog) Dialog(onDismissRequest = { showLinkDialog = false }) {
         GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp)) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(t("Add link"), style = MaterialTheme.typography.headlineSmall)
+                Text(t(UiKey.TEXT_ADD_LINK), style = MaterialTheme.typography.headlineSmall)
                 TaktTextField(linkUrl, { linkUrl = it; linkError = false },
-                    label = { Text(t("Link URL")) }, singleLine = true,
+                    label = { Text(t(UiKey.TEXT_LINK_URL)) }, singleLine = true,
                     isError = linkError, modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     leadingIcon = { Icon(Icons.Default.Link, null) },
                     trailingIcon = { if (linkUrl.isNotBlank()) IconButton(onClick = { linkUrl = ""; linkError = false }) {
-                        Icon(Icons.Default.Close, t("Clear"))
+                        Icon(Icons.Default.Close, t(UiKey.TEXT_CLEAR))
                     } })
                 TaktTextField(linkTitle, { linkTitle = it },
-                    label = { Text(t("Name (optional)")) }, singleLine = true,
+                    label = { Text(t(UiKey.TEXT_NAME_OPTIONAL)) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(), leadingIcon = { Icon(Icons.Default.Description, null) },
                     trailingIcon = { if (linkTitle.isNotBlank()) IconButton(onClick = { linkTitle = "" }) {
-                        Icon(Icons.Default.Close, t("Clear"))
+                        Icon(Icons.Default.Close, t(UiKey.TEXT_CLEAR))
                     } })
-                if (linkError) Text(t("Enter a valid https:// or http:// link"),
+                if (linkError) Text(t(UiKey.TEXT_ENTER_A_VALID_HTTPS_OR_HTTP_LINK),
                     color = MaterialTheme.colorScheme.error)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(50)) {
-                        TextButton(onClick = { showLinkDialog = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(t("Cancel")) }
+                        TextButton(onClick = { showLinkDialog = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(t(UiKey.ACTION_CANCEL)) }
                     }
                     TaktPrimaryButton(onClick = {
                         runCatching { NoteAttachment.webLink(linkUrl, linkTitle) }
@@ -164,7 +167,7 @@ fun AddNoteForm(
                                 attachments = attachments + attachment
                                 linkUrl = ""; linkTitle = ""; linkError = false; showLinkDialog = false
                             }.onFailure { linkError = true }
-                    }, modifier = Modifier.weight(1f)) { Text(t("Add")) }
+                    }, modifier = Modifier.weight(1f)) { Text(t(UiKey.TEXT_ADD)) }
                 }
             }
         }
@@ -176,25 +179,25 @@ fun AddNoteForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialNote == null) t("Add a note") else t("Edit note"),
+                if (initialNote == null) t(UiKey.TEXT_ADD_A_NOTE) else t(UiKey.TEXT_EDIT_NOTE),
                 style = MaterialTheme.typography.headlineMedium,
             )
         }
         TaktTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(t("Title")) },
+            label = { Text(t(UiKey.TEXT_TITLE)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         TaktTextField(
             value = content,
             onValueChange = { content = it },
-            label = { Text(t("Note")) },
+            label = { Text(t(UiKey.TEXT_NOTE)) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 5,
         )
-        Text(t("Attachments"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(t(UiKey.TEXT_ATTACHMENTS), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         attachments.forEach { attachment ->
             Row(modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(17.dp)).padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically) {
@@ -203,7 +206,7 @@ fun AddNoteForm(
                 Spacer(Modifier.width(9.dp))
                 Text(attachment.name, modifier = Modifier.weight(1f))
                 IconButton(onClick = { attachments = attachments - attachment }) {
-                    Icon(Icons.Default.Close, contentDescription = t("Remove attachments"))
+                    Icon(Icons.Default.Close, contentDescription = t(UiKey.TEXT_REMOVE_ATTACHMENTS))
                 }
             }
         }
@@ -213,18 +216,18 @@ fun AddNoteForm(
                     if (documentStore.isConnected) filesPicker.launch(arrayOf("*/*")) else folderPicker.launch(null)
                 }, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
                     Icon(Icons.Default.AttachFile, contentDescription = null)
-                    Text(t("Add file"))
+                    Text(t(UiKey.TEXT_ADD_FILE))
                 }
             }
             GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(18.dp)) {
                 TextButton(onClick = { showLinkDialog = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
                     Icon(Icons.Default.Link, contentDescription = null)
-                    Text(t("Add link"))
+                    Text(t(UiKey.TEXT_ADD_LINK))
                 }
             }
         }
-        attachmentError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (copyingFiles) Text(t("Copying files…"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        attachmentError?.let { Text(t(it), color = MaterialTheme.colorScheme.error) }
+        if (copyingFiles) Text(t(UiKey.TEXT_COPYING_FILES), color = MaterialTheme.colorScheme.onSurfaceVariant)
         TaktPrimaryButton(
             onClick = {
                 onSave(
@@ -241,7 +244,7 @@ fun AddNoteForm(
             enabled = !copyingFiles && title.isNotBlank() && (content.isNotBlank() || attachments.isNotEmpty()),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialNote == null) t("Save") else t("Update"))
+            Text(if (initialNote == null) t(UiKey.ACTION_SAVE) else t(UiKey.ACTION_UPDATE))
         }
     }
 }

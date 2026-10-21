@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -48,7 +49,7 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                                 Icon(Icons.Outlined.MenuBook, null, Modifier.size(20.dp), tint = colors.secondary)
                             }
                         }
-                        Text(t("Your first class"), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                        Text(t(UiKey.TEXT_YOUR_FIRST_CLASS), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
                         Surface(Modifier.size(32.dp).testTag("palette-preview-grade"),
                             shape = MaterialTheme.shapes.small, color = colors.primaryContainer,
                             contentColor = colors.onPrimaryContainer) {
@@ -63,7 +64,7 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                             Row(Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp), tint = colors.tertiary)
-                                Text(t("Prepare an outline"), style = MaterialTheme.typography.labelSmall)
+                                Text(t(UiKey.TEXT_PREPARE_AN_OUTLINE), style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         // Passive button sample: the real Apply/Save target stays in the footer.
@@ -81,8 +82,8 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                         }
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(t("EXAMPLE"), style = MaterialTheme.typography.labelSmall, color = colors.secondary)
-                        Text(t("Your first class"), style = MaterialTheme.typography.titleSmall)
+                        Text(t(UiKey.TEXT_EXAMPLE), style = MaterialTheme.typography.labelSmall, color = colors.secondary)
+                        Text(t(UiKey.TEXT_YOUR_FIRST_CLASS), style = MaterialTheme.typography.titleSmall)
                         Text("09:00–10:30", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     }
                     Surface(Modifier.size(40.dp).testTag("palette-preview-grade"), shape = MaterialTheme.shapes.small,
@@ -99,16 +100,16 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.CheckCircle, null, Modifier.size(22.dp), tint = colors.tertiary)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(t("Prepare an outline"), style = MaterialTheme.typography.labelLarge)
-                            Text(t("tomorrow") + " · " + formatDurationMinutes(30), style = MaterialTheme.typography.bodySmall)
+                            Text(t(UiKey.TEXT_PREPARE_AN_OUTLINE), style = MaterialTheme.typography.labelLarge)
+                            Text(t(UiKey.TEXT_TOMORROW) + " · " + formatDurationMinutes(30), style = MaterialTheme.typography.bodySmall)
                         }
                         Box(Modifier.size(9.dp).background(colors.tertiary, CircleShape))
                     }
                 }
                 TaktPrimaryButton({}, Modifier.fillMaxWidth().testTag("palette-preview-primary")) {
-                    Text(t("Add task"))
+                    Text(t(UiKey.TEXT_ADD_TASK))
                 }
-                if (!compact) Text(t("Primary: buttons and grades · Secondary: subjects · Tertiary: tasks and markers"),
+                if (!compact) Text(t(UiKey.TEXT_PRIMARY_BUTTONS_AND_GRADES_SECONDARY_SUBJECTS_TERTIARY_TASKS_AND_MARKERS),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
         }

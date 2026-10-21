@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.animation.AnimatedVisibility
@@ -41,10 +43,10 @@ internal enum class SemesterState { COMPLETED, ACTIVE, FUTURE }
 
 internal fun activeCoursesLabel(count: Int): String {
     val word = when {
-        count % 100 in 11..14 -> t("active subjects")
-        count % 10 == 1 -> t("active subject")
-        count % 10 in 2..4 -> t("currently active subjects")
-        else -> t("active subjects")
+        count % 100 in 11..14 -> t(UiKey.TEXT_ACTIVE_SUBJECTS)
+        count % 10 == 1 -> t(UiKey.TEXT_ACTIVE_SUBJECT_4D88CC7D)
+        count % 10 in 2..4 -> t(UiKey.TEXT_CURRENTLY_ACTIVE_SUBJECTS)
+        else -> t(UiKey.TEXT_ACTIVE_SUBJECTS)
     }
     return "$count $word"
 }
@@ -71,19 +73,19 @@ fun SemesterSection(
     val relevantCredits = courses.filter { it.status != CourseStatus.NOT_NEEDED }.sumOf { it.credits }
     val activeCount = courses.count { it.status == CourseStatus.ENROLLED }
     val stateLabel = when (state) {
-        SemesterState.COMPLETED -> t("closed")
-        SemesterState.ACTIVE -> t("current semester")
+        SemesterState.COMPLETED -> t(UiKey.TEXT_CLOSED_C3EEFB58)
+        SemesterState.ACTIVE -> t(UiKey.TEXT_CURRENT_SEMESTER_A9B3EA6D)
         SemesterState.FUTURE -> when {
             activeCount > 0 -> activeCoursesLabel(activeCount)
-            courses.any { it.status == CourseStatus.FULFILLED } -> t("partially completed")
-            else -> t("planned")
+            courses.any { it.status == CourseStatus.FULFILLED } -> t(UiKey.TEXT_PARTIALLY_COMPLETED)
+            else -> t(UiKey.TEXT_PLANNED)
         }
     }
     GlassSurface(Modifier.fillMaxWidth().padding(bottom = 8.dp), shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("semester-toggle-$semester")
-                    .clickable(role = Role.Button, onClickLabel = if (expanded) t("Collapse the semester") else t("Expand the semester")) { onExpandedChange(!expanded) }
-                    .semantics { stateDescription = if (expanded) t("Expanded") else t("Collapsed") },
+                    .clickable(role = Role.Button, onClickLabel = if (expanded) t(UiKey.TEXT_COLLAPSE_THE_SEMESTER) else t(UiKey.TEXT_EXPAND_THE_SEMESTER)) { onExpandedChange(!expanded) }
+                    .semantics { stateDescription = if (expanded) t(UiKey.TEXT_EXPANDED) else t(UiKey.TEXT_COLLAPSED) },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val circleColor = when (state) {
                     SemesterState.COMPLETED -> MaterialTheme.colorScheme.secondaryContainer
@@ -93,20 +95,20 @@ fun SemesterSection(
                 Box(Modifier.size(30.dp).background(circleColor, CircleShape)
                     .testTag("semester-$semester-${state.name.lowercase()}")
                     .semantics { stateDescription = stateLabel }, contentAlignment = Alignment.Center) {
-                    if (state == SemesterState.COMPLETED) Icon(Icons.Default.Check, t("Completed semester"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.secondary)
+                    if (state == SemesterState.COMPLETED) Icon(Icons.Default.Check, t(UiKey.TEXT_COMPLETED_SEMESTER), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.secondary)
                     else Text("$semester", color = if (state == SemesterState.ACTIVE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(t("Semester ${semester}" + if (state == SemesterState.ACTIVE) {
-                        if (semester % 2 == 1) " · winter" else " · summer"
-                    } else ""),
+                    Text(t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, semester)) + if (state == SemesterState.ACTIVE) {
+                        t(if (semester % 2 == 1) UiKey.TEXT_WINTER_11577647 else UiKey.TEXT_SUMMER_16945261)
+                    } else "",
                         style = MaterialTheme.typography.titleMedium)
                     if (activeCount > 0) Text(activeCoursesLabel(activeCount), modifier = Modifier.testTag("semester-active-count-$semester"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(if (state == SemesterState.COMPLETED) t("${earnedCredits}/${relevantCredits} credits")
-                    else t("${relevantCredits} credits"),
+                Text(if (state == SemesterState.COMPLETED) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_CREDITS, earnedCredits, relevantCredits))
+                    else t(uiMessage(UiKey.FORMAT_VALUE_CREDITS_6F9D64BE, relevantCredits)),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, Modifier.size(19.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)

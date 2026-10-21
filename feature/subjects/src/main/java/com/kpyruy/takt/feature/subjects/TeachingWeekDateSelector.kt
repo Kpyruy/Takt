@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -65,13 +66,13 @@ internal fun TeachingWeekDateSelector(
 ) {
     val formatter = DateTimeFormatter.ofPattern("EEE d MMM", TaktI18n.locale)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Teaching week"), style = MaterialTheme.typography.titleSmall)
+        Text(t(UiKey.TEXT_TEACHING_WEEK), style = MaterialTheme.typography.titleSmall)
         when (options.setupIssue) {
             TeachingWeekSetupIssue.SEMESTER_PERIOD -> Text(
-                t("Set the semester study period in settings or choose Date."),
+                t(UiKey.TEXT_SET_THE_SEMESTER_STUDY_PERIOD_IN_SETTINGS_OR_CHOOSE_DATE),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TeachingWeekSetupIssue.COURSE_SCHEDULE -> Text(
-                t("Add recurring classes for this course or choose Date."),
+                t(UiKey.TEXT_ADD_RECURRING_CLASSES_FOR_THIS_COURSE_OR_CHOOSE_DATE),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             null -> {
                 var expanded by remember { mutableStateOf(false) }
@@ -87,8 +88,8 @@ internal fun TeachingWeekDateSelector(
                         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(week?.let { "${t("Teaching week")} ${it.number}" }
-                                    ?: t("Choose a teaching week"), style = MaterialTheme.typography.bodyLarge)
+                                Text(week?.let { "${t(UiKey.TEXT_TEACHING_WEEK)} ${it.number}" }
+                                    ?: t(UiKey.TEXT_CHOOSE_A_TEACHING_WEEK), style = MaterialTheme.typography.bodyLarge)
                                 week?.let {
                                     Text("${it.start.format(formatter)} – ${it.end.format(formatter)}",
                                         style = MaterialTheme.typography.bodySmall,
@@ -103,7 +104,7 @@ internal fun TeachingWeekDateSelector(
                             TaktChoiceMenuItem(
                                 text = {
                                     Column {
-                                        Text("${t("Teaching week")} ${option.number}")
+                                        Text("${t(UiKey.TEXT_TEACHING_WEEK)} ${option.number}")
                                         Text("${option.start.format(formatter)} – ${option.end.format(formatter)}",
                                             style = MaterialTheme.typography.bodySmall)
                                     }
@@ -123,13 +124,13 @@ internal fun TeachingWeekDateSelector(
                 }
                 if (week != null) {
                     if (week.occurrences.isEmpty()) Text(
-                        t("No scheduled class this teaching week. Choose Date."),
+                        t(UiKey.TEXT_NO_SCHEDULED_CLASS_THIS_TEACHING_WEEK_CHOOSE_DATE),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else {
                         val selectedOccurrence = week.occurrences.firstOrNull { dueDate == it.date && lessonId == it.id }
                         val lessonShape = RoundedCornerShape(18.dp)
                         val lessonInteraction = remember { MutableInteractionSource() }
-                        Text(t("Choose a lesson this week"), style = MaterialTheme.typography.titleSmall)
+                        Text(t(UiKey.TEXT_CHOOSE_A_LESSON_THIS_WEEK), style = MaterialTheme.typography.titleSmall)
                         Box(Modifier.fillMaxWidth()) {
                             TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(lessonInteraction).clip(lessonShape)
                                 .clickable(indication = null, interactionSource = lessonInteraction, role = Role.Button,
@@ -139,7 +140,7 @@ internal fun TeachingWeekDateSelector(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     Icon(Icons.Outlined.Event, null)
                                     Column(Modifier.weight(1f)) {
-                                        if (selectedOccurrence == null) Text(t("Choose a lesson this week"))
+                                        if (selectedOccurrence == null) Text(t(UiKey.TEXT_CHOOSE_A_LESSON_THIS_WEEK))
                                         else {
                                             Text("${selectedOccurrence.date.format(formatter)} · ${selectedOccurrence.startTime}–${selectedOccurrence.endTime}")
                                             Text(t(selectedOccurrence.lessonType.label) + selectedOccurrence.room?.let { " · $it" }.orEmpty(),

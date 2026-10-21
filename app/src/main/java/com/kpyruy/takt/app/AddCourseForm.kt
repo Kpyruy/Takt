@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import com.kpyruy.takt.core.ui.i18n.t
@@ -57,23 +58,23 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
     val parsedSemester = semester.toIntOrNull()
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        TaktTextField(title, { title = it; error = null }, label = { Text(t("Subject name")) },
+        TaktTextField(title, { title = it; error = null }, label = { Text(t(UiKey.TEXT_SUBJECT_NAME)) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-title"))
-        TaktTextField(code, { code = it; error = null }, label = { Text(t("Subject code")) },
+        TaktTextField(code, { code = it; error = null }, label = { Text(t(UiKey.TEXT_SUBJECT_CODE)) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-code"))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TaktTextField(credits, { credits = it.filter(Char::isDigit); error = null },
-                label = { Text(t("Credits")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = { Text(t(UiKey.TEXT_CREDITS_2A6B24AD)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.weight(1f).testTag("course-credits"))
             TaktTextField(semester, { semester = it.filter(Char::isDigit); error = null },
-                label = { Text(t("Semester")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = { Text(t(UiKey.TEXT_SEMESTER_A83EF1C1)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.weight(1f).testTag("course-semester"))
         }
         Box {
             GlassSurface(Modifier.fillMaxWidth().clickable { gradingMenu = true }) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(t("Assessment"), style = MaterialTheme.typography.bodySmall,
+                        Text(t(UiKey.TEXT_ASSESSMENT_7808EEEB), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(gradingLabel(grading), style = MaterialTheme.typography.bodyLarge)
                     }
@@ -86,7 +87,7 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                 }
             }
         }
-        Text(t("Subject icon"), style = MaterialTheme.typography.labelLarge)
+        Text(t(UiKey.TEXT_SUBJECT_ICON), style = MaterialTheme.typography.labelLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf("Atom", "MenuBook", "Code", "Calculate", "Translate").forEach { key ->
                 val icon = CourseIcons.find(key)
@@ -98,7 +99,7 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                 }
             }
         }
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+        error?.let { Text(t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         TaktPrimaryButton(
             onClick = {
                 saving = true
@@ -110,19 +111,19 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                     }
                     saving = false
                     if (result.isSuccess) withContext(Dispatchers.Main.immediate) { onSaved() }
-                    else error = result.exceptionOrNull()?.message?.let(::t) ?: t("Failed to add subject")
+                    else error = result.exceptionOrNull()?.message ?: UiKey.TEXT_FAILED_TO_ADD_SUBJECT
                 }
             },
             enabled = !saving && title.isNotBlank() && code.isNotBlank() &&
                 parsedCredits != null && parsedSemester != null,
             modifier = Modifier.fillMaxWidth().testTag("save-course"),
-        ) { Text(t("Add course")) }
+        ) { Text(t(UiKey.TEXT_ADD_COURSE)) }
     }
 }
 
 @Composable
 private fun gradingLabel(type: CourseGradingType): String = t(when (type) {
-    CourseGradingType.EXAM_LETTER -> "Exam · A–FX"
-    CourseGradingType.CONTINUOUS_LETTER -> "Grade · A–FX"
-    CourseGradingType.PASS_FAIL -> "Credit"
+    CourseGradingType.EXAM_LETTER -> UiKey.TEXT_EXAM_A_FX
+    CourseGradingType.CONTINUOUS_LETTER -> UiKey.TEXT_GRADE_A_FX
+    CourseGradingType.PASS_FAIL -> UiKey.TEXT_CREDIT
 })

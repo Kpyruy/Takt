@@ -35,6 +35,7 @@ class HomeworkEditorUiTest {
         } }
         compose.onNodeWithText("Homework").assertExists()
         compose.onNodeWithTag("grade-details-trigger").assertExists()
+        compose.onNodeWithTag("task-maximum").assertDoesNotExist()
         compose.onNode(hasText("Description") and hasSetTextAction()).assertDoesNotExist()
         compose.onNodeWithTag("task-title").performTextInput("Practice set")
         click("grade-details-trigger")
@@ -59,9 +60,9 @@ class HomeworkEditorUiTest {
         compose.setContent { TaktI18n.use(AppLanguage.ENGLISH); MaterialTheme {
             AddTaskForm("course", initialTask = original, modifier = Modifier.verticalScroll(rememberScrollState()), onSave = { saved = it })
         } }
-        compose.onNodeWithTag("task-maximum").performTextReplacement("12")
         click("grade-details-trigger")
         click("grade-details-tab-RESULT")
+        compose.onNodeWithTag("task-maximum").performTextReplacement("12")
         compose.onNodeWithTag("task-earned").performTextReplacement("7")
         click("grade-details-done")
         assertNull(saved)

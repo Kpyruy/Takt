@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
@@ -37,7 +38,7 @@ internal class DeviceAuthenticator(private val activity: FragmentActivity) {
         pending = onResult
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             @Suppress("DEPRECATION")
-            val intent = keyguard.createConfirmDeviceCredentialIntent(title, t("Verify your identity for Takt"))
+            val intent = keyguard.createConfirmDeviceCredentialIntent(title, t(UiKey.TEXT_VERIFY_YOUR_IDENTITY_FOR_TAKT))
             if (intent == null) finish(DeviceAuthenticationResult.ERROR)
             else credentialLauncher.launch(intent)
             return
@@ -57,7 +58,7 @@ internal class DeviceAuthenticator(private val activity: FragmentActivity) {
             })
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
-            .setSubtitle(t("Fingerprint, face, or phone PIN"))
+            .setSubtitle(t(UiKey.TEXT_FINGERPRINT_FACE_OR_PHONE_PIN))
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL)
             .build()

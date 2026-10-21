@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -59,14 +60,14 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
         compose.onNodeWithTag("lesson-type-LAB").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t(LessonType.LAB.label))
-        compose.onNodeWithText(t("Save")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.ACTION_SAVE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(course.id, saved?.courseId)
             assertEquals(course.title, saved?.title)
             assertEquals(LessonType.LAB, saved?.lessonType)
         }
         compose.onNodeWithTag("course-link-trigger").performScrollTo().performClick()
-        compose.onNodeWithText(t("Without binding")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_WITHOUT_BINDING)).performClick()
         compose.onNodeWithTag("lesson-custom-title").assertTextContains("Kept custom draft")
     }
 
@@ -88,8 +89,8 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("lesson-repeat-ODD_WEEKS").assertIsSelected()
         compose.onNodeWithTag("lesson-repeat-once").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-once-date").assertExists()
-        compose.onNodeWithText(t("The recurring lesson will be replaced with a single lesson.")).assertDoesNotExist()
-        compose.onNodeWithText(t("Update")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_THE_RECURRING_LESSON_WILL_BE_REPLACED_WITH_A_SINGLE_LESSON)).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.ACTION_UPDATE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertTrue(recurring.isEmpty())
             assertEquals(initial.id, once.single().id)
@@ -100,7 +101,7 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("lesson-repeat-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-repeat-EVEN_WEEKS").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-once-date").assertDoesNotExist()
-        compose.onNodeWithText(t("Update")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.ACTION_UPDATE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(1, once.size)
             assertEquals(initial.id, recurring.single().id)
@@ -121,7 +122,10 @@ class ScopedEditorChoiceTest {
         }
         compose.onNodeWithTag("grade-explicit-date").assertDoesNotExist()
         compose.onNodeWithTag("grade-minimum").assertDoesNotExist()
+        openDetails()
+        tab("RESULT")
         compose.onNodeWithTag("grade-maximum").performTextReplacement("25")
+        doneDetails()
         compose.onNodeWithTag("grade-save").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(initial.copy(maxPoints = 25.0), saved) }
     }
@@ -139,11 +143,12 @@ class ScopedEditorChoiceTest {
         compose.onNodeWithTag("grade-type-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
         compose.onNodeWithTag("grade-type-LAB").performScrollTo().performClick()
-        compose.onNodeWithTag("grade-type-trigger").assertTextContains(t("Laboratory"))
+        compose.onNodeWithTag("grade-type-trigger").assertTextContains(t(UiKey.TEXT_LABORATORY))
         compose.onNodeWithTag("grade-type-trigger").performClick()
         compose.onNodeWithTag("grade-type-TEST").performScrollTo().performClick()
-        compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
         openDetails()
+        tab("RESULT")
+        compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
         tab("WHEN")
         compose.onNodeWithTag("grade-duration").performScrollTo().performTextReplacement("45")
         tab("RESULT")
@@ -157,7 +162,10 @@ class ScopedEditorChoiceTest {
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("grade-details").assertDoesNotExist()
         compose.onNodeWithTag("grade-explicit-date").assertDoesNotExist()
+        openDetails()
+        tab("RESULT")
         compose.onNodeWithTag("grade-maximum").assertTextContains("20")
+        doneDetails()
         compose.runOnIdle { assertNull(saved) }
         openDetails()
         tab("WHEN")
@@ -195,12 +203,13 @@ class ScopedEditorChoiceTest {
                 }
             }
         }
+        openDetails()
+        tab("RESULT")
         compose.onNodeWithTag("grade-maximum").assertHeightIsAtLeast(48.dp)
         assertTrue(compose.onNodeWithTag("grade-maximum").getUnclippedBoundsInRoot().run { bottom - top } <= 80.dp)
         compose.onNodeWithTag("grade-maximum").performScrollTo().performTextReplacement("20")
-        openDetails()
         tab("RULES")
-        compose.onNodeWithTag("grade-minimum").performScrollTo().assertTextContains(t("Minimum"))
+        compose.onNodeWithTag("grade-minimum").performScrollTo().assertTextContains(t(UiKey.TEXT_MINIMUM))
         assertTrue(compose.onNodeWithTag("grade-minimum").getUnclippedBoundsInRoot().run { bottom - top } <= 80.dp)
     }
 
@@ -212,8 +221,9 @@ class ScopedEditorChoiceTest {
                     modifier = Modifier.verticalScroll(rememberScrollState()), onSave = { saved = it })
             }
         }
-        compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
         openDetails()
+        tab("RESULT")
+        compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
         tab("RESULT")
         compose.onNodeWithTag("grade-result-AWAITING").performClick()
         compose.onNodeWithTag("grade-result-KNOWN").performClick()
@@ -261,7 +271,10 @@ class ScopedEditorChoiceTest {
                         modifier = Modifier.verticalScroll(rememberScrollState()), onSave = { saved = it })
                 }
             }
+            openDetails()
+            tab("RESULT")
             compose.onNodeWithTag("grade-maximum").performTextReplacement("20")
+            doneDetails()
             openDetails()
             tab("WHEN")
             compose.onNodeWithTag("grade-date-mode-SCHEDULE").performClick()
@@ -281,7 +294,7 @@ class ScopedEditorChoiceTest {
             compose.onNodeWithTag("grade-save").performScrollTo().performClick()
             compose.runOnIdle { assertNull(saved) }
             compose.onNodeWithTag("grade-details-tab-WHEN").assertIsSelected()
-            compose.onNodeWithTag("grade-details-error").assertTextContains(t("Choose a lesson this week or enter a date."))
+            compose.onNodeWithTag("grade-details-error").assertTextContains(t(UiKey.TEXT_CHOOSE_A_LESSON_THIS_WEEK_OR_ENTER_A_DATE))
             compose.onNodeWithTag("grade-week-lesson-trigger").performScrollTo().performClick()
             compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
             compose.onNodeWithTag(occurrenceTag).performScrollTo().performClick()
@@ -304,9 +317,16 @@ class ScopedEditorChoiceTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isNotEmpty() }
         compose.waitForIdle()
     }
-    private fun tab(name: String) = compose.onNodeWithTag("grade-details-tab-$name").performClick()
+    private var lastTabTap = 0L
+    private fun tab(name: String) {
+        compose.waitUntil(5_000) {
+            android.os.SystemClock.elapsedRealtime() - lastTabTap >= com.kpyruy.takt.core.ui.motion.TaktMotion.NavigationTapCooldownMs
+        }
+        compose.onNodeWithTag("grade-details-tab-$name").performClick().assertIsSelected()
+        lastTabTap = android.os.SystemClock.elapsedRealtime()
+    }
     private fun doneDetails() {
-        compose.onNodeWithTag("grade-details-done").performClick()
+        compose.onNodeWithTag("grade-details-done").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick) { assertTrue(it()) }
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("grade-details").fetchSemanticsNodes().isEmpty() }
         compose.waitForIdle()
     }

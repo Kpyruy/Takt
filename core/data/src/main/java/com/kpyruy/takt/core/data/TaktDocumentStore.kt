@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.data
 
+import com.kpyruy.takt.core.model.UiKey
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -50,20 +51,20 @@ class TaktDocumentStore(
                 treeUri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
             )
-            val selected = DocumentFile.fromTreeUri(context, treeUri) ?: error("Folder not found")
+            val selected = DocumentFile.fromTreeUri(context, treeUri) ?: error(UiKey.TEXT_FOLDER_NOT_FOUND)
             require(selected.name == "Documents" || selected.name == "Takt") {
-                "Choose the Documents or Documents/Takt folder"
+                UiKey.TEXT_CHOOSE_THE_DOCUMENTS_OR_DOCUMENTS_TAKT_FOLDER
             }
             val root = if (selected.name == "Takt") selected
                 else selected.findFile("Takt") ?: selected.createDirectory("Takt")
-            requireNotNull(root) { "Could not create Documents/Takt" }
-            require(root.isDirectory) { "Takt must be a folder" }
+            requireNotNull(root) { UiKey.TEXT_COULD_NOT_CREATE_DOCUMENTS_TAKT }
+            require(root.isDirectory) { UiKey.TEXT_TAKT_MUST_BE_A_FOLDER }
             preferences.edit().putString("tree_uri", treeUri.toString()).apply()
             val remote = readBestBackup(root)
             val local = backupRepository.exportJson()
             when {
                 remote == null -> {
-                    require(!hasBackupFile(root)) { "The data copy is damaged. The file was not overwritten." }
+                    require(!hasBackupFile(root)) { UiKey.TEXT_THE_DATA_COPY_IS_DAMAGED_THE_FILE_WAS_NOT_OVERWRITTEN }
                     writeBackup(root, local)
                 }
                 sameData(remote, local) -> {
@@ -113,7 +114,7 @@ class TaktDocumentStore(
 
     suspend fun restoreFromDocuments() = mutex.withLock {
         withContext(Dispatchers.IO) {
-            val remote = readBestBackup(requireRoot()) ?: error("There is no data in Documents/Takt")
+            val remote = readBestBackup(requireRoot()) ?: error(UiKey.TEXT_THERE_IS_NO_DATA_IN_DOCUMENTS_TAKT)
             backupRepository.importJson(remote)
             rememberHash(remote)
             if (migrateLegacyMaterials()) writeBackup(requireRoot(), backupRepository.exportJson())
@@ -124,7 +125,7 @@ class TaktDocumentStore(
     /** Read a stable candidate without changing local data or acknowledging a conflict. */
     suspend fun readBackupForReview(): String = mutex.withLock {
         withContext(Dispatchers.IO) {
-            readBestBackup(requireRoot()) ?: error("There is no data in Documents/Takt")
+            readBestBackup(requireRoot()) ?: error(UiKey.TEXT_THERE_IS_NO_DATA_IN_DOCUMENTS_TAKT)
         }
     }
 
@@ -134,9 +135,9 @@ class TaktDocumentStore(
         fromBackup: Set<BackupSection>,
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
-            val current = readBestBackup(requireRoot()) ?: error("There is no data in Documents/Takt")
+            val current = readBestBackup(requireRoot()) ?: error(UiKey.TEXT_THERE_IS_NO_DATA_IN_DOCUMENTS_TAKT)
             check(BackupPayloadCodec.decode(current) == BackupPayloadCodec.decode(reviewedRaw)) {
-                "The copy in Documents/Takt has changed. Review the differences again."
+                UiKey.TEXT_THE_COPY_IN_DOCUMENTS_TAKT_HAS_CHANGED_REVIEW_THE_DIFFERENCES_AGAIN
             }
             backupRepository.importSelectedJson(reviewedRaw, expectedLocalRaw, fromBackup)
             val merged = backupRepository.exportJson()
@@ -227,16 +228,16 @@ class TaktDocumentStore(
         val root = requireRoot()
         val folderName = safeCourseCode(courseCode)
         val folder = root.findFile(folderName) ?: root.createDirectory(folderName)
-            ?: error("Could not create the course folder")
+            ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_COURSE_FOLDER)
         val displayName = sourceName(source)
         val fileName = UUID.randomUUID().toString().take(8) + "-" + safeFileName(displayName)
         val mime = resolver.getType(source) ?: "application/octet-stream"
-        val target = folder.createFile(mime, fileName) ?: error("Could not create the file")
+        val target = folder.createFile(mime, fileName) ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_FILE)
         try {
             resolver.openInputStream(source).use { input ->
-                requireNotNull(input) { "Could not read the file" }
+                requireNotNull(input) { UiKey.TEXT_COULD_NOT_READ_THE_FILE }
                 resolver.openOutputStream(target.uri, "wt").use { output ->
-                    requireNotNull(output) { "Could not write the file" }
+                    requireNotNull(output) { UiKey.TEXT_COULD_NOT_WRITE_THE_FILE }
                     input.copyTo(output)
                 }
             }
@@ -252,8 +253,8 @@ class TaktDocumentStore(
         withContext(Dispatchers.IO) {
             val root = requireRoot()
             val code = CourseDocumentPaths.courseFolder(courseCode)
-            val folder = root.findFile(code) ?: root.createDirectory(code) ?: error("Could not create the course folder")
-            val target = folder.createFile(mime, CourseDocumentPaths.fileName(name)) ?: error("Could not create the file")
+            val folder = root.findFile(code) ?: root.createDirectory(code) ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_COURSE_FOLDER)
+            val target = folder.createFile(mime, CourseDocumentPaths.fileName(name)) ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_FILE)
             try {
                 source.inputStream().use { input -> resolver.openOutputStream(target.uri, "wt").use { output ->
                     copyCancellable(input, requireNotNull(output))
@@ -286,7 +287,7 @@ class TaktDocumentStore(
         return if (selected.name == "Takt") selected else selected.findFile("Takt") ?: selected.createDirectory("Takt")
     }
 
-    private fun requireRoot() = rootOrNull() ?: error("Connect Documents/Takt in settings first")
+    private fun requireRoot() = rootOrNull() ?: error(UiKey.TEXT_CONNECT_DOCUMENTS_TAKT_IN_SETTINGS_FIRST)
 
     private fun readBestBackup(root: DocumentFile): String? {
         for (name in listOf("data.json", "data.previous.json")) {
@@ -303,7 +304,7 @@ class TaktDocumentStore(
     private fun mainIsValid(root: DocumentFile): Boolean = root.findFile("data.json")?.let { main ->
         runCatching {
             resolver.openInputStream(main.uri)?.bufferedReader()?.use { BackupPayloadCodec.decode(it.readText()) }
-                ?: error("Could not read data.json")
+                ?: error(UiKey.TEXT_COULD_NOT_READ_DATA_JSON)
         }.isSuccess
     } ?: false
 
@@ -312,7 +313,7 @@ class TaktDocumentStore(
         val main = root.findFile("data.json")
         if (main != null && mainIsValid(root)) {
             val previous = root.findFile("data.previous.json") ?: root.createFile("application/json", "data.previous.json")
-                ?: error("Could not create a previous copy")
+                ?: error(UiKey.TEXT_COULD_NOT_CREATE_A_PREVIOUS_COPY)
             resolver.openInputStream(main.uri).use { input ->
                 resolver.openOutputStream(previous.uri, "wt").use { output ->
                     requireNotNull(input); requireNotNull(output)
@@ -320,11 +321,11 @@ class TaktDocumentStore(
                 }
             }
         }
-        val target = main ?: root.createFile("application/json", "data.json") ?: error("Could not create data.json")
+        val target = main ?: root.createFile("application/json", "data.json") ?: error(UiKey.TEXT_COULD_NOT_CREATE_DATA_JSON)
         resolver.openOutputStream(target.uri, "wt")?.bufferedWriter()?.use { it.write(raw) }
-            ?: error("Could not write data.json")
+            ?: error(UiKey.TEXT_COULD_NOT_WRITE_DATA_JSON)
         require(resolver.openInputStream(target.uri)?.bufferedReader()?.use { it.readText() } == raw) {
-            "Could not verify data.json after writing"
+            UiKey.TEXT_COULD_NOT_VERIFY_DATA_JSON_AFTER_WRITING
         }
         rememberHash(raw)
     }

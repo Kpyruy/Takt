@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +49,7 @@ internal fun CalendarAssessmentStrip(item: GradeItem, courseTitle: String, onCli
                 Text("${t(item.type.label)} · $courseTitle", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(if (item.completed) "${item.earnedPoints.pointLabel()}/${item.maxPoints.pointLabel()}" else t("up to ${item.maxPoints.pointLabel()} pts"),
+            Text(if (item.completed) "${item.earnedPoints.pointLabel()}/${item.maxPoints.pointLabel()}" else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, item.maxPoints.pointLabel())),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

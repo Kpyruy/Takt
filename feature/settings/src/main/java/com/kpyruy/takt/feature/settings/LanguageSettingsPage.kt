@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.BackHandler
@@ -48,26 +49,26 @@ internal fun LanguageSettingsPage(
         .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenHeader(
-            title = t("Language"),
+            title = t(UiKey.TEXT_LANGUAGE),
             navigation = {
-                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
+                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack)
             },
         )
-        Text(t("Application language"), style = MaterialTheme.typography.titleLarge)
+        Text(t(UiKey.TEXT_APPLICATION_LANGUAGE), style = MaterialTheme.typography.titleLarge)
         LanguageRadioGroup(
-            options = listOf(AppLanguage.UKRAINIAN to t("Ukrainian"), AppLanguage.ENGLISH to "English", AppLanguage.SLOVAK to "Slovenčina"),
+            options = listOf(AppLanguage.UKRAINIAN to t(UiKey.TEXT_UKRAINIAN), AppLanguage.ENGLISH to UiKey.TEXT_ENGLISH, AppLanguage.SLOVAK to UiKey.TEXT_SLOVEN_INA),
             selected = selected, tagPrefix = "language", onSelect = onSelected,
         )
-        Text(t("Course name language"), style = MaterialTheme.typography.titleLarge)
+        Text(t(UiKey.TEXT_COURSE_NAME_LANGUAGE), style = MaterialTheme.typography.titleLarge)
         LanguageRadioGroup(
-            options = listOf(CourseNameLanguage.FOLLOW_APP to t("Follow app language"), CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),
+            options = listOf(CourseNameLanguage.FOLLOW_APP to t(UiKey.TEXT_FOLLOW_APP_LANGUAGE), CourseNameLanguage.SLOVAK to UiKey.TEXT_SLOVEN_INA, CourseNameLanguage.ENGLISH to UiKey.TEXT_ENGLISH),
             selected = courseNameLanguage, tagPrefix = "course-name", onSelect = onCourseNameSelected,
         )
         if (selected == AppLanguage.UKRAINIAN && courseNameLanguage == CourseNameLanguage.FOLLOW_APP) {
-            Text(t("When the app is in Ukrainian"), style = MaterialTheme.typography.bodySmall,
+            Text(t(UiKey.TEXT_WHEN_THE_APP_IS_IN_UKRAINIAN), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             LanguageRadioGroup(
-                options = listOf(CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),
+                options = listOf(CourseNameLanguage.SLOVAK to UiKey.TEXT_SLOVEN_INA, CourseNameLanguage.ENGLISH to UiKey.TEXT_ENGLISH),
                 selected = ukrainianFallback, tagPrefix = "course-fallback", onSelect = onUkrainianFallbackSelected,
             )
         }
@@ -83,7 +84,7 @@ private fun <T : Enum<T>> LanguageRadioGroup(options: List<Pair<T, String>>, sel
                     .selectable(selected = value == selected, role = androidx.compose.ui.semantics.Role.RadioButton, onClick = { onSelect(value) })
                     .padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.material3.RadioButton(selected = value == selected, onClick = null)
-                    Text(label, Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
+                    Text(t(label), Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
                 }
                 if (index != options.lastIndex) androidx.compose.material3.HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f))

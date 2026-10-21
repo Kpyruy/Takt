@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.clickable
@@ -76,11 +77,11 @@ internal fun CourseOverviewTab(
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         course.officialGrade?.let { grade ->
             SectionCard {
-                Text(t("Official UIS grade"), style = MaterialTheme.typography.titleMedium)
+                Text(t(UiKey.TEXT_OFFICIAL_UIS_GRADE), style = MaterialTheme.typography.titleMedium)
                 Text(grade.name, style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary)
                 course.fulfilledOn?.let { date ->
-                    Text(t("Completion date") + ": " + date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                    Text(t(UiKey.TEXT_COMPLETION_DATE) + ": " + date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -89,19 +90,19 @@ internal fun CourseOverviewTab(
         if (course.gradingType != CourseGradingType.PASS_FAIL) {
             SubjectPanel {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OverviewMetric(t("Earned"), projection.securedPoints, projection.totalPoints, Modifier.weight(1f))
+                    OverviewMetric(t(UiKey.TEXT_EARNED), projection.securedPoints, projection.totalPoints, Modifier.weight(1f))
                     VerticalDivider(Modifier.height(74.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    OverviewMetric(t("Potential"), projection.maximumPossiblePoints, projection.totalPoints, Modifier.weight(1f))
+                    OverviewMetric(t(UiKey.TEXT_POTENTIAL), projection.maximumPossiblePoints, projection.totalPoints, Modifier.weight(1f))
                 }
-                currentGrade?.let { SmallText(t("Current grade") + ": " + it.name) }
+                currentGrade?.let { SmallText(t(UiKey.TEXT_CURRENT_GRADE) + ": " + it.name) }
             }
         }
         else if (course.passFailResult != null) SubjectPanel {
-            Text(t("Current result"), style = MaterialTheme.typography.titleMedium)
-            Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Passed"); PassFailResult.FAILED -> t("Failed"); null -> "" })
+            Text(t(UiKey.TEXT_CURRENT_RESULT), style = MaterialTheme.typography.titleMedium)
+            Text(when(course.passFailResult) { PassFailResult.PASSED -> t(UiKey.TEXT_PASSED); PassFailResult.FAILED -> t(UiKey.TEXT_FAILED); null -> "" })
         }
         if (hasExam || eligibility.requiredCount > 0) SubjectPanel {
-            Text(t("Exam eligibility"), style = MaterialTheme.typography.titleMedium)
+            Text(t(UiKey.TEXT_EXAM_ELIGIBILITY), style = MaterialTheme.typography.titleMedium)
             Text("${eligibility.completedCount}/${eligibility.requiredCount}", fontSize = 26.sp, fontWeight = FontWeight.Bold)
             LinearProgressIndicator(progress = { if (eligibility.requiredCount > 0) eligibility.completedCount.toFloat() / eligibility.requiredCount else 0f },
                 modifier = Modifier.fillMaxWidth().height(7.dp), gapSize = 0.dp, drawStopIndicator = {})
@@ -111,8 +112,8 @@ internal fun CourseOverviewTab(
                     Checkbox(task.completed, onCheckedChange = { onTaskCompleted(task, it) })
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(task.title, fontSize = 13.sp, lineHeight = 17.sp)
-                        SmallText(if (task.meetsAdmissionRequirement) t("Passed") else if (task.completed) t("Score threshold not met") else task.description?.takeIf { it.isNotBlank() } ?: t("Required for exam"))
-                        task.minimumPointsForExam?.let { SmallText(t("Minimum ") + it.displayNumber() + t(" pts")) }
+                        SmallText(if (task.meetsAdmissionRequirement) t(UiKey.TEXT_PASSED) else if (task.completed) t(UiKey.TEXT_SCORE_THRESHOLD_NOT_MET) else task.description?.takeIf { it.isNotBlank() } ?: t(UiKey.TEXT_REQUIRED_FOR_EXAM))
+                        task.minimumPointsForExam?.let { SmallText(t(UiKey.TEXT_MINIMUM_3E72FBEC) + it.displayNumber() + t(UiKey.TEXT_PTS_77846466)) }
                     }
                     task.dueDate?.let { SmallText(it.format(DateTimeFormatter.ofPattern("dd.MM"))) }
                 }
@@ -123,33 +124,33 @@ internal fun CourseOverviewTab(
                     Icon(if (grade.meetsAdmissionRequirement) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp)
-                        SmallText(if (grade.meetsAdmissionRequirement) t("Passed") else if (grade.completed) t("Score threshold not met") else if (grade.isAwaitingResult) t("Awaiting grade") else t("Add result"))
-                        grade.minimumPointsForExam?.let { SmallText(t("Minimum ") + it.displayNumber() + t(" pts")) }
+                        SmallText(if (grade.meetsAdmissionRequirement) t(UiKey.TEXT_PASSED) else if (grade.completed) t(UiKey.TEXT_SCORE_THRESHOLD_NOT_MET) else if (grade.isAwaitingResult) t(UiKey.TEXT_AWAITING_GRADE) else t(UiKey.TEXT_ADD_RESULT))
+                        grade.minimumPointsForExam?.let { SmallText(t(UiKey.TEXT_MINIMUM_3E72FBEC) + it.displayNumber() + t(UiKey.TEXT_PTS_77846466)) }
                     }
                 }
             }
-            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText(t("No required work marked"), Modifier.padding(vertical = 16.dp))
+            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText(t(UiKey.TEXT_NO_REQUIRED_WORK_MARKED), Modifier.padding(vertical = 16.dp))
         }
         nextLesson?.let { lesson ->
             SubjectPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.CalendarMonth, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        SmallText(t("Next class"))
+                        SmallText(t(UiKey.TEXT_NEXT_CLASS))
                         Text(lesson.date.format(DateTimeFormatter.ofPattern("EEEE, dd.MM", com.kpyruy.takt.core.ui.i18n.TaktI18n.locale)) +
                             " · ${lesson.startTime}–${lesson.endTime}", style = MaterialTheme.typography.titleSmall)
-                        SmallText(t(lesson.lessonType.label) + lesson.room?.let { " · " + t("room") + " $it" }.orEmpty())
+                        SmallText(t(lesson.lessonType.label) + lesson.room?.let { " · " + t(UiKey.TEXT_ROOM) + " $it" }.orEmpty())
                     }
                 }
             }
         }
         teachersContent()
-        if (hasExam) SubjectPanel { ResourceRow(t("Preparation for the exam"), t("Date and target grade"), onExam) }
+        if (hasExam) SubjectPanel { ResourceRow(t(UiKey.TEXT_PREPARATION_FOR_THE_EXAM), t(UiKey.TEXT_DATE_AND_TARGET_GRADE), onExam) }
         if (showFinalGrade && course.gradingType != CourseGradingType.PASS_FAIL && course.officialGrade == null) {
             ManualGradeSection(manualGrade, onManualGradeChange)
         }
         course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; SubjectPanel {
-            ResourceRow(t("Course syllabus"), course.code) { runCatching { uriHandler.openUri(url) } }
+            ResourceRow(t(UiKey.TEXT_COURSE_SYLLABUS), course.code) { runCatching { uriHandler.openUri(url) } }
         } }
         documentsContent()
         onSettings?.let { open ->
@@ -157,7 +158,7 @@ internal fun CourseOverviewTab(
                 Row(Modifier.fillMaxWidth().clickable(onClick = open).heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Settings, null)
-                    Text(t("Subject settings"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Text(t(UiKey.TEXT_SUBJECT_SETTINGS), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                     Icon(Icons.Default.ChevronRight, null)
                 }
             }

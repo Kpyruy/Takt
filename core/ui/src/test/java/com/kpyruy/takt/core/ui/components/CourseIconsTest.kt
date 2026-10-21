@@ -38,7 +38,7 @@ class CourseIconsTest {
         assertEquals(listOf("School", "MenuBook", "AutoStories"), options.take(3).map { it.key })
         assertEquals(listOf("StarOutline", "FavoriteBorder", "Diamond"), options.slice(107..109).map { it.key })
         assertEquals(
-            listOf("Study", "Science", "Technologies", "Engineering", "Economy", "Languages and creativity", "Sports and more"),
+            listOf(com.kpyruy.takt.core.model.UiKey.TEXT_STUDY, com.kpyruy.takt.core.model.UiKey.TEXT_SCIENCE, com.kpyruy.takt.core.model.UiKey.TEXT_TECHNOLOGIES, com.kpyruy.takt.core.model.UiKey.TEXT_ENGINEERING, com.kpyruy.takt.core.model.UiKey.TEXT_ECONOMY, com.kpyruy.takt.core.model.UiKey.TEXT_LANGUAGES_AND_CREATIVITY, com.kpyruy.takt.core.model.UiKey.TEXT_SPORTS_AND_MORE),
             options.map { it.category }.distinct(),
         )
         options.forEach { assertSame(it, CourseIcons.find(it.key)) }

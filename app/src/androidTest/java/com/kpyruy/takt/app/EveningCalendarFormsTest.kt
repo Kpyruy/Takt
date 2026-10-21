@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -133,7 +134,7 @@ class EveningCalendarFormsTest {
         compose.onNodeWithTag("lesson-repeat-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-repeat-once").performScrollTo().assertIsSelected().performClick()
         compose.onNodeWithTag("lesson-once-date").assertExists()
-        compose.onNodeWithText(t("Update")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.ACTION_UPDATE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(initial, saved)
             assertNull(savedRule)
@@ -199,7 +200,7 @@ class EveningCalendarFormsTest {
             compose.onNodeWithTag("grade-save").performScrollTo().performClick()
             compose.runOnIdle { assertNull("Two occurrences must not silently select the first lesson", saved) }
             compose.onNodeWithTag("grade-details-tab-WHEN").assertIsSelected()
-            compose.onNodeWithTag("grade-details-error").assertTextContains(t("Choose a lesson this week or enter a date."))
+            compose.onNodeWithTag("grade-details-error").assertTextContains(t(UiKey.TEXT_CHOOSE_A_LESSON_THIS_WEEK_OR_ENTER_A_DATE))
             compose.onNodeWithTag("grade-week-lesson-trigger").performScrollTo().performClick()
             compose.onNodeWithTag("grade-week-occurrence-seminar-${target.toEpochDay()}").performScrollTo().performClick()
             doneDetails()

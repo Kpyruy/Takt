@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import com.kpyruy.takt.core.ui.components.tourTarget
@@ -81,10 +83,10 @@ fun StudyPlanScreen(
     if (courses.isEmpty()) {
         Column(Modifier.fillMaxSize()
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            ScreenHeader(title = t("Your progress"))
-            Text(t(if (uisAccount) "Subjects are loaded from UIS." else "Add the first subject to see your progress."),
+            ScreenHeader(title = t(UiKey.TEXT_YOUR_PROGRESS))
+            Text(t(if (uisAccount) UiKey.TEXT_SUBJECTS_ARE_LOADED_FROM_UIS else UiKey.TEXT_ADD_THE_FIRST_SUBJECT_TO_SEE_YOUR_PROGRESS),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!uisAccount) Button(onClick = onAddCourse) { Text(t("Add course")) }
+            if (!uisAccount) Button(onClick = onAddCourse) { Text(t(UiKey.TEXT_ADD_COURSE)) }
         }
         return
     }
@@ -95,27 +97,27 @@ fun StudyPlanScreen(
     ) {
         item {
             ScreenHeader(
-                title = t("Your progress"),
-                subtitle = t("Study plan"),
+                title = t(UiKey.TEXT_YOUR_PROGRESS),
+                subtitle = t(UiKey.TEXT_STUDY_PLAN),
                 action = {
                     Box {
                         TaktIconButton(
                             icon = Icons.Default.MoreHoriz,
-                            contentDescription = t("Curriculum management"),
+                            contentDescription = t(UiKey.TEXT_CURRICULUM_MANAGEMENT),
                             onClick = { menuExpanded = true },
                             modifier = Modifier.testTag("progress-menu"),
                         )
                         TaktChoiceMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                             TaktChoiceMenuItem(
-                                text = { Text(t("Find a subject")) },
+                                text = { Text(t(UiKey.TEXT_FIND_A_SUBJECT)) },
                                 modifier = Modifier.testTag("progress-search-open"),
                                 onClick = { menuExpanded = false; searchOpen = true },
                             )
-                            TaktChoiceMenuItem(text = { Text(t("Expand the whole plan")) }, onClick = {
+                            TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_EXPAND_THE_WHOLE_PLAN)) }, onClick = {
                                 expandedSemesters = semesters.keys.toSet()
                                 menuExpanded = false
                             })
-                            TaktChoiceMenuItem(text = { Text(t("Collapse all semesters")) }, onClick = {
+                            TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_COLLAPSE_ALL_SEMESTERS)) }, onClick = {
                                 expandedSemesters = emptySet()
                                 menuExpanded = false
                             })
@@ -131,7 +133,7 @@ fun StudyPlanScreen(
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                                 Text(displayedEarned.toString(), style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.9).sp))
-                                Text(t(" / ${displayedTotal} credits"), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(t(uiMessage(UiKey.FORMAT_VALUE_CREDITS, displayedTotal)), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (!stackSemesterControl) CurrentSemesterControl(currentSemester) { selectingSemester = true }
                         }
@@ -143,13 +145,13 @@ fun StudyPlanScreen(
                             drawStopIndicator = {},
                             trackColor = MaterialTheme.colorScheme.outlineVariant,
                         )
-                        Text(t("${completedSemesters} of ${semesters.size} semesters completed"),
+                        Text(t(uiMessage(UiKey.FORMAT_VALUE_OF_VALUE_SEMESTERS_COMPLETED, completedSemesters, semesters.size)),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             Spacer(Modifier.height(16.dp))
-            TaktSegmentedTabs(listOf(t("Plan"), t("Active"), t("Completed")), filter, { filter = it },
+            TaktSegmentedTabs(listOf(t(UiKey.TEXT_PLAN), t(UiKey.TEXT_ACTIVE), t(UiKey.TEXT_COMPLETED)), filter, { filter = it },
                 railCornerRadius = 12.dp, modifier = Modifier.tourTarget("progress-tabs"))
             Spacer(Modifier.height(12.dp))
         }
@@ -163,7 +165,7 @@ fun StudyPlanScreen(
                 }
                 Spacer(Modifier.height(8.dp))
             }
-            if (filtered.isEmpty()) item { Text(if (filter == 1) t("There are no active subjects yet. Choose them in the plan.") else t("No completed subjects yet."), style = MaterialTheme.typography.bodySmall) }
+            if (filtered.isEmpty()) item { Text(if (filter == 1) t(UiKey.TEXT_THERE_ARE_NO_ACTIVE_SUBJECTS_YET_CHOOSE_THEM_IN_THE_PLAN) else t(UiKey.TEXT_NO_COMPLETED_SUBJECTS_YET), style = MaterialTheme.typography.bodySmall) }
         }
         if (filter == 0) semesters.forEach { (semester, semesterCourses) ->
             item(key = "semester-$semester") {
@@ -218,9 +220,9 @@ private fun CurrentSemesterControl(semester: Int?, onClick: () -> Unit) {
         Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Icon(Icons.Default.School, null, Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
-            Text(if (semester != null) t("Semester ${semester}") else t("Choose a semester"), style = MaterialTheme.typography.labelSmall,
+            Text(if (semester != null) t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, semester)) else t(UiKey.TEXT_CHOOSE_A_SEMESTER), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary)
-            Icon(Icons.Default.ExpandMore, t("Choose a semester"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.ExpandMore, t(UiKey.TEXT_CHOOSE_A_SEMESTER), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }

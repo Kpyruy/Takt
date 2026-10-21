@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.ui.i18n.t
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.data.PlannedReminder
 import com.kpyruy.takt.core.data.ReminderChannels
 import com.kpyruy.takt.core.data.ReminderNotificationText
@@ -10,9 +12,9 @@ import java.time.ZoneId
 
 internal object AppReminderTextProvider : ReminderTextProvider {
     override fun channelName(id: String, language: AppLanguage): String = NotificationTranslations.text(when (id) {
-        ReminderChannels.WORK -> "Academic work and tasks"
-        ReminderChannels.LESSON -> "Lessons"
-        else -> "Events and reminders"
+        ReminderChannels.WORK -> UiKey.TEXT_ACADEMIC_WORK_AND_TASKS
+        ReminderChannels.LESSON -> UiKey.TEXT_LESSONS
+        else -> UiKey.TEXT_EVENTS_AND_REMINDERS
     }, language)
 
     override fun notification(reminder: PlannedReminder, language: AppLanguage, zone: ZoneId) = ReminderNotificationText(

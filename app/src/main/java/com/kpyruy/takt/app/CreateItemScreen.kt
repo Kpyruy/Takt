@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.components.rememberSaveAction
 import com.kpyruy.takt.core.ui.components.SaveErrorDialog
@@ -88,31 +89,31 @@ fun CreateItemScreen(
     ) {
         ScreenHeader(
             title = t(when (type) {
-                CreateItemType.COURSE -> "Add course"
-                CreateItemType.CLASS -> "Add class"
-                CreateItemType.TASK -> "Add a task"
-                CreateItemType.TEST -> "Add test"
-                CreateItemType.EXAM -> "Add an exam"
-                CreateItemType.NOTE -> "Add a note"
-                CreateItemType.EVENT -> "Add event"
-                CreateItemType.REMINDER -> "Add reminder"
+                CreateItemType.COURSE -> UiKey.TEXT_ADD_COURSE
+                CreateItemType.CLASS -> UiKey.TEXT_ADD_CLASS
+                CreateItemType.TASK -> UiKey.WORK_ADD_TASK
+                CreateItemType.TEST -> UiKey.TEXT_ADD_TEST
+                CreateItemType.EXAM -> UiKey.TEXT_ADD_AN_EXAM
+                CreateItemType.NOTE -> UiKey.TEXT_ADD_A_NOTE
+                CreateItemType.EVENT -> UiKey.TEXT_ADD_EVENT
+                CreateItemType.REMINDER -> UiKey.TEXT_ADD_REMINDER
             }),
             subtitle = courses.firstOrNull { it.id == courseId }?.title,
             navigation = {
-                TaktIconButton(Icons.Default.ArrowBack, t("Back"), onBack)
+                TaktIconButton(Icons.Default.ArrowBack, t(UiKey.ACTION_BACK), onBack)
             },
         )
 
         if (type.requiresCourse && courseId == null) {
             SectionCard {
-                Text(t("First, choose a subject."), style = MaterialTheme.typography.titleMedium)
+                Text(t(UiKey.TEXT_FIRST_CHOOSE_A_SUBJECT), style = MaterialTheme.typography.titleMedium)
             }
             return@Column
         }
 
         when (type) {
             CreateItemType.COURSE -> if (uisAccount) {
-                Text(t("Subjects are added automatically from UIS."))
+                Text(t(UiKey.TEXT_SUBJECTS_ARE_ADDED_AUTOMATICALLY_FROM_UIS))
             } else AddCourseForm(studyPlanRepository, onSaved)
             CreateItemType.CLASS -> AddLessonForm(
                 courses = courses,
@@ -131,7 +132,7 @@ fun CreateItemScreen(
                         } catch (error: UserNotAuthenticatedException) {
                             val authenticate = authenticateDevice ?: throw error
                             val result = suspendCancellableCoroutine<DeviceAuthenticationResult> { continuation ->
-                                authenticate(t("Load lessons from UIS")) { value ->
+                                authenticate(t(UiKey.TEXT_LOAD_LESSONS_FROM_UIS)) { value ->
                                     if (continuation.isActive) continuation.resume(value)
                                 }
                             }

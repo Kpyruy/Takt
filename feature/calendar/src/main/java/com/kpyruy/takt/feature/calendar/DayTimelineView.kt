@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.i18n.formatDurationMinutes
 
@@ -105,7 +106,7 @@ fun DayTimelineView(
             placements.any { it.durationMinutes < 45 || it.laneCount > 2 }
         if (agenda) {
             Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-                Text(t("Events by time"), style = MaterialTheme.typography.labelMedium,
+                Text(t(UiKey.TEXT_EVENTS_BY_TIME), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ordered.forEach { event ->
                     TimelineEventBlock(event, cancellationStyle, hasTest(event), { onEventClick(event) },
@@ -161,7 +162,7 @@ fun DayTimelineView(
                 if (gap >= 35 && placements.all { it.laneCount == 1 }) {
                     val offset = Duration.between(rangeStart, current.endTime).toMinutes() + gap / 2
                     val currentOffset = Duration.between(rangeStart, now).toMinutes()
-                    if (selectedDate != today || kotlin.math.abs(currentOffset - offset) > 18) Text(t("Break") + " · " + formatDurationMinutes(gap),
+                    if (selectedDate != today || kotlin.math.abs(currentOffset - offset) > 18) Text(t(UiKey.TEXT_BREAK) + " · " + formatDurationMinutes(gap),
                         Modifier.offset(x = timelineLabelWidth + 13.dp, y = minutesToDp(offset) - 7.dp),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -212,10 +213,10 @@ private fun TimelineEventBlock(
     val subjectColor = taktSubjectColor(event.courseId ?: event.title)
     val accentColor = if (dimmed) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
     val cancelled = event.status == ScheduleEventStatus.CANCELLED
-    val status = if (event.isAbsent) t("Absent") else when (event.status) {
-        ScheduleEventStatus.CANCELLED -> t("Cancelled")
-        ScheduleEventStatus.MOVED -> t("Rescheduled")
-        ScheduleEventStatus.ONE_OFF -> t("One time event")
+    val status = if (event.isAbsent) t(UiKey.TEXT_ABSENT) else when (event.status) {
+        ScheduleEventStatus.CANCELLED -> t(UiKey.TEXT_CANCELLED)
+        ScheduleEventStatus.MOVED -> t(UiKey.TEXT_RESCHEDULED)
+        ScheduleEventStatus.ONE_OFF -> t(UiKey.TEXT_ONE_TIME_EVENT)
         ScheduleEventStatus.NORMAL -> null
     }
     val decoration = if (
@@ -223,7 +224,7 @@ private fun TimelineEventBlock(
     ) TextDecoration.LineThrough else null
 
     Surface(
-        modifier = modifier.alpha(if (dimmed || cancelled || event.isAbsent) 0.6f else 1f).semantics { contentDescription = "${event.title}, ${t(event.lessonType.label)}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", ${t("test")}" else ""}" }.lessonInteraction(onClick, onLongClick),
+        modifier = modifier.alpha(if (dimmed || cancelled || event.isAbsent) 0.6f else 1f).semantics { contentDescription = "${event.title}, ${t(event.lessonType.label)}, ${event.startTime}–${event.endTime}, ${event.room.orEmpty()}, ${status.orEmpty()}${if (hasTest) ", ${t(UiKey.TEXT_TEST)}" else ""}" }.lessonInteraction(onClick, onLongClick),
         shape = RoundedCornerShape(16.dp),
         color = if (dimmed) MaterialTheme.colorScheme.surfaceContainerLow
             else lerp(MaterialTheme.colorScheme.background, subjectColor, 0.13f),

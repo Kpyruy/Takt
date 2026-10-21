@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.kpyruy.takt.core.ui.components.LocalDateStateSaver
@@ -116,9 +118,9 @@ fun OneOffEventForm(
         if (showHeading) {
             Text(
                 when {
-                    initialEvent != null -> t("Edit the event")
-                    isReminder -> t("Reminder")
-                    else -> t("One time event")
+                    initialEvent != null -> t(UiKey.TEXT_EDIT_THE_EVENT)
+                    isReminder -> t(UiKey.TEXT_REMINDER)
+                    else -> t(UiKey.TEXT_ONE_TIME_EVENT)
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
@@ -134,7 +136,7 @@ fun OneOffEventForm(
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(if (isReminder) t("What to remind") else t("Name")) },
+            label = { Text(if (isReminder) t(UiKey.TEXT_WHAT_TO_REMIND) else t(UiKey.COMMON_NAME)) },
             modifier = Modifier.fillMaxWidth().testTag("oneoff-title"),
             singleLine = true,
         )
@@ -144,24 +146,24 @@ fun OneOffEventForm(
                 FilterChip(
                     selected = type == OneOffScheduleEventType.EXTRA,
                     onClick = { type = OneOffScheduleEventType.EXTRA },
-                    label = { Text(t("Extra class")) },
+                    label = { Text(t(UiKey.TEXT_EXTRA_CLASS)) },
                 )
                 FilterChip(
                     selected = type == OneOffScheduleEventType.BLOCK_ACTION,
                     onClick = { type = OneOffScheduleEventType.BLOCK_ACTION },
-                    label = { Text(t("Block action")) },
+                    label = { Text(t(UiKey.TEXT_BLOCK_ACTION)) },
                 )
             }
         } else if (isReminder) {
             Text(
-                t("Configure reminder notifications in Personalize → Notifications."),
+                t(UiKey.TEXT_CONFIGURE_REMINDER_NOTIFICATIONS_IN_PERSONALIZE_NOTIFICATIONS),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         TaktDatePickerField(
-            label = t("Date"),
+            label = t(UiKey.TEXT_DATE_99C40AB4),
             value = date,
             onValueChange = {
                 date = it
@@ -175,7 +177,7 @@ fun OneOffEventForm(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TaktTimePickerField(
-                label = t("Start time"),
+                label = t(UiKey.TEXT_START_TIME),
                 value = startTime,
                 onValueChange = {
                     startTime = it
@@ -185,7 +187,7 @@ fun OneOffEventForm(
                 modifier = Modifier.weight(1f),
             )
             TaktTimePickerField(
-                label = t("End"),
+                label = t(UiKey.TEXT_END),
                 value = endTime,
                 onValueChange = {
                     endTime = it
@@ -199,7 +201,7 @@ fun OneOffEventForm(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(if (lessonType == LessonType.EVENT) t("Place") else t("Room")) },
+                label = { Text(if (lessonType == LessonType.EVENT) t(UiKey.TEXT_PLACE) else t(UiKey.TEXT_ROOM_911EA89C)) },
                 modifier = Modifier.fillMaxWidth().testTag("oneoff-room"),
                 singleLine = true,
             )
@@ -207,7 +209,7 @@ fun OneOffEventForm(
 
         error?.let {
             Text(
-                it,
+                t(it),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -216,7 +218,7 @@ fun OneOffEventForm(
         Button(
             onClick = {
                 if (endTime <= startTime) {
-                    error = t("The end must be later than the beginning.")
+                    error = uiMessage(UiKey.TEXT_THE_END_MUST_BE_LATER_THAN_THE_BEGINNING)
                     return@Button
                 }
                 onSave(
@@ -236,7 +238,7 @@ fun OneOffEventForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth().testTag("oneoff-save"),
         ) {
-            Text(if (initialEvent == null) t("Add") else t("Update"))
+            Text(if (initialEvent == null) t(UiKey.TEXT_ADD) else t(UiKey.ACTION_UPDATE))
         }
     }
 }

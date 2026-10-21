@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.core.view.ViewCompat
@@ -28,7 +29,7 @@ class LiquidGlassInsetsTest {
     @Test fun saveActionCanBeReachedAboveKeyboard() {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-add").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("root-add").performClick()
-        compose.onNodeWithText(t("Subject")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_SUBJECT_68971283)).performClick()
         compose.onNodeWithTag("course-title").performClick().performTextInput("Keyboard review")
         compose.onNodeWithTag("save-course").performScrollTo().assertIsDisplayed()
         val view = compose.activity.window.decorView

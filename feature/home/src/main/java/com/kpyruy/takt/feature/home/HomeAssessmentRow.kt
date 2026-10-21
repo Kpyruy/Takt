@@ -1,7 +1,14 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,11 +21,6 @@ import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.Text
@@ -58,14 +60,14 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                 Text(item.title, style = MaterialTheme.typography.titleSmall)
                 Text(buildList {
                     add(courseCode)
-                    item.durationMinutes?.let { add(t("${it} min")) }
+                    item.durationMinutes?.let { add(t(uiMessage(UiKey.FORMAT_VALUE_MIN, it))) }
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (item.isAwaitingResult) Text(t("Awaiting grade"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (!item.contributesToGrade) Text(t("Excluded from the final grade"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!item.contributesToGrade) Text(t(UiKey.TEXT_EXCLUDED_FROM_THE_FINAL_GRADE), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (item.requiredForExam) {
-                    val threshold = item.minimumPointsForExam?.let { t(" · min. ${it.pointText()} pts") }.orEmpty()
-                    Text(t("Required for exam${threshold}"), style = MaterialTheme.typography.labelSmall,
+                    val threshold = item.minimumPointsForExam?.let { t(uiMessage(UiKey.FORMAT_MIN_VALUE_PTS, it.pointText())) }.orEmpty()
+                    Text(t(uiMessage(UiKey.FORMAT_REQUIRED_FOR_EXAMVALUE_BC3F4853, threshold)), style = MaterialTheme.typography.labelSmall,
                         color = if (item.completed && !item.meetsAdmissionRequirement) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -73,15 +75,15 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
-                        else t("up to ${item.maxPoints.pointText()} pts"),
+                        else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, item.maxPoints.pointText())),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 item.dueDate?.let { date ->
                     val today = LocalDate.now()
                     Text(when (date) {
-                        today -> t("Today")
-                        today.plusDays(1) -> t("Tomorrow")
+                        today -> t(UiKey.TEXT_TODAY)
+                        today.plusDays(1) -> t(UiKey.TEXT_TOMORROW_456A73BB)
                         else -> date.format(DateTimeFormatter.ofPattern("dd.MM"))
                     }, style = MaterialTheme.typography.labelSmall,
                         color = if (!item.isSubmitted && date <= today) MaterialTheme.colorScheme.error

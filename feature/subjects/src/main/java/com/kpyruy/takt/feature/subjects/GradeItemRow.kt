@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import androidx.compose.foundation.layout.Arrangement
@@ -81,11 +83,11 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                 }
                 Box {
                     IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(40.dp)) {
-                        Icon(Icons.Default.MoreVert, contentDescription = t("Assessment actions"))
+                        Icon(Icons.Default.MoreVert, contentDescription = t(UiKey.TEXT_ASSESSMENT_ACTIONS))
                     }
                     TaktChoiceMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        TaktChoiceMenuItem(text = { Text(t("Edit")) }, onClick = { menuOpen = false; onEdit() })
-                        TaktChoiceMenuItem(text = { Text(t("Delete")) }, onClick = { menuOpen = false; onDelete() })
+                        TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_EDIT)) }, onClick = { menuOpen = false; onEdit() })
+                        TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_DELETE)) }, onClick = { menuOpen = false; onDelete() })
                     }
                 }
             }
@@ -94,10 +96,10 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                 item.dueDate?.let {
                     AssessmentDetailChip(item.type.datePrefix() + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), Icons.Outlined.CalendarMonth)
                 }
-                item.durationMinutes?.let { AssessmentDetailChip(t("${it} min"), Icons.Outlined.Schedule) }
-                AssessmentDetailChip(if (item.contributesToGrade) t("Counts toward the final grade") else t("Excluded from the final grade"), Icons.Outlined.Description)
-                if (item.requiredForExam) AssessmentDetailChip(t("Required for exam"), Icons.Outlined.Lock)
-                item.minimumPointsForExam?.let { AssessmentDetailChip(t("Minimum ") + it.displayNumber() + t(" pts"), Icons.Outlined.BarChart) }
+                item.durationMinutes?.let { AssessmentDetailChip(t(uiMessage(UiKey.FORMAT_VALUE_MIN, it)), Icons.Outlined.Schedule) }
+                AssessmentDetailChip(if (item.contributesToGrade) t(UiKey.TEXT_COUNTS_TOWARD_THE_FINAL_GRADE) else t(UiKey.TEXT_EXCLUDED_FROM_THE_FINAL_GRADE), Icons.Outlined.Description)
+                if (item.requiredForExam) AssessmentDetailChip(t(UiKey.TEXT_REQUIRED_FOR_EXAM), Icons.Outlined.Lock)
+                item.minimumPointsForExam?.let { AssessmentDetailChip(t(UiKey.TEXT_MINIMUM_3E72FBEC) + it.displayNumber() + t(UiKey.TEXT_PTS_77846466), Icons.Outlined.BarChart) }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
@@ -105,16 +107,16 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                 Icon(if (item.completed) Icons.Outlined.CheckCircle else if (overdue) Icons.Outlined.ErrorOutline else Icons.Outlined.Schedule,
                     null, Modifier.size(18.dp), tint = if (overdue) MaterialTheme.colorScheme.error else accentText)
                 Text(when {
-                    item.isAwaitingResult -> t("Awaiting grade")
+                    item.isAwaitingResult -> t(UiKey.TEXT_AWAITING_GRADE)
                     overdue -> overdueLabel(item.dueDate!!, today)
-                    item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Threshold not met")
-                    item.completed -> t("Result recorded")
-                    else -> t("Pending")
+                    item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t(UiKey.TEXT_THRESHOLD_NOT_MET)
+                    item.completed -> t(UiKey.TEXT_RESULT_RECORDED)
+                    else -> t(UiKey.TEXT_PENDING)
                 }, modifier = Modifier.weight(1f).padding(start = 7.dp), style = MaterialTheme.typography.labelMedium,
                     color = if (overdue || (item.completed && item.requiredForExam && !item.meetsAdmissionRequirement))
                         MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t("pts")}"
-                        else "${t("Max.")} ${item.maxPoints.displayNumber()} ${t("pts")}",
+                Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t(UiKey.TEXT_PTS)}"
+                        else "${t(UiKey.TEXT_MAX)} ${item.maxPoints.displayNumber()} ${t(UiKey.TEXT_PTS)}",
                         style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -132,7 +134,7 @@ internal fun AssessmentDetailChip(label: String, icon: androidx.compose.ui.graph
 }
 
 internal fun GradeItemType.datePrefix(): String =
-    if (this == GradeItemType.TEST || this == GradeItemType.MIDTERM) t("On ") else t("Due ")
+    if (this == GradeItemType.TEST || this == GradeItemType.MIDTERM) t(UiKey.TEXT_ON) else t(UiKey.TEXT_DUE)
 
 internal fun Double.displayNumber(): String =
     if (this % 1.0 == 0.0) toInt().toString() else "%.1f".format(this)

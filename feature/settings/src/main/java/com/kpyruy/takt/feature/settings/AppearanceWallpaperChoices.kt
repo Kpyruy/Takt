@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -46,8 +47,8 @@ internal fun AppearanceWallpaperMenu(draft: AppSettings, appliedReference: Strin
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(Icons.Outlined.Wallpaper, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(t("Background"), style = MaterialTheme.typography.titleSmall)
-                Text(t(if (draft.customWallpaper == null) "Built-in background" else "Custom photo"),
+                Text(t(UiKey.TEXT_BACKGROUND), style = MaterialTheme.typography.titleSmall)
+                Text(t(if (draft.customWallpaper == null) UiKey.TEXT_BUILT_IN_BACKGROUND else UiKey.TEXT_CUSTOM_PHOTO),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Outlined.ChevronRight, null)
@@ -56,8 +57,8 @@ internal fun AppearanceWallpaperMenu(draft: AppSettings, appliedReference: Strin
     if (open) TaktFullSheet(onDismissRequest = { if (!importing) open = false }) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(.82f).testTag("appearance-wallpaper-menu")) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Background"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TaktIconButton(Icons.Outlined.Close, t("Close"), { if (!importing) open = false })
+                Text(t(UiKey.TEXT_BACKGROUND), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                TaktIconButton(Icons.Outlined.Close, t(UiKey.ACTION_CLOSE), { if (!importing) open = false })
             }
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
                 .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -68,7 +69,7 @@ internal fun AppearanceWallpaperMenu(draft: AppSettings, appliedReference: Strin
             }
             TaktPrimaryButton(onClick = { open = false }, enabled = !importing,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
-                    .testTag("appearance-wallpaper-done")) { Text(t("Done")) }
+                    .testTag("appearance-wallpaper-done")) { Text(t(UiKey.TEXT_DONE)) }
         }
     }
 }
@@ -103,23 +104,23 @@ internal fun AppearanceWallpaperChoices(draft: AppSettings, appliedReference: St
                 TaktGlassBackground(Modifier.matchParentSize()) {
                 GlassSurface(Modifier.fillMaxWidth().padding(22.dp), shape = MaterialTheme.shapes.medium) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(t("Your space"), style = MaterialTheme.typography.titleMedium)
-                        Text(t("Your day, your atmosphere"), style = MaterialTheme.typography.bodyMedium)
+                        Text(t(UiKey.TEXT_YOUR_SPACE), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_YOUR_DAY_YOUR_ATMOSPHERE), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 }
             }
         }
-        Text(t("The photo is saved on this device. Apply to use your changes."),
+        Text(t(UiKey.TEXT_THE_PHOTO_IS_SAVED_ON_THIS_DEVICE_APPLY_TO_USE_YOUR_CHANGES),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TaktPrimaryButton(onClick = { picker.launch(arrayOf("image/*")) }, enabled = !importing,
             modifier = Modifier.fillMaxWidth().testTag("appearance-wallpaper-choose")) {
-            Text(t(if (importing) "Preparing photo…" else "Choose your photo"))
+            Text(t(if (importing) UiKey.TEXT_PREPARING_PHOTO else UiKey.TEXT_CHOOSE_YOUR_PHOTO))
         }
         if (draft.customWallpaper != null) TextButton(
             onClick = { failed = false; onChange(currentDraft.copy(customWallpaper = null)) }, enabled = !importing,
-            modifier = Modifier.fillMaxWidth().testTag("appearance-wallpaper-reset")) { Text(t("Use built-in background")) }
-        if (failed) Text(t("Could not open this photo. Choose another image up to 24 MB and 64 MP."),
+            modifier = Modifier.fillMaxWidth().testTag("appearance-wallpaper-reset")) { Text(t(UiKey.TEXT_USE_BUILT_IN_BACKGROUND)) }
+        if (failed) Text(t(UiKey.TEXT_COULD_NOT_OPEN_THIS_PHOTO_CHOOSE_ANOTHER_IMAGE_UP_TO_24_MB_AND_64_MP),
             color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.testTag("appearance-wallpaper-error"))
     }

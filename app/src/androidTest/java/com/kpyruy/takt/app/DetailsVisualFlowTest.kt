@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import android.view.WindowInsets
 import androidx.compose.ui.test.*
@@ -38,13 +39,12 @@ class DetailsVisualFlowTest {
         compose.onNodeWithTag("global-add-TEST").performClick()
         compose.onAllNodes(hasText("Фізика") and hasClickAction()).onLast().performScrollTo().performClick()
         compose.onNodeWithTag("grade-title").performTextInput("Details flow review")
-        compose.onNodeWithTag("grade-maximum").performTextInput("20")
         hideKeyboard()
         val before = compose.onNodeWithTag("grade-save").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("grade-details-trigger").performClick()
         compose.onNodeWithTag("grade-details").assertIsDisplayed()
         assertEquals(before, compose.onNodeWithTag("grade-save").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText(t("Week 1 is the week containing the teaching start; weeks begin on Monday.")).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.TEXT_WEEK_1_IS_THE_WEEK_CONTAINING_THE_TEACHING_START_WEEKS_BEGIN_ON_MONDAY)).assertDoesNotExist()
         compose.onNodeWithTag("grade-explicit-date").assertIsDisplayed()
         compose.onNodeWithTag("grade-result-PLANNED").assertDoesNotExist()
         capture("when-date")
@@ -54,6 +54,7 @@ class DetailsVisualFlowTest {
         compose.onNodeWithTag("grade-week-4").performScrollTo().performClick()
         capture("when-timetable")
         compose.onNodeWithTag("grade-details-tab-RESULT").performClick()
+        compose.onNodeWithTag("grade-maximum").performTextInput("20")
         compose.onNodeWithTag("grade-result-KNOWN").performClick()
         compose.onNodeWithTag("grade-earned").performScrollTo().performTextReplacement("17")
         hideKeyboard()
@@ -87,7 +88,7 @@ class DetailsVisualFlowTest {
         compose.waitForIdle()
         root("Предмети")
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
-        compose.onNode(hasText(t("Tasks")) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_TASKS)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)).performClick()
         compose.onNodeWithTag("course-work-${saved.id}").performScrollTo().performClick()
         compose.onNodeWithTag("grade-details-trigger").performClick()
         compose.onNodeWithTag("grade-details-tab-RESULT").performClick()

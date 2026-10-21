@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
@@ -51,7 +52,7 @@ class EveningGlassReviewTest {
         assertTrue("Header must sample scrolled content, not a fixed rectangle", changes > 10)
         capture("subjects-scrolled")
         root("Прогрес")
-        compose.onNode(hasText(t("Completed")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_COMPLETED)) and hasClickAction()).performClick()
         capture("progress-completed")
         compose.onNodeWithTag("progress-menu").performClick()
         compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
@@ -60,25 +61,25 @@ class EveningGlassReviewTest {
         root("Календар")
         compose.onNodeWithTag("calendar-view-week").performClick()
         compose.onNodeWithTag("week-timetable").assertExists()
-        compose.onNodeWithText(t("Week shown as a list for readability.")).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.TEXT_WEEK_SHOWN_AS_A_LIST_FOR_READABILITY)).assertDoesNotExist()
         capture("week-timetable")
         compose.onNodeWithTag("calendar-view-week").performTouchInput { longClick() }
         compose.onNodeWithTag("takt-choice-menu").assertExists()
         capture("week-menu")
-        compose.onNodeWithText(t("List")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_LIST)).performClick()
         capture("week-list")
         root("Предмети")
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
-        compose.onNode(hasText(t("Exam")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_EXAM)) and hasClickAction()).performClick()
         compose.onNodeWithTag("exam-semester-metric").assertIsDisplayed()
         compose.onNodeWithTag("exam-available-metric").assertDoesNotExist()
         capture("exam-metrics")
     }
     @Test fun threeRolePickerUpdatesLiveCancelsAndPersistsThroughBackup() {
         start()
-        compose.onNodeWithContentDescription(t("Settings")).performClick()
-        compose.onNode(hasText(t("Appearance")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNodeWithContentDescription(t(UiKey.TEXT_SETTINGS)).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_APPEARANCE)) and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
         capture("palette-popup")
         compose.onNodeWithTag("theme-create").performScrollTo().performClick()
@@ -104,7 +105,7 @@ class EveningGlassReviewTest {
         compose.onNodeWithTag("theme-save").performClick()
         capture("custom-palette")
         compose.onNodeWithTag("palette-popup-apply").performClick()
-        compose.onNodeWithText(t("Apply appearance")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_APPLY_APPEARANCE)).performClick()
         compose.waitForIdle()
         val saved = runBlocking { data.settingsRepository.settings.first() }.selectedCustomTheme!!
         assertEquals("#B52D67", saved.primaryHex)
@@ -142,7 +143,7 @@ class EveningGlassReviewTest {
         val original = state.value
         try {
             state.value = DocumentSyncStatus.READY // UI-only fixture, no URI/permissions/SAF writes.
-            compose.onNodeWithContentDescription(t("Settings")).performClick()
+            compose.onNodeWithContentDescription(t(UiKey.TEXT_SETTINGS)).performClick()
             for (language in listOf(AppLanguage.UKRAINIAN, AppLanguage.ENGLISH, AppLanguage.SLOVAK)) {
                 runBlocking { data.settingsRepository.setLanguage(language) }
                 compose.waitForIdle()
@@ -160,9 +161,9 @@ class EveningGlassReviewTest {
                 compose.onNodeWithText(label).performScrollTo().assertExists()
                 capture("connected-${language.name.lowercase()}")
             }
-            compose.onNode(hasText(t("Automatic UIS updates")) and hasClickAction()).performScrollTo().performClick()
-            val apply = compose.onNodeWithText(t("Apply progress automatically")).fetchSemanticsNode().boundsInRoot
-            val progress = compose.onNodeWithText(t("Progress")).fetchSemanticsNode().boundsInRoot
+            compose.onNode(hasText(t(UiKey.TEXT_AUTOMATIC_UIS_UPDATES)) and hasClickAction()).performScrollTo().performClick()
+            val apply = compose.onNodeWithText(t(UiKey.TEXT_APPLY_PROGRESS_AUTOMATICALLY)).fetchSemanticsNode().boundsInRoot
+            val progress = compose.onNodeWithText(t(UiKey.TEXT_PROGRESS)).fetchSemanticsNode().boundsInRoot
             assertTrue(apply.top < progress.top)
             capture("uis-toggle-first")
         } finally { state.value = original }
@@ -173,15 +174,15 @@ class EveningGlassReviewTest {
         compose.onNodeWithTag("calendar-view-week").performClick()
         compose.onNodeWithTag("week-timetable-event-glass-lecture").performTouchInput { longClick() }
         capture("lesson-actions")
-        compose.onNodeWithText(t("Mark absent")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_MARK_ABSENT)).performClick()
         compose.waitUntil(5_000) { runBlocking { data.scheduleRepository.observeAbsences().first().any { it.eventId == "glass-lecture" } } }
         compose.onNodeWithTag("week-timetable-event-glass-lecture").performTouchInput { longClick() }
-        compose.onNodeWithText(t("Remove absence mark")).assertExists()
+        compose.onNodeWithText(t(UiKey.TEXT_REMOVE_ABSENCE_MARK)).assertExists()
         capture("lesson-absence-selected")
         back()
         root("Предмети")
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
-        compose.onNode(hasText(t("Tasks")) and androidx.compose.ui.test.SemanticsMatcher.expectValue(
+        compose.onNode(hasText(t(UiKey.TEXT_TASKS)) and androidx.compose.ui.test.SemanticsMatcher.expectValue(
             SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)).performClick()
         compose.onNodeWithTag("course-work-glass-gate").performScrollTo().performClick()
         compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()

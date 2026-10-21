@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -30,8 +31,8 @@ internal fun WorkDetailsButton(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Outlined.Tune, null)
             Column(Modifier.weight(1f)) {
-                Text(t("Details"), style = MaterialTheme.typography.titleSmall)
-                Text(t("Date, result and assessment rules"), style = MaterialTheme.typography.bodySmall,
+                Text(t(UiKey.WORK_DETAILS), style = MaterialTheme.typography.titleSmall)
+                Text(t(UiKey.TEXT_DATE_RESULT_AND_ASSESSMENT_RULES), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Outlined.ChevronRight, null)

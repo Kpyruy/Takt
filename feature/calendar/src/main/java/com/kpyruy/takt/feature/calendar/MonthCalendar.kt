@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.background
@@ -61,7 +62,7 @@ fun MonthCalendar(
             else MaterialTheme.typography.bodyMedium
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                listOf(t("Mon"), t("Tue"), t("Wed"), t("Thu"), t("Fri"), t("Sat"), t("Sun")).forEach { label ->
+                listOf(t(UiKey.TEXT_MON), t(UiKey.TEXT_TUE), t(UiKey.TEXT_WED), t(UiKey.TEXT_THU), t(UiKey.TEXT_FRI), t(UiKey.TEXT_SAT), t(UiKey.TEXT_SUN)).forEach { label ->
                     Text(
                         text = label,
                         modifier = Modifier.weight(1f),
@@ -95,9 +96,9 @@ fun MonthCalendar(
                                     selected = isSelected
                                     contentDescription = buildList {
                                         add(date.toString())
-                                        if (markers.lessons) add(t("classes"))
-                                        if (markers.work) add(t("tasks"))
-                                        if (markers.exams) add(t("exam"))
+                                        if (markers.lessons) add(t(UiKey.TEXT_CLASSES_7B3BB6B0))
+                                        if (markers.work) add(t(UiKey.TEXT_TASKS_08515408))
+                                        if (markers.exams) add(t(UiKey.TEXT_EXAM_5E89E9D8))
                                     }.joinToString(", ")
                                 }
                                 .clickable { onSelect(date) },
@@ -159,9 +160,9 @@ fun MonthCalendar(
             FlowRow(Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                MonthLegendItem(MaterialTheme.colorScheme.primary, t("Classes"))
-                MonthLegendItem(MaterialTheme.colorScheme.tertiary, t("Tasks"))
-                MonthLegendItem(MaterialTheme.colorScheme.error, t("Exams"))
+                MonthLegendItem(MaterialTheme.colorScheme.primary, t(UiKey.TEXT_CLASSES))
+                MonthLegendItem(MaterialTheme.colorScheme.tertiary, t(UiKey.TEXT_TASKS))
+                MonthLegendItem(MaterialTheme.colorScheme.error, t(UiKey.TEXT_EXAMS))
             }
         }
     }

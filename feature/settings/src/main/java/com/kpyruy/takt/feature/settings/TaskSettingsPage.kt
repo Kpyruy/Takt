@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.BackHandler
@@ -50,15 +51,15 @@ internal fun TaskSettingsPage(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = t("Tasks"),
-            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack) },
+            title = t(UiKey.TEXT_TASKS),
+            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack) },
         )
-        SettingsSectionTitle(t("Show tasks for"))
+        SettingsSectionTitle(t(UiKey.TEXT_SHOW_TASKS_FOR))
         val periods = listOf(
-            HomeWorkPeriod.SEVEN_DAYS to t("7 days"),
-            HomeWorkPeriod.FOURTEEN_DAYS to t("14 days"),
-            HomeWorkPeriod.ALL to t("All dates"),
-            HomeWorkPeriod.CUSTOM to t("Custom period"),
+            HomeWorkPeriod.SEVEN_DAYS to t(UiKey.TEXT_7_DAYS),
+            HomeWorkPeriod.FOURTEEN_DAYS to t(UiKey.TEXT_14_DAYS),
+            HomeWorkPeriod.ALL to t(UiKey.TEXT_ALL_DATES),
+            HomeWorkPeriod.CUSTOM to t(UiKey.TEXT_CUSTOM_PERIOD),
         )
         periods.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -82,19 +83,19 @@ internal fun TaskSettingsPage(
             }
         }
         if (filter.period == HomeWorkPeriod.CUSTOM) {
-            TaktDatePickerField(t("From"), filter.fromDate, { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
-            TaktDatePickerField(t("To"), filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
+            TaktDatePickerField(t(UiKey.TEXT_FROM_21819769), filter.fromDate, { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
+            TaktDatePickerField(t(UiKey.TEXT_TO_F4B06EF6), filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
         }
-        SettingsSectionTitle(t("What to include"))
-        TaskToggleCard(t("No date"), Icons.Outlined.EventNote, filter.includeUndated) {
+        SettingsSectionTitle(t(UiKey.TEXT_WHAT_TO_INCLUDE))
+        TaskToggleCard(t(UiKey.TEXT_NO_DATE), Icons.Outlined.EventNote, filter.includeUndated) {
             onChange(filter.copy(includeUndated = it))
         }
-        TaskToggleCard(t("Completed tasks"), Icons.Outlined.TaskAlt, filter.includeCompleted) {
+        TaskToggleCard(t(UiKey.TEXT_COMPLETED_TASKS), Icons.Outlined.TaskAlt, filter.includeCompleted) {
             onChange(filter.copy(includeCompleted = it))
         }
         if (filter != HomeWorkFilter()) {
             OutlinedButton(onClick = { onChange(HomeWorkFilter()) }, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Reset task filters"))
+                Text(t(UiKey.TEXT_RESET_TASK_FILTERS))
             }
         }
     }

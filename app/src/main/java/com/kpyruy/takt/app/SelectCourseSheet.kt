@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.CourseAvatar
@@ -50,13 +52,13 @@ fun SelectCourseSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                t("Choose a subject"),
+                t(UiKey.TEXT_CHOOSE_A_SUBJECT),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
             if (ordered.isEmpty()) {
                 Text(
-                    t("There are no active subjects. Mark the subject as active in \"Progress\"."),
+                    t(UiKey.TEXT_THERE_ARE_NO_ACTIVE_SUBJECTS_MARK_THE_SUBJECT_AS_ACTIVE_IN_PROGRESS),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -73,7 +75,7 @@ fun SelectCourseSheet(
                             Text(course.title, style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                t("${course.code} · ${course.credits} credits · semester ${course.semester}"),
+                                t(uiMessage(UiKey.FORMAT_VALUE_VALUE_CREDITS_SEMESTER_VALUE, course.code, course.credits, course.semester)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

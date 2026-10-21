@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -142,10 +143,10 @@ fun WeekTimetable(
                                 val muted = event.isVisuallyMuted(clock)
                                 val accentColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
                                 val status = when {
-                                    event.isAbsent -> t("Absent")
-                                    event.status == ScheduleEventStatus.CANCELLED -> t("Cancelled")
-                                    event.status == ScheduleEventStatus.MOVED -> t("Rescheduled")
-                                    event.status == ScheduleEventStatus.ONE_OFF -> t("One time event")
+                                    event.isAbsent -> t(UiKey.TEXT_ABSENT)
+                                    event.status == ScheduleEventStatus.CANCELLED -> t(UiKey.TEXT_CANCELLED)
+                                    event.status == ScheduleEventStatus.MOVED -> t(UiKey.TEXT_RESCHEDULED)
+                                    event.status == ScheduleEventStatus.ONE_OFF -> t(UiKey.TEXT_ONE_TIME_EVENT)
                                     else -> null
                                 }
                                 TaktSurface(
@@ -156,7 +157,7 @@ fun WeekTimetable(
                                         .semantics {
                                             contentDescription = listOfNotNull(event.title, t(event.lessonType.label),
                                                 "${event.startTime}–${event.endTime}", event.room, status,
-                                                if (hasTest(event)) t("test") else null).joinToString(", ")
+                                                if (hasTest(event)) t(UiKey.TEXT_TEST) else null).joinToString(", ")
                                         }
                                         .lessonInteraction({ onEventClick(event) }, { onEventLongClick(event) }),
                                     shape = MaterialTheme.shapes.small,

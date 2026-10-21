@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.*
@@ -101,19 +103,19 @@ internal fun HomeTasksSection(
 
     Column(Modifier.fillMaxWidth().testTag("home-tasks-section")) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Upcoming work"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            Text(t(UiKey.TEXT_UPCOMING_WORK), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             Text((overdue.size + upcoming.size).toString(), Modifier.testTag("home-tasks-count"),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = { showFilters = true }, modifier = Modifier.testTag("home-tasks-filter")) {
-                Icon(Icons.Outlined.Tune, t("Task filters"))
+                Icon(Icons.Outlined.Tune, t(UiKey.TEXT_TASK_FILTERS))
             }
         }
         if (filter.period != HomeWorkPeriod.FOURTEEN_DAYS || filter.selectedCourseIds.isNotEmpty()) Text(periodSummary(filter), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         if (overdue.isEmpty() && upcoming.isEmpty()) {
-            Text(t("There are no tasks for this filter"), style = MaterialTheme.typography.bodyMedium,
+            Text(t(UiKey.TEXT_THERE_ARE_NO_TASKS_FOR_THIS_FILTER), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             val renderEntry: @Composable (HomeWorkEntry) -> Unit = { entry ->
@@ -129,7 +131,7 @@ internal fun HomeTasksSection(
             }
             upcoming.forEach { renderEntry(it) }
             if (overdue.isNotEmpty()) {
-                Text(t("Overdue · ${overdue.size}"), style = MaterialTheme.typography.titleSmall,
+                Text(t(uiMessage(UiKey.FORMAT_OVERDUE_VALUE, overdue.size)), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("home-overdue-heading").padding(vertical = 6.dp))
                 overdue.forEach { renderEntry(it) }
             }
@@ -145,10 +147,10 @@ internal fun HomeTasksSection(
 }
 
 private fun periodSummary(filter: HomeWorkFilter): String = when (filter.period) {
-    HomeWorkPeriod.SEVEN_DAYS -> t("The next 7 days")
-    HomeWorkPeriod.FOURTEEN_DAYS -> t("The next 14 days")
-    HomeWorkPeriod.ALL -> t("All dates")
-    HomeWorkPeriod.CUSTOM -> t("Selected period")
+    HomeWorkPeriod.SEVEN_DAYS -> t(UiKey.TEXT_THE_NEXT_7_DAYS)
+    HomeWorkPeriod.FOURTEEN_DAYS -> t(UiKey.TEXT_THE_NEXT_14_DAYS)
+    HomeWorkPeriod.ALL -> t(UiKey.TEXT_ALL_DATES)
+    HomeWorkPeriod.CUSTOM -> t(UiKey.TEXT_SELECTED_PERIOD)
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -164,18 +166,18 @@ private fun HomeTaskFilterSheet(
             .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Task filters"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close filters")) }
+                Text(t(UiKey.TEXT_TASK_FILTERS), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t(UiKey.TEXT_CLOSE_FILTERS)) }
             }
             HomeFilterChoices(filter, courses, onChange)
             SectionCard {
-                Text(t("Show"), style = MaterialTheme.typography.titleSmall,
+                Text(t(UiKey.TEXT_SHOW), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(includeUndated = !filter.includeUndated)) },
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Event, null, Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary)
-                    Text(t("Show tasks without a date"), Modifier.weight(1f).padding(start = 12.dp))
+                    Text(t(UiKey.TEXT_SHOW_TASKS_WITHOUT_A_DATE), Modifier.weight(1f).padding(start = 12.dp))
                     Checkbox(filter.includeUndated, onCheckedChange = null)
                 }
                 HorizontalDivider()
@@ -183,11 +185,11 @@ private fun HomeTaskFilterSheet(
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.CheckCircle, null, Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary)
-                    Text(t("Show completed"), Modifier.weight(1f).padding(start = 12.dp))
+                    Text(t(UiKey.TEXT_SHOW_COMPLETED), Modifier.weight(1f).padding(start = 12.dp))
                     Checkbox(filter.includeCompleted, onCheckedChange = null)
                 }
             }
-            Button(onClick = onDismiss, Modifier.fillMaxWidth().testTag("home-filter-done")) { Text(t("Done")) }
+            Button(onClick = onDismiss, Modifier.fillMaxWidth().testTag("home-filter-done")) { Text(t(UiKey.TEXT_DONE)) }
         }
     }
 }

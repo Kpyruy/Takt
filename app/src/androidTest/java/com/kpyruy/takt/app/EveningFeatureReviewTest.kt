@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -36,7 +37,7 @@ class EveningFeatureReviewTest {
         compose.onNodeWithTag("subject-header-avatar").assertWidthIsAtLeast(androidx.compose.ui.unit.Dp(56f))
         capture("avatar-square")
         compose.onNodeWithTag("subject-header-avatar").performClick()
-        compose.onNodeWithText(t("Subject icon")).assertExists()
+        compose.onNodeWithText(t(UiKey.TEXT_SUBJECT_ICON)).assertExists()
         nativeBack()
         compose.onNodeWithTag("subject-header-back").performClick()
         compose.onNodeWithTag("root-add").performClick()
@@ -47,7 +48,7 @@ class EveningFeatureReviewTest {
         compose.onNodeWithTag("lesson-type-EVENT").assertIsSelected()
         capture("event-types")
         compose.onNodeWithTag("lesson-type-EVENT").performClick()
-        compose.onNodeWithText(t("Extra class")).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.TEXT_EXTRA_CLASS)).assertDoesNotExist()
         compose.onNodeWithTag("oneoff-room").performScrollTo().performTextInput("Шаховий клуб")
         hideKeyboard(); capture("event-form")
         compose.onNodeWithTag("oneoff-save").performScrollTo().performClick()
@@ -56,7 +57,7 @@ class EveningFeatureReviewTest {
         assertEquals(LessonType.EVENT, saved.lessonType); assertNull(saved.courseId)
         root("Предмети")
         compose.onNodeWithTag("subjects-settings").performClick()
-        compose.onNode(hasText(t("Notifications")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_NOTIFICATIONS)) and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithTag("reminder_global_switch").assertIsOff()
         compose.onNodeWithTag("reminder_request_notifications").assertDoesNotExist()
         capture("notifications-off")

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.rememberSaveAction
 import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 import com.kpyruy.takt.core.ui.components.tourTarget
@@ -150,14 +152,14 @@ fun SubjectDetailScreen(
     if (item == null) {
         Column(Modifier.fillMaxSize().padding(20.dp)) {
             ScreenHeader(
-                title = t("Subject"),
+                title = t(UiKey.TEXT_SUBJECT_68971283),
                 navigation = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = t("Back"))
+                        Icon(Icons.Default.ArrowBack, contentDescription = t(UiKey.ACTION_BACK))
                     }
                 },
             )
-            Text(t("Subject not found"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t(UiKey.TEXT_SUBJECT_NOT_FOUND), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -184,7 +186,7 @@ fun SubjectDetailScreen(
         Column(Modifier.fillMaxWidth().testTag("subject-header"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TaktIconButton(Icons.Default.ArrowBack, t("Back"), onClick = {
+                TaktIconButton(Icons.Default.ArrowBack, t(UiKey.ACTION_BACK), onClick = {
                     if (selectedTab == "exam") selectedTab = "overview" else onBack()
                 }, modifier = Modifier.testTag("subject-header-back"))
                 val avatarInteraction = remember { MutableInteractionSource() }
@@ -193,16 +195,16 @@ fun SubjectDetailScreen(
                     .clickable(interactionSource = avatarInteraction, indication = null, role = Role.Button,
                         onClick = { showIconPicker = true })
                     .testTag("subject-header-avatar").tourTarget("subject-icon").semantics {
-                        contentDescription = t("Change subject icon")
+                        contentDescription = t(UiKey.TEXT_CHANGE_SUBJECT_ICON)
                     }) { CourseAvatar(item, Modifier.fillMaxSize()) }
                 Text(item.title, Modifier.weight(1f).testTag("subject-header-title"),
                     fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
-                TaktIconButton(Icons.Default.MoreHoriz, t("Subject settings"),
+                TaktIconButton(Icons.Default.MoreHoriz, t(UiKey.TEXT_SUBJECT_SETTINGS),
                     onClick = { showSettings = true }, modifier = Modifier.testTag("subject-header-menu"))
             }
             // 48dp back control + 10dp gap: metadata starts at the avatar, below all controls.
-            Text(item.code + " · " + item.credits + t(" credits · ") + t("Semester ${item.semester}"),
+            Text(item.code + " · " + item.credits + t(UiKey.TEXT_CREDITS_91D86B47) + t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, item.semester)),
                 Modifier.fillMaxWidth().padding(start = 58.dp).testTag("subject-header-metadata"),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -390,8 +392,8 @@ fun SubjectDetailScreen(
 }
 
 private fun subjectTabLabel(tab: String): String = when (tab) {
-    "tasks" -> t("Tasks")
-    "exam" -> t("Exam")
-    "notes" -> t("Notes")
-    else -> t("Overview")
+    "tasks" -> t(UiKey.TEXT_TASKS)
+    "exam" -> t(UiKey.TEXT_EXAM)
+    "notes" -> t(UiKey.TEXT_NOTES)
+    else -> t(UiKey.TEXT_OVERVIEW)
 }

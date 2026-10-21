@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import com.kpyruy.takt.core.ui.components.TaktTourSemantics
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -26,8 +27,8 @@ class SlovakTourCorrectionsTest {
             data.settingsRepository.setThemeFamily(ThemeFamily.BLUE)
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
-        compose.onAllNodesWithContentDescription(t("Settings")).onFirst().performClick()
-        compose.onNodeWithText(t("Tour of Takt")).performScrollTo().performClick()
+        compose.onAllNodesWithContentDescription(t(UiKey.TEXT_SETTINGS)).onFirst().performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_TOUR_OF_TAKT)).performScrollTo().performClick()
     }
 
     private fun phase(value: String) = compose.waitUntil(8_000) {
@@ -60,8 +61,8 @@ class SlovakTourCorrectionsTest {
             if (step == GuidedTourStep.CALENDAR_LAYOUT) {
                 phase("MENU_OPEN")
                 compose.onNodeWithTag("takt-choice-menu").assertIsDisplayed()
-                compose.onNodeWithText(t("Schedule timetable")).assertIsDisplayed()
-                compose.onNodeWithText(t("List")).assertIsDisplayed()
+                compose.onNodeWithText(t(UiKey.TEXT_SCHEDULE_TIMETABLE)).assertIsDisplayed()
+                compose.onNodeWithText(t(UiKey.TEXT_LIST)).assertIsDisplayed()
                 capture("correction-sk-popup.png")
                 phase("LIST_SELECTED")
                 assertTrue(calendarState().endsWith(WeekLayout.COMPACT_LIST.name))

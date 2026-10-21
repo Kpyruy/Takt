@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.activity.compose.BackHandler
@@ -62,14 +63,14 @@ internal fun CalendarSettingsPage(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = t("Calendar and schedule"),
-            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack) },
+            title = t(UiKey.TEXT_CALENDAR_AND_SCHEDULE),
+            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack) },
         )
-        SettingsSectionTitle(t("Week view"))
+        SettingsSectionTitle(t(UiKey.TEXT_WEEK_VIEW))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf(
-                WeekLayout.TIMETABLE to t("Schedule timetable"),
-                WeekLayout.COMPACT_LIST to t("List"),
+                WeekLayout.TIMETABLE to t(UiKey.TEXT_SCHEDULE_TIMETABLE),
+                WeekLayout.COMPACT_LIST to t(UiKey.TEXT_LIST),
             ).forEach { (layout, label) ->
                 CalendarChoiceCard(
                     title = label,
@@ -81,34 +82,34 @@ internal fun CalendarSettingsPage(
                         Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("09:00", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             Box(Modifier.size(3.dp, 25.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
-                            Text(t("Lecture"), style = MaterialTheme.typography.labelSmall)
+                            Text(t(UiKey.TEXT_LECTURE), style = MaterialTheme.typography.labelSmall)
                         }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(t("Mon · 2 classes"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            Text(t("09:00 Lecture"), style = MaterialTheme.typography.labelSmall)
+                            Text(t(UiKey.TEXT_MON_2_CLASSES), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(t(UiKey.TEXT_09_00_LECTURE), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
             }
         }
-        SettingsSectionTitle(t("Canceled classes"))
+        SettingsSectionTitle(t(UiKey.TEXT_CANCELED_CLASSES))
         CalendarPopupChoice(
             selected = settings.cancellationStyle,
             options = listOf(
-                CancellationDisplayStyle.STRIKETHROUGH to t("Cross out"),
-                CancellationDisplayStyle.MARKED to t("To mark"),
-                CancellationDisplayStyle.HIDDEN to t("Hide"),
+                CancellationDisplayStyle.STRIKETHROUGH to t(UiKey.TEXT_CROSS_OUT),
+                CancellationDisplayStyle.MARKED to t(UiKey.TEXT_TO_MARK),
+                CancellationDisplayStyle.HIDDEN to t(UiKey.TEXT_HIDE),
             ),
             onSelected = onCancellationStyle,
         ) { style ->
             when (style) {
-                CancellationDisplayStyle.STRIKETHROUGH -> Text(t("09:00 Theory of law"),
+                CancellationDisplayStyle.STRIKETHROUGH -> Text(t(UiKey.TEXT_09_00_THEORY_OF_LAW),
                     textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                CancellationDisplayStyle.MARKED -> Text(t("09:00 Theory of law · Cancelled"),
+                CancellationDisplayStyle.MARKED -> Text(t(UiKey.TEXT_09_00_THEORY_OF_LAW_CANCELLED),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                CancellationDisplayStyle.HIDDEN -> Text(t("Canceled classes will disappear from the schedule"),
+                CancellationDisplayStyle.HIDDEN -> Text(t(UiKey.TEXT_CANCELED_CLASSES_WILL_DISAPPEAR_FROM_THE_SCHEDULE),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -116,16 +117,16 @@ internal fun CalendarSettingsPage(
         if (settings.cancellationStyle == CancellationDisplayStyle.HIDDEN) {
             SectionCard {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(t("Show hidden"), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Text(t(UiKey.TEXT_SHOW_HIDDEN), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     Switch(checked = settings.showHiddenLessons, onCheckedChange = onShowHiddenLessons)
                 }
             }
         }
-        SettingsSectionTitle(t("Week parity"))
+        SettingsSectionTitle(t(UiKey.TEXT_WEEK_PARITY))
         val parityOptions = listOf(
-            ParityOverride.AUTO to t("Automatically"),
-            ParityOverride.EVEN to t("Always even"),
-            ParityOverride.ODD to t("Always odd"),
+            ParityOverride.AUTO to t(UiKey.TEXT_AUTOMATICALLY),
+            ParityOverride.EVEN to t(UiKey.TEXT_ALWAYS_EVEN),
+            ParityOverride.ODD to t(UiKey.TEXT_ALWAYS_ODD),
         )
         CalendarPopupChoice(settings.parityOverride, parityOptions, onParityOverride)
     }

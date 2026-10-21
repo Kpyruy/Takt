@@ -1,5 +1,8 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.uiArg
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
@@ -121,7 +124,7 @@ fun SettingsScreen(
                 BackupPayloadCodec.decode(sourceRaw)
                 backupReview = BackupReviewState(localRaw, sourceRaw, BackupReviewSource.DOCUMENTS, initialSelection)
             }.onFailure {
-                backupMessage = t("Recovery Error: ${t(it.message.orEmpty())}")
+                backupMessage = uiMessage(UiKey.FORMAT_RECOVERY_ERROR_VALUE, uiArg(it.message.orEmpty()))
                 showPeriods = false
             }
         }
@@ -136,15 +139,14 @@ fun SettingsScreen(
                     val json = backupRepository.exportJson()
                     withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openOutputStream(uri)
-                            ?: error(t("Failed to open file"))
+                            ?: error(UiKey.TEXT_FAILED_TO_OPEN_FILE)
                         stream.bufferedWriter().use { it.write(json) }
                     }
                 }
                 backupMessage = if (result.isSuccess) {
-                    t("Backup saved.")
+                    uiMessage(UiKey.TEXT_BACKUP_SAVED)
                 } else {
-                    t("Export error: ") +
-                        (result.exceptionOrNull()?.message ?: t("unknown error"))
+                    uiMessage(UiKey.FORMAT_EXPORT_ERROR, uiArg(result.exceptionOrNull()?.message ?: UiKey.TEXT_UNKNOWN_ERROR))
                 }
             }
         }
@@ -158,7 +160,7 @@ fun SettingsScreen(
                 val result = runCatching {
                     val raw = withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openInputStream(uri)
-                            ?: error(t("Failed to open file"))
+                            ?: error(UiKey.TEXT_FAILED_TO_OPEN_FILE)
                         stream.bufferedReader().use { it.readText() }
                     }
                     BackupPayloadCodec.decode(raw)
@@ -168,8 +170,7 @@ fun SettingsScreen(
                 backupMessage = if (result.isSuccess) {
                     null
                 } else {
-                    t("Import error: ") +
-                        (result.exceptionOrNull()?.message ?: t("unknown error"))
+                    uiMessage(UiKey.FORMAT_IMPORT_ERROR, uiArg(result.exceptionOrNull()?.message ?: UiKey.TEXT_UNKNOWN_ERROR))
                 }
             }
         }
@@ -179,9 +180,9 @@ fun SettingsScreen(
         if (uri != null) scope.launch {
             val result = runCatching { documentStore.connect(uri) }
             backupMessage = when (result.getOrNull()) {
-                DocumentSyncStatus.READY -> t("Documents/Takt is connected. Data is synchronized automatically.")
-                DocumentSyncStatus.CONFLICT -> t("Different data found. Choose which version to keep.")
-                else -> t("Connection error: ${t(result.exceptionOrNull()?.message ?: "Unknown error")}")
+                DocumentSyncStatus.READY -> uiMessage(UiKey.TEXT_DOCUMENTS_TAKT_IS_CONNECTED_DATA_IS_SYNCHRONIZED_AUTOMATICALLY)
+                DocumentSyncStatus.CONFLICT -> uiMessage(UiKey.TEXT_DIFFERENT_DATA_FOUND_CHOOSE_WHICH_VERSION_TO_KEEP)
+                else -> uiMessage(UiKey.FORMAT_CONNECTION_ERROR_VALUE, uiArg(result.exceptionOrNull()?.message ?: UiKey.TEXT_UNKNOWN_ERROR))
             }
         }
     }
@@ -212,8 +213,8 @@ fun SettingsScreen(
             } else {
                 backupRepository.importSelectedJson(review.sourceRaw, review.localRaw, selected)
             }
-            backupMessage = if (documentStore.isConnected) t("Selected data applied and saved.")
-                else t("Selected data applied.")
+            backupMessage = if (documentStore.isConnected) uiMessage(UiKey.TEXT_SELECTED_DATA_APPLIED_AND_SAVED)
+                else uiMessage(UiKey.TEXT_SELECTED_DATA_APPLIED)
         })
         return
     }
@@ -292,36 +293,36 @@ fun SettingsScreen(
                 Box(Modifier.size(9.dp).background(
                     if (documentStatus == DocumentSyncStatus.READY) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.error, CircleShape))
-                Text("Documents/Takt", style = MaterialTheme.typography.titleMedium)
+                Text(t(UiKey.DOCUMENTS_FOLDER), style = MaterialTheme.typography.titleMedium)
             }
             Text(
                 when (documentStatus) {
-                    DocumentSyncStatus.READY -> t("Connected · synchronization is active")
-                    DocumentSyncStatus.CONFLICT -> t("The local data and the copy in Documents/Takt are different")
-                    DocumentSyncStatus.ERROR -> t("Synchronization error. Check folder access.")
-                    DocumentSyncStatus.DISCONNECTED -> t("Not connected")
+                    DocumentSyncStatus.READY -> t(UiKey.TEXT_CONNECTED_SYNCHRONIZATION_IS_ACTIVE)
+                    DocumentSyncStatus.CONFLICT -> t(UiKey.TEXT_THE_LOCAL_DATA_AND_THE_COPY_IN_DOCUMENTS_TAKT_ARE_DIFFERENT)
+                    DocumentSyncStatus.ERROR -> t(UiKey.TEXT_SYNCHRONIZATION_ERROR_CHECK_FOLDER_ACCESS)
+                    DocumentSyncStatus.DISCONNECTED -> t(UiKey.TEXT_NOT_CONNECTED)
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (unmigratedMaterials > 0) {
                 Text(
-                    t("Could not copy ${unmigratedMaterials} older materials. Add them again while the originals are available."),
+                    t(uiMessage(UiKey.FORMAT_COULD_NOT_COPY_VALUE_OLDER_MATERIALS_ADD_THEM_AGAIN_WHILE_THE_F1C08342, unmigratedMaterials)),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
             OutlinedButton(onClick = { folderLauncher.launch(android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents")) }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t("Connect Documents") else t("Change folder"))
+                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t(UiKey.TEXT_CONNECT_DOCUMENTS) else t(UiKey.TEXT_CHANGE_FOLDER))
             }
             if (documentStatus == DocumentSyncStatus.CONFLICT) {
                 Button(onClick = { reviewDocuments() }, modifier = Modifier.fillMaxWidth()) {
-                    Text(t("Review differences with Documents/Takt"))
+                    Text(t(UiKey.TEXT_REVIEW_DIFFERENCES_WITH_DOCUMENTS_TAKT))
                 }
                 OutlinedButton(onClick = {
                     scope.launch {
                         backupMessage = runCatching { documentStore.saveCurrentToDocuments() }
-                            .fold({ t("Current data is recorded in Documents/Takt.") }, { t("Save error: ${t(it.message.orEmpty())}") })
+                            .fold({ uiMessage(UiKey.TEXT_CURRENT_DATA_IS_RECORDED_IN_DOCUMENTS_TAKT) }, { uiMessage(UiKey.FORMAT_SAVE_ERROR_VALUE, uiArg(it.message.orEmpty())) })
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text(t("Replace the copy with phone data")) }
+                }, modifier = Modifier.fillMaxWidth()) { Text(t(UiKey.TEXT_REPLACE_THE_COPY_WITH_PHONE_DATA)) }
             }
         }
         SectionCard {
@@ -329,7 +330,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.Center) {
                 Icon(Icons.Outlined.CloudUpload, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Backup"), style = MaterialTheme.typography.titleLarge)
+                Text(t(UiKey.TEXT_BACKUP), style = MaterialTheme.typography.titleLarge)
             }
             Button(
                 onClick = {
@@ -339,7 +340,7 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Outlined.FileUpload, null)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Export JSON"), style = MaterialTheme.typography.titleMedium)
+                Text(t(UiKey.TEXT_EXPORT_JSON), style = MaterialTheme.typography.titleMedium)
             }
             OutlinedButton(
                 onClick = {
@@ -349,13 +350,14 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Outlined.Restore, null)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Restore from JSON"), style = MaterialTheme.typography.titleMedium)
+                Text(t(UiKey.TEXT_RESTORE_FROM_JSON), style = MaterialTheme.typography.titleMedium)
             }
-            backupMessage?.let { message ->
+            backupMessage?.let { reference ->
+                val message = t(reference)
                 Text(
                     message,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (message.startsWith(t("Error"))) {
+                    color = if (message.startsWith(t(UiKey.TEXT_ERROR))) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
@@ -375,78 +377,78 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ScreenHeader(
-            title = t("Settings"),
+            title = t(UiKey.TEXT_SETTINGS),
             navigation = {
-                TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Back"), onBack)
+                TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t(UiKey.ACTION_BACK), onBack)
             },
         )
 
-        SettingsGroup(t("Help")) {
-            SettingsNavigationTile(title = t("Tour of Takt"),
+        SettingsGroup(t(UiKey.TEXT_HELP)) {
+            SettingsNavigationTile(title = t(UiKey.TEXT_TOUR_OF_TAKT),
                 icon = Icons.Outlined.School, onClick = onStartTour)
         }
-        SettingsGroup(t("For yourself")) {
+        SettingsGroup(t(UiKey.TEXT_FOR_YOURSELF)) {
         SettingsNavigationTile(
-            title = t("Notifications"),
+            title = t(UiKey.TEXT_NOTIFICATIONS),
             icon = Icons.Outlined.Notifications,
             onClick = { showNotifications = true },
         )
         SettingsNavigationTile(
-            title = t("Appearance"),
+            title = t(UiKey.TEXT_APPEARANCE),
             icon = Icons.Outlined.Palette,
             onClick = { showAppearance = true },
         )
         SettingsNavigationTile(
-            title = t("Language"),
+            title = t(UiKey.TEXT_LANGUAGE),
             icon = Icons.Outlined.Language,
             onClick = { showLanguage = true },
         )
         SettingsNavigationTile(
-            title = t("Calendar and schedule"),
+            title = t(UiKey.TEXT_CALENDAR_AND_SCHEDULE),
             icon = Icons.Outlined.CalendarMonth,
             onClick = { showCalendar = true },
         )
         SettingsNavigationTile(
-            title = t("Study periods"),
+            title = t(UiKey.TEXT_STUDY_PERIODS),
             icon = Icons.Outlined.DateRange,
             onClick = { showPeriods = true },
         )
 
         SettingsNavigationTile(
-            title = t("Tasks"),
+            title = t(UiKey.TEXT_TASKS),
             icon = Icons.Outlined.Checklist,
             onClick = { showTasks = true },
         )
 
         }
-        SettingsGroup(t("Account")) {
+        SettingsGroup(t(UiKey.TEXT_ACCOUNT)) {
         SettingsNavigationTile(
-            title = t("University system"),
+            title = t(UiKey.TEXT_UNIVERSITY_SYSTEM),
             subtitle = when {
-                uisPreview != null -> t("UIS · changes to review")
-                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t("UIS · verification code needed")
+                uisPreview != null -> t(UiKey.TEXT_UIS_CHANGES_TO_REVIEW)
+                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t(UiKey.TEXT_UIS_VERIFICATION_CODE_NEEDED)
                 uisSession in setOf(com.kpyruy.takt.core.data.uis.UisResult.INVALID_CREDENTIALS,
                     com.kpyruy.takt.core.data.uis.UisResult.UNAVAILABLE,
-                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t("UIS · check failed")
-                uisImport.error != null -> t("UIS · check failed")
-                hasUniversityAccount -> t("UIS · credentials saved")
-                else -> t("Local mode")
+                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t(UiKey.TEXT_UIS_CHECK_FAILED)
+                uisImport.error != null -> t(UiKey.TEXT_UIS_CHECK_FAILED)
+                hasUniversityAccount -> t(UiKey.TEXT_UIS_CREDENTIALS_SAVED)
+                else -> t(UiKey.TEXT_LOCAL_MODE)
             },
             icon = Icons.Outlined.AccountCircle,
             onClick = { showUniversityAccount = true },
         )
         SettingsNavigationTile(
-            title = t("Automatic UIS updates"),
-            subtitle = t("Progress") + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
-                t("Timetable") + ": " + t(settings.uisAutoSync.timetable.label()),
+            title = t(UiKey.TEXT_AUTOMATIC_UIS_UPDATES),
+            subtitle = t(UiKey.TEXT_PROGRESS) + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
+                t(UiKey.TEXT_TIMETABLE) + ": " + t(settings.uisAutoSync.timetable.label()),
             icon = Icons.Outlined.DateRange,
             onClick = { showUisAutoSync = true },
         )
 
         }
-        SettingsSectionTitle(t("Assessment"))
+        SettingsSectionTitle(t(UiKey.TEXT_ASSESSMENT_7808EEEB))
         SectionCard {
-            Text(t("Standard scale"), style = MaterialTheme.typography.titleMedium)
+            Text(t(UiKey.TEXT_STANDARD_SCALE), style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
                     Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -456,23 +458,23 @@ fun SettingsScreen(
                     }
                 }
             }
-            Text(t("FX · below 56%"), style = MaterialTheme.typography.bodySmall,
+            Text(t(UiKey.FORMAT_FX_BELOW_56), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        SettingsGroup(t("App")) {
+        SettingsGroup(t(UiKey.TEXT_APP)) {
         SettingsNavigationTile(
-            title = t("App updates"),
-            subtitle = if (releaseState.availableUpdate != null) t("Update available") else "Takt " + releaseState.installedVersion,
+            title = t(UiKey.TEXT_APP_UPDATES),
+            subtitle = if (releaseState.availableUpdate != null) t(UiKey.TEXT_UPDATE_AVAILABLE) else "Takt " + releaseState.installedVersion,
             icon = Icons.Outlined.SystemUpdate,
             onClick = { showAppUpdates = true },
         )
 
         }
-        SettingsGroup(t("Data")) {
+        SettingsGroup(t(UiKey.TEXT_DATA)) {
             SettingsNavigationTile("Documents/Takt", Icons.Outlined.Folder,
                 onClick = { backupMessage = null; showDocuments = true },
-                subtitle = t(if (documentStatus == DocumentSyncStatus.READY) "Connected" else "Not connected"))
+                subtitle = t(if (documentStatus == DocumentSyncStatus.READY) UiKey.TEXT_CONNECTED else UiKey.TEXT_NOT_CONNECTED))
         }
     }
 }

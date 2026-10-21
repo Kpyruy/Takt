@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.*
@@ -24,10 +26,10 @@ internal fun CalendarDeadlineStrip(task: StudyTask, onCompletedChange: (Boolean)
         contentColor = ink) {
         Row(Modifier.fillMaxWidth().padding(start = 13.dp, end = 3.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-            Text(if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) t("threshold not met") else t("deadline"),
+            Text(if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) t(UiKey.TEXT_THRESHOLD_NOT_MET_A52E93D6) else t(UiKey.TEXT_DEADLINE),
                 style = MaterialTheme.typography.bodySmall)
             Checkbox(checked = task.completed, onCheckedChange = onCompletedChange,
-                modifier = Modifier.semantics { contentDescription = t("Complete: ${task.title}") })
+                modifier = Modifier.semantics { contentDescription = t(uiMessage(UiKey.FORMAT_COMPLETE_VALUE, task.title)) })
         }
     }
 }

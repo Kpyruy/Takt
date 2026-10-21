@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -91,8 +92,8 @@ class CourseNoteReaderTest {
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("note-reader").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("note-reader").assertDoesNotExist()
-        compose.onNodeWithContentDescription(t("Note actions")).performClick()
-        compose.onNodeWithText(t("Edit")).performClick()
+        compose.onNodeWithContentDescription(t(UiKey.TEXT_NOTE_ACTIONS)).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_EDIT)).performClick()
         compose.onNodeWithTag("note-reader").assertDoesNotExist()
         compose.runOnIdle { assertEquals(1, edits); assertEquals(0, deletes) }
     }
@@ -101,7 +102,7 @@ class CourseNoteReaderTest {
         fixture()
         compose.onNodeWithTag("note-preview-${note.id}").performClick()
         compose.onNodeWithTag("note-reader-actions").performClick()
-        compose.onNodeWithText(t("Edit")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_EDIT)).performClick()
         compose.onNodeWithTag("note-reader").assertDoesNotExist()
         compose.runOnIdle { assertEquals(1, edits); assertEquals(0, deletes) }
     }

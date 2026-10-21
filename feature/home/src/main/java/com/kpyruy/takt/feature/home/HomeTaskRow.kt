@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.animation.animateContentSize
@@ -36,8 +38,8 @@ import java.time.format.DateTimeFormatter
 fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolean) -> Unit) {
     val today = LocalDate.now()
     val due = task.dueDate?.let { when (it) {
-        today -> t("Today")
-        today.plusDays(1) -> t("Tomorrow")
+        today -> t(UiKey.TEXT_TODAY)
+        today.plusDays(1) -> t(UiKey.TEXT_TOMORROW_456A73BB)
         else -> it.format(DateTimeFormatter.ofPattern("dd.MM"))
     } }
     val overdue = !task.completed && task.dueDate?.isBefore(today) == true
@@ -57,13 +59,13 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null)
                 Text(listOfNotNull(courseTitle, due).joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (task.requiredForExam) Text(t("Required for exam") + task.minimumPointsForExam?.let { t(" · min. ${it.pointText()} pts") }.orEmpty(),
+                if (task.requiredForExam) Text(t(UiKey.TEXT_REQUIRED_FOR_EXAM) + task.minimumPointsForExam?.let { t(uiMessage(UiKey.FORMAT_MIN_VALUE_PTS, it.pointText())) }.orEmpty(),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement)
-                    Text(t("Threshold for admission not met"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    Text(t(UiKey.TEXT_THRESHOLD_FOR_ADMISSION_NOT_MET), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
             }
             task.maxPoints?.let { maximum ->
-                Text(if (task.earnedPoints != null) t("${task.earnedPoints?.pointText()} / ${maximum.pointText()} pts") else t("up to ${maximum.pointText()} pts"),
+                Text(if (task.earnedPoints != null) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_PTS, task.earnedPoints?.pointText(), maximum.pointText())) else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, maximum.pointText())),
                     Modifier.glassSurface(tint = MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }

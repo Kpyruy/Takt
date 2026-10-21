@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -67,27 +68,27 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
             Surface(shadowElevation = 10.dp) {
                 Button(onClick = { onApply(draft.normalizedAppearance()) }, enabled = changed && !importingWallpaper,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp)) {
-                    Text(if (changed) t("Apply appearance") else t("Appearance applied"))
+                    Text(if (changed) t(UiKey.TEXT_APPLY_APPEARANCE) else t(UiKey.TEXT_APPEARANCE_APPLIED))
                 }
             }
         },
     ) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            ScreenHeader(title = t("Your appearance"), navigation = {
-                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
+            ScreenHeader(title = t(UiKey.TEXT_YOUR_APPEARANCE), navigation = {
+                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack)
             })
-            SettingsSectionTitle(t("Lighting"))
+            SettingsSectionTitle(t(UiKey.TEXT_LIGHTING))
             AppearanceLightingChoices(draft, { draft = it })
-            SettingsSectionTitle(t("Palette"))
+            SettingsSectionTitle(t(UiKey.TEXT_PALETTE))
             AppearanceThemeChoices(draft, { draft = it })
             AppearanceWallpaperMenu(draft, settings.customWallpaper, { draft = it; wallpaperDraft = it.customWallpaper }, { importingWallpaper = it })
-            SettingsSectionTitle(t("Card style"))
+            SettingsSectionTitle(t(UiKey.TEXT_CARD_STYLE))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
-                    Triple(CardAppearance.ELEVATED, t("Elevated"), t("Solid background and soft shadow")),
-                    Triple(CardAppearance.TONAL_FILLED, t("Filled"), t("Tinted background without shadow")),
-                    Triple(CardAppearance.GLASS, t("Glass"), t("Translucent cards with a highlight")),
+                    Triple(CardAppearance.ELEVATED, t(UiKey.TEXT_ELEVATED), t(UiKey.TEXT_SOLID_BACKGROUND_AND_SOFT_SHADOW)),
+                    Triple(CardAppearance.TONAL_FILLED, t(UiKey.TEXT_FILLED), t(UiKey.TEXT_TINTED_BACKGROUND_WITHOUT_SHADOW)),
+                    Triple(CardAppearance.GLASS, t(UiKey.TEXT_GLASS), t(UiKey.TEXT_TRANSLUCENT_CARDS_WITH_A_HIGHLIGHT)),
                 ).forEach { (appearance, label, description) ->
                     CardStyleOption(draft, appearance, label, description) { draft = draft.copy(cardAppearance = appearance) }
                 }
@@ -101,9 +102,9 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
 fun AppearanceLightingChoices(settings: AppSettings, onChange: (AppSettings) -> Unit, tagPrefix: String = "appearance-theme") {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            Triple(AppThemeMode.SYSTEM, t("System"), Icons.Outlined.BrightnessAuto),
-            Triple(AppThemeMode.LIGHT, t("Light"), Icons.Outlined.LightMode),
-            Triple(AppThemeMode.DARK, t("Dark"), Icons.Outlined.DarkMode),
+            Triple(AppThemeMode.SYSTEM, t(UiKey.TEXT_SYSTEM), Icons.Outlined.BrightnessAuto),
+            Triple(AppThemeMode.LIGHT, t(UiKey.TEXT_LIGHT), Icons.Outlined.LightMode),
+            Triple(AppThemeMode.DARK, t(UiKey.TEXT_DARK), Icons.Outlined.DarkMode),
         ).forEach { (mode, label, icon) ->
             LightingOption(label, icon, settings.themeMode == mode,
                 Modifier.weight(1f).testTag("$tagPrefix-${mode.name}")) { onChange(settings.copy(themeMode = mode)) }

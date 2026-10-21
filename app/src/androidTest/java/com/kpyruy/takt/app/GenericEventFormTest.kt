@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -86,13 +87,13 @@ class GenericEventFormTest {
                     onBack = {}, onSaved = { saves++ })
             }
         }
-        compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t("Event"))
-        compose.onNodeWithText(t("Extra class")).assertDoesNotExist()
-        compose.onNodeWithText(t("Block action")).assertDoesNotExist()
+        compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t(UiKey.TEXT_EVENT))
+        compose.onNodeWithText(t(UiKey.TEXT_EXTRA_CLASS)).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.TEXT_BLOCK_ACTION)).assertDoesNotExist()
         select("LAB")
-        compose.onNodeWithText(t("Extra class")).assertExists()
+        compose.onNodeWithText(t(UiKey.TEXT_EXTRA_CLASS)).assertExists()
         select("EVENT")
-        compose.onNodeWithText(t("Extra class")).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.TEXT_EXTRA_CLASS)).assertDoesNotExist()
         compose.onNodeWithTag("oneoff-title").assertTextContains("Chess tournament")
         compose.onNodeWithTag("oneoff-save").performScrollTo().performClick()
         compose.waitUntil(5_000) { saves == 1 }
@@ -119,7 +120,7 @@ class GenericEventFormTest {
                     modifier = Modifier.verticalScroll(rememberScrollState()), onSave = { saved = it })
             }
         }
-        compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t("Event"))
+        compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t(UiKey.TEXT_EVENT))
         compose.onNodeWithTag("oneoff-title").performTextReplacement("Updated tournament")
         select("EVENT")
         compose.onNodeWithTag("oneoff-save").performScrollTo().performClick()
@@ -143,10 +144,10 @@ class GenericEventFormTest {
                     onSaveOneOff = { once.add(it) }, onSave = { recurring.add(it) })
             }
         }
-        compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t("Unspecified"))
+        compose.onNodeWithTag("lesson-type-trigger").assertTextContains(t(UiKey.TEXT_UNSPECIFIED))
         select("EVENT")
         compose.onNodeWithTag("lesson-custom-title").assertTextContains("Chess club")
-        compose.onNodeWithText(t("Save")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.ACTION_SAVE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertTrue(recurring.isEmpty())
             assertEquals(date, once.single().date)
@@ -156,7 +157,7 @@ class GenericEventFormTest {
         }
         compose.onNodeWithTag("lesson-repeat-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("lesson-repeat-WEEKLY").performScrollTo().performClick()
-        compose.onNodeWithText(t("Save")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.ACTION_SAVE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(1, once.size)
             assertEquals(ScheduleRecurrence.WEEKLY, recurring.single().recurrence)
@@ -174,16 +175,16 @@ class GenericEventFormTest {
                     onSaveLesson = { saved = it }, onSaveNote = {}, onOpenFull = { draft = it })
             }
         }
-        compose.onNodeWithText(t("Class")).performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_CLASS)).performClick()
         select("EVENT")
-        compose.onNode(hasSetTextAction() and hasText(t("Name"))).performTextReplacement("Chess club")
-        compose.onNodeWithText(t("Save")).performScrollTo().performClick()
+        compose.onNode(hasSetTextAction() and hasText(t(UiKey.COMMON_NAME))).performTextReplacement("Chess club")
+        compose.onNodeWithText(t(UiKey.ACTION_SAVE)).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(LessonType.EVENT, saved?.lessonType)
             assertNull(saved?.courseId)
             assertEquals("Chess club", saved?.title)
         }
-        compose.onNodeWithText(t("More options")).performScrollTo().performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_MORE_OPTIONS)).performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(LessonType.EVENT, draft?.lessonType)
             assertEquals("Chess club", draft?.title)
@@ -201,7 +202,7 @@ class GenericEventFormTest {
             }
         }
         compose.onNodeWithTag("lesson-type-trigger").assertDoesNotExist()
-        compose.onNodeWithText(t("Configure reminder notifications in Personalize → Notifications.")).assertExists()
+        compose.onNodeWithText(t(UiKey.TEXT_CONFIGURE_REMINDER_NOTIFICATIONS_IN_PERSONALIZE_NOTIFICATIONS)).assertExists()
         compose.onNodeWithTag("oneoff-save").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(OneOffScheduleEventType.REMINDER, saved?.type)
@@ -221,10 +222,10 @@ class GenericEventFormTest {
         }
         compose.onNodeWithTag("oneoff-title").performTextReplacement("Kept draft")
         select("EVENT")
-        compose.onNodeWithText(t("Block action")).assertDoesNotExist()
+        compose.onNodeWithText(t(UiKey.TEXT_BLOCK_ACTION)).assertDoesNotExist()
         compose.onNodeWithTag("oneoff-room").performScrollTo().assertTextContains("207")
         select("LAB")
-        compose.onNodeWithText(t("Block action")).assertIsSelected()
+        compose.onNodeWithText(t(UiKey.TEXT_BLOCK_ACTION)).assertIsSelected()
         compose.onNodeWithTag("oneoff-save").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(initial.copy(title = "Kept draft"), saved) }
     }
@@ -239,7 +240,7 @@ class GenericEventFormTest {
             }
         }
         compose.onNodeWithTag("oneoff-save").performScrollTo().performClick()
-        compose.onNodeWithText(t("The end must be later than the beginning.")).assertExists()
+        compose.onNodeWithText(t(UiKey.TEXT_THE_END_MUST_BE_LATER_THAN_THE_BEGINNING)).assertExists()
         compose.runOnIdle { assertNull(saved) }
     }
 
@@ -256,7 +257,7 @@ class GenericEventFormTest {
         }
         compose.onNodeWithTag("first-type-trigger").performClick()
         compose.onNodeWithTag("first-type-EVENT").performScrollTo().performClick()
-        compose.onNodeWithTag("first-type-trigger").assertTextContains(t("Event"))
+        compose.onNodeWithTag("first-type-trigger").assertTextContains(t(UiKey.TEXT_EVENT))
         compose.onNodeWithTag("second-type-trigger").assertTextContains(t(LessonType.LAB.label))
         compose.runOnIdle { assertEquals(LessonType.LAB, second) }
     }
@@ -279,7 +280,7 @@ class GenericEventFormTest {
         }
         val avatar = compose.onNodeWithTag("subject-header-avatar")
             .assertWidthIsEqualTo(56.dp).assertHeightIsEqualTo(56.dp)
-            .assert(hasContentDescription(t("Change subject icon"))).assertHasClickAction()
+            .assert(hasContentDescription(t(UiKey.TEXT_CHANGE_SUBJECT_ICON))).assertHasClickAction()
         val pixels = avatar.captureToImage().toPixelMap()
         // 6dp,6dp lies inside the 13dp rounded square, outside a 56dp circle.
         val inset = (pixels.width * 6f / 56f).toInt()

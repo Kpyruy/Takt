@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.runtime.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -50,9 +51,9 @@ fun rememberSaveAction(): SaveAction {
 fun SaveErrorDialog(action: SaveAction) {
     if (action.failed) AlertDialog(onDismissRequest = action::dismissError,
         modifier = Modifier.testTag("save-error-dialog"),
-        title = { Text(t("Could not save changes")) },
-        text = { Text(t("Your changes are still in the form. Check available storage and try saving again.")) },
+        title = { Text(t(UiKey.TEXT_COULD_NOT_SAVE_CHANGES)) },
+        text = { Text(t(UiKey.TEXT_YOUR_CHANGES_ARE_STILL_IN_THE_FORM_CHECK_AVAILABLE_STORAGE_AND_6ED398A2)) },
         confirmButton = { TextButton(onClick = action::dismissError, modifier = Modifier.testTag("save-error-dismiss")) {
-            Text(t("Return to changes"))
+            Text(t(UiKey.TEXT_RETURN_TO_CHANGES))
         } })
 }

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -40,27 +41,27 @@ internal fun BackupScheduleChanges(phone: BackupPayload, file: BackupPayload) {
     val incoming = file.scheduleRules.associateBy { it.id }
     val codes = (phone.courses + file.courses).associate { it.id to it.code }
     val rules = file.scheduleRules.filter { old[it.id] != it } + phone.scheduleRules.filter { it.id !in incoming }
-    if (rules.isNotEmpty()) Text(t("Recurring lessons"), style = MaterialTheme.typography.titleSmall)
+    if (rules.isNotEmpty()) Text(t(UiKey.TEXT_RECURRING_LESSONS), style = MaterialTheme.typography.titleSmall)
     rules.take(12).forEach { rule ->
         val removed = rule.id !in incoming
         val day = runCatching { DayOfWeek.of(rule.dayOfWeek).getDisplayName(TextStyle.FULL, TaktI18n.locale) }.getOrDefault("—")
-        val recurrence = t(when (rule.recurrence) { "ODD_WEEKS" -> "Odd weeks"; "EVEN_WEEKS" -> "Even weeks"; else -> "Every week" })
+        val recurrence = t(when (rule.recurrence) { "ODD_WEEKS" -> UiKey.TEXT_ODD_WEEKS; "EVEN_WEEKS" -> UiKey.TEXT_EVEN_WEEKS; else -> UiKey.TEXT_EVERY_WEEK })
         val type = runCatching { t(LessonType.valueOf(rule.lessonType).label) }.getOrDefault("")
         BackupChangeRow(rule.title, "$day · ${time(rule.startMinute)}–${time(rule.endMinute)}",
             listOfNotNull(codes[rule.courseId], type.takeIf(String::isNotBlank), rule.room?.takeIf(String::isNotBlank), recurrence).joinToString(" · "),
-            if (removed) t("Removed") else if (rule.id in old) t("Changed") else t("Added"))
+            if (removed) t(UiKey.TEXT_REMOVED) else if (rule.id in old) t(UiKey.TEXT_CHANGED) else t(UiKey.TEXT_ADDED))
     }
     val oldEvents = phone.oneOffEvents.associateBy { it.id }
     val events = file.oneOffEvents.associateBy { it.id }
     val changed = file.oneOffEvents.filter { oldEvents[it.id] != it } + phone.oneOffEvents.filter { it.id !in events }
-    if (changed.isNotEmpty()) Text(t("One-off lessons"), style = MaterialTheme.typography.titleSmall)
+    if (changed.isNotEmpty()) Text(t(UiKey.TEXT_ONE_OFF_LESSONS), style = MaterialTheme.typography.titleSmall)
     changed.take(12).forEach { event ->
         val date = runCatching { LocalDate.ofEpochDay(event.dateEpochDay).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) }.getOrDefault("—")
         BackupChangeRow(event.title, "$date · ${time(event.startMinute)}–${time(event.endMinute)}",
             listOfNotNull(codes[event.courseId], event.room?.takeIf(String::isNotBlank)).joinToString(" · "),
-            if (event.id !in events) t("Removed") else if (event.id in oldEvents) t("Changed") else t("Added"))
+            if (event.id !in events) t(UiKey.TEXT_REMOVED) else if (event.id in oldEvents) t(UiKey.TEXT_CHANGED) else t(UiKey.TEXT_ADDED))
     }
-    if (rules.size > 12 || changed.size > 12) Text(t("First changes shown. The entire selected section will be applied."), style = MaterialTheme.typography.bodySmall)
+    if (rules.size > 12 || changed.size > 12) Text(t(UiKey.TEXT_FIRST_CHANGES_SHOWN_THE_ENTIRE_SELECTED_SECTION_WILL_BE_APPLIED), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -70,13 +71,13 @@ internal fun BackupNoteChanges(phone: BackupPayload, file: BackupPayload) {
     val notes = file.courseNotes.filter { old[it.id] != it }
     notes.take(8).forEach { note ->
         BackupChangeRow(note.title, codes[note.courseId].orEmpty(),
-            note.content.replace(Regex("\\s+"), " ").take(180), if (note.id in old) t("Changed") else t("Added"))
-        if (note.attachments.isNotEmpty()) Text(t("Attachments") + ": " + note.attachments.joinToString(", ") { it.name }, style = MaterialTheme.typography.bodySmall)
+            note.content.replace(Regex("\\s+"), " ").take(180), if (note.id in old) t(UiKey.TEXT_CHANGED) else t(UiKey.TEXT_ADDED))
+        if (note.attachments.isNotEmpty()) Text(t(UiKey.TEXT_ATTACHMENTS) + ": " + note.attachments.joinToString(", ") { it.name }, style = MaterialTheme.typography.bodySmall)
     }
     file.examMaterials.filter { item -> phone.examMaterials.none { it == item } }.take(6).forEach { item ->
-        BackupChangeRow(item.title, codes[item.courseId].orEmpty(), t("Study material"), t("Added"))
+        BackupChangeRow(item.title, codes[item.courseId].orEmpty(), t(UiKey.TEXT_STUDY_MATERIAL), t(UiKey.TEXT_ADDED))
     }
-    if (notes.isEmpty() && phone.courseNotes != file.courseNotes) Text(t("Note contents or selection changed."), style = MaterialTheme.typography.bodySmall)
+    if (notes.isEmpty() && phone.courseNotes != file.courseNotes) Text(t(UiKey.TEXT_NOTE_CONTENTS_OR_SELECTION_CHANGED), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -102,7 +103,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
     // Each property owns one shared row, so longer names and missing photos cannot shift the comparison.
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AppearanceComparisonRow(
-            left = { Text(t("Phone"), Modifier.testTag("backup-appearance-phone"), style = MaterialTheme.typography.labelLarge) },
+            left = { Text(t(UiKey.TEXT_PHONE), Modifier.testTag("backup-appearance-phone"), style = MaterialTheme.typography.labelLarge) },
             right = { Text(sourceName, Modifier.testTag("backup-appearance-file"), style = MaterialTheme.typography.labelLarge) },
         )
         AppearanceComparisonRow(
@@ -117,7 +118,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             left = { Text(appearanceModeName(phonePreview), style = MaterialTheme.typography.bodySmall) },
             right = { Text(appearanceModeName(filePreview), style = MaterialTheme.typography.bodySmall) },
         )
-        Text(t("Card style"), style = MaterialTheme.typography.labelLarge)
+        Text(t(UiKey.TEXT_CARD_STYLE), style = MaterialTheme.typography.labelLarge)
         AppearanceComparisonRow(
             left = { AppearanceMaterial(phonePreview, phonePhoto, "backup-appearance-phone-material") },
             right = { AppearanceMaterial(filePreview, filePhoto, "backup-appearance-file-material") },
@@ -126,7 +127,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             left = { Text(appearanceMaterialName(phonePreview), style = MaterialTheme.typography.bodySmall) },
             right = { Text(appearanceMaterialName(filePreview), style = MaterialTheme.typography.bodySmall) },
         )
-        Text(t("Background"), style = MaterialTheme.typography.labelLarge)
+        Text(t(UiKey.TEXT_BACKGROUND), style = MaterialTheme.typography.labelLarge)
         AppearanceComparisonRow(
             left = { AppearanceWallpaper(phone, phonePreview, phonePhoto, "backup-appearance-phone-background") },
             right = { AppearanceWallpaper(file, filePreview, filePhoto, "backup-appearance-file-background") },
@@ -136,7 +137,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             right = { Text(appearanceWallpaperName(file), style = MaterialTheme.typography.bodySmall) },
         )
         if (phone.customThemes.isNotEmpty() || file.customThemes.isNotEmpty()) {
-            Text(t("Saved themes"), style = MaterialTheme.typography.labelLarge)
+            Text(t(UiKey.TEXT_SAVED_THEMES), style = MaterialTheme.typography.labelLarge)
             AppearanceComparisonRow(
                 left = { Text(phone.customThemes.joinToString(", ") { it.name }.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall) },
                 right = { Text(file.customThemes.joinToString(", ") { it.name }.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall) },
@@ -173,7 +174,7 @@ private fun AppearanceMaterial(settings: AppSettings, photo: Bitmap?, tag: Strin
             TaktGlassBackground(Modifier.matchParentSize(), photoPreview = photo) {
                 GlassSurface(Modifier.align(Alignment.Center).padding(12.dp).fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(t("Lessons"), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        Text(t(UiKey.TEXT_LESSONS), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                         Box(Modifier.fillMaxWidth(.7f).height(5.dp).clip(RoundedCornerShape(3.dp))
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = .5f)))
                         Box(Modifier.fillMaxWidth(.45f).height(5.dp).clip(RoundedCornerShape(3.dp))
@@ -211,9 +212,9 @@ private fun AppearanceWallpaper(source: BackupSettings, settings: AppSettings, b
             .background(MaterialTheme.colorScheme.surfaceVariant).testTag(tag), contentAlignment = Alignment.Center) {
             val ready = bitmap
             when {
-                ready != null -> Image(ready.asImageBitmap(), t("Custom photo"), Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+                ready != null -> Image(ready.asImageBitmap(), t(UiKey.TEXT_CUSTOM_PHOTO), Modifier.matchParentSize(), contentScale = ContentScale.Crop)
                 photo == null && source.wallpaperRecorded -> TaktGlassBackground(Modifier.matchParentSize()) {}
-                else -> Text(t(if (photo != null) "Photo unavailable" else "Photo not included in this backup"),
+                else -> Text(t(if (photo != null) UiKey.TEXT_PHOTO_UNAVAILABLE else UiKey.TEXT_PHOTO_NOT_INCLUDED_IN_THIS_BACKUP),
                     Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -231,26 +232,26 @@ private fun BackupSettings.appearancePreviewSettings() = AppSettings(
 
 @Composable
 private fun appearanceThemeName(settings: AppSettings): String = settings.selectedCustomTheme?.name ?: t(when (settings.themeFamily) {
-    ThemeFamily.GREEN -> "Green"; ThemeFamily.PURPLE -> "Violet"; ThemeFamily.WARM -> "Warm"
-    ThemeFamily.MONOCHROME -> "Monochrome"; ThemeFamily.ROSE -> "Rose"; ThemeFamily.AMBER -> "Amber"
-    ThemeFamily.CYAN -> "Cyan"; ThemeFamily.BLUE -> "Blue"
+    ThemeFamily.GREEN -> UiKey.TEXT_GREEN; ThemeFamily.PURPLE -> UiKey.TEXT_VIOLET; ThemeFamily.WARM -> UiKey.TEXT_WARM
+    ThemeFamily.MONOCHROME -> UiKey.TEXT_MONOCHROME; ThemeFamily.ROSE -> UiKey.TEXT_ROSE; ThemeFamily.AMBER -> UiKey.TEXT_AMBER
+    ThemeFamily.CYAN -> UiKey.TEXT_CYAN; ThemeFamily.BLUE -> UiKey.TEXT_BLUE
 })
 
 @Composable
 private fun appearanceModeName(settings: AppSettings): String = t(when (settings.themeMode) {
-    AppThemeMode.DARK -> "Dark"; AppThemeMode.LIGHT -> "Light"; AppThemeMode.SYSTEM -> "Device theme"
+    AppThemeMode.DARK -> UiKey.TEXT_DARK; AppThemeMode.LIGHT -> UiKey.TEXT_LIGHT; AppThemeMode.SYSTEM -> UiKey.TEXT_DEVICE_THEME
 })
 
 @Composable
 private fun appearanceMaterialName(settings: AppSettings): String = t(when (settings.cardAppearance) {
-    CardAppearance.GLASS -> "Glass"; CardAppearance.TONAL_FILLED -> "Filled"; CardAppearance.ELEVATED -> "Elevated"
+    CardAppearance.GLASS -> UiKey.TEXT_GLASS; CardAppearance.TONAL_FILLED -> UiKey.TEXT_FILLED; CardAppearance.ELEVATED -> UiKey.TEXT_ELEVATED
 })
 
 @Composable
 private fun appearanceWallpaperName(settings: BackupSettings): String = t(when {
-    settings.wallpaper != null -> "Custom photo"
-    settings.wallpaperRecorded -> "Use built-in background"
-    else -> "Photo not included in this backup"
+    settings.wallpaper != null -> UiKey.TEXT_CUSTOM_PHOTO
+    settings.wallpaperRecorded -> UiKey.TEXT_USE_BUILT_IN_BACKGROUND
+    else -> UiKey.TEXT_PHOTO_NOT_INCLUDED_IN_THIS_BACKUP
 })
 
 private fun time(value: Int) = if (value in 0..1440) "%02d:%02d".format(value / 60, value % 60) else "—"

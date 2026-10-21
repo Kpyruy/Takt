@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.background
@@ -63,7 +64,7 @@ fun SwipeCompletionBox(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(if (completed) "↺" else "✓")
-                    Text(if (completed) t("Restore") else t("Work done"))
+                    Text(if (completed) t(UiKey.TEXT_RESTORE) else t(UiKey.TEXT_WORK_DONE))
                 }
             }
         },

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -66,12 +67,12 @@ internal fun BoxScope.TourSpotlight(
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(t("Tour of Takt") + " · ${step.ordinal + 1}/${GuidedTourStep.entries.size}",
+                        Text(t(UiKey.TEXT_TOUR_OF_TAKT) + " · ${step.ordinal + 1}/${GuidedTourStep.entries.size}",
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                        Text(t("Examples · your data stays unchanged"), style = MaterialTheme.typography.labelSmall,
+                        Text(t(UiKey.TEXT_EXAMPLES_YOUR_DATA_STAYS_UNCHANGED), style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    TaktIconButton(Icons.Outlined.Close, t("Exit tour"), onExit,
+                    TaktIconButton(Icons.Outlined.Close, t(UiKey.TEXT_EXIT_TOUR), onExit,
                         modifier = Modifier.testTag("tour-exit"))
                 }
                 LinearProgressIndicator(progress = { (step.ordinal + 1f) / GuidedTourStep.entries.size },
@@ -85,12 +86,12 @@ internal fun BoxScope.TourSpotlight(
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(onClick = onBack, enabled = step.ordinal > 0, modifier = Modifier.testTag("tour-back")) {
-                        Text(t("Back"))
+                        Text(t(UiKey.ACTION_BACK))
                     }
                     if (onReplay != null) TextButton(onClick = onReplay, enabled = nextEnabled,
-                        modifier = Modifier.testTag("tour-replay")) { Text(t("Replay")) }
+                        modifier = Modifier.testTag("tour-replay")) { Text(t(UiKey.TEXT_REPLAY)) }
                     TaktPrimaryButton(onClick = onNext, enabled = nextEnabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("tour-next")) {
-                        Text(if (step == GuidedTourStep.entries.last()) t("Finish") else t("Next"))
+                        Text(if (step == GuidedTourStep.entries.last()) t(UiKey.TEXT_FINISH) else t(UiKey.TEXT_NEXT))
                     }
                 }
             }

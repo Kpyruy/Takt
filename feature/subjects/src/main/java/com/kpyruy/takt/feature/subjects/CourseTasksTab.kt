@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenu
 import com.kpyruy.takt.core.ui.components.TaktChoiceMenuItem
 import com.kpyruy.takt.core.ui.i18n.t
@@ -67,10 +68,10 @@ internal fun CourseTasksTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AdmissionProgressCard(eligibility, compact = true)
-        Text(t("Course tasks"), fontSize = 21.sp, fontWeight = FontWeight.Bold,
+        Text(t(UiKey.TEXT_COURSE_TASKS), fontSize = 21.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp))
         if (work.isEmpty()) {
-            SectionCard { Text(t("There are no tasks yet."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            SectionCard { Text(t(UiKey.TEXT_THERE_ARE_NO_TASKS_YET), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
             work.forEach { entry ->
                 when (entry) {
@@ -98,16 +99,16 @@ internal fun CourseTasksTab(
                     horizontalArrangement = Arrangement.Center) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
-                    Text(t("Add work"), color = MaterialTheme.colorScheme.primary,
+                    Text(t(UiKey.TEXT_ADD_WORK), color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleMedium)
                 }
             }
             TaktChoiceMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
-                TaktChoiceMenuItem(text = { Text(t("Task without points")) }, onClick = {
+                TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_TASK_WITHOUT_POINTS)) }, onClick = {
                     addMenuOpen = false
                     onAddTask()
                 })
-                TaktChoiceMenuItem(text = { Text(t("Graded work with points")) }, onClick = {
+                TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_GRADED_WORK_WITH_POINTS)) }, onClick = {
                     addMenuOpen = false
                     onAddGrade()
                 })

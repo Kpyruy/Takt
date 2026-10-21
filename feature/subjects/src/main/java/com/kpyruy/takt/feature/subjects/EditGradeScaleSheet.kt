@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
@@ -62,9 +64,9 @@ fun EditGradeScaleSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Assessment scale"), style = MaterialTheme.typography.headlineMedium)
+            Text(t(UiKey.TEXT_ASSESSMENT_SCALE), style = MaterialTheme.typography.headlineMedium)
             Text(
-                t("Minimum percentage"),
+                t(UiKey.TEXT_MINIMUM_PERCENTAGE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SubjectPanel {
@@ -88,7 +90,7 @@ fun EditGradeScaleSheet(
                                 setter(it)
                                 error = null
                             },
-                            modifier = Modifier.width(100.dp).semantics { contentDescription = t("Minimum percentage") + " · " + label },
+                            modifier = Modifier.width(100.dp).semantics { contentDescription = t(UiKey.TEXT_MINIMUM_PERCENTAGE) + " · " + label },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
@@ -100,15 +102,15 @@ fun EditGradeScaleSheet(
             GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("FX", style = MaterialTheme.typography.titleMedium)
-                    Text(t("Below the E threshold"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t(UiKey.TEXT_BELOW_THE_E_THRESHOLD), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            SmallText(t("Thresholds apply to points that count toward the final grade."))
+            SmallText(t(UiKey.TEXT_THRESHOLDS_APPLY_TO_POINTS_THAT_COUNT_TOWARD_THE_FINAL_GRADE))
             }
 
             if (error != null) {
                 Text(
-                    text = error.orEmpty(),
+                    text = t(error.orEmpty()),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -121,7 +123,7 @@ fun EditGradeScaleSheet(
                     a = defaults.getValue(GradeLetter.A).compact(); b = defaults.getValue(GradeLetter.B).compact()
                     c = defaults.getValue(GradeLetter.C).compact(); d = defaults.getValue(GradeLetter.D).compact()
                     e = defaults.getValue(GradeLetter.E).compact(); error = null
-                }, modifier = Modifier.fillMaxWidth()) { Text(t("Standard scale")) }
+                }, modifier = Modifier.fillMaxWidth()) { Text(t(UiKey.TEXT_STANDARD_SCALE)) }
               }
               TaktPrimaryButton(
                 onClick = {
@@ -129,7 +131,7 @@ fun EditGradeScaleSheet(
                         it.replace(',', '.').toDoubleOrNull()
                     }
                     if (values.any { it == null }) {
-                        error = t("All limits must be numbers.")
+                        error = uiMessage(UiKey.TEXT_ALL_LIMITS_MUST_BE_NUMBERS)
                         return@TaktPrimaryButton
                     }
                     val parsed = values.filterNotNull()
@@ -141,7 +143,7 @@ fun EditGradeScaleSheet(
                         parsed[4] > 0.0
 
                     if (!valid) {
-                        error = t("The limits should decrease: A > B > C > D > E > 0.")
+                        error = uiMessage(UiKey.TEXT_THE_LIMITS_SHOULD_DECREASE_A_B_C_D_E_0)
                         return@TaktPrimaryButton
                     }
 
@@ -160,7 +162,7 @@ fun EditGradeScaleSheet(
                 },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(t("Save"))
+                Text(t(UiKey.ACTION_SAVE))
             }
             }
         }

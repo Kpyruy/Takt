@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -28,8 +29,8 @@ internal fun DeviceLockScreen(message: String?, onUnlock: () -> Unit) {
     Box(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.Center) {
         Row(Modifier.fillMaxWidth().align(Alignment.TopCenter), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), { activity?.finish() })
-            Text("Takt", style = MaterialTheme.typography.titleLarge)
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), { activity?.finish() })
+            Text(t(UiKey.TEXT_TAKT), style = MaterialTheme.typography.titleLarge)
         }
         GlassSurface(Modifier.fillMaxWidth()) {
             Column(
@@ -40,22 +41,22 @@ internal fun DeviceLockScreen(message: String?, onUnlock: () -> Unit) {
                 Box(Modifier.size(80.dp).glassSurface(), contentAlignment = Alignment.Center) {
                     Icon(Icons.Outlined.MenuBook, null, Modifier.size(46.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                Text(t("Your data is protected"), style = MaterialTheme.typography.headlineSmall,
+                Text(t(UiKey.TEXT_YOUR_DATA_IS_PROTECTED), style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                Text(t("Use your phone security to access your data."),
+                Text(t(UiKey.TEXT_USE_YOUR_PHONE_SECURITY_TO_ACCESS_YOUR_DATA),
                     style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 IconButton(onClick = onUnlock, modifier = Modifier.size(96.dp).glassSurface(shape = CircleShape)) {
-                    Icon(Icons.Outlined.Fingerprint, t("Unlock"), Modifier.size(60.dp),
+                    Icon(Icons.Outlined.Fingerprint, t(UiKey.TEXT_UNLOCK), Modifier.size(60.dp),
                         tint = MaterialTheme.colorScheme.primary)
                 }
-                Text(t("Unlock"), style = MaterialTheme.typography.titleLarge)
-                message?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center) }
+                Text(t(UiKey.TEXT_UNLOCK), style = MaterialTheme.typography.titleLarge)
+                message?.let { Text(t(it), color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center) }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
                 TextButton(onClick = onUnlock) {
                     Icon(Icons.Outlined.Lock, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(t("Use screen lock"), textAlign = TextAlign.Center)
+                    Text(t(UiKey.TEXT_USE_SCREEN_LOCK), textAlign = TextAlign.Center)
                 }
             }
         }

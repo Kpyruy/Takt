@@ -1,5 +1,8 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.model.uiArg
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.BorderStroke
@@ -55,7 +58,7 @@ internal fun CurrentSemesterSheet(
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp).selectableGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(t("Current semester"), style = MaterialTheme.typography.headlineSmall)
+            Text(t(UiKey.TEXT_CURRENT_SEMESTER), style = MaterialTheme.typography.headlineSmall)
             GlassSurface(
                 modifier = Modifier.fillMaxWidth().testTag("select-current-semester-auto").selectable(selected == null, role = Role.RadioButton, onClick = { selected = null }),
                 shape = RoundedCornerShape(18.dp),
@@ -66,11 +69,11 @@ internal fun CurrentSemesterSheet(
                     verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = selected == null, onClick = null)
                     Column(Modifier.weight(1f)) {
-                        Text(t("Automatically"), style = MaterialTheme.typography.titleSmall)
-                        currentSemester?.let { Text(t("Semester ${it}"), style = MaterialTheme.typography.bodySmall,
+                        Text(t(UiKey.TEXT_AUTOMATICALLY), style = MaterialTheme.typography.titleSmall)
+                        currentSemester?.let { Text(t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, it)), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
-                    if (selected == null) Icon(Icons.Outlined.Check, contentDescription = t("Current"),
+                    if (selected == null) Icon(Icons.Outlined.Check, contentDescription = t(UiKey.TEXT_CURRENT),
                         tint = MaterialTheme.colorScheme.primary)
                 }
             }
@@ -86,19 +89,19 @@ internal fun CurrentSemesterSheet(
                         verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = isSelected, onClick = null)
                         Column(Modifier.weight(1f)) {
-                            Text(t("Semester ${semester} · ${t(if (semester % 2 == 1) "winter" else "summer")}"), style = MaterialTheme.typography.titleSmall)
+                            Text(t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE_VALUE, semester, uiArg(if (semester % 2 == 1) UiKey.TEXT_WINTER_30C5461F else UiKey.TEXT_SUMMER_E8366425))), style = MaterialTheme.typography.titleSmall)
                             if (activeCourses > 0) Text(activeCoursesLabel(activeCourses),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (isSelected) Icon(Icons.Outlined.Check, contentDescription = t("Current"),
+                        if (isSelected) Icon(Icons.Outlined.Check, contentDescription = t(UiKey.TEXT_CURRENT),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
             Spacer(Modifier.height(10.dp))
             TaktPrimaryButton(onClick = { onSelect(selected) }, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Apply"))
+                Text(t(UiKey.TEXT_APPLY))
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
@@ -70,10 +72,10 @@ internal fun EditExamInfoSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Exam"), style = MaterialTheme.typography.headlineSmall)
+            Text(t(UiKey.TEXT_EXAM), style = MaterialTheme.typography.headlineSmall)
 
             TaktDatePickerField(
-                label = t("Date"),
+                label = t(UiKey.TEXT_DATE_99C40AB4),
                 value = date,
                 onValueChange = {
                     date = it
@@ -83,7 +85,7 @@ internal fun EditExamInfoSheet(
             )
             if (date != null) {
                 TextButton(onClick = { date = null }) {
-                    Text(t("The date is not yet known"))
+                    Text(t(UiKey.TEXT_THE_DATE_IS_NOT_YET_KNOWN))
                 }
 
                 Row(
@@ -91,7 +93,7 @@ internal fun EditExamInfoSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TaktTimePickerField(
-                        label = t("Start time"),
+                        label = t(UiKey.TEXT_START_TIME),
                         value = startTime,
                         onValueChange = {
                             startTime = it
@@ -100,7 +102,7 @@ internal fun EditExamInfoSheet(
                         modifier = Modifier.weight(1f),
                     )
                     TaktTimePickerField(
-                        label = t("End"),
+                        label = t(UiKey.TEXT_END),
                         value = endTime,
                         onValueChange = {
                             endTime = it
@@ -114,23 +116,23 @@ internal fun EditExamInfoSheet(
             TaktTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(t("Room")) },
+                label = { Text(t(UiKey.TEXT_ROOM_911EA89C)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 trailingIcon = { Icon(Icons.Outlined.LocationOn, null) },
             )
 
-            Text(t("Attempt · maximum 3"), style = MaterialTheme.typography.labelLarge)
+            Text(t(UiKey.TEXT_ATTEMPT_MAXIMUM_3), style = MaterialTheme.typography.labelLarge)
             TaktSegmentedTabs(listOf("1/3", "2/3", "3/3"), attempt - 1, { attempt = it + 1 })
 
             if (examItems.isNotEmpty()) {
-                Text(t("Related result"), style = MaterialTheme.typography.labelLarge)
+                Text(t(UiKey.TEXT_RELATED_RESULT), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         ExamChoice(
                             selected = linkedGradeItemId == null,
                             onClick = { linkedGradeItemId = null },
-                            label = { Text(t("Not selected")) },
+                            label = { Text(t(UiKey.TEXT_NOT_SELECTED)) },
                         )
                     }
                     items(examItems, key = { it.id }) { item ->
@@ -146,19 +148,19 @@ internal fun EditExamInfoSheet(
             TaktTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text(t("Notes")) },
+                label = { Text(t(UiKey.TEXT_NOTES)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
             )
 
             error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             TaktPrimaryButton(
                 onClick = {
                     if (date != null && endTime <= startTime) {
-                        error = t("The end must be later than the beginning.")
+                        error = uiMessage(UiKey.TEXT_THE_END_MUST_BE_LATER_THAN_THE_BEGINNING)
                         return@TaktPrimaryButton
                     }
                     onSave(
@@ -177,7 +179,7 @@ internal fun EditExamInfoSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(t("Save"))
+                Text(t(UiKey.ACTION_SAVE))
             }
         }
     }

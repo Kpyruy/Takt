@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import android.net.Uri
@@ -80,11 +82,11 @@ import kotlinx.coroutines.launch
 private data class TourPage(val title: String, val body: String, val icon: ImageVector)
 
 private fun localizedTourPages() = listOf(
-    TourPage(t("Today"), t("Classes and tasks for the selected day. Tap a class to open its subject."), Icons.Outlined.Today),
-    TourPage(t("Calendar"), t("View your schedule by day, week, or month. Long-press Week to switch between timetable and list. Double-tap the selected view to return to today."), Icons.Outlined.CalendarMonth),
-    TourPage(t("Subjects"), t("Active subjects, tasks and notes in one place."), Icons.Outlined.MenuBook),
-    TourPage(t("Progress"), t("Mark active and passed subjects, choose the current semester and track your scores."), Icons.Outlined.School),
-    TourPage(t("Settings"), t("Here you can change the view, schedule and tasks and connect a backup. After adding subjects, select the current semester in Progress, and in Settings → Study periods, specify the dates of classes and exams."), Icons.Outlined.Settings),
+    TourPage(t(UiKey.TEXT_TODAY), t(UiKey.TEXT_CLASSES_AND_TASKS_FOR_THE_SELECTED_DAY_TAP_A_CLASS_TO_OPEN_ITS_SUBJECT), Icons.Outlined.Today),
+    TourPage(t(UiKey.TEXT_CALENDAR), t(UiKey.TEXT_VIEW_YOUR_SCHEDULE_BY_DAY_WEEK_OR_MONTH_LONG_PRESS_WEEK_TO_SWI_1FF5CEB8), Icons.Outlined.CalendarMonth),
+    TourPage(t(UiKey.TEXT_SUBJECTS), t(UiKey.TEXT_ACTIVE_SUBJECTS_TASKS_AND_NOTES_IN_ONE_PLACE), Icons.Outlined.MenuBook),
+    TourPage(t(UiKey.TEXT_PROGRESS), t(UiKey.TEXT_MARK_ACTIVE_AND_PASSED_SUBJECTS_CHOOSE_THE_CURRENT_SEMESTER_AN_DBEE6EB5), Icons.Outlined.School),
+    TourPage(t(UiKey.TEXT_SETTINGS), t(UiKey.TEXT_HERE_YOU_CAN_CHANGE_THE_VIEW_SCHEDULE_AND_TASKS_AND_CONNECT_A_4A6A5418), Icons.Outlined.Settings),
 )
 
 @Composable
@@ -155,12 +157,12 @@ internal fun FirstRunScreen(
                                 hasUniversityAccount && initialImportComplete && !importProgress.running),
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("onboarding-primary"),
                         ) {
-                            Text(if (step < 2) t("Next") else t("Start the tour"))
+                            Text(if (step < 2) t(UiKey.TEXT_NEXT) else t(UiKey.TEXT_START_THE_TOUR))
                         }
                         if (step == 2) {
                             TextButton(onClick = { finishing = true; onFinish(draft, false) }, enabled = !finishing,
                                 modifier = Modifier.fillMaxWidth()) {
-                                Text(t("Start without a tour"))
+                                Text(t(UiKey.TEXT_START_WITHOUT_A_TOUR))
                             }
                         }
                     }
@@ -168,70 +170,70 @@ internal fun FirstRunScreen(
         ) { insets ->
             Column(Modifier.fillMaxSize().padding(insets).consumeWindowInsets(insets).verticalScroll(pageScroll)
                 .padding(horizontal = 20.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Text("TAKT  ·  ${step + 1} / 3", style = MaterialTheme.typography.labelLarge,
+                Text(t(uiMessage(UiKey.FORMAT_ONBOARDING_STEP, step + 1)), style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 when (step) {
                     0 -> {
-                        Text(t("Your Takt"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text(t("Choose an appearance. Your schedule starts with your subjects."),
+                        Text(t(UiKey.TEXT_YOUR_TAKT), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t(UiKey.TEXT_CHOOSE_AN_APPEARANCE_YOUR_SCHEDULE_STARTS_WITH_YOUR_SUBJECTS),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(t("Language"), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_LANGUAGE), style = MaterialTheme.typography.titleMedium)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
-                                AppLanguage.ENGLISH to "English",
-                                AppLanguage.UKRAINIAN to t("Ukrainian"),
-                                AppLanguage.SLOVAK to "Slovenčina",
+                                AppLanguage.ENGLISH to UiKey.TEXT_ENGLISH,
+                                AppLanguage.UKRAINIAN to t(UiKey.TEXT_UKRAINIAN),
+                                AppLanguage.SLOVAK to UiKey.TEXT_SLOVEN_INA,
                             ).forEach { (language, label) ->
                                 FilterChip(
                                     selected = draft.language == language,
                                     onClick = { draft = draft.copy(language = language) },
-                                    label = { Text(label) },
+                                    label = { Text(t(label)) },
                                     modifier = Modifier.testTag("onboarding-language-${language.name}"),
                                 )
                             }
                         }
-                        Text(t("Topic"), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_TOPIC), style = MaterialTheme.typography.titleMedium)
                         com.kpyruy.takt.feature.settings.AppearanceLightingChoices(
                             draft, { draft = it }, tagPrefix = "onboarding-theme")
-                        Text(t("Color"), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_COLOR), style = MaterialTheme.typography.titleMedium)
                         com.kpyruy.takt.feature.settings.AppearanceThemeChoices(
                             draft, { draft = it }, tagPrefix = "onboarding-color")
-                        TextButton(onClick = { folderPicker.launch(null) }) { Text(t("Restore from Documents/Takt")) }
-                        restoreMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        TextButton(onClick = { folderPicker.launch(null) }) { Text(t(UiKey.TEXT_RESTORE_FROM_DOCUMENTS_TAKT)) }
+                        restoreMessage?.let { Text(t(it), color = MaterialTheme.colorScheme.error) }
                     }
                     1 -> {
-                        Text(t("How will you use Takt?"), style = MaterialTheme.typography.headlineLarge,
+                        Text(t(UiKey.TEXT_HOW_WILL_YOU_USE_TAKT), style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold)
-                        Text(t("Work locally or connect to STU UIS."),
+                        Text(t(UiKey.TEXT_WORK_LOCALLY_OR_CONNECT_TO_STU_UIS),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = !useUIS, onClick = {
                                 if (hasUniversityAccount) {
-                                    authenticateDevice(t("Remove UIS credentials")) { result ->
+                                    authenticateDevice(t(UiKey.TEXT_REMOVE_UIS_CREDENTIALS)) { result ->
                                         if (result == DeviceAuthenticationResult.SUCCESS) {
                                             scope.launch {
                                                 runCatching { universityAccountRepository.remove() }
                                                     .onSuccess { useUIS = false; accountMessage = null }
-                                                    .onFailure { accountMessage = t("Could not remove UIS credentials") }
+                                                    .onFailure { accountMessage = uiMessage(UiKey.TEXT_COULD_NOT_REMOVE_UIS_CREDENTIALS) }
                                             }
-                                        } else accountMessage = t("Verification cancelled")
+                                        } else accountMessage = uiMessage(UiKey.TEXT_VERIFICATION_CANCELLED)
                                     }
                                 } else useUIS = false
                             },
-                                label = { Text(t("Locally")) }, modifier = Modifier.testTag("onboarding-local"))
+                                label = { Text(t(UiKey.TEXT_LOCALLY)) }, modifier = Modifier.testTag("onboarding-local"))
                             FilterChip(selected = useUIS, onClick = { useUIS = true },
-                                label = { Text("UIS") }, modifier = Modifier.testTag("onboarding-uis"))
+                                label = { Text(t(UiKey.TEXT_UIS)) }, modifier = Modifier.testTag("onboarding-uis"))
                         }
                         if (useUIS) {
-                            Text(t("After saving UIS credentials, Takt requires phone biometrics or PIN at each launch."),
+                            Text(t(UiKey.TEXT_AFTER_SAVING_UIS_CREDENTIALS_TAKT_REQUIRES_PHONE_BIOMETRICS_OR_D1338C30),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             UniversityAccountForm(universityAccountRepository, authenticateDevice)
                         }
-                        accountMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        accountMessage?.let { Text(t(it), color = MaterialTheme.colorScheme.error) }
                     }
                     2 -> {
-                        Text(t("Show me around"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text(t("The tour opens Takt’s screens and highlights what matters. You can stop at any time."),
+                        Text(t(UiKey.TEXT_SHOW_ME_AROUND), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t(UiKey.TEXT_THE_TOUR_OPENS_TAKT_S_SCREENS_AND_HIGHLIGHTS_WHAT_MATTERS_YOU_3A0E1416),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Surface(shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.primaryContainer) {
@@ -240,9 +242,9 @@ internal fun FirstRunScreen(
                                 verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Outlined.DateRange, null, tint = MaterialTheme.colorScheme.primary)
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(t("Before the start of the schedule"), style = MaterialTheme.typography.titleSmall,
+                                    Text(t(UiKey.TEXT_BEFORE_THE_START_OF_THE_SCHEDULE), style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold)
-                                    Text(t("Add subjects, select the current semester in Progress and set the dates of classes and exams in Settings → Study periods."),
+                                    Text(t(UiKey.TEXT_ADD_SUBJECTS_SELECT_THE_CURRENT_SEMESTER_IN_PROGRESS_AND_SET_T_073AC112),
                                         style = MaterialTheme.typography.bodySmall)
                                 }
                             }

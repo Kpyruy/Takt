@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +43,7 @@ internal fun CourseNotesTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (notes.isEmpty()) SectionCard {
-            Text(t("There are no notes yet."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t(UiKey.TEXT_THERE_ARE_NO_NOTES_YET), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         notes.forEach { note ->
             key(note.id) {
@@ -62,7 +63,7 @@ internal fun CourseNotesTab(
                 horizontalArrangement = Arrangement.Center) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
-                Text(t("Add a note"), color = MaterialTheme.colorScheme.primary,
+                Text(t(UiKey.TEXT_ADD_A_NOTE), color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleMedium)
             }
         }

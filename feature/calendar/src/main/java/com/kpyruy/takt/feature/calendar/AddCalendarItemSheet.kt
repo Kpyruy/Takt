@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
@@ -31,20 +32,20 @@ fun AddCalendarItemSheet(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(t("What to add?"))
+            Text(t(UiKey.TEXT_WHAT_TO_ADD))
             Button(
                 onClick = onAddRecurring,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Repeat, contentDescription = null)
-                Text(t("Recurring class"))
+                Text(t(UiKey.TEXT_RECURRING_CLASS))
             }
             OutlinedButton(
                 onClick = onAddOneOff,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Event, contentDescription = null)
-                Text(t("One-off event / block event"))
+                Text(t(UiKey.TEXT_ONE_OFF_EVENT_BLOCK_EVENT))
             }
         }
     }

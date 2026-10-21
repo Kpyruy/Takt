@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,7 +55,7 @@ fun CourseNoteCard(
     val updatedDate = remember(note.updatedAtEpochMillis) { noteUpdatedDate(note.updatedAtEpochMillis) }
     Column(
         Modifier.fillMaxWidth().testTag("note-preview-${note.id}")
-            .clickable(onClickLabel = t("Open note")) { readerOpen = true }.padding(16.dp),
+            .clickable(onClickLabel = t(UiKey.TEXT_OPEN_NOTE)) { readerOpen = true }.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
@@ -103,11 +104,11 @@ internal fun NoteActionsMenu(onEdit: () -> Unit, onDelete: () -> Unit, modifier:
     var menuOpen by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { menuOpen = true }, modifier = modifier) {
-            Icon(Icons.Default.MoreVert, contentDescription = t("Note actions"))
+            Icon(Icons.Default.MoreVert, contentDescription = t(UiKey.TEXT_NOTE_ACTIONS))
         }
         TaktChoiceMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            TaktChoiceMenuItem(text = { Text(t("Edit")) }, onClick = { menuOpen = false; onEdit() })
-            TaktChoiceMenuItem(text = { Text(t("Delete")) }, onClick = { menuOpen = false; onDelete() })
+            TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_EDIT)) }, onClick = { menuOpen = false; onEdit() })
+            TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_DELETE)) }, onClick = { menuOpen = false; onDelete() })
         }
     }
 }

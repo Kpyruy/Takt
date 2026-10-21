@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,12 +67,12 @@ fun UniversityAccountPage(
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ScreenHeader(title = t("University system"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Back"), onBack)
+        ScreenHeader(title = t(UiKey.TEXT_UNIVERSITY_SYSTEM), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t(UiKey.ACTION_BACK), onBack)
         })
         SectionCard {
-            Text("UIS", style = MaterialTheme.typography.titleLarge)
-            Text(t("Connect to STU UIS"),
+            Text(t(UiKey.TEXT_UIS), style = MaterialTheme.typography.titleLarge)
+            Text(t(UiKey.TEXT_CONNECT_TO_STU_UIS),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard {
@@ -101,14 +103,14 @@ fun UniversityAccountForm(
         if (repository.hasAccount.value) {
             authenticating = true
             try {
-                val result = awaitAuthentication(authenticate, t("Sign in to UIS"))
+                val result = awaitAuthentication(authenticate, t(UiKey.TEXT_SIGN_IN_TO_UIS))
                 if (result == DeviceAuthenticationResult.SUCCESS) {
                     runCatching { repository.readAfterAuthentication() }
                         .onSuccess { credentials ->
                             login = credentials?.login.orEmpty()
                             password = credentials?.password.orEmpty()
                         }
-                        .onFailure { message = t("Could not read UIS credentials. Check your phone security.") }
+                        .onFailure { message = uiMessage(UiKey.TEXT_COULD_NOT_READ_UIS_CREDENTIALS_CHECK_YOUR_PHONE_SECURITY) }
                 } else message = authError(result)
             } finally { authenticating = false }
         }
@@ -116,32 +118,32 @@ fun UniversityAccountForm(
     OutlinedTextField(
         value = login,
         onValueChange = { login = it; message = null; repository.session.disconnect() },
-        label = { Text(t("UIS login")) }, singleLine = true, enabled = !busy,
+        label = { Text(t(UiKey.TEXT_UIS_LOGIN)) }, singleLine = true, enabled = !busy,
         modifier = Modifier.fillMaxWidth().testTag("uis-login"),
     )
     OutlinedTextField(
         value = password,
         onValueChange = { password = it; message = null; repository.session.disconnect() },
-        label = { Text(t("UIS password")) }, singleLine = true, enabled = !busy,
+        label = { Text(t(UiKey.TEXT_UIS_PASSWORD)) }, singleLine = true, enabled = !busy,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = !busy,
                 modifier = Modifier.testTag("uis-password-visibility")) {
                 Icon(if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    contentDescription = t(if (passwordVisible) "Hide password" else "Show password"))
+                    contentDescription = t(if (passwordVisible) UiKey.TEXT_HIDE_PASSWORD else UiKey.TEXT_SHOW_PASSWORD))
             }
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         modifier = Modifier.fillMaxWidth().testTag("uis-password"),
     )
     if (!hasAccount) {
-        Text(t("Which language should UIS course names use?"),
+        Text(t(UiKey.TEXT_WHICH_LANGUAGE_SHOULD_UIS_COURSE_NAMES_USE),
             style = MaterialTheme.typography.titleSmall)
         androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = firstCourseLanguage == CourseNameLanguage.ENGLISH,
-                onClick = { firstCourseLanguage = CourseNameLanguage.ENGLISH }, label = { Text("English") })
+                onClick = { firstCourseLanguage = CourseNameLanguage.ENGLISH }, label = { Text(t(UiKey.TEXT_ENGLISH)) })
             FilterChip(selected = firstCourseLanguage == CourseNameLanguage.SLOVAK,
-                onClick = { firstCourseLanguage = CourseNameLanguage.SLOVAK }, label = { Text("Slovenčina") })
+                onClick = { firstCourseLanguage = CourseNameLanguage.SLOVAK }, label = { Text(t(UiKey.TEXT_SLOVEN_INA)) })
         }
     }
     UisConnectionControls(repository, canLogin = login.isNotBlank() && password.isNotEmpty(),
@@ -151,14 +153,14 @@ fun UniversityAccountForm(
                 message = null
                 passwordVisible = false
                 try {
-                    val result = awaitAuthentication(authenticate, t("Sign in to UIS"))
+                    val result = awaitAuthentication(authenticate, t(UiKey.TEXT_SIGN_IN_TO_UIS))
                     if (result == DeviceAuthenticationResult.SUCCESS) {
                         // One local account. Submit exactly the current fields, never an older stored pair.
                         val credentials = com.kpyruy.takt.core.data.UniversityCredentials(login.trim(), password)
                         if (!hasAccount) repository.setFirstCourseNameChoice(firstCourseLanguage)
                         val saved = runCatching { repository.save(credentials.login, credentials.password) }
                         if (saved.isSuccess) repository.signIn(credentials)
-                        else message = t("Could not save UIS credentials. Check the login, password, and phone security.")
+                        else message = uiMessage(UiKey.TEXT_COULD_NOT_SAVE_UIS_CREDENTIALS_CHECK_THE_LOGIN_PASSWORD_AND_PH_D1BCD74B)
                     } else message = authError(result)
                 } finally { authenticating = false }
             }
@@ -169,17 +171,17 @@ fun UniversityAccountForm(
                 authenticating = true
                 passwordVisible = false
                 try {
-                    val result = awaitAuthentication(authenticate, t("Remove UIS credentials"))
+                    val result = awaitAuthentication(authenticate, t(UiKey.TEXT_REMOVE_UIS_CREDENTIALS))
                     if (result == DeviceAuthenticationResult.SUCCESS) {
                         runCatching { repository.remove() }
                             .onSuccess { login = ""; password = ""; message = null }
-                            .onFailure { message = t("Could not remove UIS credentials") }
+                            .onFailure { message = uiMessage(UiKey.TEXT_COULD_NOT_REMOVE_UIS_CREDENTIALS) }
                     } else message = authError(result)
                 } finally { authenticating = false }
             }
-        }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(t("Remove UIS account")) }
+        }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(t(UiKey.TEXT_REMOVE_UIS_ACCOUNT)) }
     }
-    message?.let { Text(it, style = MaterialTheme.typography.bodySmall,
+    message?.let { Text(t(it), style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.error) }
 }
 
@@ -191,8 +193,8 @@ private suspend fun awaitAuthentication(
 }
 
 private fun authError(result: DeviceAuthenticationResult): String = when (result) {
-    DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> t("First enable a PIN or password in your phone settings")
-    DeviceAuthenticationResult.CANCELLED -> t("Verification cancelled")
-    DeviceAuthenticationResult.ERROR -> t("Could not verify your identity")
+    DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> uiMessage(UiKey.TEXT_FIRST_ENABLE_A_PIN_OR_PASSWORD_IN_YOUR_PHONE_SETTINGS)
+    DeviceAuthenticationResult.CANCELLED -> uiMessage(UiKey.TEXT_VERIFICATION_CANCELLED)
+    DeviceAuthenticationResult.ERROR -> uiMessage(UiKey.TEXT_COULD_NOT_VERIFY_YOUR_IDENTITY)
     DeviceAuthenticationResult.SUCCESS -> ""
 }

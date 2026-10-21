@@ -32,8 +32,9 @@ class AdmissionFormTest {
         compose.onNodeWithText("Ще можна заробити ці бали").assertDoesNotExist()
         compose.onNodeWithText("Окремо від кількості балів.").assertDoesNotExist()
         compose.onNode(hasText("Назва") and hasSetTextAction()).performScrollTo().performTextInput("Weekly test")
-        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
         compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RESULT").performClick()
+        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
         compose.onNodeWithTag("grade-details-tab-RULES").performClick()
         compose.onNodeWithTag("grade-required").performClick()
         compose.onNodeWithText("Мінімум").assertExists()
@@ -56,8 +57,9 @@ class AdmissionFormTest {
             }
         }
         compose.onNode(hasText("Назва") and hasSetTextAction()).performScrollTo().performTextInput("Short quiz")
-        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
         compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RESULT").performClick()
+        compose.onNodeWithTag("grade-maximum").performScrollTo().performTextInput("20")
         compose.onNodeWithTag("grade-details-tab-WHEN").performClick()
         compose.onNodeWithTag("grade-duration").performScrollTo().performTextInput("45")
         doneDetails()
@@ -72,7 +74,7 @@ class AdmissionFormTest {
             MaterialTheme { AddTaskForm(modifier = Modifier.verticalScroll(rememberScrollState()), courseId = "FYZI_6B", onSave = { saved = it }) }
         }
         compose.onNodeWithTag("task-title").performTextInput("Lab report")
-        compose.onNodeWithTag("task-maximum").assertExists()
+        compose.onNodeWithTag("task-maximum").assertDoesNotExist()
         compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
         compose.onNodeWithTag("grade-details-tab-RULES").performClick()
         compose.onNodeWithTag("task-required").performClick()
@@ -94,7 +96,10 @@ class AdmissionFormTest {
         compose.setContent {
             MaterialTheme { AddTaskForm(modifier = Modifier.verticalScroll(rememberScrollState()), courseId = "FYZI_6B", initialTask = task, onSave = { saved = it }) }
         }
-        compose.onNodeWithText("Максимум").assertExists()
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RESULT").performClick()
+        compose.onNodeWithTag("task-maximum").assertTextContains("10")
+        doneDetails()
         compose.onNodeWithText("Оновити").performClick()
         compose.runOnIdle { assertEquals(10.0, saved?.maxPoints) }
     }

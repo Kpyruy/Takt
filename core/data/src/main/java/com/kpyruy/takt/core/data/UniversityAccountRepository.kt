@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.data
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import android.content.Context
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
@@ -121,7 +123,7 @@ class UniversityAccountRepository(
             mutableSyncAction.value = UisSyncActionState()
             throw cancelled
         } catch (error: Exception) {
-            mutableSyncAction.value = UisSyncActionState(error = error.message ?: "Could not save UIS changes. Check again.")
+            mutableSyncAction.value = UisSyncActionState(error = error.message ?: UiKey.TEXT_COULD_NOT_SAVE_UIS_CHANGES_CHECK_AGAIN)
         } finally { actionMutex.unlock() }
     }
 
@@ -410,7 +412,7 @@ class UniversityAccountRepository(
             throw cancelled
         } catch (error: Exception) {
             mutableImportProgress.value = previous.copy(running = false,
-                error = if (error is InvalidUisCourseId) error.message else "Could not check UIS automatically. Try manually.")
+                error = if (error is InvalidUisCourseId) error.message else UiKey.TEXT_COULD_NOT_CHECK_UIS_AUTOMATICALLY_TRY_MANUALLY)
             UisAutoSyncOutcome.FAILED.also { mutableLastCheckOutcome.value = it }
         }
     }
@@ -516,14 +518,14 @@ class UniversityAccountRepository(
         } catch (error: Exception) {
             mutableImportProgress.value = previous.copy(running = false, error = when (error) {
                 is InvalidUisCourseId -> error.message
-                is IOException -> "Could not download UIS data. Check your connection."
-                is IllegalStateException, is IllegalArgumentException -> "Could not read the UIS study plan, calendar, or timetable."
-                else -> "Could not import UIS data."
+                is IOException -> UiKey.TEXT_COULD_NOT_DOWNLOAD_UIS_DATA_CHECK_YOUR_CONNECTION
+                is IllegalStateException, is IllegalArgumentException -> UiKey.TEXT_COULD_NOT_READ_THE_UIS_STUDY_PLAN_CALENDAR_OR_TIMETABLE
+                else -> UiKey.TEXT_COULD_NOT_IMPORT_UIS_DATA
             })
         }
     }
 
-    suspend fun applyCourse(courseId: String, selectedLocalId: String? = null) = performPreviewAction("Course updated") {
+    suspend fun applyCourse(courseId: String, selectedLocalId: String? = null) = performPreviewAction(UiKey.TEXT_COURSE_UPDATED) {
         val preview = mutablePreview.value ?: return@performPreviewAction
         val remote = preview.courses.firstOrNull { it.id == courseId } ?: return@performPreviewAction
         studyPlanRepository?.upsertImportedCourses(listOf(remote),
@@ -532,7 +534,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun applyProgress(courseId: String) = performPreviewAction("Progress updated") {
+    suspend fun applyProgress(courseId: String) = performPreviewAction(UiKey.TEXT_PROGRESS_UPDATED) {
         val preview = mutablePreview.value ?: return@performPreviewAction
         if (UisSyncSection.PROGRESS !in preview.availableSections) return@performPreviewAction
         val remote = preview.courses.firstOrNull { it.id == courseId } ?: return@performPreviewAction
@@ -570,7 +572,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun addRule(id: String) = performPreviewAction("Lesson added") {
+    suspend fun addRule(id: String) = performPreviewAction(UiKey.TEXT_LESSON_ADDED) {
         if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return@performPreviewAction
         refreshLocalPreview()
         mutablePreview.value?.rules?.firstOrNull { it.id == id }?.let {
@@ -580,7 +582,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun addOneOff(id: String) = performPreviewAction("Lesson added") {
+    suspend fun addOneOff(id: String) = performPreviewAction(UiKey.TEXT_LESSON_ADDED) {
         if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return@performPreviewAction
         refreshLocalPreview()
         mutablePreview.value?.oneOffEvents?.firstOrNull { it.id == id }?.let {
@@ -590,7 +592,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun replaceSchedule() = performPreviewAction("UIS timetable saved") {
+    suspend fun replaceSchedule() = performPreviewAction(UiKey.TEXT_UIS_TIMETABLE_SAVED) {
         refreshLocalPreview()
         val preview = mutablePreview.value ?: return@performPreviewAction
         if (UisSyncSection.TIMETABLE !in preview.availableSections) return@performPreviewAction
@@ -607,7 +609,7 @@ class UniversityAccountRepository(
             val remote = mutablePreview.value?.courses?.firstOrNull { it.id.substringAfterLast(':') == subjectId }
             val code = remote?.code
             require((subjectId == null || remote != null && courseId == remote.id) && (courseId == null || courseId in ids)) {
-                "Import course ${code ?: subjectId.orEmpty()} from UIS first, then try adding the timetable again."
+                uiMessage(UiKey.FORMAT_IMPORT_COURSE_VALUE_FROM_UIS_FIRST_THEN_TRY_ADDING_THE_TIMETABLE_AGAIN, code ?: subjectId.orEmpty())
             }
         }
     }
@@ -754,7 +756,7 @@ class UniversityAccountRepository(
             .remove(EARNED_CREDITS).remove(REQUIRED_CREDITS).remove(INITIAL_IMPORT_DONE)
             .remove(PROGRESS_BASELINE).remove(AUTO_INVALID_DAY).apply {
                 UisSyncSection.entries.forEach { remove("uis_auto_last_${it.name}") }
-            }.commit()) { "Could not remove UIS credentials" }
+            }.commit()) { UiKey.TEXT_COULD_NOT_REMOVE_UIS_CREDENTIALS }
         keyStore.deleteEntry(KEY_ALIAS)
         settingsRepository?.setUisCurrentSemester(null)
         activeState.value = false

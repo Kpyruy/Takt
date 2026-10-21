@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.background
@@ -69,10 +70,10 @@ fun WeekDaySelector(
         state = pagerState,
         modifier = Modifier.fillMaxWidth().testTag("calendar-week-strip").semantics {
             customActions = listOf(
-                CustomAccessibilityAction(t("The previous week")) {
+                CustomAccessibilityAction(t(UiKey.TEXT_THE_PREVIOUS_WEEK)) {
                     onWeekChange(currentWeek.minusWeeks(1).plusDays((currentWeekday - 1).toLong())); true
                 },
-                CustomAccessibilityAction(t("Next week")) {
+                CustomAccessibilityAction(t(UiKey.TEXT_NEXT_WEEK)) {
                     onWeekChange(currentWeek.plusWeeks(1).plusDays((currentWeekday - 1).toLong())); true
                 },
             )

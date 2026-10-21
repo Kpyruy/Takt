@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.clickable
@@ -71,7 +72,7 @@ fun TaktDatePickerField(
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
-        placeholder = { Text(t("Choose a date")) },
+        placeholder = { Text(t(UiKey.TEXT_CHOOSE_A_DATE)) },
         trailingIcon = { Icon(Icons.Outlined.CalendarMonth, null) },
         modifier = modifier
             .clickable { showPicker = true }
@@ -100,19 +101,19 @@ fun TaktDatePickerField(
                         showPicker = false
                     },
                 ) {
-                    Text(t("Done"))
+                    Text(t(UiKey.TEXT_DONE))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text(t("Cancel"))
+                    Text(t(UiKey.ACTION_CANCEL))
                 }
             },
         ) {
             // Dialog creates its own Android configuration, so apply the app locale here too.
             TaktNativeLocale {
                 DatePicker(state = state, title = {
-                    Text(t("Choose a date"), Modifier.padding(start = 24.dp, top = 16.dp), style = MaterialTheme.typography.labelLarge)
+                    Text(t(UiKey.TEXT_CHOOSE_A_DATE), Modifier.padding(start = 24.dp, top = 16.dp), style = MaterialTheme.typography.labelLarge)
                 }, colors = DatePickerDefaults.colors(containerColor = Color.Transparent))
             }
         }
@@ -166,12 +167,12 @@ fun TaktTimePickerField(
                         showPicker = false
                     },
                 ) {
-                    Text(t("Done"))
+                    Text(t(UiKey.TEXT_DONE))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text(t("Cancel"))
+                    Text(t(UiKey.ACTION_CANCEL))
                 }
             },
             text = {

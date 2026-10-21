@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,10 +42,10 @@ internal fun CourseNoteReaderSheet(
                 Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(t("Note"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                Text(t(UiKey.TEXT_NOTE), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                 NoteActionsMenu(onEdit = onEdit, onDelete = onDelete, modifier = Modifier.testTag("note-reader-actions"))
                 IconButton(onClick = onDismiss, modifier = Modifier.testTag("note-reader-close")) {
-                    Icon(Icons.Default.Close, contentDescription = t("Close"))
+                    Icon(Icons.Default.Close, contentDescription = t(UiKey.ACTION_CLOSE))
                 }
             }
             Column(
@@ -61,7 +62,7 @@ internal fun CourseNoteReaderSheet(
                         style = MaterialTheme.typography.bodyLarge)
                 }
                 if (note.attachments.isNotEmpty()) {
-                    Text(t("Attachments"), style = MaterialTheme.typography.titleSmall,
+                    Text(t(UiKey.TEXT_ATTACHMENTS), style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     note.attachments.forEachIndexed { index, attachment ->
                         NoteAttachmentRow(attachment, onClick = { openAttachment(attachment) },

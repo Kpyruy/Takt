@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -76,8 +77,8 @@ fun TeacherProfileSheet(
         Column(Modifier.fillMaxWidth().testTag("teacher-profile").verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Lecturer profile"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TaktIconButton(Icons.Outlined.Close, t("Close"), onDismiss)
+                Text(t(UiKey.TEXT_LECTURER_PROFILE), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                TaktIconButton(Icons.Outlined.Close, t(UiKey.ACTION_CLOSE), onDismiss)
             }
             GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp)) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -89,7 +90,7 @@ fun TeacherProfileSheet(
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(profile?.name ?: teacher.name, style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.SemiBold)
-                            Text("STU", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            Text(t(UiKey.BRAND_STU), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -108,38 +109,38 @@ fun TeacherProfileSheet(
             error?.let { TeacherLoadProblem(it, authenticate, { reload++ }, onSettings) }
             profile?.let { person ->
                 SectionCard {
-                    Text(t("Contacts"), style = MaterialTheme.typography.titleMedium)
+                    Text(t(UiKey.TEXT_CONTACTS), style = MaterialTheme.typography.titleMedium)
                     person.universityEmail?.let { address ->
-                        TeacherEmailRow(t("University email"), address, "teacher-email-university") { composeMail(address) }
+                        TeacherEmailRow(t(UiKey.TEXT_UNIVERSITY_EMAIL), address, "teacher-email-university") { composeMail(address) }
                     }
                     person.systemEmail?.let { address ->
-                        TeacherEmailRow(t("UIS email"), address, "teacher-email-uis") { composeMail(address) }
+                        TeacherEmailRow(t(UiKey.TEXT_UIS_EMAIL), address, "teacher-email-uis") { composeMail(address) }
                     }
-                    if (person.universityEmail == null && person.systemEmail == null) Text(t("No email address is listed in UIS."),
+                    if (person.universityEmail == null && person.systemEmail == null) Text(t(UiKey.TEXT_NO_EMAIL_ADDRESS_IS_LISTED_IN_UIS),
                         color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    person.officePhone?.let { TeacherDetail(t("Office phone"), it) }
-                    if (mailFailure) Text(t("No email app was found."), color = MaterialTheme.colorScheme.error,
+                    person.officePhone?.let { TeacherDetail(t(UiKey.TEXT_OFFICE_PHONE), it) }
+                    if (mailFailure) Text(t(UiKey.TEXT_NO_EMAIL_APP_WAS_FOUND), color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall)
                 }
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.MeetingRoom, null, tint = MaterialTheme.colorScheme.primary)
-                        Text(t("Office and consultations"), style = MaterialTheme.typography.titleMedium)
+                        Text(t(UiKey.TEXT_OFFICE_AND_CONSULTATIONS), style = MaterialTheme.typography.titleMedium)
                     }
-                    TeacherDetail(t("Office"), person.officeNumber ?: t("Not listed in UIS"), "teacher-office")
-                    person.officeAddress?.let { TeacherDetail(t("Address"), it) }
+                    TeacherDetail(t(UiKey.TEXT_OFFICE), person.officeNumber ?: t(UiKey.TEXT_NOT_LISTED_IN_UIS), "teacher-office")
+                    person.officeAddress?.let { TeacherDetail(t(UiKey.TEXT_ADDRESS), it) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    TeacherDetail(t("Consultation hours"), person.consultationHours ?: t("Items not listed in UIS"), "teacher-hours")
+                    TeacherDetail(t(UiKey.TEXT_CONSULTATION_HOURS), person.consultationHours ?: t(UiKey.TEXT_ITEMS_NOT_LISTED_IN_UIS), "teacher-hours")
                 }
                 person.mailboxLastChecked?.let { timestamp ->
                     GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
                         Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Icon(Icons.Outlined.MarkEmailRead, null, tint = MaterialTheme.colorScheme.primary)
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(t("University mailbox last checked"), style = MaterialTheme.typography.labelMedium)
+                                Text(t(UiKey.TEXT_UNIVERSITY_MAILBOX_LAST_CHECKED), style = MaterialTheme.typography.labelMedium)
                                 Text(formatMailboxTimestamp(timestamp), style = MaterialTheme.typography.titleSmall,
                                     modifier = Modifier.testTag("teacher-mailbox-checked"))
-                                Text(t("As reported by UIS"), style = MaterialTheme.typography.bodySmall,
+                                Text(t(UiKey.TEXT_AS_REPORTED_BY_UIS), style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -148,9 +149,9 @@ fun TeacherProfileSheet(
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = { runCatching { uriHandler.openUri(teacher.profileUrl) } }, Modifier.weight(1f)) {
-                    Text(t("Profile in UIS"))
+                    Text(t(UiKey.TEXT_PROFILE_IN_UIS))
                 }
-                TextButton(onClick = { if (!loading) reload++ }, enabled = !loading) { Text(t("Update")) }
+                TextButton(onClick = { if (!loading) reload++ }, enabled = !loading) { Text(t(UiKey.ACTION_UPDATE)) }
             }
         }
     }

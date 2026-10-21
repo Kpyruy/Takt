@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,8 +20,8 @@ fun UisPreviewPage(repository: UniversityAccountRepository, onBack: () -> Unit) 
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        ScreenHeader(t("UIS changes"), subtitle = t("Review before applying"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
+        ScreenHeader(t(UiKey.TEXT_UIS_CHANGES), subtitle = t(UiKey.TEXT_REVIEW_BEFORE_APPLYING), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), onBack)
         })
         UisSyncReview(repository, showHeading = false)
     }

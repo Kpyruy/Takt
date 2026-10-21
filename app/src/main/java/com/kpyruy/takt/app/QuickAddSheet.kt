@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
@@ -44,9 +46,9 @@ import java.time.LocalTime
 import java.util.UUID
 
 private enum class QuickAddType(private val sourceLabel: String) {
-    TASK("Assignment"),
-    CLASS("Class"),
-    NOTE("Note"),
+    TASK(UiKey.TEXT_ASSIGNMENT),
+    CLASS(UiKey.TEXT_CLASS),
+    NOTE(UiKey.TEXT_NOTE),
 
     ;
     val label: String get() = t(sourceLabel)
@@ -87,7 +89,7 @@ fun QuickAddSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(t("Quick add"), style = MaterialTheme.typography.headlineSmall)
+            Text(t(UiKey.TEXT_QUICK_ADD), style = MaterialTheme.typography.headlineSmall)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 QuickAddType.entries.forEach { option ->
@@ -108,7 +110,7 @@ fun QuickAddSheet(
             }
 
             if (needsCourse) {
-                Text(t("Subject"), style = MaterialTheme.typography.labelLarge)
+                Text(t(UiKey.TEXT_SUBJECT_68971283), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(activeCourses, key = { it.id }) { course ->
                         FilterChip(
@@ -122,7 +124,7 @@ fun QuickAddSheet(
                     }
                 }
                 if (activeCourses.isEmpty()) {
-                    Text(t("There are no active subjects. Mark the subject as active in \"Progress\"."), style = MaterialTheme.typography.bodySmall)
+                    Text(t(UiKey.TEXT_THERE_ARE_NO_ACTIVE_SUBJECTS_MARK_THE_SUBJECT_AS_ACTIVE_IN_PROGRESS), style = MaterialTheme.typography.bodySmall)
                 }
             }
 
@@ -139,7 +141,7 @@ fun QuickAddSheet(
                     title = it
                     error = null
                 },
-                label = { Text(if (type == QuickAddType.CLASS && lessonType != com.kpyruy.takt.core.model.LessonType.EVENT) t("Class name") else t("Name")) },
+                label = { Text(if (type == QuickAddType.CLASS && lessonType != com.kpyruy.takt.core.model.LessonType.EVENT) t(UiKey.TEXT_CLASS_NAME) else t(UiKey.COMMON_NAME)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -147,7 +149,7 @@ fun QuickAddSheet(
             when (type) {
                 QuickAddType.TASK -> {
                     TaktDatePickerField(
-                        label = t("Deadline"),
+                        label = t(UiKey.WORK_DEADLINE),
                         value = dueDate,
                         onValueChange = { dueDate = it },
                         modifier = Modifier.fillMaxWidth(),
@@ -162,7 +164,7 @@ fun QuickAddSheet(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Checkbox(checked = requiredForExam, onCheckedChange = null)
-                        Text(t("Required for the exam"))
+                        Text(t(UiKey.TEXT_REQUIRED_FOR_THE_EXAM))
                     }
                 }
 
@@ -171,13 +173,13 @@ fun QuickAddSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TaktTimePickerField(
-                        label = t("Start time"),
+                        label = t(UiKey.TEXT_START_TIME),
                         value = startTime,
                         onValueChange = { startTime = it },
                         modifier = Modifier.weight(1f),
                     )
                     TaktTimePickerField(
-                        label = t("End"),
+                        label = t(UiKey.TEXT_END),
                         value = endTime,
                         onValueChange = { endTime = it },
                         modifier = Modifier.weight(1f),
@@ -187,28 +189,28 @@ fun QuickAddSheet(
                 QuickAddType.NOTE -> TaktTextField(
                     value = details,
                     onValueChange = { details = it },
-                    label = { Text(t("Text")) },
+                    label = { Text(t(UiKey.TEXT_TEXT)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                 )
             }
 
             error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             TaktPrimaryButton(
                 onClick = {
                     if (title.isBlank()) {
-                        error = t("Enter a name.")
+                        error = uiMessage(UiKey.TEXT_ENTER_A_NAME)
                         return@TaktPrimaryButton
                     }
                     if (needsCourse && courseId == null) {
-                        error = t("Choose a subject.")
+                        error = uiMessage(UiKey.TEXT_CHOOSE_A_SUBJECT_62A7E2E3)
                         return@TaktPrimaryButton
                     }
                     if (courseId != null && activeCourses.none { it.id == courseId }) {
-                        error = t("This subject is no longer active. Select the active subject.")
+                        error = uiMessage(UiKey.TEXT_THIS_SUBJECT_IS_NO_LONGER_ACTIVE_SELECT_THE_ACTIVE_SUBJECT)
                         return@TaktPrimaryButton
                     }
 
@@ -227,7 +229,7 @@ fun QuickAddSheet(
 
                         QuickAddType.CLASS -> {
                             if (endTime <= startTime) {
-                                error = t("The end must be later than the beginning.")
+                                error = uiMessage(UiKey.TEXT_THE_END_MUST_BE_LATER_THAN_THE_BEGINNING)
                                 return@TaktPrimaryButton
                             }
                             onSaveLesson(
@@ -247,7 +249,7 @@ fun QuickAddSheet(
 
                         QuickAddType.NOTE -> {
                             if (details.isBlank()) {
-                                error = t("Add note text.")
+                                error = uiMessage(UiKey.TEXT_ADD_NOTE_TEXT)
                                 return@TaktPrimaryButton
                             }
                             onSaveNote(
@@ -264,7 +266,7 @@ fun QuickAddSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(t("Save"))
+                Text(t(UiKey.ACTION_SAVE))
             }
 
             TextButton(
@@ -291,7 +293,7 @@ fun QuickAddSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(t("More options"))
+                Text(t(UiKey.TEXT_MORE_OPTIONS))
             }
         }
     }

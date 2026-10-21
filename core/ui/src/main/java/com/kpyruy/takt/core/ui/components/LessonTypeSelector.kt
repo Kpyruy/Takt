@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -34,7 +35,7 @@ fun LessonTypeSelector(
     val shape = RoundedCornerShape(18.dp)
     val interaction = remember { MutableInteractionSource() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Class type"), style = MaterialTheme.typography.titleSmall)
+        Text(t(UiKey.TEXT_CLASS_TYPE), style = MaterialTheme.typography.titleSmall)
         Box(Modifier.fillMaxWidth()) {
             TaktSurface(
                 modifier = Modifier.fillMaxWidth().taktPressFeedback(interaction).clip(shape)

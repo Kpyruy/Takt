@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -48,21 +49,21 @@ internal enum class PaletteRole { PRIMARY, SECONDARY, TERTIARY }
 
 @Composable
 internal fun PaletteRole.label(): String = when (this) {
-    PaletteRole.PRIMARY -> t("Primary color")
-    PaletteRole.SECONDARY -> t("Secondary color")
-    PaletteRole.TERTIARY -> t("Tertiary color")
+    PaletteRole.PRIMARY -> t(UiKey.TEXT_PRIMARY_COLOR)
+    PaletteRole.SECONDARY -> t(UiKey.TEXT_SECONDARY_COLOR)
+    PaletteRole.TERTIARY -> t(UiKey.TEXT_TERTIARY_COLOR)
 }
 
 @Composable
 private fun familyLabel(family: ThemeFamily): String = when (family) {
-    ThemeFamily.BLUE -> t("Blue")
-    ThemeFamily.GREEN -> t("Green")
-    ThemeFamily.PURPLE -> t("Violet")
-    ThemeFamily.WARM -> t("Warm")
-    ThemeFamily.MONOCHROME -> t("Monochrome")
-    ThemeFamily.ROSE -> t("Rose")
-    ThemeFamily.AMBER -> t("Amber")
-    ThemeFamily.CYAN -> t("Cyan")
+    ThemeFamily.BLUE -> t(UiKey.TEXT_BLUE)
+    ThemeFamily.GREEN -> t(UiKey.TEXT_GREEN)
+    ThemeFamily.PURPLE -> t(UiKey.TEXT_VIOLET)
+    ThemeFamily.WARM -> t(UiKey.TEXT_WARM)
+    ThemeFamily.MONOCHROME -> t(UiKey.TEXT_MONOCHROME)
+    ThemeFamily.ROSE -> t(UiKey.TEXT_ROSE)
+    ThemeFamily.AMBER -> t(UiKey.TEXT_AMBER)
+    ThemeFamily.CYAN -> t(UiKey.TEXT_CYAN)
 }
 
 /** Both Appearance and onboarding open the same transactional palette editor. */
@@ -74,7 +75,7 @@ fun AppearanceThemeChoices(settings: AppSettings, onChange: (AppSettings) -> Uni
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(t("Palette & custom themes"), style = MaterialTheme.typography.titleSmall)
+                Text(t(UiKey.TEXT_PALETTE_CUSTOM_THEMES), style = MaterialTheme.typography.titleSmall)
                 Text(settings.selectedCustomTheme?.name ?: familyLabel(settings.themeFamily),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 PaletteDots(taktThemePreviewColors(settings, false))
@@ -109,23 +110,23 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                 val shortPreview = maxHeight < 480.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
                 Column(Modifier.fillMaxSize().testTag("palette-popup")) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (editor != null) TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), { closeEditor() })
-                        Text(if (editor == null) t("Palette & custom themes") else t("Edit theme"),
+                        if (editor != null) TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), { closeEditor() })
+                        Text(if (editor == null) t(UiKey.TEXT_PALETTE_CUSTOM_THEMES) else t(UiKey.TEXT_EDIT_THEME),
                             Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                         TextButton(onClick = dismiss, modifier = Modifier.testTag("palette-popup-cancel")) {
-                            Text(t("Cancel"))
+                            Text(t(UiKey.ACTION_CANCEL))
                         }
                     }
                     val currentEditor = editor
                     val validHex = normalizeThemeHex(primaryInput)
-                    val previewTheme = currentEditor?.let { it.copy(name = it.name.trim().ifEmpty { t("New theme") }.take(40)) }
+                    val previewTheme = currentEditor?.let { it.copy(name = it.name.trim().ifEmpty { t(UiKey.TEXT_NEW_THEME) }.take(40)) }
                     val previewSettings = if (previewTheme != null) draft.withPreview(previewTheme) else draft
                     // Pin the sample outside both preset and editor scroll containers. When IME or
                     // a small window reduces height, use a two-row sample of all three roles.
                     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (!shortPreview) Text(t("Live preview"), style = MaterialTheme.typography.titleSmall)
-                        TaktSegmentedTabs(listOf(t("Light"), t("Dark")), if (previewDark) 1 else 0,
+                        if (!shortPreview) Text(t(UiKey.TEXT_LIVE_PREVIEW), style = MaterialTheme.typography.titleSmall)
+                        TaktSegmentedTabs(listOf(t(UiKey.TEXT_LIGHT), t(UiKey.TEXT_DARK)), if (previewDark) 1 else 0,
                             { previewDark = it == 1 }, Modifier.testTag("palette-preview-mode"))
                         AppearanceLivePreview(
                             previewSettings.copy(themeMode = if (previewDark) AppThemeMode.DARK else AppThemeMode.LIGHT),
@@ -134,7 +135,7 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)
                         .testTag("palette-popup-content"), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         if (currentEditor == null) {
-                            Text(t("Preset palettes"), style = MaterialTheme.typography.titleSmall)
+                            Text(t(UiKey.TEXT_PRESET_PALETTES), style = MaterialTheme.typography.titleSmall)
                             ThemeFamily.entries.chunked(2).forEach { pair ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     pair.forEach { family ->
@@ -146,7 +147,7 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                                     }
                                 }
                             }
-                            Text(t("Custom themes"), style = MaterialTheme.typography.titleSmall)
+                            Text(t(UiKey.TEXT_CUSTOM_THEMES), style = MaterialTheme.typography.titleSmall)
                             draft.customThemes.forEach { theme ->
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     PaletteOption(theme.name, taktThemePreviewColors(draft.withPreview(theme), previewDark),
@@ -157,13 +158,13 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                         TextButton(onClick = { openEditor(theme) }, modifier = Modifier.testTag("theme-edit-${theme.id}")) {
                                             Icon(Icons.Outlined.Edit, null, Modifier.size(18.dp))
-                                            Spacer(Modifier.width(6.dp)); Text(t("Edit theme"))
+                                            Spacer(Modifier.width(6.dp)); Text(t(UiKey.TEXT_EDIT_THEME))
                                         }
                                         IconButton(onClick = {
                                             draft = draft.copy(customThemes = draft.customThemes.filterNot { it.id == theme.id },
                                                 selectedCustomThemeId = draft.selectedCustomThemeId.takeUnless { it == theme.id })
                                         }, modifier = Modifier.testTag("theme-delete-${theme.id}")) {
-                                            Icon(Icons.Outlined.DeleteOutline, t("Delete theme") + ": " + theme.name)
+                                            Icon(Icons.Outlined.DeleteOutline, t(UiKey.TEXT_DELETE_THEME) + ": " + theme.name)
                                         }
                                     }
                                 }
@@ -172,15 +173,15 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                                 val colors = taktThemePreviewColors(draft, false)
                                 openEditor(CustomColorTheme(UUID.randomUUID().toString(), "", colors[0].hex(), colors[1].hex(), colors[2].hex()))
                             }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("theme-create")) {
-                                Icon(Icons.Outlined.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t("Create theme"))
+                                Icon(Icons.Outlined.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t(UiKey.TEXT_CREATE_THEME))
                             }
                         } else {
                             val duplicate = draft.customThemes.any { it.id != currentEditor.id && it.name.equals(currentEditor.name.trim(), true) }
                             TaktTextField(currentEditor.name, { editor = currentEditor.copy(name = it) },
-                                Modifier.fillMaxWidth().testTag("theme-name"), label = { Text(t("Theme name")) }, singleLine = true,
+                                Modifier.fillMaxWidth().testTag("theme-name"), label = { Text(t(UiKey.TEXT_THEME_NAME)) }, singleLine = true,
                                 isError = currentEditor.name.length > 40 || duplicate,
-                                supportingText = { Text(if (duplicate) t("A theme with this name already exists") else t("1 to 40 characters")) })
-                            Text(t("Three independent colors"), style = MaterialTheme.typography.titleSmall)
+                                supportingText = { Text(if (duplicate) t(UiKey.TEXT_A_THEME_WITH_THIS_NAME_ALREADY_EXISTS) else t(UiKey.TEXT_1_TO_40_CHARACTERS)) })
+                            Text(t(UiKey.TEXT_THREE_INDEPENDENT_COLORS), style = MaterialTheme.typography.titleSmall)
                             val roleColors = taktThemePreviewColors(previewSettings, false)
                             PaletteRole.entries.forEachIndexed { index, role ->
                                 val roleHex = currentEditor.colorHex(role, roleColors[index])
@@ -203,10 +204,10 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                             TaktTextField(primaryInput, {
                                 primaryInput = it
                                 normalizeThemeHex(it)?.let { hex -> editor = currentEditor.copy(primaryHex = hex) }
-                            }, Modifier.fillMaxWidth().testTag("theme-hex"), label = { Text(t("Primary color")) },
+                            }, Modifier.fillMaxWidth().testTag("theme-hex"), label = { Text(t(UiKey.TEXT_PRIMARY_COLOR)) },
                                 singleLine = true, isError = validHex == null,
-                                supportingText = { Text(t("HEX: #RRGGBB, for example #B52D67")) })
-                            Text(t("Color changes appear immediately. Saved only after applying."),
+                                supportingText = { Text(t(UiKey.TEXT_HEX_RRGGBB_FOR_EXAMPLE_B52D67)) })
+                            Text(t(UiKey.TEXT_COLOR_CHANGES_APPEAR_IMMEDIATELY_SAVED_ONLY_AFTER_APPLYING),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -215,17 +216,17 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                         val current = editor
                         if (current == null) {
                             TaktPrimaryButton(onClick = { onApply(draft.normalizedAppearance()) },
-                                modifier = Modifier.fillMaxWidth().testTag("palette-popup-apply")) { Text(t("Apply palette")) }
+                                modifier = Modifier.fillMaxWidth().testTag("palette-popup-apply")) { Text(t(UiKey.TEXT_APPLY_PALETTE)) }
                         } else {
                             val clean = current.normalizedOrNull()
                             val duplicate = draft.customThemes.any { it.id != current.id && it.name.equals(current.name.trim(), true) }
-                            TextButton(onClick = { closeEditor() }, modifier = Modifier.testTag("theme-cancel")) { Text(t("Cancel")) }
+                            TextButton(onClick = { closeEditor() }, modifier = Modifier.testTag("theme-cancel")) { Text(t(UiKey.ACTION_CANCEL)) }
                             TaktPrimaryButton(enabled = clean != null && validHex != null && !duplicate, onClick = {
                                 val theme = checkNotNull(clean)
                                 draft = draft.copy(customThemes = draft.customThemes.filterNot { it.id == theme.id } + theme,
                                     selectedCustomThemeId = theme.id)
                                 closeEditor()
-                            }, modifier = Modifier.weight(1f).testTag("theme-save")) { Text(t("Save theme")) }
+                            }, modifier = Modifier.weight(1f).testTag("theme-save")) { Text(t(UiKey.TEXT_SAVE_THEME)) }
                         }
                     }
                     val role = pickerRole

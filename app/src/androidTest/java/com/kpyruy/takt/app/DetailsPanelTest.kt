@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -181,26 +182,26 @@ class DetailsPanelTest {
         compose.onNodeWithTag("grade-earned").performScrollTo().performTextReplacement("21")
         done(); save()
         compose.onNodeWithTag("grade-details-tab-RESULT").assertIsSelected()
-        compose.onNodeWithTag("grade-details-error").assertTextContains(t("The obtained points cannot exceed the maximum."))
+        compose.onNodeWithTag("grade-details-error").assertTextContains(t(UiKey.TEXT_THE_OBTAINED_POINTS_CANNOT_EXCEED_THE_MAXIMUM))
         compose.runOnIdle { assertNull(saved) }
         compose.onNodeWithTag("grade-earned").performScrollTo().performTextReplacement("7")
         tab("RULES")
         compose.onNodeWithTag("grade-minimum").performScrollTo().performTextReplacement("25")
         done(); save()
         compose.onNodeWithTag("grade-details-tab-RULES").assertIsSelected()
-        compose.onNodeWithTag("grade-details-error").assertTextContains(t("The minimum must be from 0 to the maximum of points."))
+        compose.onNodeWithTag("grade-details-error").assertTextContains(t(UiKey.TEXT_THE_MINIMUM_MUST_BE_FROM_0_TO_THE_MAXIMUM_OF_POINTS))
         compose.onNodeWithTag("grade-minimum").performScrollTo().performTextReplacement("6")
         tab("WHEN")
         compose.onNodeWithTag("grade-duration").performScrollTo().performTextReplacement("0")
         done(); save()
         compose.onNodeWithTag("grade-details-tab-WHEN").assertIsSelected()
-        compose.onNodeWithTag("grade-details-error").assertTextContains(t("The duration of the test must be a positive number of minutes."))
+        compose.onNodeWithTag("grade-details-error").assertTextContains(t(UiKey.TEXT_THE_DURATION_OF_THE_TEST_MUST_BE_A_POSITIVE_NUMBER_OF_MINUTES))
         compose.onNodeWithTag("grade-duration").performScrollTo().performTextReplacement("45")
         done()
         compose.onNodeWithTag("grade-maximum").performTextReplacement("0")
         save()
         compose.onNodeWithTag("grade-details").assertDoesNotExist()
-        compose.onNodeWithTag("grade-form-error").assertTextContains(t("Maximum must be greater than 0."))
+        compose.onNodeWithTag("grade-form-error").assertTextContains(t(UiKey.TEXT_MAXIMUM_MUST_BE_GREATER_THAN_0))
         compose.runOnIdle { assertNull(saved) }
     }
 

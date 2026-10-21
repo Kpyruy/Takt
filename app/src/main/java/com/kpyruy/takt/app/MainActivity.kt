@@ -1,5 +1,7 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -84,8 +86,8 @@ class MainActivity : FragmentActivity() {
                 }
             }
             if (showRecovery) AlertDialog(onDismissRequest = {},
-                title = { Text(t("Data recovery is unfinished")) },
-                text = { Text(t("Check the available storage on your device and retry recovery. Your previous data remains protected until recovery finishes.")) },
+                title = { Text(t(UiKey.TEXT_DATA_RECOVERY_IS_UNFINISHED)) },
+                text = { Text(t(UiKey.TEXT_CHECK_THE_AVAILABLE_STORAGE_ON_YOUR_DEVICE_AND_RETRY_RECOVERY_B0444189)) },
                 confirmButton = { Button(enabled = restoreStatus != BackupRestoreStatus.RESTORING, onClick = {
                     scope.launch {
                         try {
@@ -94,7 +96,7 @@ class MainActivity : FragmentActivity() {
                         } catch (cancelled: CancellationException) { throw cancelled }
                         catch (_: Exception) { showRecovery = true }
                     }
-                }) { Text(t("Retry recovery")) } })
+                }) { Text(t(UiKey.TEXT_RETRY_RECOVERY)) } })
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
             val releaseState by taktApplication.appReleaseRepository.state.collectAsStateWithLifecycle()
             val hasUniversityAccount by dataContainer.universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
@@ -113,7 +115,7 @@ class MainActivity : FragmentActivity() {
                     catch (_: Exception) { UisAutoSyncOutcome.FAILED }
                     if (outcome == UisAutoSyncOutcome.NEEDS_DEVICE_AUTH) {
                         val result = suspendCancellableCoroutine<DeviceAuthenticationResult> { continuation ->
-                            authenticateForAccount(t("Check UIS")) { value ->
+                            authenticateForAccount(t(UiKey.TEXT_CHECK_UIS)) { value ->
                                 if (continuation.isActive) continuation.resume(value)
                             }
                         }
@@ -162,12 +164,12 @@ class MainActivity : FragmentActivity() {
                                                 dataContainer.firstRunRepository.complete()
                                                 showOnboarding = false
                                                 null
-                                            } else t("There are no subjects in the copy. Customize Takt for yourself.")
+                                            } else t(UiKey.TEXT_THERE_ARE_NO_SUBJECTS_IN_THE_COPY_CUSTOMIZE_TAKT_FOR_YOURSELF)
                                         }
-                                        DocumentSyncStatus.CONFLICT -> t("Data differs. Check the backup in Settings.")
-                                        else -> t("Failed to restore data")
+                                        DocumentSyncStatus.CONFLICT -> t(UiKey.TEXT_DATA_DIFFERS_CHECK_THE_BACKUP_IN_SETTINGS)
+                                        else -> t(UiKey.TEXT_FAILED_TO_RESTORE_DATA)
                                     }
-                                }.getOrElse { it.message?.let(::t) ?: t("Failed to restore data") }
+                                }.getOrElse { it.message ?: uiMessage(UiKey.TEXT_FAILED_TO_RESTORE_DATA) }
                             },
                         )
                         showOnboarding == false && showGuidedTour -> GuidedTourScreen(
@@ -219,13 +221,13 @@ class MainActivity : FragmentActivity() {
 
     private fun requestUnlock() {
         if (deviceAuthenticator.isShowing) return
-        deviceAuthenticator.authenticate(t("Unlock Takt")) { result ->
+        deviceAuthenticator.authenticate(t(UiKey.TEXT_UNLOCK_TAKT)) { result ->
             when (result) {
                 DeviceAuthenticationResult.SUCCESS -> { (application as TaktApplication).deviceUnlocked = true; unlockMessage = null }
-                DeviceAuthenticationResult.CANCELLED -> unlockMessage = t("Verification cancelled")
+                DeviceAuthenticationResult.CANCELLED -> unlockMessage = uiMessage(UiKey.TEXT_VERIFICATION_CANCELLED)
                 DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> unlockMessage =
-                    t("Set up a phone PIN or password to continue")
-                DeviceAuthenticationResult.ERROR -> unlockMessage = t("Could not verify your identity")
+                    uiMessage(UiKey.TEXT_SET_UP_A_PHONE_PIN_OR_PASSWORD_TO_CONTINUE)
+                DeviceAuthenticationResult.ERROR -> unlockMessage = uiMessage(UiKey.TEXT_COULD_NOT_VERIFY_YOUR_IDENTITY)
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,32 +39,32 @@ internal fun TaktWelcomeScreen(onConnect: () -> Unit, onLocal: () -> Unit) {
             Box(Modifier.size(96.dp).glassSurface(), contentAlignment = Alignment.Center) {
                 Icon(Icons.Outlined.MenuBook, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.onSurface)
             }
-            Text("Takt", style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp), fontWeight = FontWeight.Bold)
-            Text(t("Study at your own pace"), style = MaterialTheme.typography.titleLarge,
+            Text(t(UiKey.TEXT_TAKT), style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp), fontWeight = FontWeight.Bold)
+            Text(t(UiKey.TEXT_STUDY_AT_YOUR_OWN_PACE), style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
-            WelcomeFeature(Icons.Outlined.CalendarMonth, t("Your daily timetable"),
-                t("Classes, rooms and changes in one place"), Color(0xFF2671CC))
-            WelcomeFeature(Icons.Outlined.Checklist, t("Tasks and exam eligibility"),
-                t("Track tasks, deadlines and exam eligibility"), Color(0xFFAD721F))
-            WelcomeFeature(Icons.Outlined.BarChart, t("Grades and progress"),
-                t("Your grades and academic progress"), Color(0xFF21816B))
+            WelcomeFeature(Icons.Outlined.CalendarMonth, t(UiKey.TEXT_YOUR_DAILY_TIMETABLE),
+                t(UiKey.TEXT_CLASSES_ROOMS_AND_CHANGES_IN_ONE_PLACE), Color(0xFF2671CC))
+            WelcomeFeature(Icons.Outlined.Checklist, t(UiKey.TEXT_TASKS_AND_EXAM_ELIGIBILITY),
+                t(UiKey.TEXT_TRACK_TASKS_DEADLINES_AND_EXAM_ELIGIBILITY), Color(0xFFAD721F))
+            WelcomeFeature(Icons.Outlined.BarChart, t(UiKey.TEXT_GRADES_AND_PROGRESS),
+                t(UiKey.TEXT_YOUR_GRADES_AND_ACADEMIC_PROGRESS), Color(0xFF21816B))
             Spacer(Modifier.height(6.dp))
             TaktPrimaryButton(onClick = onConnect, modifier = Modifier.fillMaxWidth().testTag("welcome-uis")) {
                 Icon(Icons.Outlined.School, null)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Connect UIS STU"))
+                Text(t(UiKey.TEXT_CONNECT_UIS_STU))
             }
             GlassSurface(Modifier.fillMaxWidth()) {
                 TextButton(onClick = onLocal, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("welcome-local")) {
                     Icon(Icons.Outlined.Laptop, null)
                     Spacer(Modifier.width(10.dp))
-                    Text(t("Start locally"), style = MaterialTheme.typography.titleMedium)
+                    Text(t(UiKey.TEXT_START_LOCALLY), style = MaterialTheme.typography.titleMedium)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Outlined.Shield, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(t("Your study data stays on this device."), style = MaterialTheme.typography.bodySmall,
+                Text(t(UiKey.TEXT_YOUR_STUDY_DATA_STAYS_ON_THIS_DEVICE), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }

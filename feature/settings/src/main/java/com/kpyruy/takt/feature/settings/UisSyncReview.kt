@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,31 +77,31 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
     val remotePeriod = data.period
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (showHeading) Text(t("Compare with UIS"), style = MaterialTheme.typography.titleLarge)
+        if (showHeading) Text(t(UiKey.TEXT_COMPARE_WITH_UIS), style = MaterialTheme.typography.titleLarge)
         action.message?.let { Text(t(it), color = MaterialTheme.colorScheme.primary) }
         action.error?.let {
             Text(t(it), color = MaterialTheme.colorScheme.error)
-            TextButton(enabled = !action.running, onClick = { scope.launch { repository.retrySyncAction() } }) { Text(t("Retry")) }
+            TextButton(enabled = !action.running, onClick = { scope.launch { repository.retrySyncAction() } }) { Text(t(UiKey.TEXT_RETRY)) }
         }
-        if (action.running) Text(t("Saving…"))
+        if (action.running) Text(t(UiKey.TEXT_SAVING))
         if (UisSyncSection.PERIODS in data.availableSections && remotePeriod != null && data.localPeriod != remotePeriod) {
-            Text(t("Academic period"), style = MaterialTheme.typography.titleMedium)
-            Text(t("Local: ${data.localPeriod?.studyStart ?: "—"} – ${data.localPeriod?.studyEnd ?: "—"}; exams ${data.localPeriod?.examStart ?: "—"} – ${data.localPeriod?.examEnd ?: "—"}"))
-            Text(t("UIS: ${remotePeriod.studyStart} – ${remotePeriod.studyEnd}; exams ${remotePeriod.examStart} – ${remotePeriod.examEnd}"))
+            Text(t(UiKey.TEXT_ACADEMIC_PERIOD), style = MaterialTheme.typography.titleMedium)
+            Text(t(uiMessage(UiKey.FORMAT_LOCAL_VALUE_VALUE_EXAMS_VALUE_VALUE, data.localPeriod?.studyStart ?: "—", data.localPeriod?.studyEnd ?: "—", data.localPeriod?.examStart ?: "—", data.localPeriod?.examEnd ?: "—")))
+            Text(t(uiMessage(UiKey.FORMAT_UIS_VALUE_VALUE_EXAMS_VALUE_VALUE, remotePeriod.studyStart, remotePeriod.studyEnd, remotePeriod.examStart, remotePeriod.examEnd)))
             OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyPeriod() } }) {
-                Text(t("Update period"))
+                Text(t(UiKey.TEXT_UPDATE_PERIOD))
             }
         }
         if (UisSyncSection.PROGRESS in data.availableSections &&
             (data.localEarnedCredits != data.earnedCredits || data.localRequiredCredits != data.requiredCredits)) {
-            Text(t("UIS credits"), style = MaterialTheme.typography.titleMedium)
-            Text(t("Local: ${data.localEarnedCredits ?: "—"} of ${data.localRequiredCredits ?: "—"}; UIS: ${data.earnedCredits ?: "—"} of ${data.requiredCredits ?: "—"}"))
-            OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyCredits() } }) { Text(t("Update UIS credits")) }
+            Text(t(UiKey.TEXT_UIS_CREDITS), style = MaterialTheme.typography.titleMedium)
+            Text(t(uiMessage(UiKey.FORMAT_LOCAL_VALUE_OF_VALUE_UIS_VALUE_OF_VALUE, data.localEarnedCredits ?: "—", data.localRequiredCredits ?: "—", data.earnedCredits ?: "—", data.requiredCredits ?: "—")))
+            OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyCredits() } }) { Text(t(UiKey.TEXT_UPDATE_UIS_CREDITS)) }
         }
         if (progress.isNotEmpty()) {
-            Text(t("Progress · ${progress.size} changes"), style = MaterialTheme.typography.titleMedium)
+            Text(t(uiMessage(UiKey.FORMAT_PROGRESS_VALUE_CHANGES, progress.size)), style = MaterialTheme.typography.titleMedium)
             OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyAllProgress() } }) {
-                Text(t("Update all progress"))
+                Text(t(UiKey.TEXT_UPDATE_ALL_PROGRESS))
             }
             progress.forEach { (local, remote) ->
                 SectionCard {
@@ -108,27 +110,27 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 if (local.status != remote.status) Text("${statusLabel(local.status)} → ${statusLabel(remote.status)}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (local.passFailResult != remote.passFailResult) {
-                    Text("${local.passFailResult?.name ?: "—"} → ${remote.passFailResult?.name ?: "—"}",
+                    Text("${passFailLabel(local.passFailResult)} → ${passFailLabel(remote.passFailResult)}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 val nextGrade = remote.officialGrade ?: local.officialGrade
                 val nextDate = remote.fulfilledOn ?: local.fulfilledOn
                 if (local.officialGrade != nextGrade) {
-                    Text(t("Official UIS grade") + ": ${local.officialGrade?.name ?: "—"} → ${nextGrade?.name ?: "—"}",
+                    Text(t(UiKey.TEXT_OFFICIAL_UIS_GRADE) + ": ${local.officialGrade?.name ?: "—"} → ${nextGrade?.name ?: "—"}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (local.fulfilledOn != nextDate) {
-                    Text(t("Completion date") + ": ${local.fulfilledOn ?: "—"} → ${nextDate ?: "—"}",
+                    Text(t(UiKey.TEXT_COMPLETION_DATE) + ": ${local.fulfilledOn ?: "—"} → ${nextDate ?: "—"}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(enabled = !action.running, onClick = { scope.launch { repository.applyProgress(remote.id) } }) {
-                    Text(t("Update course progress"))
+                    Text(t(UiKey.TEXT_UPDATE_COURSE_PROGRESS))
                 }
                 }
             }
         }
         if (metadata.isNotEmpty()) {
-            Text(t("Courses · ${metadata.size} changes"), style = MaterialTheme.typography.titleMedium)
+            Text(t(uiMessage(UiKey.FORMAT_COURSES_VALUE_CHANGES, metadata.size)), style = MaterialTheme.typography.titleMedium)
             metadata.forEach { remote ->
                 SectionCard {
                 val local = data.localCourses.matchingUisCourse(remote)
@@ -138,16 +140,16 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                     if (candidates.size > 1) selectingCourse = remote
                     else scope.launch { repository.applyCourse(remote.id) }
                 }) {
-                    Text(t(if (local == null) "Add course" else "Update course"))
+                    Text(t(if (local == null) UiKey.TEXT_ADD_COURSE else UiKey.TEXT_UPDATE_COURSE))
                 }
                 }
             }
         }
         if (addedRules.isNotEmpty() || addedEvents.isNotEmpty() || removedRules.isNotEmpty() || removedEvents.isNotEmpty()) {
-            Text(t("Timetable · ${addedRules.size + addedEvents.size} new, ${removedRules.size + removedEvents.size} local only"),
+            Text(t(uiMessage(UiKey.FORMAT_TIMETABLE_VALUE_NEW_VALUE_LOCAL_ONLY, addedRules.size + addedEvents.size, removedRules.size + removedEvents.size)),
                 style = MaterialTheme.typography.titleMedium)
             OutlinedButton(enabled = !action.running, onClick = { confirmReplacement = true },
-                modifier = Modifier.fillMaxWidth()) { Text(t("Replace the entire timetable with UIS")) }
+                modifier = Modifier.fillMaxWidth()) { Text(t(UiKey.TEXT_REPLACE_THE_ENTIRE_TIMETABLE_WITH_UIS)) }
             addedRules.forEach { rule ->
                 TimetableDifference(enabled = !action.running, title = rule.title,
                     details = rule.dayOfWeek.getDisplayName(TextStyle.FULL, TaktI18n.locale) + " · ${rule.startTime}–${rule.endTime}" +
@@ -163,9 +165,9 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 }
             }
             if (removedRules.isNotEmpty() || removedEvents.isNotEmpty()) {
-                Text(t("Local only: ${removedRules.size + removedEvents.size} classes. They are removed only by full replacement."),
+                Text(t(uiMessage(UiKey.FORMAT_LOCAL_ONLY_VALUE_CLASSES_THEY_ARE_REMOVED_ONLY_BY_FULL_REPLACEMENT, removedRules.size + removedEvents.size)),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                removedRules.forEach { rule -> Text("${rule.dayOfWeek} ${rule.startTime}–${rule.endTime} · ${rule.title}") }
+                removedRules.forEach { rule -> Text("${rule.dayOfWeek.getDisplayName(TextStyle.FULL, TaktI18n.locale)} ${rule.startTime}–${rule.endTime} · ${rule.title}") }
                 removedEvents.forEach { event -> Text("${event.date} ${event.startTime}–${event.endTime} · ${event.title}") }
             }
         }
@@ -174,39 +176,39 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
             (UisSyncSection.PERIODS !in data.availableSections || data.localPeriod == remotePeriod) &&
             (UisSyncSection.PROGRESS !in data.availableSections ||
                 data.localEarnedCredits == data.earnedCredits && data.localRequiredCredits == data.requiredCredits)) {
-            Text(t("Data matches"))
+            Text(t(UiKey.TEXT_DATA_MATCHES))
         }
-        TextButton(enabled = !action.running, onClick = repository::dismissPreview) { Text(t("Keep local data")) }
+        TextButton(enabled = !action.running, onClick = repository::dismissPreview) { Text(t(UiKey.TEXT_KEEP_LOCAL_DATA)) }
     }
     selectingCourse?.let { remote ->
         AlertDialog(
             onDismissRequest = { selectingCourse = null },
-            title = { Text(t("Choose the matching course")) },
+            title = { Text(t(UiKey.TEXT_CHOOSE_THE_MATCHING_COURSE)) },
             text = { Column {
                 Text("${remote.code} · ${settings.displayCourseTitle(remote)}")
-                Text(t("Personal data from the selected course will be transferred to the UIS ID."))
+                Text(t(UiKey.TEXT_PERSONAL_DATA_FROM_THE_SELECTED_COURSE_WILL_BE_TRANSFERRED_TO_THE_UIS_ID))
                 data.localCourses.filter { it.matchesUisCourse(remote) }.forEach { candidate ->
                     TextButton(enabled = !action.running, onClick = {
                         selectingCourse = null
                         scope.launch { repository.applyCourse(remote.id, candidate.id) }
                     }) {
-                        Text(listOf(candidate.title, t("Semester ${candidate.semester}"), t("${candidate.credits} credits"), if (candidate.id.startsWith("uis:")) "UIS" else t("Local mode")).joinToString(" · "))
+                        Text(listOf(candidate.title, t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, candidate.semester)), t(uiMessage(UiKey.FORMAT_VALUE_CREDITS_6F9D64BE, candidate.credits)), if (candidate.id.startsWith("uis:")) t(UiKey.TEXT_UIS) else t(UiKey.TEXT_LOCAL_MODE)).joinToString(" · "))
                     }
                 }
             } },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { selectingCourse = null }) { Text(t("Cancel")) } },
+            dismissButton = { TextButton(onClick = { selectingCourse = null }) { Text(t(UiKey.ACTION_CANCEL)) } },
         )
     }
     if (confirmReplacement) AlertDialog(
         onDismissRequest = { confirmReplacement = false },
-        title = { Text(t("Replace timetable?")) },
-        text = { Text(t("All local classes and their changes will be removed. You can restore the timetable if you have a backup.")) },
+        title = { Text(t(UiKey.TEXT_REPLACE_TIMETABLE)) },
+        text = { Text(t(UiKey.TEXT_ALL_LOCAL_CLASSES_AND_THEIR_CHANGES_WILL_BE_REMOVED_YOU_CAN_RE_217F5710)) },
         confirmButton = { TextButton(enabled = !action.running, onClick = {
             confirmReplacement = false
             scope.launch { repository.replaceSchedule() }
-        }) { Text(t("Replace")) } },
-        dismissButton = { TextButton(onClick = { confirmReplacement = false }) { Text(t("Cancel")) } },
+        }) { Text(t(UiKey.TEXT_REPLACE)) } },
+        dismissButton = { TextButton(onClick = { confirmReplacement = false }) { Text(t(UiKey.ACTION_CANCEL)) } },
     )
 }
 
@@ -228,7 +230,7 @@ private fun TimetableDifference(title: String, details: String, enabled: Boolean
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
         OutlinedButton(enabled = enabled, onClick = onAdd, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.Add, null, Modifier.padding(end = 8.dp).size(18.dp))
-            Text(t("Add lesson"))
+            Text(t(UiKey.TEXT_ADD_LESSON))
         }
     }
 }
@@ -239,11 +241,11 @@ private fun sameSubject(local: Course, remote: Course) =
         local.gradingType == remote.gradingType && local.requirementType == remote.requirementType
 
 private fun statusLabel(status: CourseStatus): String = t(when (status) {
-    CourseStatus.FULFILLED -> "Work completed"
-    CourseStatus.ENROLLED -> "Active subject"
-    CourseStatus.PLANNED -> "Scheduled"
-    CourseStatus.NOT_ENROLLED -> "Not recorded"
-    CourseStatus.NOT_NEEDED -> "Not needed"
+    CourseStatus.FULFILLED -> UiKey.TEXT_WORK_COMPLETED
+    CourseStatus.ENROLLED -> UiKey.TEXT_ACTIVE_SUBJECT
+    CourseStatus.PLANNED -> UiKey.TEXT_SCHEDULED
+    CourseStatus.NOT_ENROLLED -> UiKey.TEXT_NOT_RECORDED
+    CourseStatus.NOT_NEEDED -> UiKey.TEXT_NOT_NEEDED
 })
 
 private fun sameRule(a: ScheduleRule, b: ScheduleRule) =
@@ -255,3 +257,9 @@ private fun sameEvent(a: OneOffScheduleEvent, b: OneOffScheduleEvent) =
     a.courseId == b.courseId && a.date == b.date && a.startTime == b.startTime &&
         a.endTime == b.endTime && a.room == b.room && a.lessonType == b.lessonType &&
         (a.courseId != null || a.title == b.title)
+
+private fun passFailLabel(result: com.kpyruy.takt.core.model.PassFailResult?): String = when (result) {
+    com.kpyruy.takt.core.model.PassFailResult.PASSED -> t(UiKey.TEXT_PASSED)
+    com.kpyruy.takt.core.model.PassFailResult.FAILED -> t(UiKey.TEXT_FAILED)
+    null -> "—"
+}

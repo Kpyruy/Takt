@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.i18n
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.model.*
 import java.time.Instant
 import java.time.ZoneId
@@ -17,7 +18,7 @@ class NotificationTranslationsTest {
         assertEquals(AppLanguage.UKRAINIAN, TaktI18n.language)
     }
     @Test fun allCategoriesAndChannelsHaveEnglishAndSlovakText() {
-        val keys = ReminderCategory.entries.map { it.label } + listOf("Notifications", "Academic work and tasks", "Events and reminders")
+        val keys = ReminderCategory.entries.map { it.label } + listOf(UiKey.TEXT_NOTIFICATIONS, UiKey.TEXT_ACADEMIC_WORK_AND_TASKS, UiKey.TEXT_EVENTS_AND_REMINDERS)
         keys.forEach { key ->
             assertNotNull(NotificationTranslations.lookup(key, AppLanguage.ENGLISH))
             assertNotNull(NotificationTranslations.lookup(key, AppLanguage.SLOVAK))
@@ -31,9 +32,9 @@ class NotificationTranslationsTest {
     }
     @Test fun newUiStringsAreRegistered() {
         TaktI18n.use(AppLanguage.ENGLISH)
-        assertEquals("Android permissions", t("Android permissions"))
+        assertEquals("Android permissions", t(UiKey.TEXT_ANDROID_PERMISSIONS))
         TaktI18n.use(AppLanguage.SLOVAK)
-        assertEquals("Lokálne pripomienky", t("Local reminders"))
+        assertEquals("Lokálne pripomienky", t(UiKey.TEXT_LOCAL_REMINDERS))
     }
     @Test fun selectedBackgroundLanguageControlsLessonPrefixAndDateDespiteUiAndDeviceLanguage() {
         val deviceLocale = java.util.Locale.getDefault()

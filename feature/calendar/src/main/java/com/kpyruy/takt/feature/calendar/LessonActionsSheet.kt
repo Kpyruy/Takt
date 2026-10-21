@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.*
@@ -46,10 +47,10 @@ fun LessonActionsSheet(
     TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t) ?: t("Class"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t) ?: t(UiKey.TEXT_CLASS), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close class actions")) }
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t(UiKey.TEXT_CLOSE_CLASS_ACTIONS)) }
             }
             Text(listOfNotNull(event.date.format(DateTimeFormatter.ofPattern("d MMMM", TaktI18n.locale)),
                 "${event.startTime}–${event.endTime}", event.room).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -60,20 +61,20 @@ fun LessonActionsSheet(
                     tint = if (event.isAbsent) MaterialTheme.colorScheme.errorContainer else Color.Unspecified) {
                     Box(Modifier.background(if (event.isAbsent) MaterialTheme.colorScheme.errorContainer.copy(alpha = .64f)
                         else Color.Transparent, shape)) {
-                        ActionRow(if (event.isAbsent) t("Remove absence mark") else t("Mark absent"),
+                        ActionRow(if (event.isAbsent) t(UiKey.TEXT_REMOVE_ABSENCE_MARK) else t(UiKey.TEXT_MARK_ABSENT),
                             Icons.Outlined.PersonOff, onToggleAbsence, selected = event.isAbsent,
                             contentColor = if (event.isAbsent) MaterialTheme.colorScheme.onErrorContainer else null)
                     }
                 }
             }
-            if (actions.canMoveOccurrence) ActionRow(t("Move this class"), Icons.Outlined.EventRepeat, onMoveOccurrence)
-            if (actions.canCancelOccurrence) ActionRow(t("Cancel only this class"), Icons.Outlined.EventBusy, onCancelOccurrence)
-            if (actions.canRestoreOccurrence) ActionRow(t("Return the original class"), Icons.Outlined.Restore, onRestoreOccurrence)
+            if (actions.canMoveOccurrence) ActionRow(t(UiKey.TEXT_MOVE_THIS_CLASS), Icons.Outlined.EventRepeat, onMoveOccurrence)
+            if (actions.canCancelOccurrence) ActionRow(t(UiKey.TEXT_CANCEL_ONLY_THIS_CLASS), Icons.Outlined.EventBusy, onCancelOccurrence)
+            if (actions.canRestoreOccurrence) ActionRow(t(UiKey.TEXT_RETURN_THE_ORIGINAL_CLASS), Icons.Outlined.Restore, onRestoreOccurrence)
             if (actions.canEditRecurringRule || actions.canEditOneOff) Spacer(Modifier.height(6.dp))
-            if (actions.canEditRecurringRule) ActionRow(t("Edit"), Icons.Outlined.Edit, onEditRule)
-            if (actions.canEditOneOff) ActionRow(t("Edit a one-time event"), Icons.Outlined.Edit, onEditOneOff)
-            if (actions.canDeleteRecurringRule) ActionRow(t("Delete from schedule"), Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
-            if (actions.canDeleteOneOff) ActionRow(t("Delete a one-time event"), Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
+            if (actions.canEditRecurringRule) ActionRow(t(UiKey.TEXT_EDIT), Icons.Outlined.Edit, onEditRule)
+            if (actions.canEditOneOff) ActionRow(t(UiKey.TEXT_EDIT_A_ONE_TIME_EVENT), Icons.Outlined.Edit, onEditOneOff)
+            if (actions.canDeleteRecurringRule) ActionRow(t(UiKey.TEXT_DELETE_FROM_SCHEDULE), Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
+            if (actions.canDeleteOneOff) ActionRow(t(UiKey.TEXT_DELETE_A_ONE_TIME_EVENT), Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
         }
     }
 }

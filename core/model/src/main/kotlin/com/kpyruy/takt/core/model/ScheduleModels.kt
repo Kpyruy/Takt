@@ -7,12 +7,12 @@ import java.time.LocalTime
 import java.time.temporal.WeekFields
 
 enum class LessonType(val label: String, val shortLabel: String) {
-    UNSPECIFIED("Unspecified", ""),
-    LECTURE("Lecture", "Lect."),
-    SEMINAR("Seminar", "Sem."),
-    PRACTICE("Practical", "Pract."),
-    LAB("Lab", "Lab (short)"),
-    EVENT("Event", "Event");
+    UNSPECIFIED(UiKey.TEXT_UNSPECIFIED, ""),
+    LECTURE(UiKey.TEXT_LECTURE, UiKey.TEXT_LECT),
+    SEMINAR(UiKey.TEXT_SEMINAR, UiKey.TEXT_SEM),
+    PRACTICE(UiKey.TEXT_PRACTICAL, UiKey.TEXT_PRACT),
+    LAB(UiKey.TEXT_LAB, UiKey.TEXT_LAB_SHORT),
+    EVENT(UiKey.TEXT_EVENT, UiKey.TEXT_EVENT);
 
     companion object {
         fun fromStorage(value: String): LessonType = entries.firstOrNull { it.name == value } ?: UNSPECIFIED

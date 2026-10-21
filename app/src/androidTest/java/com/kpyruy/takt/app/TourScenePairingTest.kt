@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.kpyruy.takt.core.model.AppLanguage
@@ -15,8 +16,8 @@ class TourScenePairingTest {
     @Test fun subjectExplanationTravelsWithSubjectsDuringCalendarTransition() {
         runBlocking { (compose.activity.application as TaktApplication).dataContainer.settingsRepository.setLanguage(AppLanguage.SLOVAK) }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
-        compose.onAllNodesWithContentDescription(t("Settings")).onFirst().performClick()
-        compose.onNodeWithText(t("Tour of Takt")).performScrollTo().performClick()
+        compose.onAllNodesWithContentDescription(t(UiKey.TEXT_SETTINGS)).onFirst().performClick()
+        compose.onNodeWithText(t(UiKey.TEXT_TOUR_OF_TAKT)).performScrollTo().performClick()
         repeat(6) {
             compose.waitUntil(8_000) { compose.onAllNodesWithTag("tour-next").fetchSemanticsNodes().any { it.config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled).not() } }
             compose.onNodeWithTag("tour-next").performClick()

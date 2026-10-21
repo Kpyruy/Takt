@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.clickable
@@ -22,7 +23,7 @@ import com.kpyruy.takt.core.ui.components.GlassSurface
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
-fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earned: Double = 0.0, maximum: Double = 0.0, scoreLabel: String = t("For the semester"), grade: GradeLetter? = course.officialGrade) {
+fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earned: Double = 0.0, maximum: Double = 0.0, scoreLabel: String = t(UiKey.TEXT_FOR_THE_SEMESTER), grade: GradeLetter? = course.officialGrade) {
     GlassSurface(Modifier.fillMaxWidth().testTag("subjects-course-${course.id}").clickable(onClick = onClick), shape = RoundedCornerShape(22.dp)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -30,7 +31,7 @@ fun SubjectCard(course: Course, progressLine: String, onClick: () -> Unit, earne
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(course.title, fontSize = 17.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold,
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
-                SmallText(course.code + " · " + course.credits + t(" credits"))
+                SmallText(course.code + " · " + course.credits + t(UiKey.TEXT_CREDITS))
                 if (progressLine.isNotBlank()) SmallText(progressLine)
             }
             if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null })

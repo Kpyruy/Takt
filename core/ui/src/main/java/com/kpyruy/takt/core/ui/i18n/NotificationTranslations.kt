@@ -6,6 +6,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.kpyruy.takt.core.model.UiKey
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.uiArg
 
 /** Also usable from an alarm receiver: never changes TaktI18n.language or Compose state. */
 object NotificationTranslations {
@@ -14,37 +17,24 @@ object NotificationTranslations {
     fun locale(language: AppLanguage): Locale = TaktI18n.locale(language)
     fun title(category: ReminderCategory, title: String, language: AppLanguage): String {
         val key = when (category) {
-            ReminderCategory.REMINDER -> "Reminder notification"
-            ReminderCategory.LESSON -> "Lesson"
-            ReminderCategory.TASK -> "Task"
-            ReminderCategory.EVENT -> "Event"
+            ReminderCategory.REMINDER -> UiKey.TEXT_REMINDER_NOTIFICATION
+            ReminderCategory.LESSON -> UiKey.TEXT_LESSON
+            ReminderCategory.TASK -> UiKey.TEXT_TASK
+            ReminderCategory.EVENT -> UiKey.TEXT_EVENT
             else -> category.label
         }
-        return "${text(key, language)}: $title"
+        return text(uiMessage(UiKey.FORMAT_NOTIFICATION_TITLE, uiArg(key), title), language)
     }
     fun body(occursAt: Instant, dateOnly: Boolean, courseTitle: String?, language: AppLanguage, zone: ZoneId): String {
         val locale = locale(language)
         val date = occursAt.atZone(zone).format(DateTimeFormatter.ofPattern(if (dateOnly) "d MMM" else "d MMM, HH:mm", locale))
-        val time = String.format(locale, text(if (dateOnly) "Due: %s" else "Starts: %s", language), date)
+        val time = text(uiMessage(if (dateOnly) UiKey.NOTIFICATION_DUE else UiKey.NOTIFICATION_STARTS, date), language)
         return listOfNotNull(courseTitle?.takeIf { it.isNotBlank() }, time).joinToString(" · ")
     }
     fun offset(minutes: Long, language: AppLanguage): String {
         val unit = com.kpyruy.takt.core.model.ReminderLeadUnit.entries.lastOrNull { minutes % it.minutes == 0L }
             ?: com.kpyruy.takt.core.model.ReminderLeadUnit.MINUTES
         val count = minutes / unit.minutes
-        val label = when (language) {
-            AppLanguage.ENGLISH -> when (unit) {
-                com.kpyruy.takt.core.model.ReminderLeadUnit.DAYS -> if (count == 1L) "day" else "days"
-                com.kpyruy.takt.core.model.ReminderLeadUnit.WEEKS -> if (count == 1L) "week" else "weeks"
-                else -> text(unit.label, language)
-            }
-            AppLanguage.SLOVAK -> when (unit) {
-                com.kpyruy.takt.core.model.ReminderLeadUnit.DAYS -> if (count == 1L) "deň" else if (count in 2L..4L) "dni" else "dní"
-                com.kpyruy.takt.core.model.ReminderLeadUnit.WEEKS -> if (count == 1L) "týždeň" else if (count in 2L..4L) "týždne" else "týždňov"
-                else -> text(unit.label, language)
-            }
-            else -> text(unit.label, language)
-        }
-        return "$count $label"
+        return formatLeadCount(count, unit, language)
     }
 }

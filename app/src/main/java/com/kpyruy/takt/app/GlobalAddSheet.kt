@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.i18n.t
 
@@ -79,8 +80,8 @@ internal fun GlobalAddContent(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Add"), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
-                TaktIconButton(Icons.Outlined.Close, t("Close"), onDismiss)
+                Text(t(UiKey.TEXT_ADD), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
+                TaktIconButton(Icons.Outlined.Close, t(UiKey.ACTION_CLOSE), onDismiss)
             }
             val actions = CreateItemType.entries.filter { allowCourseCreation || it != CreateItemType.COURSE }
             Column(Modifier.fillMaxWidth().tourTarget("add-actions"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -94,7 +95,7 @@ internal fun GlobalAddContent(
                         contentAlignment = Alignment.Center) {
                         Icon(Icons.Outlined.Bolt, null, tint = MaterialTheme.colorScheme.primary)
                     }
-                    Text(t("Quick add"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    Text(t(UiKey.TEXT_QUICK_ADD), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -154,12 +155,12 @@ private fun CreateItemType.actionTint(): Color = when (this) {
 }
 
 private fun CreateItemType.actionHint(): String = t(when (this) {
-    CreateItemType.COURSE -> "Add course"
-    CreateItemType.CLASS -> "Add class"
-    CreateItemType.TASK -> "Add a task"
-    CreateItemType.TEST -> "Add test"
-    CreateItemType.EXAM -> "Add an exam"
-    CreateItemType.NOTE -> "Add a note"
-    CreateItemType.EVENT -> "Add event"
-    CreateItemType.REMINDER -> "Add reminder"
+    CreateItemType.COURSE -> UiKey.TEXT_ADD_COURSE
+    CreateItemType.CLASS -> UiKey.TEXT_ADD_CLASS
+    CreateItemType.TASK -> UiKey.WORK_ADD_TASK
+    CreateItemType.TEST -> UiKey.TEXT_ADD_TEST
+    CreateItemType.EXAM -> UiKey.TEXT_ADD_AN_EXAM
+    CreateItemType.NOTE -> UiKey.TEXT_ADD_A_NOTE
+    CreateItemType.EVENT -> UiKey.TEXT_ADD_EVENT
+    CreateItemType.REMINDER -> UiKey.TEXT_ADD_REMINDER
 })

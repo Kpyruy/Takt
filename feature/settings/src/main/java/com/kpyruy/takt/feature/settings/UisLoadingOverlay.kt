@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.kpyruy.takt.core.ui.i18n.t
 
 @Composable
-internal fun UisLoadingOverlay(onCancel: () -> Unit, title: String = "Connecting to UIS…") {
+internal fun UisLoadingOverlay(onCancel: () -> Unit, title: String = UiKey.TEXT_CONNECTING_TO_UIS) {
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { keyboard?.hide() }
     // A modal window dims and blocks the entire activity, including the bottom navigation.
@@ -47,7 +48,7 @@ internal fun UisLoadingOverlay(onCancel: () -> Unit, title: String = "Connecting
                 ) {
                     CircularProgressIndicator(Modifier.size(36.dp), strokeWidth = 3.dp)
                     Text(t(title), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                    TextButton(onClick = onCancel) { Text(t("Cancel")) }
+                    TextButton(onClick = onCancel) { Text(t(UiKey.ACTION_CANCEL)) }
                 }
             }
         }

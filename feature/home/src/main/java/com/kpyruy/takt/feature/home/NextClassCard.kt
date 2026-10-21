@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.home
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
@@ -37,23 +39,23 @@ internal fun NextClassCard(event: ResolvedScheduleEvent, now: LocalTime, onClick
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(if (current) t("Now in progress") else t("Following class"), style = MaterialTheme.typography.labelMedium)
+                Text(if (current) t(UiKey.TEXT_NOW_IN_PROGRESS) else t(UiKey.TEXT_FOLLOWING_CLASS), style = MaterialTheme.typography.labelMedium)
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
             Text(event.title, style = MaterialTheme.typography.headlineSmall)
-            Text(listOfNotNull(event.room?.let { t("Room ${it}") },
+            Text(listOfNotNull(event.room?.let { t(uiMessage(UiKey.FORMAT_ROOM_VALUE, it)) },
                 when (event.status) {
-                    ScheduleEventStatus.MOVED -> t("Rescheduled")
-                    ScheduleEventStatus.ONE_OFF -> t("One time event")
+                    ScheduleEventStatus.MOVED -> t(UiKey.TEXT_RESCHEDULED)
+                    ScheduleEventStatus.ONE_OFF -> t(UiKey.TEXT_ONE_TIME_EVENT)
                     else -> null
-                }).joinToString(" · ").ifBlank { t("Room not specified yet") },
+                }).joinToString(" · ").ifBlank { t(UiKey.TEXT_ROOM_NOT_SPECIFIED_YET) },
                 style = MaterialTheme.typography.bodySmall)
             HorizontalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.24f))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("${event.startTime.format(time)}–${event.endTime.format(time)}",
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                Text(if (current) t("Now") else t("In ${Duration.between(now, event.startTime).toMinutes()} min"),
+                Text(if (current) t(UiKey.TEXT_NOW_FE18013D) else t(uiMessage(UiKey.FORMAT_IN_VALUE_MIN, Duration.between(now, event.startTime).toMinutes())),
                     style = MaterialTheme.typography.labelMedium)
             }
         }

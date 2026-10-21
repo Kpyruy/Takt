@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.settings
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -51,9 +52,9 @@ internal fun PaletteColorPicker(
     val liveHex = hsv.toHex()
     val liveSettings = previewSettings.withPreview(previewTheme.withColor(role, liveHex))
     val roleLabel = role.label()
-    val hueLabel = t("Hue")
-    val saturationLabel = t("Saturation")
-    val brightnessLabel = t("Brightness")
+    val hueLabel = t(UiKey.TEXT_HUE)
+    val saturationLabel = t(UiKey.TEXT_SATURATION)
+    val brightnessLabel = t(UiKey.TEXT_BRIGHTNESS)
     fun change(color: TaktHsvColor) { hsv = color; hexInput = color.toHex() }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val shape = RoundedCornerShape(28.dp)
@@ -68,7 +69,7 @@ internal fun PaletteColorPicker(
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
                     .testTag("theme-picker-controls"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Spacer(Modifier.height(8.dp))
-                    val planeLabel = t("Saturation and brightness")
+                    val planeLabel = t(UiKey.TEXT_SATURATION_AND_BRIGHTNESS)
                     SaturationValuePlane(hsv, { change(hsv.copy(saturation = it.x, value = it.y)) },
                         Modifier.fillMaxWidth().height(112.dp).clip(MaterialTheme.shapes.medium)
                             .semantics { contentDescription = planeLabel }.testTag("theme-picker-sv"))
@@ -91,17 +92,17 @@ internal fun PaletteColorPicker(
                     TaktTextField(hexInput, { raw ->
                         hexInput = raw
                         TaktHsvColor.fromHex(raw)?.let { hsv = it }
-                    }, Modifier.fillMaxWidth().testTag("theme-picker-hex"), label = { Text("HEX") }, singleLine = true,
+                    }, Modifier.fillMaxWidth().testTag("theme-picker-hex"), label = { Text(t(UiKey.COLOR_HEX)) }, singleLine = true,
                         isError = normalizeThemeHex(hexInput) == null,
                         leadingIcon = { Box(Modifier.size(22.dp).background(Color.hsv(hsv.hue.coerceIn(0f, 360f), hsv.saturation, hsv.value), MaterialTheme.shapes.small)) },
-                        supportingText = { Text(t("HEX: #RRGGBB, for example #B52D67")) })
+                        supportingText = { Text(t(UiKey.TEXT_HEX_RRGGBB_FOR_EXAMPLE_B52D67)) })
                     Spacer(Modifier.height(8.dp))
                 }
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.testTag("theme-picker-cancel")) { Text(t("Cancel")) }
+                    TextButton(onClick = onDismiss, modifier = Modifier.testTag("theme-picker-cancel")) { Text(t(UiKey.ACTION_CANCEL)) }
                     TaktPrimaryButton(onClick = { onApply(liveHex) }, enabled = normalizeThemeHex(hexInput) != null,
-                        modifier = Modifier.weight(1f).testTag("theme-picker-apply")) { Text(t("Choose color")) }
+                        modifier = Modifier.weight(1f).testTag("theme-picker-apply")) { Text(t(UiKey.TEXT_CHOOSE_COLOR)) }
                 }
             }
         }

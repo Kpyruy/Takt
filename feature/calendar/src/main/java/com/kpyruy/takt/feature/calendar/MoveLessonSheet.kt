@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import com.kpyruy.takt.core.ui.components.TaktFullSheet
@@ -52,11 +54,11 @@ fun MoveLessonSheet(
                 .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Move class"), style = MaterialTheme.typography.headlineSmall)
+            Text(t(UiKey.TEXT_MOVE_CLASS), style = MaterialTheme.typography.headlineSmall)
             Text(event.title, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             TaktDatePickerField(
-                label = t("New date"),
+                label = t(UiKey.TEXT_NEW_DATE),
                 value = targetDate,
                 onValueChange = {
                     targetDate = it
@@ -70,7 +72,7 @@ fun MoveLessonSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TaktTimePickerField(
-                    label = t("Start time"),
+                    label = t(UiKey.TEXT_START_TIME),
                     value = startTime,
                     onValueChange = {
                         startTime = it
@@ -79,7 +81,7 @@ fun MoveLessonSheet(
                     modifier = Modifier.weight(1f),
                 )
                 TaktTimePickerField(
-                    label = t("End"),
+                    label = t(UiKey.TEXT_END),
                     value = endTime,
                     onValueChange = {
                         endTime = it
@@ -92,19 +94,19 @@ fun MoveLessonSheet(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(t("Room")) },
+                label = { Text(t(UiKey.TEXT_ROOM_911EA89C)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
 
             error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(t(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             Button(
                 onClick = {
                     if (endTime <= startTime) {
-                        error = t("The end must be later than the beginning.")
+                        error = uiMessage(UiKey.TEXT_THE_END_MUST_BE_LATER_THAN_THE_BEGINNING)
                         return@Button
                     }
                     onSave(
@@ -122,7 +124,7 @@ fun MoveLessonSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(t("Move"))
+                Text(t(UiKey.TEXT_MOVE))
             }
         }
     }

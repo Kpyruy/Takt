@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.tourTarget
 import com.kpyruy.takt.core.ui.components.BindTaktTourAction
 import com.kpyruy.takt.core.ui.components.LocalTaktTourActions
@@ -89,7 +90,7 @@ internal fun CalendarViewTabs(
     BindTaktTourAction("calendar-week-list") { weekMenuExpanded = false; onWeekLayoutSelected(WeekLayout.COMPACT_LIST) }
     BindTaktTourAction("calendar-week-timetable") { weekMenuExpanded = false; onWeekLayoutSelected(WeekLayout.TIMETABLE) }
     val density = LocalDensity.current
-    val labels = listOf(t("Day"), t("Week"), t("Month"))
+    val labels = listOf(t(UiKey.TEXT_DAY), t(UiKey.TEXT_WEEK), t(UiKey.TEXT_MONTH))
     val textStyle = MaterialTheme.typography.titleSmall
     val measurer = rememberTextMeasurer()
     val neededWidth = remember(labels, textStyle, density) {
@@ -150,7 +151,7 @@ internal fun CalendarViewTabs(
                                 }
                             }
                         } else null,
-                        onLongClickLabel = if (index == 1) t("Choose a view of the week") else null,
+                        onLongClickLabel = if (index == 1) t(UiKey.TEXT_CHOOSE_A_VIEW_OF_THE_WEEK) else null,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -167,7 +168,7 @@ internal fun CalendarViewTabs(
                             onClick = ::openWeekMenu,
                             modifier = Modifier.size(28.dp).tourTarget("calendar-week-layout"),
                         ) {
-                            Icon(Icons.Default.KeyboardArrowDown, t("Choose a view of the week"), Modifier.size(19.dp))
+                            Icon(Icons.Default.KeyboardArrowDown, t(UiKey.TEXT_CHOOSE_A_VIEW_OF_THE_WEEK), Modifier.size(19.dp))
                         }
                     }
                 }
@@ -176,8 +177,8 @@ internal fun CalendarViewTabs(
                         focusable = LocalTaktTourActions.current == null,
                         modifier = Modifier.tourTarget("calendar-week-menu-popup")) {
                         listOf(
-                            WeekLayout.TIMETABLE to t("Schedule timetable"),
-                            WeekLayout.COMPACT_LIST to t("List"),
+                            WeekLayout.TIMETABLE to t(UiKey.TEXT_SCHEDULE_TIMETABLE),
+                            WeekLayout.COMPACT_LIST to t(UiKey.TEXT_LIST),
                         ).forEach { (layout, title) ->
                             DropdownMenuItem(
                                 text = { Text(title) },
@@ -206,7 +207,7 @@ internal fun CalendarPeriodArrows(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        TaktIconButton(Icons.Default.ChevronLeft, t("Previous period"), onPrevious, Modifier.size(40.dp))
-        TaktIconButton(Icons.Default.ChevronRight, t("The next period"), onNext, Modifier.size(40.dp))
+        TaktIconButton(Icons.Default.ChevronLeft, t(UiKey.TEXT_PREVIOUS_PERIOD), onPrevious, Modifier.size(40.dp))
+        TaktIconButton(Icons.Default.ChevronRight, t(UiKey.TEXT_THE_NEXT_PERIOD), onNext, Modifier.size(40.dp))
     }
 }

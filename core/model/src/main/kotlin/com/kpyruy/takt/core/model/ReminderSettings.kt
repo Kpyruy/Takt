@@ -3,11 +3,11 @@ package com.kpyruy.takt.core.model
 import java.time.LocalTime
 
 enum class ReminderCategory(val label: String, val academic: Boolean = false) {
-    TASK("Ordinary tasks"),
-    TEST("Test", true), LAB("Lab", true), SEMINAR("Seminar", true),
-    HOMEWORK("Homework", true), PROJECT("Project", true), ORAL("Oral answer", true),
-    EXAM("Exam", true), OTHER("Other academic work", true),
-    LESSON("Lessons"), EVENT("Events"), REMINDER("Reminder");
+    TASK(UiKey.TEXT_ORDINARY_TASKS),
+    TEST(UiKey.TEXT_TEST_532EAABD, true), LAB(UiKey.TEXT_LAB, true), SEMINAR(UiKey.TEXT_SEMINAR, true),
+    HOMEWORK(UiKey.WORK_TYPE_HOMEWORK, true), PROJECT(UiKey.TEXT_PROJECT, true), ORAL(UiKey.TEXT_ORAL_ANSWER, true),
+    EXAM(UiKey.TEXT_EXAM, true), OTHER(UiKey.TEXT_OTHER_ACADEMIC_WORK, true),
+    LESSON(UiKey.TEXT_LESSONS), EVENT(UiKey.TEXT_EVENTS), REMINDER(UiKey.TEXT_REMINDER);
 
     companion object {
         fun forAssessment(type: GradeItemType): ReminderCategory = when (type) {
@@ -26,7 +26,7 @@ data class ReminderRule(val enabled: Boolean = true, val offsetsMinutes: List<Lo
 const val MAX_REMINDER_LEAD_MINUTES: Long = 365L * 24 * 60
 
 enum class ReminderLeadUnit(val minutes: Long, val label: String) {
-    MINUTES(1, "min"), HOURS(60, "h"), DAYS(1440, "days"), WEEKS(10080, "weeks")
+    MINUTES(1, UiKey.UNIT_MINUTES_SHORT), HOURS(60, UiKey.UNIT_HOURS_SHORT), DAYS(1440, UiKey.TEXT_DAYS), WEEKS(10080, UiKey.TEXT_WEEKS)
 }
 
 data class ReminderSettings(

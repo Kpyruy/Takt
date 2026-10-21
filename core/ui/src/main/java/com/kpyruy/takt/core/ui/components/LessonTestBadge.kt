@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.Arrangement
@@ -30,8 +31,8 @@ fun LessonTestBadge(compact: Boolean = false, modifier: Modifier = Modifier) {
         Row(Modifier.padding(horizontal = if (compact) 5.dp else 7.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(Icons.Outlined.Quiz, contentDescription = t("Test in this class"), modifier = Modifier.size(16.dp))
-            if (!compact) Text(t("Test"), style = MaterialTheme.typography.labelSmall)
+            Icon(Icons.Outlined.Quiz, contentDescription = t(UiKey.TEXT_TEST_IN_THIS_CLASS), modifier = Modifier.size(16.dp))
+            if (!compact) Text(t(UiKey.TEXT_TEST_532EAABD), style = MaterialTheme.typography.labelSmall)
         }
     }
 }

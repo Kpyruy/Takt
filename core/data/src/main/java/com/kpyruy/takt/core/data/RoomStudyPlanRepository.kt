@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.data
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import androidx.room.withTransaction
 import com.kpyruy.takt.core.database.TaktDatabase
 import com.kpyruy.takt.core.database.CourseImportDecisionEntity
@@ -24,9 +26,9 @@ class RoomStudyPlanRepository(
     private val dao = database.courseDao()
     override suspend fun upsertImportedCourses(courses: List<Course>, selectedLocalIds: Map<String, String>): Int {
         courses.forEach { if (!isCanonicalUisCourseId(it.id)) throw InvalidUisCourseId(it.code) }
-        require(courses.map { it.id }.distinct().size == courses.size) { "Duplicate UIS course IDs. Try importing again." }
+        require(courses.map { it.id }.distinct().size == courses.size) { UiKey.TEXT_DUPLICATE_UIS_COURSE_IDS_TRY_IMPORTING_AGAIN }
         require(courses.map { it.code.uppercase(Locale.ROOT) }.distinct().size == courses.size) {
-            "UIS returned ambiguous course codes. Try importing again."
+            UiKey.TEXT_UIS_RETURNED_AMBIGUOUS_COURSE_CODES_TRY_IMPORTING_AGAIN
         }
         return database.withTransaction {
             val existing = dao.getAllSnapshot()
@@ -38,7 +40,7 @@ class RoomStudyPlanRepository(
                     (!it.id.startsWith("uis:") || it.id.substringBeforeLast(':') == course.id.substringBeforeLast(':')) }
                 val chosen = selectedLocalIds[course.id]?.let { selected ->
                     candidates.firstOrNull { it.id == selected }
-                        ?: error("The selected course is no longer available for ${course.code}. Check again.")
+                        ?: error(uiMessage(UiKey.FORMAT_THE_SELECTED_COURSE_IS_NO_LONGER_AVAILABLE_FOR_VALUE_CHECK_AGAIN, course.code))
                 }
                 val offline = candidates.filter { it.id != course.id }
                 val source = chosen ?: when {
@@ -91,19 +93,19 @@ class RoomStudyPlanRepository(
         val oldScale = scales.firstOrNull { it.courseId == oldId }
         val newScale = scales.firstOrNull { it.courseId == newId }
         require(oldScale == null || newScale == null || oldScale.copy(courseId = newId) == newScale) {
-            "This course already has a different grading scale. Reconcile the scales before importing from UIS."
+            UiKey.TEXT_THIS_COURSE_ALREADY_HAS_A_DIFFERENT_GRADING_SCALE_RECONCILE_TH_D1BBD81F
         }
         val overrides = grade.getOverridesSnapshot()
         val oldOverride = overrides.firstOrNull { it.courseId == oldId }
         val newOverride = overrides.firstOrNull { it.courseId == newId }
         require(oldOverride == null || newOverride == null || oldOverride.grade == newOverride.grade) {
-            "This course already has a different manual result. Reconcile the results before importing from UIS."
+            UiKey.TEXT_THIS_COURSE_ALREADY_HAS_A_DIFFERENT_MANUAL_RESULT_RECONCILE_TH_2DB7A387
         }
         val exams = exam.getExamInfoSnapshot()
         val oldExam = exams.firstOrNull { it.courseId == oldId }
         val newExam = exams.firstOrNull { it.courseId == newId }
         require(oldExam == null || newExam == null || oldExam.copy(courseId = newId) == newExam) {
-            "This course already has different exam details. Reconcile the details before importing from UIS."
+            UiKey.TEXT_THIS_COURSE_ALREADY_HAS_DIFFERENT_EXAM_DETAILS_RECONCILE_THE_D_528390FD
         }
         database.scheduleDao().remapRules(oldId, newId)
         database.scheduleDao().remapOneOffEvents(oldId, newId)
@@ -121,15 +123,15 @@ class RoomStudyPlanRepository(
     override suspend fun addCourse(title: String, code: String, credits: Int, semester: Int): String {
         val cleanTitle = title.trim()
         val cleanCode = code.trim().uppercase(Locale.ROOT)
-        require(cleanTitle.isNotBlank()) { "Enter the course name" }
+        require(cleanTitle.isNotBlank()) { UiKey.TEXT_ENTER_THE_COURSE_NAME }
         require(cleanCode.isNotBlank() && cleanCode.length <= 32 &&
             cleanCode.all { it.isLetterOrDigit() || it == '_' || it == '-' || it == '.' }) {
-            "Code: up to 32 letters, digits, dots or hyphens"
+            UiKey.TEXT_CODE_UP_TO_32_LETTERS_DIGITS_DOTS_OR_HYPHENS
         }
-        require(credits in 0..60) { "Credits must be between 0 and 60" }
-        require(semester in 1..30) { "Semester must be between 1 and 30" }
+        require(credits in 0..60) { UiKey.TEXT_CREDITS_MUST_BE_BETWEEN_0_AND_60 }
+        require(semester in 1..30) { UiKey.TEXT_SEMESTER_MUST_BE_BETWEEN_1_AND_30 }
         require(dao.getAllSnapshot().none { it.code.equals(cleanCode, ignoreCase = true) }) {
-            "A course with this code already exists"
+            UiKey.TEXT_A_COURSE_WITH_THIS_CODE_ALREADY_EXISTS
         }
         val id = UUID.randomUUID().toString()
         dao.insertAll(listOf(CourseEntity(id, cleanCode, cleanTitle, credits, semester,

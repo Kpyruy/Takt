@@ -1,5 +1,8 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.uiArg
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.components.rememberSaveAction
 import com.kpyruy.takt.core.ui.components.SaveErrorDialog
 import com.kpyruy.takt.core.ui.i18n.t
@@ -86,10 +89,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
 private enum class Destination(val route: String, private val sourceLabel: String) {
-    HOME("home", "Today"),
-    CALENDAR("calendar", "Calendar"),
-    SUBJECTS("subjects", "Subjects"),
-    PLAN("plan", "Progress"),
+    HOME("home", UiKey.TEXT_TODAY),
+    CALENDAR("calendar", UiKey.TEXT_CALENDAR),
+    SUBJECTS("subjects", UiKey.TEXT_SUBJECTS),
+    PLAN("plan", UiKey.TEXT_PROGRESS),
 
     ;
     val label: String get() = t(sourceLabel)
@@ -147,7 +150,7 @@ fun TaktApp(
                     if (status == DocumentSyncStatus.CONFLICT) navController.navigate(SETTINGS_ROUTE)
                 }
                 .onFailure { error ->
-                    snackbarHostState.showSnackbar(t("Could not connect Documents: ${t(error.message.orEmpty())}"))
+                    snackbarHostState.showSnackbar(t(uiMessage(UiKey.FORMAT_COULD_NOT_CONNECT_DOCUMENTS_VALUE, uiArg(error.message.orEmpty()))))
                 }
         }
     }
@@ -156,8 +159,8 @@ fun TaktApp(
         delay(1500)
         if (!documentStore.isConnected) {
             val result = snackbarHostState.showSnackbar(
-                message = t("Connect Documents/Takt to autosave and restore data"),
-                actionLabel = t("Connect"),
+                message = t(UiKey.TEXT_CONNECT_DOCUMENTS_TAKT_TO_AUTOSAVE_AND_RESTORE_DATA),
+                actionLabel = t(UiKey.TEXT_CONNECT),
                 duration = SnackbarDuration.Long,
                 withDismissAction = true,
             )
@@ -168,9 +171,9 @@ fun TaktApp(
         if (documentStatus == DocumentSyncStatus.CONFLICT || documentStatus == DocumentSyncStatus.ERROR) {
             val result = snackbarHostState.showSnackbar(
                 message = if (documentStatus == DocumentSyncStatus.CONFLICT) {
-                    t("The copy in Documents/Takt is different from the data on the phone")
-                } else t("Failed to sync Documents/Takt"),
-                actionLabel = t("Check"),
+                    t(UiKey.TEXT_THE_COPY_IN_DOCUMENTS_TAKT_IS_DIFFERENT_FROM_THE_DATA_ON_THE_PHONE)
+                } else t(UiKey.TEXT_FAILED_TO_SYNC_DOCUMENTS_TAKT),
+                actionLabel = t(UiKey.TEXT_CHECK),
                 duration = SnackbarDuration.Indefinite,
                 withDismissAction = true,
             )
@@ -180,8 +183,8 @@ fun TaktApp(
     LaunchedEffect(unmigratedMaterials) {
         if (unmigratedMaterials > 0) {
             val result = snackbarHostState.showSnackbar(
-                message = t("Could not copy ${unmigratedMaterials} older materials"),
-                actionLabel = t("Details"),
+                message = t(uiMessage(UiKey.FORMAT_COULD_NOT_COPY_VALUE_OLDER_MATERIALS, unmigratedMaterials)),
+                actionLabel = t(UiKey.WORK_DETAILS),
                 duration = SnackbarDuration.Indefinite,
                 withDismissAction = true,
             )
@@ -191,8 +194,8 @@ fun TaktApp(
     LaunchedEffect(uisPreview) {
         if (uisPreview != null && currentRoute != SETTINGS_ROUTE) {
             val result = snackbarHostState.showSnackbar(
-                message = t("UIS found changes to review"),
-                actionLabel = t("Review"),
+                message = t(UiKey.TEXT_UIS_FOUND_CHANGES_TO_REVIEW),
+                actionLabel = t(UiKey.TEXT_REVIEW),
                 duration = SnackbarDuration.Indefinite,
                 withDismissAction = true,
             )

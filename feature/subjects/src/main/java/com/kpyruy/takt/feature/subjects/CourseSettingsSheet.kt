@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.animation.AnimatedVisibility
@@ -79,21 +80,21 @@ internal fun CourseSettingsSheet(
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(t("Subject settings"), style = MaterialTheme.typography.headlineSmall)
+                    Text(t(UiKey.TEXT_SUBJECT_SETTINGS), style = MaterialTheme.typography.headlineSmall)
                     Text(course.title + " · " + course.code, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close subject settings")) }
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t(UiKey.TEXT_CLOSE_SUBJECT_SETTINGS)) }
             }
             SubjectPanel {
-                Text(if (uisManaged) t("UIS data") else t("Subject"), style = MaterialTheme.typography.titleMedium)
+                Text(if (uisManaged) t(UiKey.TEXT_UIS_DATA) else t(UiKey.TEXT_SUBJECT_68971283), style = MaterialTheme.typography.titleMedium)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     Column(Modifier.weight(1f)) {
-                        SmallText(t("Number of credits"))
+                        SmallText(t(UiKey.TEXT_NUMBER_OF_CREDITS))
                         Text(course.credits.toString(), style = MaterialTheme.typography.headlineSmall)
                     }
                     Column(Modifier.weight(1f)) {
-                        SmallText(t("Semester"))
+                        SmallText(t(UiKey.TEXT_SEMESTER_A83EF1C1))
                         Text(course.semester.toString(), style = MaterialTheme.typography.headlineSmall)
                     }
                 }
@@ -102,12 +103,12 @@ internal fun CourseSettingsSheet(
                 Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CourseAvatar(course)
-                    Text(t("Subject icon"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Text(t(UiKey.TEXT_SUBJECT_ICON), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SettingsLabel(t("SUBJECT STATUS"))
+                SettingsLabel(t(UiKey.TEXT_SUBJECT_STATUS))
                 Surface(onClick = { statusExpanded = !statusExpanded },
                     enabled = !uisManaged,
                     modifier = Modifier.fillMaxWidth().testTag("settings-status-${course.status.name}"),
@@ -119,11 +120,11 @@ internal fun CourseSettingsSheet(
                         Icon(statusIcon(course.status), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                         Text(statusText(course.status), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                         if (!uisManaged) Icon(if (statusExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                            if (statusExpanded) t("Collapse statuses") else t("Change status"),
+                            if (statusExpanded) t(UiKey.TEXT_COLLAPSE_STATUSES) else t(UiKey.TEXT_CHANGE_STATUS),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-                if (uisManaged) Text(t("UIS determines this subject's status"), style = MaterialTheme.typography.bodySmall,
+                if (uisManaged) Text(t(UiKey.TEXT_UIS_DETERMINES_THIS_SUBJECT_S_STATUS), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 AnimatedVisibility(statusExpanded && !uisManaged) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -145,7 +146,7 @@ internal fun CourseSettingsSheet(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SettingsLabel(t("ASSESSMENT"))
+                SettingsLabel(t(UiKey.TEXT_ASSESSMENT))
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     GradingChoice("A–FX", course.gradingType != CourseGradingType.PASS_FAIL,
                         Modifier.weight(1f)) {
@@ -153,34 +154,34 @@ internal fun CourseSettingsSheet(
                             onGrading(CourseGradingType.CONTINUOUS_LETTER)
                         }
                     }
-                    GradingChoice(t("Pass / fail"), course.gradingType == CourseGradingType.PASS_FAIL,
+                    GradingChoice(t(UiKey.TEXT_PASS_FAIL), course.gradingType == CourseGradingType.PASS_FAIL,
                         Modifier.weight(1f)) { onGrading(CourseGradingType.PASS_FAIL) }
                 }
             }
             if (course.gradingType == CourseGradingType.PASS_FAIL) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SettingsLabel(t("SUMMARY"))
+                    SettingsLabel(t(UiKey.TEXT_SUMMARY))
                     Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ResultChoice(t("Passed"), course.passFailResult == PassFailResult.PASSED,
+                        ResultChoice(t(UiKey.TEXT_PASSED), course.passFailResult == PassFailResult.PASSED,
                             Modifier.weight(1f)) { onResult(PassFailResult.PASSED) }
-                        ResultChoice(t("Failed"), course.passFailResult == PassFailResult.FAILED,
+                        ResultChoice(t(UiKey.TEXT_FAILED), course.passFailResult == PassFailResult.FAILED,
                             Modifier.weight(1f)) { onResult(PassFailResult.FAILED) }
                     }
                     if (course.passFailResult != null) {
-                        TextButton(onClick = { onResult(null) }) { Text(t("Clear the result")) }
+                        TextButton(onClick = { onResult(null) }) { Text(t(UiKey.TEXT_CLEAR_THE_RESULT)) }
                     }
                 }
             } else {
                 GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onScale), shape = RoundedCornerShape(18.dp)) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Tune, null, Modifier.size(20.dp))
-                        Text(t("Assessment scale"), Modifier.weight(1f).padding(start = 12.dp),
+                        Text(t(UiKey.TEXT_ASSESSMENT_SCALE), Modifier.weight(1f).padding(start = 12.dp),
                             style = MaterialTheme.typography.titleMedium)
                         Icon(Icons.Outlined.ChevronRight, null)
                     }
                 }
             }
-            TaktPrimaryButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(t("Done")) }
+            TaktPrimaryButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(t(UiKey.TEXT_DONE)) }
         }
     }
 }
@@ -216,11 +217,11 @@ private fun ResultChoice(label: String, selected: Boolean, modifier: Modifier, o
 }
 
 private fun statusText(status: CourseStatus) = when(status) {
-    CourseStatus.FULFILLED -> t("Work completed")
-    CourseStatus.ENROLLED -> t("Active subject")
-    CourseStatus.PLANNED -> t("Scheduled")
-    CourseStatus.NOT_ENROLLED -> t("Not recorded")
-    CourseStatus.NOT_NEEDED -> t("Not needed")
+    CourseStatus.FULFILLED -> t(UiKey.TEXT_WORK_COMPLETED)
+    CourseStatus.ENROLLED -> t(UiKey.TEXT_ACTIVE_SUBJECT)
+    CourseStatus.PLANNED -> t(UiKey.TEXT_SCHEDULED)
+    CourseStatus.NOT_ENROLLED -> t(UiKey.TEXT_NOT_RECORDED)
+    CourseStatus.NOT_NEEDED -> t(UiKey.TEXT_NOT_NEEDED)
 }
 private fun statusIcon(status: CourseStatus): ImageVector = when(status) {
     CourseStatus.FULFILLED -> Icons.Outlined.CheckCircle

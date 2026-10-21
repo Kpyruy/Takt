@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import android.graphics.Bitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -47,7 +48,7 @@ class FollowUpChromeTest {
         capture("subjects-normal-scrolled")
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
-        compose.onNode(hasText(t("Exam")) and hasClickAction()).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_EXAM)) and hasClickAction()).performClick()
         compose.onNodeWithTag("exam-available-metric").assertDoesNotExist()
         compose.onNode(hasText("17") and hasAnyAncestor(hasTestTag("exam-semester-metric"))).assertExists()
         compose.onNode(hasText("/ 20") and hasAnyAncestor(hasTestTag("exam-semester-metric"))).assertExists()
@@ -85,7 +86,7 @@ class FollowUpChromeTest {
         start()
         root("Предмети")
         compose.onNode(hasText("Фізика") and hasClickAction()).performClick()
-        compose.onNode(hasText(t("Notes")) and SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)).performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_NOTES)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Tab)).performClick()
         capture("notes-preview")
         compose.onNodeWithTag("note-preview-glass-formulas").performClick()
         compose.onNodeWithTag("note-reader").assertIsDisplayed()
@@ -103,17 +104,18 @@ class FollowUpChromeTest {
         compose.onNodeWithTag("global-add-TEST").performClick()
         compose.onAllNodes(hasText("Фізика") and hasClickAction()).onLast().performScrollTo().performClick()
         capture("assessment-compact")
+        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
+        compose.onNodeWithTag("grade-details-tab-RESULT").performClick()
         compose.onNodeWithTag("grade-maximum").performClick()
         compose.onNodeWithTag("grade-maximum").performTextInput("20")
         capture("assessment-keyboard")
         nativeBack()
-        compose.onNodeWithTag("grade-details-trigger").performScrollTo().performClick()
         capture("assessment-details")
         compose.onNodeWithTag("grade-details-done").performClick()
         nativeBack()
         root("Предмети")
         compose.onNodeWithTag("subjects-settings").performClick()
-        compose.onNode(hasText(t("Appearance")) and hasClickAction()).performScrollTo().performClick()
+        compose.onNode(hasText(t(UiKey.TEXT_APPEARANCE)) and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithTag("appearance-color-open").performScrollTo().performClick()
         compose.onNodeWithTag("theme-create").performScrollTo()
         compose.onNodeWithTag("palette-live-preview").assertIsDisplayed()

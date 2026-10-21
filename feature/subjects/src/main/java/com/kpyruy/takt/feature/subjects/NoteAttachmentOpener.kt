@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -83,11 +84,11 @@ internal fun rememberNoteAttachmentOpener(documentStore: TaktDocumentStore): (No
             val message = when (result) {
                 NoteAttachmentOpenResult.Opened -> null
                 NoteAttachmentOpenResult.NoApplication -> if (attachment.isWebLink)
-                    t("No app can open this link") else t("There is no application to open the file")
-                NoteAttachmentOpenResult.Unavailable -> t("The file is not available")
+                    t(UiKey.TEXT_NO_APP_CAN_OPEN_THIS_LINK) else t(UiKey.TEXT_THERE_IS_NO_APPLICATION_TO_OPEN_THE_FILE)
+                NoteAttachmentOpenResult.Unavailable -> t(UiKey.TEXT_THE_FILE_IS_NOT_AVAILABLE)
                 is NoteAttachmentOpenResult.Failed -> {
                     Log.e("NoteAttachmentOpener", "Could not open note attachment", result.cause)
-                    if (attachment.isWebLink) t("Could not open the link") else t("Failed to open file")
+                    if (attachment.isWebLink) t(UiKey.TEXT_COULD_NOT_OPEN_THE_LINK) else t(UiKey.TEXT_FAILED_TO_OPEN_FILE)
                 }
             }
             if (message != null) Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

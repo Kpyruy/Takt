@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.layout.*
@@ -28,7 +29,7 @@ fun CourseLinkSelector(courses: List<Course>, selectedId: String?, onChange: (Co
     val shape = RoundedCornerShape(20.dp)
     val interaction = remember { MutableInteractionSource() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Subject"), style = MaterialTheme.typography.titleSmall)
+        Text(t(UiKey.TEXT_SUBJECT_68971283), style = MaterialTheme.typography.titleSmall)
         Box(Modifier.fillMaxWidth()) {
             TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(interaction).clip(shape)
                 .clickable(interactionSource = interaction, indication = null, role = Role.Button,
@@ -37,17 +38,17 @@ fun CourseLinkSelector(courses: List<Course>, selectedId: String?, onChange: (Co
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     selectedCourse?.let { CourseAvatar(it) }
-                    Text(selectedCourse?.title ?: t("No subject linked"), Modifier.weight(1f))
+                    Text(selectedCourse?.title ?: t(UiKey.TEXT_NO_SUBJECT_LINKED), Modifier.weight(1f))
                     Icon(Icons.Outlined.ExpandMore, contentDescription = null)
                 }
             }
             TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
-                TaktChoiceMenuItem(text = { Text(t("Without binding")) },
+                TaktChoiceMenuItem(text = { Text(t(UiKey.TEXT_WITHOUT_BINDING)) },
                     trailingIcon = { if (selectedId == null) Icon(Icons.Outlined.Check, null) },
                     onClick = { onChange(null); expanded = false })
                 if (activeCourses.isEmpty()) {
                     Text(
-                        t("There are no active subjects"),
+                        t(UiKey.TEXT_THERE_ARE_NO_ACTIVE_SUBJECTS),
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

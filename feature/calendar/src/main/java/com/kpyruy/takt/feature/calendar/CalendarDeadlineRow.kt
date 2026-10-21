@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.animation.animateContentSize
@@ -45,11 +46,11 @@ fun CalendarDeadlineRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement) {
-                    Text(t("Threshold for admission not met"), style = MaterialTheme.typography.labelSmall,
+                    Text(t(UiKey.TEXT_THRESHOLD_FOR_ADMISSION_NOT_MET), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error)
                 }
             }
-            Text(t("Deadline"), color = MaterialTheme.colorScheme.primary)
+            Text(t(UiKey.WORK_DEADLINE), color = MaterialTheme.colorScheme.primary)
         }
     }
 }

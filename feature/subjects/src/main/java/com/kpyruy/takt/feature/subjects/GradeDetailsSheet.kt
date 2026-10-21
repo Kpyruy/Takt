@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -26,15 +27,15 @@ import com.kpyruy.takt.core.ui.components.TaktSurface
 import com.kpyruy.takt.core.ui.i18n.t
 
 internal enum class GradeDetailsTab(val label: String) {
-    WHEN("When"), RESULT("Result"), RULES("Rules"),
+    WHEN(UiKey.WORK_DETAILS_WHEN), RESULT(UiKey.WORK_DETAILS_RESULT), RULES(UiKey.WORK_DETAILS_RULES),
 }
 
 internal enum class GradeDateMode(val label: String) {
-    DATE("Date"), SCHEDULE("By timetable"),
+    DATE(UiKey.TEXT_DATE_99C40AB4), SCHEDULE(UiKey.TEXT_BY_TIMETABLE),
 }
 
 internal enum class GradeResultState(val label: String) {
-    PLANNED("Scheduled"), AWAITING("Awaiting grade"), KNOWN("Result known"),
+    PLANNED(UiKey.TEXT_SCHEDULED), AWAITING(UiKey.TEXT_AWAITING_GRADE), KNOWN(UiKey.TEXT_RESULT_KNOWN),
 }
 
 /** View state belongs to the parent form; this sheet only edits its unsaved draft. */
@@ -51,7 +52,7 @@ internal fun GradeDetailsSheet(
     TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().heightIn(max = maximumHeight).imePadding()
             .padding(horizontal = 20.dp).testTag("grade-details")) {
-            Text(t("Details"), style = MaterialTheme.typography.headlineSmall,
+            Text(t(UiKey.WORK_DETAILS), style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 12.dp))
             TaktSegmentedTabs(
                 labels = GradeDetailsTab.entries.map { t(it.label) },
@@ -65,7 +66,7 @@ internal fun GradeDetailsSheet(
                     .verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     error?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall,
+                        Text(t(it), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("grade-details-error"))
                     }
                     content()
@@ -73,7 +74,7 @@ internal fun GradeDetailsSheet(
             }
             TaktPrimaryButton(onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).testTag("grade-details-done")) {
-                Text(t("Done"))
+                Text(t(UiKey.TEXT_DONE))
             }
         }
     }

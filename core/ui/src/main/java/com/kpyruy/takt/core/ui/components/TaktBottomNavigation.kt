@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -95,6 +96,6 @@ fun TaktAddFab(onClick: () -> Unit) {
             .clip(CircleShape).taktPressFeedback(source).clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick).testTag("root-add").tourTarget("add-button"),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Default.Add, t("Add"), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Default.Add, t(UiKey.TEXT_ADD), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
     }
 }

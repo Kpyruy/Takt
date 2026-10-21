@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.calendar
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.ui.i18n.t
 
 import androidx.compose.foundation.clickable
@@ -83,7 +85,7 @@ fun WeekCompactList(
                             }
                         }
                         if (events.isEmpty()) {
-                            Text(t("No classes"), Modifier.padding(vertical = 8.dp),
+                            Text(t(UiKey.TEXT_NO_CLASSES), Modifier.padding(vertical = 8.dp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else events.forEachIndexed { index, event ->
@@ -113,9 +115,9 @@ private fun WeekLessonRow(
     val muted = event.isVisuallyMuted(clock)
     val accentColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
     val status = when {
-        event.isAbsent -> t("Absent")
-        event.status == ScheduleEventStatus.CANCELLED -> t("Cancelled")
-        event.status == ScheduleEventStatus.MOVED -> t("Rescheduled")
+        event.isAbsent -> t(UiKey.TEXT_ABSENT)
+        event.status == ScheduleEventStatus.CANCELLED -> t(UiKey.TEXT_CANCELLED)
+        event.status == ScheduleEventStatus.MOVED -> t(UiKey.TEXT_RESCHEDULED)
         else -> null
     }
     Row(Modifier.fillMaxWidth().testTag("week-lesson-${event.id}")
@@ -138,13 +140,13 @@ private fun WeekLessonRow(
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (event.lessonType == LessonType.UNSPECIFIED) {
-                    Icon(Icons.Outlined.Event, t("Event"), Modifier.size(16.dp),
+                    Icon(Icons.Outlined.Event, t(UiKey.TEXT_EVENT), Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else LessonTypeIcon(event.lessonType)
                 Text(buildList {
                     event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.let { add(t(it.label)) }
                     event.room?.takeIf { it.isNotBlank() }?.let(::add)
-                    add(t("by ${event.endTime.format(time)}"))
+                    add(t(uiMessage(UiKey.FORMAT_BY_VALUE, event.endTime.format(time))))
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)

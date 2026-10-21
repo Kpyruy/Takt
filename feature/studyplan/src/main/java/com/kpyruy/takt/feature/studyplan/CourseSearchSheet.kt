@@ -1,5 +1,7 @@
 package com.kpyruy.takt.feature.studyplan
 
+import com.kpyruy.takt.core.model.uiMessage
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,18 +39,18 @@ internal fun CourseSearchSheet(courses: List<Course>, onCourseClick: (String) ->
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Find a subject"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TaktIconButton(Icons.Default.Close, t("Close"), onClick = onDismiss,
+                Text(t(UiKey.TEXT_FIND_A_SUBJECT), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                TaktIconButton(Icons.Default.Close, t(UiKey.ACTION_CLOSE), onClick = onDismiss,
                     modifier = Modifier.testTag("progress-search-close"))
             }
             TaktTextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth().testTag("progress-search-query"),
-                label = { Text(t("Find a subject")) },
+                label = { Text(t(UiKey.TEXT_FIND_A_SUBJECT)) },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 trailingIcon = {
-                    if (query.isNotEmpty()) TaktIconButton(Icons.Default.Close, t("Clear"),
+                    if (query.isNotEmpty()) TaktIconButton(Icons.Default.Close, t(UiKey.TEXT_CLEAR),
                         onClick = { query = "" }, modifier = Modifier.testTag("progress-search-clear"))
                 },
                 singleLine = true,
@@ -67,7 +69,7 @@ internal fun CourseSearchSheet(courses: List<Course>, onCourseClick: (String) ->
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 Text(course.title, style = MaterialTheme.typography.titleSmall,
                                     maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Text(course.code + " · " + t("Semester ${course.semester}"),
+                                Text(course.code + " · " + t(uiMessage(UiKey.FORMAT_SEMESTER_VALUE, course.semester)),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -75,7 +77,7 @@ internal fun CourseSearchSheet(courses: List<Course>, onCourseClick: (String) ->
                     }
                 }
                 if (results.isEmpty()) item {
-                    Text(t("No subjects found"), Modifier.padding(vertical = 12.dp),
+                    Text(t(UiKey.TEXT_NO_SUBJECTS_FOUND), Modifier.padding(vertical = 12.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

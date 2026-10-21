@@ -1,5 +1,6 @@
 package com.kpyruy.takt.app
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -35,7 +36,7 @@ class NativePickerLocaleTest {
             val month = date.month.getDisplayName(TextStyle.FULL_STANDALONE, TaktI18n.locale)
             compose.onAllNodesWithText(month, substring = true, ignoreCase = true)
                 .onFirst().assertIsDisplayed()
-            compose.onNodeWithText(t("Cancel")).performClick()
+            compose.onNodeWithText(t(UiKey.ACTION_CANCEL)).performClick()
         }
     }
 }

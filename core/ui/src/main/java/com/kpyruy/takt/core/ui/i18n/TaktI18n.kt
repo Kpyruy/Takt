@@ -3,82 +3,56 @@ package com.kpyruy.takt.core.ui.i18n
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.kpyruy.takt.core.model.AppLanguage
+import com.kpyruy.takt.core.model.*
 import java.util.Locale
 
-/** UI language is observable so switching it refreshes already open Compose screens. */
+/** Stable resource IDs are independent of wording and the selected UI language. */
 object TaktI18n {
     var language: AppLanguage by mutableStateOf(AppLanguage.ENGLISH)
         private set
-
     fun use(preference: AppLanguage) { language = preference }
-
     val locale: Locale get() = locale(language)
-
     fun locale(language: AppLanguage): Locale = when (language) {
         AppLanguage.SLOVAK -> Locale.forLanguageTag("sk")
         AppLanguage.ENGLISH -> Locale.ENGLISH
         AppLanguage.UKRAINIAN -> Locale.forLanguageTag("uk")
     }
+    internal fun lookup(key: String, language: AppLanguage): String? = staticTranslations[key]?.text(language)
 
-    internal fun lookup(source: String, language: AppLanguage): String? =
-        staticTranslations[source]?.text(source, language)
-            ?: dynamicTranslations.firstNotNullOfOrNull { it.translate(source, language) }
+    /** Unknown external diagnostics pass through; application copy must use a registered [UiKey]. */
+    fun text(key: String, language: AppLanguage = this.language): String = render(key, language, 0)
+    private fun render(value: String, language: AppLanguage, depth: Int): String {
+        require(depth < 16) { "Localization message nesting is too deep" }
+        val message = decodeUiMessage(value)
+        val key = message?.key ?: value
+        val template = lookup(key, language) ?: return key
+        val arguments = message?.arguments.orEmpty()
+        val rendered = arguments.map { argument ->
+            if (argument.resource) render(argument.value, language, depth + 1) else argument.value
+        }
+        return formatTranslation(template, rendered)
 
-    /** Explicit language is safe for background work and never changes Compose state. */
-    fun text(source: String, language: AppLanguage = this.language): String = lookup(source, language) ?: source
+    }
 }
 
-internal data class LocalizedText(
-    val ukrainian: String,
-    val slovak: String,
-    val english: String? = null,
-) {
-    fun text(source: String, language: AppLanguage): String = when (language) {
+internal data class LocalizedText(val english: String, val ukrainian: String, val slovak: String) {
+    fun text(language: AppLanguage) = when (language) {
+        AppLanguage.ENGLISH -> english
         AppLanguage.UKRAINIAN -> ukrainian
         AppLanguage.SLOVAK -> slovak
-        AppLanguage.ENGLISH -> english ?: source
     }
 }
-
 private val placeholder = Regex("__ARG(\\d+)__")
-
-internal class DynamicTranslation(
-    private val source: String,
-    private val ukrainian: String,
-    private val slovak: String,
-) {
-    internal val specificity: Int = placeholder.replace(source, "").length
-    private val argumentIndices = placeholder.findAll(source).map { it.groupValues[1].toInt() }.toList()
-    private val pattern = Regex(
-        "^" + placeholder.split(source).joinToString("(.*?)") { Regex.escape(it) } + "$",
-        RegexOption.DOT_MATCHES_ALL,
-    )
-
-    fun translate(value: String, language: AppLanguage): String? {
-        val match = pattern.matchEntire(value) ?: return null
-        val translated = when (language) {
-            AppLanguage.UKRAINIAN -> ukrainian
-            AppLanguage.SLOVAK -> slovak
-            AppLanguage.ENGLISH -> source
-        }
-        return placeholder.replace(translated) { marker ->
-            val group = argumentIndices.indexOf(marker.groupValues[1].toInt()) + 1
-            match.groupValues[group]
-        }
-    }
+internal fun formatTranslation(template: String, arguments: List<String>): String = placeholder.replace(template) { token ->
+    val index = token.groupValues[1].toInt()
+    require(index in arguments.indices) { "Missing localization argument $index" }
+    arguments[index]
 }
-
-fun t(source: String): String = TaktI18n.text(source)
-
+fun t(key: String): String = TaktI18n.text(key)
+fun tf(key: String, vararg arguments: Any?): String = t(uiMessage(key, *arguments))
 fun formatDurationMinutes(minutes: Long): String {
     val hours = minutes / 60
-    val remainingMinutes = minutes % 60
-    return listOfNotNull(
-        hours.takeIf { it > 0 }?.let { "$it ${t("h")}" },
-        remainingMinutes.takeIf { it > 0 || hours == 0L }?.let { "$it ${t("min")}" },
-    ).joinToString(" ")
+    val remainder = minutes % 60
+    return listOfNotNull(hours.takeIf { it > 0 }?.let { "$it ${t(UiKey.UNIT_HOURS_SHORT)}" },
+        remainder.takeIf { it > 0 || hours == 0L }?.let { "$it ${t(UiKey.UNIT_MINUTES_SHORT)}" }).joinToString(" ")
 }
-
-fun tf(sourceFormat: String, vararg arguments: Any?): String =
-    String.format(TaktI18n.locale, t(sourceFormat), *arguments)

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.feature.subjects
 
+import com.kpyruy.takt.core.model.UiKey
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,18 +49,18 @@ internal fun CourseTeachersPanel(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.Groups, null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(10.dp))
-            Text(t("Teaching team"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text(t(UiKey.TEXT_TEACHING_TEAM), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             if (repository != null && connected && hasSyllabus) TaktIconButton(Icons.Outlined.Refresh,
-                t("Refresh teaching team"), { if (!loading) reload++ }, Modifier.testTag("teachers-refresh"))
+                t(UiKey.TEXT_REFRESH_TEACHING_TEAM), { if (!loading) reload++ }, Modifier.testTag("teachers-refresh"))
         }
         when {
-            !hasSyllabus -> SmallText(t("Teaching staff will appear after importing this subject from UIS."))
+            !hasSyllabus -> SmallText(t(UiKey.TEXT_TEACHING_STAFF_WILL_APPEAR_AFTER_IMPORTING_THIS_SUBJECT_FROM_UIS))
             (!connected || repository == null) && teachers == null -> {
-                SmallText(t("Connect UIS to view teaching staff and contacts."))
-                TextButton(onClick = onSettings) { Text(t("Open settings")) }
+                SmallText(t(UiKey.TEXT_CONNECT_UIS_TO_VIEW_TEACHING_STAFF_AND_CONTACTS))
+                TextButton(onClick = onSettings) { Text(t(UiKey.TEXT_OPEN_SETTINGS)) }
             }
             loading && teachers == null -> LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 16.dp))
-            teachers?.isEmpty() == true && error == null -> SmallText(t("No teaching staff are listed in the syllabus."))
+            teachers?.isEmpty() == true && error == null -> SmallText(t(UiKey.TEXT_NO_TEACHING_STAFF_ARE_LISTED_IN_THE_SYLLABUS))
         }
         teachers.orEmpty().forEachIndexed { index, teacher ->
             if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -72,7 +73,7 @@ internal fun CourseTeachersPanel(
                     Text(teacher.roles.joinToString(" · ", transform = ::teacherRoleLabel),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(Icons.Outlined.ChevronRight, t("Lecturer profile"), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Outlined.ChevronRight, t(UiKey.TEXT_LECTURER_PROFILE), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         error?.let { failure ->
@@ -86,10 +87,10 @@ internal fun CourseTeachersPanel(
 }
 
 internal fun teacherRoleLabel(role: String): String = t(when (role.lowercase()) {
-    "examiner", "skúšajúci", "zkoušející" -> "Examiner"
-    "instructor", "cvičiaci", "cvičící" -> "Tutorials"
-    "lecturer", "prednášajúci", "přednášející" -> "Lectures"
-    "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Course supervisor"
+    "examiner", "skúšajúci", "zkoušející" -> UiKey.TEXT_EXAMINER
+    "instructor", "cvičiaci", "cvičící" -> UiKey.TEXT_TUTORIALS
+    "lecturer", "prednášajúci", "přednášející" -> UiKey.TEXT_LECTURES
+    "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> UiKey.TEXT_COURSE_SUPERVISOR
     else -> role
 })
 
@@ -102,21 +103,21 @@ internal fun TeacherLoadProblem(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(t(when (failure) {
-            is TeachingAuthenticationRequired -> "Confirm UIS access to load contacts."
-            is TeachingSessionUnavailable -> "Sign in to UIS or enter the verification code in settings."
-            else -> "Could not load contacts. Check your connection and try again."
+            is TeachingAuthenticationRequired -> UiKey.TEXT_CONFIRM_UIS_ACCESS_TO_LOAD_CONTACTS
+            is TeachingSessionUnavailable -> UiKey.TEXT_SIGN_IN_TO_UIS_OR_ENTER_THE_VERIFICATION_CODE_IN_SETTINGS
+            else -> UiKey.TEXT_COULD_NOT_LOAD_CONTACTS_CHECK_YOUR_CONNECTION_AND_TRY_AGAIN
         }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = {
             when (failure) {
-                is TeachingAuthenticationRequired -> authenticate(t("UIS teaching contacts")) { if (it == DeviceAuthenticationResult.SUCCESS) retry() }
+                is TeachingAuthenticationRequired -> authenticate(t(UiKey.TEXT_UIS_TEACHING_CONTACTS)) { if (it == DeviceAuthenticationResult.SUCCESS) retry() }
                 is TeachingSessionUnavailable -> onSettings()
                 else -> retry()
             }
         }, modifier = Modifier.testTag("teacher-retry")) {
             Text(t(when (failure) {
-                is TeachingAuthenticationRequired -> "Confirm access"
-                is TeachingSessionUnavailable -> "Open settings"
-                else -> "Try again"
+                is TeachingAuthenticationRequired -> UiKey.TEXT_CONFIRM_ACCESS
+                is TeachingSessionUnavailable -> UiKey.TEXT_OPEN_SETTINGS
+                else -> UiKey.TEXT_TRY_AGAIN
             }))
         }
     }
