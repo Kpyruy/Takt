@@ -44,11 +44,11 @@ class RoomScheduleRepository(
 
     override suspend fun replaceSchedule(rules: List<ScheduleRule>, events: List<OneOffScheduleEvent>) {
         require(rules.map { it.id }.distinct().size == rules.size && events.map { it.id }.distinct().size == events.size) {
-            "UIS повернув заняття з повторними ідентифікаторами. Повтори перевірку."
+            "UIS returned lessons with duplicate identifiers. Check again."
         }
         require(rules.all { it.id.isNotBlank() && it.title.isNotBlank() && it.startTime < it.endTime } &&
             events.all { it.id.isNotBlank() && it.title.isNotBlank() && it.startTime < it.endTime }) {
-            "UIS повернув некоректний розклад. Повтори перевірку."
+            "UIS returned an invalid timetable. Check again."
         }
         val newRules = rules.map { it.toEntity() }
         val newEvents = events.map { it.toEntity() }
@@ -58,7 +58,7 @@ class RoomScheduleRepository(
             val preparedRules = newRules.map { it.copy(courseId = it.courseId?.let { id -> aliases[id] ?: id }) }
             val preparedEvents = newEvents.map { it.copy(courseId = it.courseId?.let { id -> aliases[id] ?: id }) }
             require((preparedRules.mapNotNull { it.courseId } + preparedEvents.mapNotNull { it.courseId }).all { it in courseIds }) {
-                "Спочатку імпортуй відповідні предмети UIS, потім повтори заміну розкладу."
+                "Import the matching UIS courses first, then try replacing the timetable again."
             }
             dao.deleteAllExceptions()
             dao.deleteAllAbsences()

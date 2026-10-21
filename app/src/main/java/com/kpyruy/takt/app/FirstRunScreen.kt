@@ -80,11 +80,11 @@ import kotlinx.coroutines.launch
 private data class TourPage(val title: String, val body: String, val icon: ImageVector)
 
 private fun localizedTourPages() = listOf(
-    TourPage(t("Сьогодні"), t("Пари та задачі на вибраний день. Натисни пару, щоб відкрити предмет."), Icons.Outlined.Today),
-    TourPage(t("Календар"), t("Дивись розклад за днем, тижнем або місяцем. Затисни «Тиждень» для вибору таймтейблу чи списку. Двічі натисни активний режим, щоб повернутися до сьогодні."), Icons.Outlined.CalendarMonth),
-    TourPage(t("Предмети"), t("Активні предмети, задачі й нотатки в одному місці."), Icons.Outlined.MenuBook),
-    TourPage(t("Прогрес"), t("Позначай активні й здані предмети, обирай поточний семестр та стеж за балами."), Icons.Outlined.School),
-    TourPage(t("Налаштування"), t("Тут можна змінити вигляд, розклад і задачі та підключити резервну копію. Після додавання предметів обери поточний семестр у Прогресі, а в Налаштування → Періоди навчання вкажи дати занять та екзаменів."), Icons.Outlined.Settings),
+    TourPage(t("Today"), t("Classes and tasks for the selected day. Tap a class to open its subject."), Icons.Outlined.Today),
+    TourPage(t("Calendar"), t("View your schedule by day, week, or month. Long-press Week to switch between timetable and list. Double-tap the selected view to return to today."), Icons.Outlined.CalendarMonth),
+    TourPage(t("Subjects"), t("Active subjects, tasks and notes in one place."), Icons.Outlined.MenuBook),
+    TourPage(t("Progress"), t("Mark active and passed subjects, choose the current semester and track your scores."), Icons.Outlined.School),
+    TourPage(t("Settings"), t("Here you can change the view, schedule and tasks and connect a backup. After adding subjects, select the current semester in Progress, and in Settings → Study periods, specify the dates of classes and exams."), Icons.Outlined.Settings),
 )
 
 @Composable
@@ -152,12 +152,12 @@ internal fun FirstRunScreen(
                             enabled = !finishing && (step != 1 || !useUIS || hasUniversityAccount),
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("onboarding-primary"),
                         ) {
-                            Text(if (step < 2) t("Далі") else t("Почати екскурсію"))
+                            Text(if (step < 2) t("Next") else t("Start the tour"))
                         }
                         if (step == 2) {
                             TextButton(onClick = { finishing = true; onFinish(draft, false) }, enabled = !finishing,
                                 modifier = Modifier.fillMaxWidth()) {
-                                Text(t("Почати без туру"))
+                                Text(t("Start without a tour"))
                             }
                         }
                     }
@@ -169,14 +169,14 @@ internal fun FirstRunScreen(
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 when (step) {
                     0 -> {
-                        Text(t("Твій Takt"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text(t("Обери вигляд. Розклад почнеться з твоїх предметів."),
+                        Text(t("Your Takt"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t("Choose an appearance. Your schedule starts with your subjects."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(t("Мова"), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Language"), style = MaterialTheme.typography.titleMedium)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 AppLanguage.ENGLISH to "English",
-                                AppLanguage.UKRAINIAN to t("Українська"),
+                                AppLanguage.UKRAINIAN to t("Ukrainian"),
                                 AppLanguage.SLOVAK to "Slovenčina",
                             ).forEach { (language, label) ->
                                 FilterChip(
@@ -187,48 +187,48 @@ internal fun FirstRunScreen(
                                 )
                             }
                         }
-                        Text(t("Тема"), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Topic"), style = MaterialTheme.typography.titleMedium)
                         com.kpyruy.takt.feature.settings.AppearanceLightingChoices(
                             draft, { draft = it }, tagPrefix = "onboarding-theme")
-                        Text(t("Колір"), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Color"), style = MaterialTheme.typography.titleMedium)
                         com.kpyruy.takt.feature.settings.AppearanceThemeChoices(
                             draft, { draft = it }, tagPrefix = "onboarding-color")
-                        TextButton(onClick = { folderPicker.launch(null) }) { Text(t("Відновити з Documents/Takt")) }
+                        TextButton(onClick = { folderPicker.launch(null) }) { Text(t("Restore from Documents/Takt")) }
                         restoreMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                     1 -> {
-                        Text(t("Як користуватися Takt?"), style = MaterialTheme.typography.headlineLarge,
+                        Text(t("How will you use Takt?"), style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold)
-                        Text(t("Працюй локально або підключи UIS STU."),
+                        Text(t("Work locally or connect to STU UIS."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = !useUIS, onClick = {
                                 if (hasUniversityAccount) {
-                                    authenticateDevice(t("Видалити дані UIS")) { result ->
+                                    authenticateDevice(t("Remove UIS credentials")) { result ->
                                         if (result == DeviceAuthenticationResult.SUCCESS) {
                                             scope.launch {
                                                 runCatching { universityAccountRepository.remove() }
                                                     .onSuccess { useUIS = false; accountMessage = null }
-                                                    .onFailure { accountMessage = t("Не вдалося видалити дані UIS") }
+                                                    .onFailure { accountMessage = t("Could not remove UIS credentials") }
                                             }
-                                        } else accountMessage = t("Підтвердження скасовано")
+                                        } else accountMessage = t("Verification cancelled")
                                     }
                                 } else useUIS = false
                             },
-                                label = { Text(t("Локально")) }, modifier = Modifier.testTag("onboarding-local"))
+                                label = { Text(t("Locally")) }, modifier = Modifier.testTag("onboarding-local"))
                             FilterChip(selected = useUIS, onClick = { useUIS = true },
                                 label = { Text("UIS") }, modifier = Modifier.testTag("onboarding-uis"))
                         }
                         if (useUIS) {
-                            Text(t("Після збереження даних UIS Takt проситиме біометрію або PIN телефона при кожному запуску."),
+                            Text(t("After saving UIS credentials, Takt requires phone biometrics or PIN at each launch."),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             UniversityAccountForm(universityAccountRepository, authenticateDevice)
                         }
                         accountMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                     2 -> {
-                        Text(t("Показати, що де?"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                        Text(t("Екскурсія відкриє екрани Takt і підсвітить головне. Її можна зупинити будь-коли."),
+                        Text(t("Show me around"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                        Text(t("The tour opens Takt’s screens and highlights what matters. You can stop at any time."),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Surface(shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.primaryContainer) {
@@ -237,9 +237,9 @@ internal fun FirstRunScreen(
                                 verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Outlined.DateRange, null, tint = MaterialTheme.colorScheme.primary)
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(t("Перед стартом розкладу"), style = MaterialTheme.typography.titleSmall,
+                                    Text(t("Before the start of the schedule"), style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold)
-                                    Text(t("Додай предмети, обери поточний семестр у Прогресі та задай дати занять і екзаменів у Налаштування → Періоди навчання."),
+                                    Text(t("Add subjects, select the current semester in Progress and set the dates of classes and exams in Settings → Study periods."),
                                         style = MaterialTheme.typography.bodySmall)
                                 }
                             }

@@ -71,44 +71,44 @@ internal fun AppUpdatesPage(repository: AppReleaseRepository, onBack: () -> Unit
     var manuallyChecked by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ScreenHeader(title = t("Оновлення додатка"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+        ScreenHeader(title = t("App updates"), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
         })
         SectionCard {
-            UpdateVersionRow(Icons.Outlined.School, t("Встановлена версія"), "Takt " + state.installedVersion.ifBlank { t("Невідомо") })
+            UpdateVersionRow(Icons.Outlined.School, t("Installed version"), "Takt " + state.installedVersion.ifBlank { t("Unknown") })
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
-            UpdateVersionRow(Icons.Outlined.CloudDownload, t("Останній реліз на GitHub"), state.latest?.tag ?: t("Ще не перевірено"))
+            UpdateVersionRow(Icons.Outlined.CloudDownload, t("Latest GitHub release"), state.latest?.tag ?: t("Not checked yet"))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
             if (state.availableUpdate != null) {
-                Text(t("Доступне оновлення"), color = MaterialTheme.colorScheme.primary)
+                Text(t("Update available"), color = MaterialTheme.colorScheme.primary)
             } else if (state.latest != null && AppVersion.parse(state.installedVersion) != null) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Outlined.CheckCircle, null, tint = MaterialTheme.colorScheme.secondary)
-                    Text(t("Встановлено актуальну версію"), style = MaterialTheme.typography.bodyMedium,
+                    Text(t("Your version is up to date"), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             state.availableUpdate?.let { release ->
                 Button(onClick = { openError = !openRelease(context, release) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(t(if (release.apkUrl != null) "Відкрити завантаження APK" else "Відкрити реліз на GitHub"))
+                    Text(t(if (release.apkUrl != null) "Open APK download" else "Open release on GitHub"))
                 }
-                Text(t("Завантаження й встановлення підтверджуєш самостійно."),
+                Text(t("You confirm the download and installation."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (openError) Text(t("Не вдалося відкрити посилання"), color = MaterialTheme.colorScheme.error)
+            if (openError) Text(t("Could not open the link"), color = MaterialTheme.colorScheme.error)
         }
         SectionCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Автоматично перевіряти оновлення"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Text(t("Automatically check for updates"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = state.automaticChecks, onCheckedChange = repository::setAutomaticChecks)
             }
         }
         SectionCard {
-            UpdateVersionRow(Icons.Outlined.Schedule, t("Остання успішна перевірка"), state.lastSuccessfulCheck?.let {
+            UpdateVersionRow(Icons.Outlined.Schedule, t("Last successful check"), state.lastSuccessfulCheck?.let {
                 val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())
                 DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(TaktI18n.locale).format(date) +
                     " · " + DateTimeFormatter.ofPattern("HH:mm", TaktI18n.locale).format(date)
-            } ?: t("Ще не перевірено"))
+            } ?: t("Not checked yet"))
         }
         Button(onClick = {
             openError = false
@@ -116,7 +116,7 @@ internal fun AppUpdatesPage(repository: AppReleaseRepository, onBack: () -> Unit
             scope.launch { repository.check(force = true) }
         }, enabled = !state.checking, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.Update, null)
-            Text(t(if (state.checking) "Перевіряємо…" else "Перевірити зараз"), Modifier.padding(start = 8.dp))
+            Text(t(if (state.checking) "Checking…" else "Check now"), Modifier.padding(start = 8.dp))
         }
         if (manuallyChecked && !state.checking) state.error?.let {
             Text(t(it.message()), color = MaterialTheme.colorScheme.error)
@@ -130,16 +130,16 @@ fun AppUpdatePrompt(release: AppRelease, onDismiss: () -> Unit) {
     var openError by remember(release.tag) { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(t("Доступне оновлення Takt")) },
+        title = { Text(t("Takt update available")) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(t("Нова версія") + ": " + release.tag)
-            Text(t("Завантаження й встановлення підтверджуєш самостійно."))
-            if (openError) Text(t("Не вдалося відкрити посилання"), color = MaterialTheme.colorScheme.error)
+            Text(t("New version") + ": " + release.tag)
+            Text(t("You confirm the download and installation."))
+            if (openError) Text(t("Could not open the link"), color = MaterialTheme.colorScheme.error)
         } },
         confirmButton = { TextButton(onClick = {
             if (openRelease(context, release)) onDismiss() else openError = true
-        }) { Text(t(if (release.apkUrl != null) "Відкрити завантаження APK" else "Відкрити реліз на GitHub")) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Пізніше")) } },
+        }) { Text(t(if (release.apkUrl != null) "Open APK download" else "Open release on GitHub")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Later")) } },
     )
 }
 
@@ -154,10 +154,10 @@ private fun openRelease(context: Context, release: AppRelease): Boolean {
 }
 
 private fun AppReleaseError.message(): String = when (this) {
-    AppReleaseError.NETWORK -> "Не вдалося перевірити оновлення. Перевір інтернет і спробуй ще раз."
-    AppReleaseError.RATE_LIMITED -> "GitHub тимчасово обмежив перевірки. Спробуй пізніше."
-    AppReleaseError.INVALID_RESPONSE -> "GitHub повернув нерозпізнаний реліз. Спробуй пізніше."
-    AppReleaseError.UNAVAILABLE -> "Реліз на GitHub зараз недоступний. Спробуй пізніше."
+    AppReleaseError.NETWORK -> "Could not check for updates. Check your connection and try again."
+    AppReleaseError.RATE_LIMITED -> "GitHub temporarily limited checks. Try again later."
+    AppReleaseError.INVALID_RESPONSE -> "GitHub returned an unrecognized release. Try again later."
+    AppReleaseError.UNAVAILABLE -> "The GitHub release is currently unavailable. Try again later."
 }
 
 @Composable

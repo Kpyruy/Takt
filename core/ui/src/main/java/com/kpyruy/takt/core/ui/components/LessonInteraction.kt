@@ -8,4 +8,4 @@ import androidx.compose.ui.Modifier
 
 @OptIn(ExperimentalFoundationApi::class)
 fun Modifier.lessonInteraction(onClick: () -> Unit, onLongClick: () -> Unit): Modifier =
-    combinedClickable(onClickLabel = t("Відкрити предмет"), onLongClickLabel = t("Дії з парою"), onClick = onClick, onLongClick = onLongClick)
+    combinedClickable(onClickLabel = t("Open the subject"), onLongClickLabel = t("Class actions"), onClick = onClick, onLongClick = onLongClick)

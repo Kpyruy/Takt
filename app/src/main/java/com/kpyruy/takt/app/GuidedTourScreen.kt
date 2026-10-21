@@ -116,10 +116,10 @@ internal fun GuidedTourScreen(
     BackHandler { confirmExit = true }
     if (confirmExit) {
         AlertDialog(onDismissRequest = { confirmExit = false },
-            title = { Text(t("Завершити екскурсію?")) },
-            text = { Text(t("Можеш повернутися до неї будь-коли: Налаштування → Допомога → Екскурсія по Takt.")) },
-            confirmButton = { TextButton(onClick = onFinish, modifier = Modifier.testTag("tour-exit-confirm")) { Text(t("Так, вийти")) } },
-            dismissButton = { TextButton(onClick = { confirmExit = false }, modifier = Modifier.testTag("tour-exit-cancel")) { Text(t("Продовжити екскурсію")) } },
+            title = { Text(t("Exit the tour?")) },
+            text = { Text(t("You can return anytime: Settings → Help → Tour of Takt.")) },
+            confirmButton = { TextButton(onClick = onFinish, modifier = Modifier.testTag("tour-exit-confirm")) { Text(t("Yes, exit")) } },
+            dismissButton = { TextButton(onClick = { confirmExit = false }, modifier = Modifier.testTag("tour-exit-cancel")) { Text(t("Continue tour")) } },
             modifier = Modifier.glassSurface(RoundedCornerShape(28.dp)), containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
     }
 }
@@ -133,7 +133,7 @@ private fun TourScene(
     releases: AppReleaseRepository,
     authenticate: DeviceAuthenticationRequest,
 ) {
-    val labels = listOf(t("Сьогодні"), t("Календар"), t("Предмети"), t("Прогрес"))
+    val labels = listOf(t("Today"), t("Calendar"), t("Subjects"), t("Progress"))
     val icons = listOf(TaktIcons.Home, TaktIcons.Calendar, TaktIcons.Book, TaktIcons.Progress)
     val selected = when (scene) { "home" -> 0; "calendar" -> 1; "progress" -> 3; else -> 2 }
     val root = scene in setOf("home", "calendar", "subjects", "progress")

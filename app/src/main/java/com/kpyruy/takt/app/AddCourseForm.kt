@@ -57,23 +57,23 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
     val parsedSemester = semester.toIntOrNull()
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        TaktTextField(title, { title = it; error = null }, label = { Text(t("Назва предмета")) },
+        TaktTextField(title, { title = it; error = null }, label = { Text(t("Subject name")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-title"))
-        TaktTextField(code, { code = it; error = null }, label = { Text(t("Код предмета")) },
+        TaktTextField(code, { code = it; error = null }, label = { Text(t("Subject code")) },
             singleLine = true, modifier = Modifier.fillMaxWidth().testTag("course-code"))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TaktTextField(credits, { credits = it.filter(Char::isDigit); error = null },
-                label = { Text(t("Кредити")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = { Text(t("Credits")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.weight(1f).testTag("course-credits"))
             TaktTextField(semester, { semester = it.filter(Char::isDigit); error = null },
-                label = { Text(t("Семестр")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = { Text(t("Semester")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true, modifier = Modifier.weight(1f).testTag("course-semester"))
         }
         Box {
             GlassSurface(Modifier.fillMaxWidth().clickable { gradingMenu = true }) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(t("Оцінювання"), style = MaterialTheme.typography.bodySmall,
+                        Text(t("Assessment"), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(gradingLabel(grading), style = MaterialTheme.typography.bodyLarge)
                     }
@@ -86,7 +86,7 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                 }
             }
         }
-        Text(t("Іконка предмета"), style = MaterialTheme.typography.labelLarge)
+        Text(t("Subject icon"), style = MaterialTheme.typography.labelLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf("Atom", "MenuBook", "Code", "Calculate", "Translate").forEach { key ->
                 val icon = CourseIcons.find(key)
@@ -94,7 +94,7 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                 Box(Modifier.weight(1f).size(52.dp)
                     .glassSurface(RoundedCornerShape(16.dp), if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .18f) else androidx.compose.ui.graphics.Color.Unspecified)
                     .clickable { iconKey = key }, contentAlignment = Alignment.Center) {
-                    icon?.let { Icon(it.vector, it.label, Modifier.size(28.dp), tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
+                    icon?.let { Icon(it.vector, t(it.label), Modifier.size(28.dp), tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }
@@ -110,19 +110,19 @@ internal fun AddCourseForm(repository: StudyPlanRepository, onSaved: () -> Unit)
                     }
                     saving = false
                     if (result.isSuccess) withContext(Dispatchers.Main.immediate) { onSaved() }
-                    else error = result.exceptionOrNull()?.message ?: t("Не вдалося додати предмет")
+                    else error = result.exceptionOrNull()?.message?.let(::t) ?: t("Failed to add subject")
                 }
             },
             enabled = !saving && title.isNotBlank() && code.isNotBlank() &&
                 parsedCredits != null && parsedSemester != null,
             modifier = Modifier.fillMaxWidth().testTag("save-course"),
-        ) { Text(t("Додати предмет")) }
+        ) { Text(t("Add course")) }
     }
 }
 
 @Composable
 private fun gradingLabel(type: CourseGradingType): String = t(when (type) {
-    CourseGradingType.EXAM_LETTER -> "Екзамен · A–FX"
-    CourseGradingType.CONTINUOUS_LETTER -> "Оцінка · A–FX"
-    CourseGradingType.PASS_FAIL -> "Залік"
+    CourseGradingType.EXAM_LETTER -> "Exam · A–FX"
+    CourseGradingType.CONTINUOUS_LETTER -> "Grade · A–FX"
+    CourseGradingType.PASS_FAIL -> "Credit"
 })

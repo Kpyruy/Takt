@@ -76,11 +76,11 @@ internal fun CourseOverviewTab(
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         course.officialGrade?.let { grade ->
             SectionCard {
-                Text(t("Офіційна оцінка UIS"), style = MaterialTheme.typography.titleMedium)
+                Text(t("Official UIS grade"), style = MaterialTheme.typography.titleMedium)
                 Text(grade.name, style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary)
                 course.fulfilledOn?.let { date ->
-                    Text(t("Дата складання") + ": " + date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                    Text(t("Completion date") + ": " + date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -89,19 +89,19 @@ internal fun CourseOverviewTab(
         if (course.gradingType != CourseGradingType.PASS_FAIL) {
             SubjectPanel {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OverviewMetric(t("Набрано"), projection.securedPoints, projection.totalPoints, Modifier.weight(1f))
+                    OverviewMetric(t("Earned"), projection.securedPoints, projection.totalPoints, Modifier.weight(1f))
                     VerticalDivider(Modifier.height(74.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    OverviewMetric(t("Потенціал"), projection.maximumPossiblePoints, projection.totalPoints, Modifier.weight(1f))
+                    OverviewMetric(t("Potential"), projection.maximumPossiblePoints, projection.totalPoints, Modifier.weight(1f))
                 }
-                currentGrade?.let { SmallText(t("Поточна оцінка") + ": " + it.name) }
+                currentGrade?.let { SmallText(t("Current grade") + ": " + it.name) }
             }
         }
         else if (course.passFailResult != null) SubjectPanel {
-            Text(t("Поточний результат"), style = MaterialTheme.typography.titleMedium)
-            Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" })
+            Text(t("Current result"), style = MaterialTheme.typography.titleMedium)
+            Text(when(course.passFailResult) { PassFailResult.PASSED -> t("Passed"); PassFailResult.FAILED -> t("Failed"); null -> "" })
         }
         if (hasExam || eligibility.requiredCount > 0) SubjectPanel {
-            Text(t("Допуск до екзамену"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Exam eligibility"), style = MaterialTheme.typography.titleMedium)
             Text("${eligibility.completedCount}/${eligibility.requiredCount}", fontSize = 26.sp, fontWeight = FontWeight.Bold)
             LinearProgressIndicator(progress = { if (eligibility.requiredCount > 0) eligibility.completedCount.toFloat() / eligibility.requiredCount else 0f },
                 modifier = Modifier.fillMaxWidth().height(7.dp), gapSize = 0.dp, drawStopIndicator = {})
@@ -111,8 +111,8 @@ internal fun CourseOverviewTab(
                     Checkbox(task.completed, onCheckedChange = { onTaskCompleted(task, it) })
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(task.title, fontSize = 13.sp, lineHeight = 17.sp)
-                        SmallText(if (task.meetsAdmissionRequirement) t("Зараховано") else if (task.completed) t("Поріг балів не виконано") else task.description?.takeIf { it.isNotBlank() } ?: t("Для допуску"))
-                        task.minimumPointsForExam?.let { SmallText(t("Мінімум ") + it.displayNumber() + t(" б.")) }
+                        SmallText(if (task.meetsAdmissionRequirement) t("Passed") else if (task.completed) t("Score threshold not met") else task.description?.takeIf { it.isNotBlank() } ?: t("Required for exam"))
+                        task.minimumPointsForExam?.let { SmallText(t("Minimum ") + it.displayNumber() + t(" pts")) }
                     }
                     task.dueDate?.let { SmallText(it.format(DateTimeFormatter.ofPattern("dd.MM"))) }
                 }
@@ -123,33 +123,33 @@ internal fun CourseOverviewTab(
                     Icon(if (grade.meetsAdmissionRequirement) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(grade.title, fontSize = 13.sp, lineHeight = 17.sp)
-                        SmallText(if (grade.meetsAdmissionRequirement) t("Зараховано") else if (grade.completed) t("Поріг балів не виконано") else if (grade.isAwaitingResult) t("Очікую оцінку") else t("Додати результат"))
-                        grade.minimumPointsForExam?.let { SmallText(t("Мінімум ") + it.displayNumber() + t(" б.")) }
+                        SmallText(if (grade.meetsAdmissionRequirement) t("Passed") else if (grade.completed) t("Score threshold not met") else if (grade.isAwaitingResult) t("Awaiting grade") else t("Add result"))
+                        grade.minimumPointsForExam?.let { SmallText(t("Minimum ") + it.displayNumber() + t(" pts")) }
                     }
                 }
             }
-            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText(t("Обов’язкових робіт не позначено"), Modifier.padding(vertical = 16.dp))
+            if (requiredTasks.isEmpty() && requiredGrades.isEmpty()) SmallText(t("No required work marked"), Modifier.padding(vertical = 16.dp))
         }
         nextLesson?.let { lesson ->
             SubjectPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.CalendarMonth, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        SmallText(t("Найближча пара"))
+                        SmallText(t("Next class"))
                         Text(lesson.date.format(DateTimeFormatter.ofPattern("EEEE, dd.MM", com.kpyruy.takt.core.ui.i18n.TaktI18n.locale)) +
                             " · ${lesson.startTime}–${lesson.endTime}", style = MaterialTheme.typography.titleSmall)
-                        SmallText(t(lesson.lessonType.label) + lesson.room?.let { " · " + t("ауд.") + " $it" }.orEmpty())
+                        SmallText(t(lesson.lessonType.label) + lesson.room?.let { " · " + t("room") + " $it" }.orEmpty())
                     }
                 }
             }
         }
         teachersContent()
-        if (hasExam) SubjectPanel { ResourceRow(t("Підготовка до екзамену"), t("Дата й цільова оцінка"), onExam) }
+        if (hasExam) SubjectPanel { ResourceRow(t("Preparation for the exam"), t("Date and target grade"), onExam) }
         if (showFinalGrade && course.gradingType != CourseGradingType.PASS_FAIL && course.officialGrade == null) {
             ManualGradeSection(manualGrade, onManualGradeChange)
         }
         course.syllabusUrl?.let { url -> val uriHandler = LocalUriHandler.current; SubjectPanel {
-            ResourceRow(t("Програма предмета"), course.code) { runCatching { uriHandler.openUri(url) } }
+            ResourceRow(t("Course syllabus"), course.code) { runCatching { uriHandler.openUri(url) } }
         } }
         documentsContent()
         onSettings?.let { open ->
@@ -157,7 +157,7 @@ internal fun CourseOverviewTab(
                 Row(Modifier.fillMaxWidth().clickable(onClick = open).heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Settings, null)
-                    Text(t("Налаштування предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Text(t("Subject settings"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                     Icon(Icons.Default.ChevronRight, null)
                 }
             }

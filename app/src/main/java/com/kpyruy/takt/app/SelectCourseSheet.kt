@@ -50,13 +50,13 @@ fun SelectCourseSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                t("Оберіть предмет"),
+                t("Choose a subject"),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
             if (ordered.isEmpty()) {
                 Text(
-                    t("Немає активних предметів. Познач предмет активним у «Прогресі»."),
+                    t("There are no active subjects. Mark the subject as active in \"Progress\"."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -73,7 +73,7 @@ fun SelectCourseSheet(
                             Text(course.title, style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                t("${course.code} · ${course.credits} кр. · семестр ${course.semester}"),
+                                t("${course.code} · ${course.credits} credits · semester ${course.semester}"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

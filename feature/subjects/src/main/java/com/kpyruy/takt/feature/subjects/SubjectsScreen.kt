@@ -75,9 +75,9 @@ fun SubjectsScreen(
         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp).padding(top = 18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             com.kpyruy.takt.core.ui.components.ScreenHeader(
-                title = t("Предмети"), modifier = Modifier.testTag("subjects-header"),
+                title = t("Subjects"), modifier = Modifier.testTag("subjects-header"),
                 action = {
-                    TaktIconButton(Icons.Outlined.Settings, t("Налаштування"), onClick = onOpenSettings,
+                    TaktIconButton(Icons.Outlined.Settings, t("Settings"), onClick = onOpenSettings,
                         modifier = Modifier.testTag("subjects-settings"))
                 },
             )
@@ -93,13 +93,13 @@ fun SubjectsScreen(
                 }
                 if (visible.isEmpty()) item {
                     Column(Modifier.padding(vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SmallText(if (courses.isEmpty()) t("Тут будуть твої предмети") else t("Предметів не знайдено"))
-                        if (courses.isEmpty() && allowCourseCreation) Button(onClick = onAddCourse) { Text(t("Додати перший предмет")) }
+                        SmallText(if (courses.isEmpty()) t("Your subjects will be here") else t("No subjects found"))
+                        if (courses.isEmpty() && allowCourseCreation) Button(onClick = onAddCourse) { Text(t("Add first subject")) }
                     }
                 }
             }
         }
-        if (allowCourseCreation && showAddButton) TaktIconButton(Icons.Default.Add, t("Додати предмет"), onClick = onAddCourse,
+        if (allowCourseCreation && showAddButton) TaktIconButton(Icons.Default.Add, t("Add course"), onClick = onAddCourse,
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 100.dp))
     }
 
@@ -129,10 +129,10 @@ private fun SubjectProgressCard(
         .minWithOrNull(compareBy<Pair<String, java.time.LocalDate?>> { it.second ?: java.time.LocalDate.MAX }.thenBy { it.first })
     val progressLine = when {
         course.status == CourseStatus.FULFILLED -> ""
-        !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 робота до допуску") else t("${eligibility.requiredCount - eligibility.completedCount} робіт до допуску")
+        !eligibility.eligible -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 task left for exam eligibility") else t("Work remaining for exam eligibility: ${eligibility.requiredCount - eligibility.completedCount}")
         next != null -> next.first + (next.second?.let { " · " + it.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM")) } ?: "")
-        course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Зараховано"); PassFailResult.FAILED -> t("Не зараховано"); null -> "" }
-        CourseWork.allSubmitted(tasks, gradeItems) -> t("Усі роботи здано")
+        course.gradingType == CourseGradingType.PASS_FAIL -> when (course.passFailResult) { PassFailResult.PASSED -> t("Passed"); PassFailResult.FAILED -> t("Failed"); null -> "" }
+        CourseWork.allSubmitted(tasks, gradeItems) -> t("All work completed")
         else -> ""
     }
     SubjectCard(course, progressLine, onClick, earned, maximum, grade = course.officialGrade ?: manualGrade)

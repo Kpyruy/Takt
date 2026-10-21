@@ -40,70 +40,70 @@ internal fun UisConnectionControls(
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
     if (state !in listOf(UisResult.DISCONNECTED, UisResult.CONNECTING)) Text(t(when (state) {
-        UisResult.DISCONNECTED -> "UIS не підключено"
-        UisResult.CONNECTING -> "Підключення до UIS…"
-        UisResult.CONNECTED -> "Вхід у UIS виконано"
-        UisResult.SECOND_FACTOR -> "Введи код підтвердження UIS"
-        UisResult.INVALID_CREDENTIALS -> "UIS відхилив логін або пароль"
-        UisResult.EXPIRED -> "Сесія UIS завершилась. Увійди повторно."
-        UisResult.UNAVAILABLE -> "UIS недоступний. Локальні дані залишаються доступними."
-        UisResult.UNEXPECTED_RESPONSE -> "Не вдалося розпізнати відповідь UIS"
+        UisResult.DISCONNECTED -> "UIS is not connected"
+        UisResult.CONNECTING -> "Connecting to UIS…"
+        UisResult.CONNECTED -> "Signed in to UIS"
+        UisResult.SECOND_FACTOR -> "Enter your UIS verification code"
+        UisResult.INVALID_CREDENTIALS -> "UIS rejected the username or password"
+        UisResult.EXPIRED -> "Your UIS session expired. Sign in again."
+        UisResult.UNAVAILABLE -> "UIS is unavailable. Local data remains accessible."
+        UisResult.UNEXPECTED_RESPONSE -> "Could not recognize the UIS response"
     }))
     failure?.let { Text(uisFailureMessage(it), color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
-    if (importProgress.running) Text(t("Завантаження даних UIS…"))
+    if (importProgress.running) Text(t("Loading UIS data…"))
     if (importProgress.running && state != UisResult.CONNECTING) {
-        UisLoadingOverlay(onCancel = { repository.session.disconnect() }, title = "Завантаження даних UIS…")
+        UisLoadingOverlay(onCancel = { repository.session.disconnect() }, title = "Loading UIS data…")
     }
     importProgress.importedCourses?.let { count ->
-        Text(t("Імпортовано $count предметів"))
+        Text(t("Imported ${count} courses"))
     }
     if (importProgress.earnedCredits != null && importProgress.requiredCredits != null) {
-        Text(t("Кредити UIS: ${importProgress.earnedCredits} із ${importProgress.requiredCredits}"))
+        Text(t("UIS credits: ${importProgress.earnedCredits} of ${importProgress.requiredCredits}"))
     }
     importProgress.error?.let { Text(t(it), color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
     if (preview == null && lastCheck == UisAutoSyncOutcome.APPLIED && !importProgress.running) {
-        Text(t("Перевірку UIS завершено. Немає змін для перегляду."))
+        Text(t("UIS check complete. No changes to review."))
     }
     if (importProgress.error != null && state == UisResult.CONNECTED) {
         OutlinedButton(onClick = { scope.launch { repository.retryImport() } }, modifier = Modifier.fillMaxWidth()) {
-            Text(t("Повторити імпорт"))
+            Text(t("Retry import"))
         }
     }
     when (state) {
         UisResult.CONNECTING -> {
-            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text(t("Увійти в UIS")) }
+            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text(t("Sign in to UIS")) }
             UisLoadingOverlay(onCancel = { repository.session.disconnect() })
         }
         UisResult.SECOND_FACTOR -> {
             OutlinedTextField(value = code, onValueChange = { code = it.take(32) },
-                label = { Text(t("Код підтвердження")) }, singleLine = true,
+                label = { Text(t("Verification code")) }, singleLine = true,
                 visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
             Button(onClick = {
                 val entered = code
                 code = ""
                 scope.launch { repository.submitCode(entered) }
-            }, enabled = code.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text(t("Підтвердити код")) }
+            }, enabled = code.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text(t("Confirm code")) }
         }
         UisResult.CONNECTED -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { scope.launch { repository.checkProgressNow() } },
                 enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Перевірити прогрес UIS"))
+                Text(t("Check UIS progress"))
             }
             OutlinedButton(onClick = { scope.launch { repository.checkTimetableNow() } },
                 enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Отримати розклад з UIS"))
+                Text(t("Get timetable from UIS"))
             }
             OutlinedButton(onClick = { scope.launch { repository.checkAndImport() } },
                 enabled = preview == null, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Перевірити всі дані UIS"))
+                Text(t("Check all UIS data"))
             }
         }
         else -> Button(onClick = onLogin, enabled = canLogin && !authenticating,
-            modifier = Modifier.fillMaxWidth().testTag("uis-sign-in")) { Text(t("Увійти в UIS")) }
+            modifier = Modifier.fillMaxWidth().testTag("uis-sign-in")) { Text(t("Sign in to UIS")) }
     }
     if (state in listOf(UisResult.CONNECTED, UisResult.SECOND_FACTOR)) {
         TextButton(onClick = { code = ""; repository.session.disconnect() }, modifier = Modifier.fillMaxWidth()) {
-            Text(t("Закрити сесію UIS"))
+            Text(t("Close UIS session"))
         }
     }
     UisSyncReview(repository)

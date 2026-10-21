@@ -83,11 +83,11 @@ internal fun rememberNoteAttachmentOpener(documentStore: TaktDocumentStore): (No
             val message = when (result) {
                 NoteAttachmentOpenResult.Opened -> null
                 NoteAttachmentOpenResult.NoApplication -> if (attachment.isWebLink)
-                    t("Немає застосунку для відкриття посилання") else t("Немає застосунку для відкриття файла")
-                NoteAttachmentOpenResult.Unavailable -> t("Файл недоступний")
+                    t("No app can open this link") else t("There is no application to open the file")
+                NoteAttachmentOpenResult.Unavailable -> t("The file is not available")
                 is NoteAttachmentOpenResult.Failed -> {
                     Log.e("NoteAttachmentOpener", "Could not open note attachment", result.cause)
-                    if (attachment.isWebLink) t("Не вдалося відкрити посилання") else t("Не вдалося відкрити файл")
+                    if (attachment.isWebLink) t("Could not open the link") else t("Failed to open file")
                 }
             }
             if (message != null) Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

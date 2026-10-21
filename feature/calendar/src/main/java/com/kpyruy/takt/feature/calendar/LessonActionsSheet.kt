@@ -46,10 +46,10 @@ fun LessonActionsSheet(
     TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t) ?: t("Пара"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t) ?: t("Class"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(event.title, Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити дії пари")) }
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close class actions")) }
             }
             Text(listOfNotNull(event.date.format(DateTimeFormatter.ofPattern("d MMMM", TaktI18n.locale)),
                 "${event.startTime}–${event.endTime}", event.room).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -60,20 +60,20 @@ fun LessonActionsSheet(
                     tint = if (event.isAbsent) MaterialTheme.colorScheme.errorContainer else Color.Unspecified) {
                     Box(Modifier.background(if (event.isAbsent) MaterialTheme.colorScheme.errorContainer.copy(alpha = .64f)
                         else Color.Transparent, shape)) {
-                        ActionRow(if (event.isAbsent) t("Зняти позначку пропуску") else t("Позначити пропуск"),
+                        ActionRow(if (event.isAbsent) t("Remove absence mark") else t("Mark absent"),
                             Icons.Outlined.PersonOff, onToggleAbsence, selected = event.isAbsent,
                             contentColor = if (event.isAbsent) MaterialTheme.colorScheme.onErrorContainer else null)
                     }
                 }
             }
-            if (actions.canMoveOccurrence) ActionRow(t("Перенести цю пару"), Icons.Outlined.EventRepeat, onMoveOccurrence)
-            if (actions.canCancelOccurrence) ActionRow(t("Скасувати тільки цю пару"), Icons.Outlined.EventBusy, onCancelOccurrence)
-            if (actions.canRestoreOccurrence) ActionRow(t("Повернути початкову пару"), Icons.Outlined.Restore, onRestoreOccurrence)
+            if (actions.canMoveOccurrence) ActionRow(t("Move this class"), Icons.Outlined.EventRepeat, onMoveOccurrence)
+            if (actions.canCancelOccurrence) ActionRow(t("Cancel only this class"), Icons.Outlined.EventBusy, onCancelOccurrence)
+            if (actions.canRestoreOccurrence) ActionRow(t("Return the original class"), Icons.Outlined.Restore, onRestoreOccurrence)
             if (actions.canEditRecurringRule || actions.canEditOneOff) Spacer(Modifier.height(6.dp))
-            if (actions.canEditRecurringRule) ActionRow(t("Редагувати"), Icons.Outlined.Edit, onEditRule)
-            if (actions.canEditOneOff) ActionRow(t("Редагувати разову подію"), Icons.Outlined.Edit, onEditOneOff)
-            if (actions.canDeleteRecurringRule) ActionRow(t("Видалити з розкладу"), Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
-            if (actions.canDeleteOneOff) ActionRow(t("Видалити разову подію"), Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
+            if (actions.canEditRecurringRule) ActionRow(t("Edit"), Icons.Outlined.Edit, onEditRule)
+            if (actions.canEditOneOff) ActionRow(t("Edit a one-time event"), Icons.Outlined.Edit, onEditOneOff)
+            if (actions.canDeleteRecurringRule) ActionRow(t("Delete from schedule"), Icons.Outlined.DeleteOutline, onDeleteRule, destructive = true)
+            if (actions.canDeleteOneOff) ActionRow(t("Delete a one-time event"), Icons.Outlined.DeleteOutline, onDeleteOneOff, destructive = true)
         }
     }
 }

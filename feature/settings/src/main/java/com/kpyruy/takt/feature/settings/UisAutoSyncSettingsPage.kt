@@ -55,25 +55,25 @@ internal fun UisAutoSyncSettingsPage(
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ScreenHeader(title = t("Автооновлення UIS"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+        ScreenHeader(title = t("Automatic UIS updates"), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
         })
         SectionCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SettingsSyncIcon(Icons.Outlined.AutoMode)
-                Text(t("Автоматично застосовувати прогрес"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Text(t("Apply progress automatically"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(checked = settings.applyProgressAutomatically,
                     onCheckedChange = { onChange(settings.copy(applyProgressAutomatically = it)) })
             }
         }
-        FrequencyChoice(t("Прогрес"), Icons.Outlined.BarChart, settings.progress,
+        FrequencyChoice(t("Progress"), Icons.Outlined.BarChart, settings.progress,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(progress = it)) }
-        FrequencyChoice(t("Предмети"), Icons.Outlined.MenuBook, settings.subjects,
+        FrequencyChoice(t("Subjects"), Icons.Outlined.MenuBook, settings.subjects,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(subjects = it)) }
-        FrequencyChoice(t("Періоди навчання"), Icons.Outlined.CalendarMonth, settings.periods,
+        FrequencyChoice(t("Study periods"), Icons.Outlined.CalendarMonth, settings.periods,
             UisRefreshFrequency.entries.toList()) { onChange(settings.copy(periods = it)) }
-        FrequencyChoice(t("Розклад"), Icons.Outlined.Schedule, settings.timetable,
+        FrequencyChoice(t("Timetable"), Icons.Outlined.Schedule, settings.timetable,
             listOf(UisRefreshFrequency.MANUAL, UisRefreshFrequency.TEACHING_START)) {
             onChange(settings.copy(timetable = it))
         }
@@ -118,10 +118,10 @@ private fun SettingsSyncIcon(icon: ImageVector) {
 }
 
 internal fun UisRefreshFrequency.label(): String = when (this) {
-    UisRefreshFrequency.MANUAL -> "Вручну"
-    UisRefreshFrequency.EVERY_ENTRY -> "Кожен вхід"
-    UisRefreshFrequency.DAILY -> "Щодня"
-    UisRefreshFrequency.WEEKLY -> "Щотижня"
-    UisRefreshFrequency.MONTHLY -> "Щомісяця"
-    UisRefreshFrequency.TEACHING_START -> "На початку навчання"
+    UisRefreshFrequency.MANUAL -> "Manual"
+    UisRefreshFrequency.EVERY_ENTRY -> "Every app entry"
+    UisRefreshFrequency.DAILY -> "Daily"
+    UisRefreshFrequency.WEEKLY -> "Every week"
+    UisRefreshFrequency.MONTHLY -> "Monthly"
+    UisRefreshFrequency.TEACHING_START -> "At the start of teaching"
 }

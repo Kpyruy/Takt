@@ -30,8 +30,8 @@ fun LessonTestBadge(compact: Boolean = false, modifier: Modifier = Modifier) {
         Row(Modifier.padding(horizontal = if (compact) 5.dp else 7.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(Icons.Outlined.Quiz, contentDescription = t("Тест на цій парі"), modifier = Modifier.size(16.dp))
-            if (!compact) Text(t("Тест"), style = MaterialTheme.typography.labelSmall)
+            Icon(Icons.Outlined.Quiz, contentDescription = t("Test in this class"), modifier = Modifier.size(16.dp))
+            if (!compact) Text(t("Test"), style = MaterialTheme.typography.labelSmall)
         }
     }
 }

@@ -58,11 +58,11 @@ fun HomeScheduleCard(
                 }
             }
             when (event.status) {
-                ScheduleEventStatus.ONE_OFF -> StatusPill(t("Блок"))
-                ScheduleEventStatus.MOVED -> StatusPill(t("Перенесено"))
+                ScheduleEventStatus.ONE_OFF -> StatusPill(t("Block"))
+                ScheduleEventStatus.MOVED -> StatusPill(t("Rescheduled"))
                 ScheduleEventStatus.CANCELLED -> {
                     if (cancellationStyle != CancellationDisplayStyle.STRIKETHROUGH) {
-                        StatusPill(t("Скасовано"))
+                        StatusPill(t("Cancelled"))
                     }
                 }
                 ScheduleEventStatus.NORMAL -> Unit

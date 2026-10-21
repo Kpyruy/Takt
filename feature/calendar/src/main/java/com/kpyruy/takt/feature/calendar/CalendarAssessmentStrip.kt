@@ -47,7 +47,7 @@ internal fun CalendarAssessmentStrip(item: GradeItem, courseTitle: String, onCli
                 Text("${t(item.type.label)} · $courseTitle", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(if (item.completed) "${item.earnedPoints.pointLabel()}/${item.maxPoints.pointLabel()}" else t("до ${item.maxPoints.pointLabel()} б."),
+            Text(if (item.completed) "${item.earnedPoints.pointLabel()}/${item.maxPoints.pointLabel()}" else t("up to ${item.maxPoints.pointLabel()} pts"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

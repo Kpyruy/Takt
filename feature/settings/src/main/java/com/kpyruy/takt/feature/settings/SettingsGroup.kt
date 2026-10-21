@@ -30,8 +30,8 @@ internal fun DocumentsSettingsPage(onBack: () -> Unit, content: @Composable Colu
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        ScreenHeader(t("Дані й копії"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+        ScreenHeader(t("Data and backups"), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
         })
         content()
     }

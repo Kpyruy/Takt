@@ -1,5 +1,7 @@
 package com.kpyruy.takt.core.ui.components
 
+import com.kpyruy.takt.core.ui.i18n.t
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -31,7 +33,7 @@ fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
     // A restrained subject-colour tile avoids the white glass rim around this small icon.
     Box(modifier.size(46.dp).clip(shape).background(color.copy(alpha = .16f), shape)
         .border(.75.dp, color.copy(alpha = .28f), shape), contentAlignment = Alignment.Center) {
-        if (icon != null) Icon(icon.vector, icon.label, Modifier.size(26.dp), tint = color)
+        if (icon != null) Icon(icon.vector, t(icon.label), Modifier.size(26.dp), tint = color)
         else Text(course.code.substringBefore("_").take(2), color = color, fontSize = 14.sp, lineHeight = 18.sp,
             fontWeight = FontWeight.SemiBold, style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)))
     }
@@ -40,6 +42,6 @@ fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
 @Composable
 fun CourseInlineIcon(courseId: String?) {
     CourseIcons.find(LocalCourseIconKeys.current[courseId])?.let { icon ->
-        Icon(icon.vector, icon.label, Modifier.padding(end = 6.dp).size(18.dp), tint = taktSubjectColor(courseId.orEmpty()))
+        Icon(icon.vector, t(icon.label), Modifier.padding(end = 6.dp).size(18.dp), tint = taktSubjectColor(courseId.orEmpty()))
     }
 }

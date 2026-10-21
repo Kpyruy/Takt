@@ -45,8 +45,8 @@ fun CourseDocumentsPanel(
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(Icons.Outlined.FolderOpen, null, tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(t("Документи предмета"), style = MaterialTheme.typography.titleSmall)
-                Text(t("Матеріали з документ-сервера UIS"), style = MaterialTheme.typography.bodySmall,
+                Text(t("Course documents"), style = MaterialTheme.typography.titleSmall)
+                Text(t("Materials from the UIS document server"), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Outlined.ChevronRight, null)
@@ -85,13 +85,13 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                     downloads.save(course, document, cached)
                     saved = saved + document.documentId
                     withContext(Dispatchers.Main.immediate) {
-                        Toast.makeText(context, t("Збережено в папку Takt") + "/${course.code}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, t("Saved in Takt") + "/${course.code}", Toast.LENGTH_LONG).show()
                     }
                 } else {
                     withContext(Dispatchers.Main.immediate) {
                         val result = NoteAttachmentOpener.launch(context, NoteAttachmentOpener.fileIntent(cached.uri, cached.mimeType))
                         if (result != NoteAttachmentOpenResult.Opened) Toast.makeText(context,
-                            t("Не вдалося відкрити файл. Установи застосунок для цього формату."), Toast.LENGTH_LONG).show()
+                            t("Could not open the file. Install an app for this format."), Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -116,42 +116,42 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
             .padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(t("Документи предмета"), style = MaterialTheme.typography.titleLarge)
-                    Text(course.code + listing?.let { " · ${t("Файли")}: ${it.files.size}" }.orEmpty(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(t("Course documents"), style = MaterialTheme.typography.titleLarge)
+                    Text(course.code + listing?.let { " · ${t("Files")}: ${it.files.size}" }.orEmpty(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 }
-                TaktIconButton(Icons.Outlined.Refresh, t("Оновити"), { reload++ }, enabled = !loading && working == null)
-                TaktIconButton(Icons.Outlined.Close, t("Закрити"), onDismiss)
+                TaktIconButton(Icons.Outlined.Refresh, t("Update"), { reload++ }, enabled = !loading && working == null)
+                TaktIconButton(Icons.Outlined.Close, t("Close"), onDismiss)
             }
             if (!connected) {
-                Text(t("Підключи UIS, щоб бачити документи предмета."))
-                TextButton(onClick = onSettings, modifier = Modifier.testTag("documents-connect")) { Text(t("Відкрити налаштування")) }
+                Text(t("Connect UIS to see course documents."))
+                TextButton(onClick = onSettings, modifier = Modifier.testTag("documents-connect")) { Text(t("Open settings")) }
             }
             if (!downloads.canSave || folderRequired) {
-                Text(t("Підключи папку Documents/Takt у налаштуваннях, щоб відкривати й зберігати файли."),
+                Text(t("Connect Documents/Takt in settings to open and save files."),
                     style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("documents-folder-required"))
-                TextButton(onClick = onFolderSettings, modifier = Modifier.testTag("documents-folder-settings")) { Text(t("Підключити Documents")) }
+                TextButton(onClick = onFolderSettings, modifier = Modifier.testTag("documents-folder-settings")) { Text(t("Connect Documents")) }
             }
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("documents-loading"))
             failure?.let { problem ->
-                Text(t(if (working == null && listing != null) "Не вдалося відкрити або зберегти документ. Спробуй ще раз."
-                    else "Не вдалося завантажити документи. Перевір з’єднання."), color = MaterialTheme.colorScheme.error)
+                Text(t(if (working == null && listing != null) "Could not open or save the document. Try again."
+                    else "Could not load documents. Check your connection."), color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = {
                     when (problem) {
-                        is TeachingAuthenticationRequired -> authenticate(t("Документи UIS")) { if (it == DeviceAuthenticationResult.SUCCESS) reload++ }
+                        is TeachingAuthenticationRequired -> authenticate(t("UIS documents")) { if (it == DeviceAuthenticationResult.SUCCESS) reload++ }
                         is TeachingSessionUnavailable -> onSettings()
                         else -> reload++
                     }
                 }, modifier = Modifier.testTag("documents-retry")) {
                     Text(t(when (problem) {
-                        is TeachingAuthenticationRequired -> "Підтвердити доступ"
-                        is TeachingSessionUnavailable -> "Відкрити налаштування"
-                        else -> "Спробувати ще раз"
+                        is TeachingAuthenticationRequired -> "Confirm access"
+                        is TeachingSessionUnavailable -> "Open settings"
+                        else -> "Try again"
                     }))
                 }
             }
             listing?.let { result ->
                 if (result.files.isEmpty() && !loading) Text(t(if (result.foldersFound)
-                    "У папці предмета поки немає файлів." else "Папку цього предмета не знайдено на UIS."),
+                    "There are no files in this course folder yet." else "This course folder was not found in UIS."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 result.files.forEach { document ->
                     val busy = working == document.documentId
@@ -165,7 +165,7 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                                 verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Text(document.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                                 val type = (document.fileName ?: document.title).substringAfterLast('.', "").uppercase()
-                                    .takeIf { it.length in 1..8 } ?: if (document.mimeType == "application/pdf") "PDF" else t("Файл")
+                                    .takeIf { it.length in 1..8 } ?: if (document.mimeType == "application/pdf") "PDF" else t("File")
                                 Text(listOfNotNull(type, document.sizeLabel).joinToString(" · "),
                                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 document.folderPath?.takeIf { it.isNotBlank() && result.files.map { file -> file.folderId }.distinct().size > 1 }?.let {
@@ -174,17 +174,17 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                             }
                             if (busy) CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                             else TaktIconButton(if (document.documentId in saved) Icons.Outlined.DownloadDone else Icons.Outlined.Download,
-                                t(if (document.documentId in saved) "Збережено" else "Завантажити"), {
+                                t(if (document.documentId in saved) "Saved" else "Download"), {
                                     handle(document, true)
                                 }, enabled = working == null && connected, modifier = Modifier.testTag("document-download-${document.documentId}"))
                         }
                     }
                 }
-                if (result.truncated) Text(t("Показано частину матеріалів. Решту можна переглянути на UIS."),
+                if (result.truncated) Text(t("Some materials are shown. View the rest in UIS."),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 result.folderUrl?.let { url ->
                     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-                    TextButton(onClick = { runCatching { uriHandler.openUri(url) } }) { Text(t("Папка предмета в UIS")) }
+                    TextButton(onClick = { runCatching { uriHandler.openUri(url) } }) { Text(t("Course folder in UIS")) }
                 }
             }
         }

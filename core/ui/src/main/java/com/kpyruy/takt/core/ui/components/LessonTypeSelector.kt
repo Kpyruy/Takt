@@ -33,7 +33,7 @@ fun LessonTypeSelector(
     val shape = RoundedCornerShape(18.dp)
     val interaction = remember { MutableInteractionSource() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Тип заняття"), style = MaterialTheme.typography.titleSmall)
+        Text(t("Class type"), style = MaterialTheme.typography.titleSmall)
         Box(Modifier.fillMaxWidth()) {
             TaktSurface(
                 modifier = Modifier.fillMaxWidth().taktPressFeedback(interaction).clip(shape)

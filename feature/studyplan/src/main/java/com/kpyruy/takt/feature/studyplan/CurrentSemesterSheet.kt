@@ -55,7 +55,7 @@ internal fun CurrentSemesterSheet(
                 .padding(horizontal = 20.dp).padding(bottom = 28.dp).selectableGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(t("Поточний семестр"), style = MaterialTheme.typography.headlineSmall)
+            Text(t("Current semester"), style = MaterialTheme.typography.headlineSmall)
             GlassSurface(
                 modifier = Modifier.fillMaxWidth().testTag("select-current-semester-auto").selectable(selected == null, role = Role.RadioButton, onClick = { selected = null }),
                 shape = RoundedCornerShape(18.dp),
@@ -66,11 +66,11 @@ internal fun CurrentSemesterSheet(
                     verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = selected == null, onClick = null)
                     Column(Modifier.weight(1f)) {
-                        Text(t("Автоматично"), style = MaterialTheme.typography.titleSmall)
-                        currentSemester?.let { Text(t("$it семестр"), style = MaterialTheme.typography.bodySmall,
+                        Text(t("Automatically"), style = MaterialTheme.typography.titleSmall)
+                        currentSemester?.let { Text(t("Semester ${it}"), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
-                    if (selected == null) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
+                    if (selected == null) Icon(Icons.Outlined.Check, contentDescription = t("Current"),
                         tint = MaterialTheme.colorScheme.primary)
                 }
             }
@@ -86,19 +86,19 @@ internal fun CurrentSemesterSheet(
                         verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = isSelected, onClick = null)
                         Column(Modifier.weight(1f)) {
-                            Text(t("$semester семестр · ${if (semester % 2 == 1) "зимовий" else "літній"}"), style = MaterialTheme.typography.titleSmall)
+                            Text(t("Semester ${semester} · ${t(if (semester % 2 == 1) "winter" else "summer")}"), style = MaterialTheme.typography.titleSmall)
                             if (activeCourses > 0) Text(activeCoursesLabel(activeCourses),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        if (isSelected) Icon(Icons.Outlined.Check, contentDescription = t("Поточний"),
+                        if (isSelected) Icon(Icons.Outlined.Check, contentDescription = t("Current"),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
             Spacer(Modifier.height(10.dp))
             TaktPrimaryButton(onClick = { onSelect(selected) }, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Застосувати"))
+                Text(t("Apply"))
             }
         }
     }

@@ -121,7 +121,7 @@ fun SettingsScreen(
                 BackupPayloadCodec.decode(sourceRaw)
                 backupReview = BackupReviewState(localRaw, sourceRaw, BackupReviewSource.DOCUMENTS, initialSelection)
             }.onFailure {
-                backupMessage = t("Помилка відновлення: ${it.message}")
+                backupMessage = t("Recovery Error: ${t(it.message.orEmpty())}")
                 showPeriods = false
             }
         }
@@ -136,15 +136,15 @@ fun SettingsScreen(
                     val json = backupRepository.exportJson()
                     withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openOutputStream(uri)
-                            ?: error(t("Не вдалося відкрити файл"))
+                            ?: error(t("Failed to open file"))
                         stream.bufferedWriter().use { it.write(json) }
                     }
                 }
                 backupMessage = if (result.isSuccess) {
-                    t("Резервну копію збережено.")
+                    t("Backup saved.")
                 } else {
-                    t("Помилка експорту: ") +
-                        (result.exceptionOrNull()?.message ?: t("невідома помилка"))
+                    t("Export error: ") +
+                        (result.exceptionOrNull()?.message ?: t("unknown error"))
                 }
             }
         }
@@ -158,7 +158,7 @@ fun SettingsScreen(
                 val result = runCatching {
                     val raw = withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openInputStream(uri)
-                            ?: error(t("Не вдалося відкрити файл"))
+                            ?: error(t("Failed to open file"))
                         stream.bufferedReader().use { it.readText() }
                     }
                     BackupPayloadCodec.decode(raw)
@@ -168,8 +168,8 @@ fun SettingsScreen(
                 backupMessage = if (result.isSuccess) {
                     null
                 } else {
-                    t("Помилка імпорту: ") +
-                        (result.exceptionOrNull()?.message ?: t("невідома помилка"))
+                    t("Import error: ") +
+                        (result.exceptionOrNull()?.message ?: t("unknown error"))
                 }
             }
         }
@@ -179,9 +179,9 @@ fun SettingsScreen(
         if (uri != null) scope.launch {
             val result = runCatching { documentStore.connect(uri) }
             backupMessage = when (result.getOrNull()) {
-                DocumentSyncStatus.READY -> t("Documents/Takt підключено. Дані синхронізуються автоматично.")
-                DocumentSyncStatus.CONFLICT -> t("Знайдено різні дані. Виберіть, яку версію залишити.")
-                else -> t("Помилка підключення: ${result.exceptionOrNull()?.message ?: "невідома помилка"}")
+                DocumentSyncStatus.READY -> t("Documents/Takt is connected. Data is synchronized automatically.")
+                DocumentSyncStatus.CONFLICT -> t("Different data found. Choose which version to keep.")
+                else -> t("Connection error: ${t(result.exceptionOrNull()?.message ?: "Unknown error")}")
             }
         }
     }
@@ -212,8 +212,8 @@ fun SettingsScreen(
             } else {
                 backupRepository.importSelectedJson(review.sourceRaw, review.localRaw, selected)
             }
-            backupMessage = if (documentStore.isConnected) t("Вибрані дані застосовано й збережено.")
-                else t("Вибрані дані застосовано.")
+            backupMessage = if (documentStore.isConnected) t("Selected data applied and saved.")
+                else t("Selected data applied.")
         })
         return
     }
@@ -296,32 +296,32 @@ fun SettingsScreen(
             }
             Text(
                 when (documentStatus) {
-                    DocumentSyncStatus.READY -> t("Підключено · синхронізація активна")
-                    DocumentSyncStatus.CONFLICT -> t("Локальні дані й копія в Documents/Takt відрізняються")
-                    DocumentSyncStatus.ERROR -> t("Помилка синхронізації. Перевірте доступ до папки.")
-                    DocumentSyncStatus.DISCONNECTED -> t("Не підключено")
+                    DocumentSyncStatus.READY -> t("Connected · synchronization is active")
+                    DocumentSyncStatus.CONFLICT -> t("The local data and the copy in Documents/Takt are different")
+                    DocumentSyncStatus.ERROR -> t("Synchronization error. Check folder access.")
+                    DocumentSyncStatus.DISCONNECTED -> t("Not connected")
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (unmigratedMaterials > 0) {
                 Text(
-                    t("Не вдалося скопіювати $unmigratedMaterials старих матеріалів. Додайте їх заново, поки оригінали доступні."),
+                    t("Could not copy ${unmigratedMaterials} older materials. Add them again while the originals are available."),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
             OutlinedButton(onClick = { folderLauncher.launch(android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents")) }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t("Підключити Documents") else t("Змінити папку"))
+                Text(if (documentStatus == DocumentSyncStatus.DISCONNECTED) t("Connect Documents") else t("Change folder"))
             }
             if (documentStatus == DocumentSyncStatus.CONFLICT) {
                 Button(onClick = { reviewDocuments() }, modifier = Modifier.fillMaxWidth()) {
-                    Text(t("Переглянути відмінності з Documents/Takt"))
+                    Text(t("Review differences with Documents/Takt"))
                 }
                 OutlinedButton(onClick = {
                     scope.launch {
                         backupMessage = runCatching { documentStore.saveCurrentToDocuments() }
-                            .fold({ t("Поточні дані записано в Documents/Takt.") }, { t("Помилка збереження: ${it.message}") })
+                            .fold({ t("Current data is recorded in Documents/Takt.") }, { t("Save error: ${t(it.message.orEmpty())}") })
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text(t("Замінити копію даними телефона")) }
+                }, modifier = Modifier.fillMaxWidth()) { Text(t("Replace the copy with phone data")) }
             }
         }
         SectionCard {
@@ -329,7 +329,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.Center) {
                 Icon(Icons.Outlined.CloudUpload, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Резервна копія"), style = MaterialTheme.typography.titleLarge)
+                Text(t("Backup"), style = MaterialTheme.typography.titleLarge)
             }
             Button(
                 onClick = {
@@ -339,7 +339,7 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Outlined.FileUpload, null)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Експортувати JSON"), style = MaterialTheme.typography.titleMedium)
+                Text(t("Export JSON"), style = MaterialTheme.typography.titleMedium)
             }
             OutlinedButton(
                 onClick = {
@@ -349,13 +349,13 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Outlined.Restore, null)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Відновити з JSON"), style = MaterialTheme.typography.titleMedium)
+                Text(t("Restore from JSON"), style = MaterialTheme.typography.titleMedium)
             }
             backupMessage?.let { message ->
                 Text(
                     message,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (message.startsWith(t("Помилка"))) {
+                    color = if (message.startsWith(t("Error"))) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
@@ -375,78 +375,78 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ScreenHeader(
-            title = t("Налаштування"),
+            title = t("Settings"),
             navigation = {
-                TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Назад"), onBack)
+                TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Back"), onBack)
             },
         )
 
-        SettingsGroup(t("Допомога")) {
-            SettingsNavigationTile(title = t("Екскурсія по Takt"),
+        SettingsGroup(t("Help")) {
+            SettingsNavigationTile(title = t("Tour of Takt"),
                 icon = Icons.Outlined.School, onClick = onStartTour)
         }
-        SettingsGroup(t("Під себе")) {
+        SettingsGroup(t("For yourself")) {
         SettingsNavigationTile(
-            title = t("Сповіщення"),
+            title = t("Notifications"),
             icon = Icons.Outlined.Notifications,
             onClick = { showNotifications = true },
         )
         SettingsNavigationTile(
-            title = t("Вигляд"),
+            title = t("Appearance"),
             icon = Icons.Outlined.Palette,
             onClick = { showAppearance = true },
         )
         SettingsNavigationTile(
-            title = t("Мова"),
+            title = t("Language"),
             icon = Icons.Outlined.Language,
             onClick = { showLanguage = true },
         )
         SettingsNavigationTile(
-            title = t("Календар і розклад"),
+            title = t("Calendar and schedule"),
             icon = Icons.Outlined.CalendarMonth,
             onClick = { showCalendar = true },
         )
         SettingsNavigationTile(
-            title = t("Періоди навчання"),
+            title = t("Study periods"),
             icon = Icons.Outlined.DateRange,
             onClick = { showPeriods = true },
         )
 
         SettingsNavigationTile(
-            title = t("Задачі"),
+            title = t("Tasks"),
             icon = Icons.Outlined.Checklist,
             onClick = { showTasks = true },
         )
 
         }
-        SettingsGroup(t("Акаунт")) {
+        SettingsGroup(t("Account")) {
         SettingsNavigationTile(
-            title = t("Університетська система"),
+            title = t("University system"),
             subtitle = when {
-                uisPreview != null -> t("UIS · є зміни для перегляду")
-                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t("UIS · потрібен код підтвердження")
+                uisPreview != null -> t("UIS · changes to review")
+                uisSession == com.kpyruy.takt.core.data.uis.UisResult.SECOND_FACTOR -> t("UIS · verification code needed")
                 uisSession in setOf(com.kpyruy.takt.core.data.uis.UisResult.INVALID_CREDENTIALS,
                     com.kpyruy.takt.core.data.uis.UisResult.UNAVAILABLE,
-                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t("UIS · перевірка не вдалася")
-                uisImport.error != null -> t("UIS · перевірка не вдалася")
-                hasUniversityAccount -> t("UIS · дані збережено")
-                else -> t("Локальний режим")
+                    com.kpyruy.takt.core.data.uis.UisResult.UNEXPECTED_RESPONSE) -> t("UIS · check failed")
+                uisImport.error != null -> t("UIS · check failed")
+                hasUniversityAccount -> t("UIS · credentials saved")
+                else -> t("Local mode")
             },
             icon = Icons.Outlined.AccountCircle,
             onClick = { showUniversityAccount = true },
         )
         SettingsNavigationTile(
-            title = t("Автооновлення UIS"),
-            subtitle = t("Прогрес") + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
-                t("Розклад") + ": " + t(settings.uisAutoSync.timetable.label()),
+            title = t("Automatic UIS updates"),
+            subtitle = t("Progress") + ": " + t(settings.uisAutoSync.progress.label()) + " · " +
+                t("Timetable") + ": " + t(settings.uisAutoSync.timetable.label()),
             icon = Icons.Outlined.DateRange,
             onClick = { showUisAutoSync = true },
         )
 
         }
-        SettingsSectionTitle(t("Оцінювання"))
+        SettingsSectionTitle(t("Assessment"))
         SectionCard {
-            Text(t("Стандартна шкала"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Standard scale"), style = MaterialTheme.typography.titleMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf("A" to "92+", "B" to "83+", "C" to "74+", "D" to "65+", "E" to "56+").forEach { (grade, threshold) ->
                     Column(Modifier.weight(1f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -456,23 +456,23 @@ fun SettingsScreen(
                     }
                 }
             }
-            Text(t("FX · нижче 56%"), style = MaterialTheme.typography.bodySmall,
+            Text(t("FX · below 56%"), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        SettingsGroup(t("Додаток")) {
+        SettingsGroup(t("App")) {
         SettingsNavigationTile(
-            title = t("Оновлення додатка"),
-            subtitle = if (releaseState.availableUpdate != null) t("Доступне оновлення") else "Takt " + releaseState.installedVersion,
+            title = t("App updates"),
+            subtitle = if (releaseState.availableUpdate != null) t("Update available") else "Takt " + releaseState.installedVersion,
             icon = Icons.Outlined.SystemUpdate,
             onClick = { showAppUpdates = true },
         )
 
         }
-        SettingsGroup(t("Дані")) {
+        SettingsGroup(t("Data")) {
             SettingsNavigationTile("Documents/Takt", Icons.Outlined.Folder,
                 onClick = { backupMessage = null; showDocuments = true },
-                subtitle = t(if (documentStatus == DocumentSyncStatus.READY) "Підключено" else "Не підключено"))
+                subtitle = t(if (documentStatus == DocumentSyncStatus.READY) "Connected" else "Not connected"))
         }
     }
 }

@@ -36,8 +36,8 @@ import java.time.format.DateTimeFormatter
 fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolean) -> Unit) {
     val today = LocalDate.now()
     val due = task.dueDate?.let { when (it) {
-        today -> t("Сьогодні")
-        today.plusDays(1) -> t("Завтра")
+        today -> t("Today")
+        today.plusDays(1) -> t("Tomorrow")
         else -> it.format(DateTimeFormatter.ofPattern("dd.MM"))
     } }
     val overdue = !task.completed && task.dueDate?.isBefore(today) == true
@@ -57,13 +57,13 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null)
                 Text(listOfNotNull(courseTitle, due).joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (task.requiredForExam) Text(t("Для допуску") + task.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty(),
+                if (task.requiredForExam) Text(t("Required for exam") + task.minimumPointsForExam?.let { t(" · min. ${it.pointText()} pts") }.orEmpty(),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement)
-                    Text(t("Поріг для допуску не виконано"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    Text(t("Threshold for admission not met"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
             }
             task.maxPoints?.let { maximum ->
-                Text(if (task.earnedPoints != null) t("${task.earnedPoints?.pointText()} / ${maximum.pointText()} б.") else t("до ${maximum.pointText()} б."),
+                Text(if (task.earnedPoints != null) t("${task.earnedPoints?.pointText()} / ${maximum.pointText()} pts") else t("up to ${maximum.pointText()} pts"),
                     Modifier.glassSurface(tint = MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }

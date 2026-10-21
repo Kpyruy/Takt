@@ -48,7 +48,7 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                                 Icon(Icons.Outlined.MenuBook, null, Modifier.size(20.dp), tint = colors.secondary)
                             }
                         }
-                        Text(t("Твоя перша пара"), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                        Text(t("Your first class"), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
                         Surface(Modifier.size(32.dp).testTag("palette-preview-grade"),
                             shape = MaterialTheme.shapes.small, color = colors.primaryContainer,
                             contentColor = colors.onPrimaryContainer) {
@@ -63,7 +63,7 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                             Row(Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp), tint = colors.tertiary)
-                                Text(t("Підготувати конспект"), style = MaterialTheme.typography.labelSmall)
+                                Text(t("Prepare an outline"), style = MaterialTheme.typography.labelSmall)
                             }
                         }
                         // Passive button sample: the real Apply/Save target stays in the footer.
@@ -81,8 +81,8 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                         }
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(t("ПРИКЛАД"), style = MaterialTheme.typography.labelSmall, color = colors.secondary)
-                        Text(t("Твоя перша пара"), style = MaterialTheme.typography.titleSmall)
+                        Text(t("EXAMPLE"), style = MaterialTheme.typography.labelSmall, color = colors.secondary)
+                        Text(t("Your first class"), style = MaterialTheme.typography.titleSmall)
                         Text("09:00–10:30", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                     }
                     Surface(Modifier.size(40.dp).testTag("palette-preview-grade"), shape = MaterialTheme.shapes.small,
@@ -99,16 +99,16 @@ fun AppearanceLivePreview(settings: AppSettings, compact: Boolean = false, conde
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.CheckCircle, null, Modifier.size(22.dp), tint = colors.tertiary)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(t("Підготувати конспект"), style = MaterialTheme.typography.labelLarge)
-                            Text(t("завтра") + " · " + formatDurationMinutes(30), style = MaterialTheme.typography.bodySmall)
+                            Text(t("Prepare an outline"), style = MaterialTheme.typography.labelLarge)
+                            Text(t("tomorrow") + " · " + formatDurationMinutes(30), style = MaterialTheme.typography.bodySmall)
                         }
                         Box(Modifier.size(9.dp).background(colors.tertiary, CircleShape))
                     }
                 }
                 TaktPrimaryButton({}, Modifier.fillMaxWidth().testTag("palette-preview-primary")) {
-                    Text(t("Додати задачу"))
+                    Text(t("Add task"))
                 }
-                if (!compact) Text(t("Основний — кнопки й оцінки · Другий — предмети · Третій — задачі та позначки"),
+                if (!compact) Text(t("Primary: buttons and grades · Secondary: subjects · Tertiary: tasks and markers"),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
         }

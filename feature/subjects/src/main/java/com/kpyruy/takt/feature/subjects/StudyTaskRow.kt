@@ -42,7 +42,7 @@ fun StudyTaskRow(
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Checkbox(checked = task.completed, onCheckedChange = onCompletedChange,
-                        modifier = Modifier.semantics { contentDescription = t("Виконано: ${task.title}") })
+                        modifier = Modifier.semantics { contentDescription = t("Completed: ${task.title}") })
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(task.title, style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold, maxLines = 2)
@@ -52,21 +52,21 @@ fun StudyTaskRow(
                         }
                     }
                     Box {
-                        IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Дії завдання")) }
+                        IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Task actions")) }
                         TaktChoiceMenu(menuOpen, onDismissRequest = { menuOpen = false }) {
-                            TaktChoiceMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
-                            TaktChoiceMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+                            TaktChoiceMenuItem(text = { Text(t("Edit")) }, onClick = { menuOpen = false; onEdit() })
+                            TaktChoiceMenuItem(text = { Text(t("Delete")) }, onClick = { menuOpen = false; onDelete() })
                         }
                     }
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     task.dueDate?.let {
-                        AssessmentDetailChip(t("До ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), Icons.Outlined.CalendarMonth)
+                        AssessmentDetailChip(t("Due ") + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), Icons.Outlined.CalendarMonth)
                     }
-                    if (task.requiredForExam) AssessmentDetailChip(t("потрібно для допуску"), Icons.Outlined.Lock)
-                    if (task.maxPoints != null) AssessmentDetailChip(t("Входить у підсумок"), Icons.Outlined.Description)
+                    if (task.requiredForExam) AssessmentDetailChip(t("required for exam eligibility"), Icons.Outlined.Lock)
+                    if (task.maxPoints != null) AssessmentDetailChip(t("Counts toward the final grade"), Icons.Outlined.Description)
                     task.minimumPointsForExam?.let {
-                        AssessmentDetailChip(t("Мінімум ") + it.displayNumber() + t(" б."), Icons.Outlined.BarChart)
+                        AssessmentDetailChip(t("Minimum ") + it.displayNumber() + t(" pts"), Icons.Outlined.BarChart)
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -76,12 +76,12 @@ fun StudyTaskRow(
                         null, Modifier.size(18.dp), tint = resultColor)
                     Text(when {
                         overdue -> overdueLabel(task.dueDate!!, today)
-                        belowThreshold -> t("Поріг не виконано")
-                        task.completed -> t("Виконано")
-                        else -> t("Очікується")
+                        belowThreshold -> t("Threshold not met")
+                        task.completed -> t("Work done")
+                        else -> t("Pending")
                     }, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = resultColor)
                     task.maxPoints?.let { maximum ->
-                        Text("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} ${t("б.")}",
+                        Text("${task.earnedPoints?.displayNumber() ?: "—"} / ${maximum.displayNumber()} ${t("pts")}",
                             style = MaterialTheme.typography.labelLarge)
                     }
                 }

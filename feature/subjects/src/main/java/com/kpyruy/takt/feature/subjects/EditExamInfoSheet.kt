@@ -70,10 +70,10 @@ internal fun EditExamInfoSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Екзамен"), style = MaterialTheme.typography.headlineSmall)
+            Text(t("Exam"), style = MaterialTheme.typography.headlineSmall)
 
             TaktDatePickerField(
-                label = t("Дата"),
+                label = t("Date"),
                 value = date,
                 onValueChange = {
                     date = it
@@ -83,7 +83,7 @@ internal fun EditExamInfoSheet(
             )
             if (date != null) {
                 TextButton(onClick = { date = null }) {
-                    Text(t("Дата ще не відома"))
+                    Text(t("The date is not yet known"))
                 }
 
                 Row(
@@ -91,7 +91,7 @@ internal fun EditExamInfoSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TaktTimePickerField(
-                        label = t("Початок"),
+                        label = t("Start time"),
                         value = startTime,
                         onValueChange = {
                             startTime = it
@@ -100,7 +100,7 @@ internal fun EditExamInfoSheet(
                         modifier = Modifier.weight(1f),
                     )
                     TaktTimePickerField(
-                        label = t("Кінець"),
+                        label = t("End"),
                         value = endTime,
                         onValueChange = {
                             endTime = it
@@ -114,23 +114,23 @@ internal fun EditExamInfoSheet(
             TaktTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(t("Аудиторія")) },
+                label = { Text(t("Room")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 trailingIcon = { Icon(Icons.Outlined.LocationOn, null) },
             )
 
-            Text(t("Спроба · максимум 3"), style = MaterialTheme.typography.labelLarge)
+            Text(t("Attempt · maximum 3"), style = MaterialTheme.typography.labelLarge)
             TaktSegmentedTabs(listOf("1/3", "2/3", "3/3"), attempt - 1, { attempt = it + 1 })
 
             if (examItems.isNotEmpty()) {
-                Text(t("Пов'язаний результат"), style = MaterialTheme.typography.labelLarge)
+                Text(t("Related result"), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         ExamChoice(
                             selected = linkedGradeItemId == null,
                             onClick = { linkedGradeItemId = null },
-                            label = { Text(t("Не вибрано")) },
+                            label = { Text(t("Not selected")) },
                         )
                     }
                     items(examItems, key = { it.id }) { item ->
@@ -146,7 +146,7 @@ internal fun EditExamInfoSheet(
             TaktTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text(t("Нотатки")) },
+                label = { Text(t("Notes")) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
             )
@@ -158,7 +158,7 @@ internal fun EditExamInfoSheet(
             TaktPrimaryButton(
                 onClick = {
                     if (date != null && endTime <= startTime) {
-                        error = t("Кінець має бути пізніше початку.")
+                        error = t("The end must be later than the beginning.")
                         return@TaktPrimaryButton
                     }
                     onSave(
@@ -177,7 +177,7 @@ internal fun EditExamInfoSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(t("Зберегти"))
+                Text(t("Save"))
             }
         }
     }

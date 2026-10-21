@@ -42,7 +42,7 @@ internal fun CourseNotesTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (notes.isEmpty()) SectionCard {
-            Text(t("Поки немає нотаток."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("There are no notes yet."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         notes.forEach { note ->
             key(note.id) {
@@ -62,7 +62,7 @@ internal fun CourseNotesTab(
                 horizontalArrangement = Arrangement.Center) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
-                Text(t("Додати нотатку"), color = MaterialTheme.colorScheme.primary,
+                Text(t("Add a note"), color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleMedium)
             }
         }

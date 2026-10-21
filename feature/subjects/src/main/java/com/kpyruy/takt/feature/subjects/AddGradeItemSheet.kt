@@ -104,7 +104,7 @@ fun AddGradeItemForm(
     var title by rememberSaveable(initialItem?.id, initialTitle, effectiveType) {
         mutableStateOf(
             initialItem?.title
-                ?: initialTitle.ifBlank { if (effectiveType == GradeItemType.EXAM) t("Екзамен") else "" }
+                ?: initialTitle.ifBlank { if (effectiveType == GradeItemType.EXAM) t("Exam") else "" }
         )
     }
     var earnedText by rememberSaveable(initialItem?.id) {
@@ -157,10 +157,10 @@ fun AddGradeItemForm(
         if (showHeading) {
             Text(
                 when {
-                    initialItem != null -> t("Редагувати оцінювання")
-                    initialType == GradeItemType.EXAM -> t("Додати екзамен")
-                    initialType == GradeItemType.TEST -> t("Додати тест")
-                    else -> t("Додати оцінювання")
+                    initialItem != null -> t("Edit assessment")
+                    initialType == GradeItemType.EXAM -> t("Add an exam")
+                    initialType == GradeItemType.TEST -> t("Add test")
+                    else -> t("Add assessment")
                 },
                 style = MaterialTheme.typography.headlineMedium,
             )
@@ -169,12 +169,12 @@ fun AddGradeItemForm(
         TaktTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(t("Назва")) },
+            label = { Text(t("Name")) },
             modifier = Modifier.fillMaxWidth().testTag("grade-title"),
             singleLine = true,
         )
 
-        Text(t("Тип"), style = MaterialTheme.typography.titleSmall)
+        Text(t("Type"), style = MaterialTheme.typography.titleSmall)
         GradeTypeSelector(
             selected = type,
             onSelected = {
@@ -186,7 +186,7 @@ fun AddGradeItemForm(
         // A normal single-line field sizes itself; do not stretch it to another field's wrapped label.
         TaktTextField(
             value = maxText, onValueChange = { maxText = it; error = null },
-            label = { Text(t("Максимум")) }, modifier = Modifier.fillMaxWidth().testTag("grade-maximum"),
+            label = { Text(t("Maximum")) }, modifier = Modifier.fillMaxWidth().testTag("grade-maximum"),
             singleLine = true, isError = error != null && errorTab == null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
@@ -201,8 +201,8 @@ fun AddGradeItemForm(
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Outlined.Tune, null)
                 Column(Modifier.weight(1f)) {
-                    Text(t("Деталі"), style = MaterialTheme.typography.titleSmall)
-                    Text(t("Дата, результат і умови оцінювання"), style = MaterialTheme.typography.bodySmall,
+                    Text(t("Details"), style = MaterialTheme.typography.titleSmall)
+                    Text(t("Date, result and assessment rules"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Icon(Icons.Outlined.ChevronRight, null)
@@ -226,23 +226,23 @@ fun AddGradeItemForm(
                 error = null
                 errorTab = null
                 when {
-                    max == null -> error = t("Введіть числові значення балів.")
-                    !max.isFinite() || max <= 0.0 -> error = t("Максимум має бути більшим за 0.")
-                    earned == null -> invalidDetails(GradeDetailsTab.RESULT, t("Введіть числові значення балів."))
+                    max == null -> error = t("Enter the numerical values of the points.")
+                    !max.isFinite() || max <= 0.0 -> error = t("Maximum must be greater than 0.")
+                    earned == null -> invalidDetails(GradeDetailsTab.RESULT, t("Enter the numerical values of the points."))
                     !earned.isFinite() || earned < 0.0 ->
-                        invalidDetails(GradeDetailsTab.RESULT, t("Отримані бали не можуть бути від'ємними."))
-                    earned > max -> invalidDetails(GradeDetailsTab.RESULT, t("Отримані бали не можуть перевищувати максимум."))
+                        invalidDetails(GradeDetailsTab.RESULT, t("The obtained points cannot be negative."))
+                    earned > max -> invalidDetails(GradeDetailsTab.RESULT, t("The obtained points cannot exceed the maximum."))
                     selectedTeachingWeek != null && dueDate == null && teachingWeeks.weeks
                         .any { it.number == selectedTeachingWeek && it.occurrences.size > 1 } -> {
                         dateMode = GradeDateMode.SCHEDULE
-                        invalidDetails(GradeDetailsTab.WHEN, t("Обери пару цього тижня або вкажи дату."))
+                        invalidDetails(GradeDetailsTab.WHEN, t("Choose a lesson this week or enter a date."))
                     }
                     minimumInput != null && minimum == null ->
-                        invalidDetails(GradeDetailsTab.RULES, t("Введіть числовий мінімум балів."))
+                        invalidDetails(GradeDetailsTab.RULES, t("Enter the numerical minimum score."))
                     minimum != null && (!minimum.isFinite() || minimum < 0.0 || minimum > max) ->
-                        invalidDetails(GradeDetailsTab.RULES, t("Мінімум має бути від 0 до максимуму балів."))
+                        invalidDetails(GradeDetailsTab.RULES, t("The minimum must be from 0 to the maximum of points."))
                     durationInput != null && (duration == null || duration <= 0) ->
-                        invalidDetails(GradeDetailsTab.WHEN, t("Тривалість тесту має бути додатним числом хвилин."))
+                        invalidDetails(GradeDetailsTab.WHEN, t("The duration of the test must be a positive number of minutes."))
                     else -> onSave(
                         GradeItem(
                             id = initialItem?.id ?: UUID.randomUUID().toString(),
@@ -268,7 +268,7 @@ fun AddGradeItemForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth().testTag("grade-save"),
         ) {
-            Text(if (initialItem == null) t("Зберегти") else t("Оновити"))
+            Text(if (initialItem == null) t("Save") else t("Update"))
         }
     }
 
@@ -302,7 +302,7 @@ fun AddGradeItemForm(
                     )
                 } else {
                     TaktDatePickerField(
-                        label = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) t("Дата тесту") else t("Дедлайн / дата"),
+                        label = if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) t("Test date") else t("Deadline / date"),
                         value = dueDate,
                         onValueChange = {
                             if (dueDate != it) lessonId = null
@@ -317,14 +317,14 @@ fun AddGradeItemForm(
                             lessons = lessonOptions, selectedId = selectedLessonId,
                             onSelected = { lessonId = it.id; error = null },
                         ) else if (dueDate != null && scheduleRepository != null) {
-                            Text(t("На цю дату немає пари цього предмета"), style = MaterialTheme.typography.bodySmall,
+                            Text(t("There are no classes for this subject on this date"), style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
                 if (type == GradeItemType.TEST || type == GradeItemType.MIDTERM) TaktTextField(
                     value = durationText, onValueChange = { durationText = it; error = null },
-                    label = { Text(t("Тривалість тесту (хв)")) },
+                    label = { Text(t("Test duration (min)")) },
                     modifier = Modifier.fillMaxWidth().testTag("grade-duration"),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true, isError = error != null && errorTab == GradeDetailsTab.WHEN,
@@ -344,24 +344,24 @@ fun AddGradeItemForm(
                 }
                 if (completed) TaktTextField(
                     value = earnedText, onValueChange = { earnedText = it; error = null },
-                    label = { Text(t("Отримано")) }, modifier = Modifier.fillMaxWidth().testTag("grade-earned"),
+                    label = { Text(t("Received")) }, modifier = Modifier.fillMaxWidth().testTag("grade-earned"),
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = error != null && errorTab == GradeDetailsTab.RESULT,
                 )
             }
             GradeDetailsTab.RULES -> {
-                GradeRuleToggle("grade-contributes", "Бали входять у підсумкову оцінку", contributesToGrade) {
+                GradeRuleToggle("grade-contributes", "Points count toward the final grade", contributesToGrade) {
                     contributesToGrade = it
                     error = null
                 }
                 if (type != GradeItemType.EXAM) {
-                    GradeRuleToggle("grade-required", "Потрібно для допуску", requiredForExam) {
+                    GradeRuleToggle("grade-required", "Required for exam eligibility", requiredForExam) {
                         requiredForExam = it
                         error = null
                     }
                     if (requiredForExam) TaktTextField(
                         value = minimumText, onValueChange = { minimumText = it; error = null },
-                        label = { Text(t("Мінімум")) }, modifier = Modifier.fillMaxWidth().testTag("grade-minimum"),
+                        label = { Text(t("Minimum")) }, modifier = Modifier.fillMaxWidth().testTag("grade-minimum"),
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         isError = error != null && errorTab == GradeDetailsTab.RULES,
                     )
@@ -376,10 +376,10 @@ fun AddGradeItemForm(
 private fun GradeTypeSelector(selected: GradeItemType, onSelected: (GradeItemType) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val choices = listOf(
-        GradeItemType.TEST to t("Тест"), GradeItemType.LAB to t("Лаба"),
-        GradeItemType.SEMINAR to t("Семінар"), GradeItemType.HOMEWORK to t("ДЗ"),
-        GradeItemType.PROJECT to t("Проєкт"), GradeItemType.ORAL to t("Усне"),
-        GradeItemType.EXAM to t("Екзамен"), GradeItemType.OTHER to t("Інше"),
+        GradeItemType.TEST to t("Test"), GradeItemType.LAB to t("Laboratory"),
+        GradeItemType.SEMINAR to t("Seminar"), GradeItemType.HOMEWORK to t("Homework (short)"),
+        GradeItemType.PROJECT to t("Project"), GradeItemType.ORAL to t("Oral"),
+        GradeItemType.EXAM to t("Exam"), GradeItemType.OTHER to t("Other"),
     )
     Box(Modifier.fillMaxWidth()) {
         GradeChoiceTrigger("grade-type-trigger", { expanded = true },
@@ -419,12 +419,12 @@ private fun GradeLessonSelector(
     var expanded by remember { mutableStateOf(false) }
     val selectedLesson = lessons.firstOrNull { it.id == selectedId }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Пара з тестом"), style = MaterialTheme.typography.titleSmall)
+        Text(t("Class with a test"), style = MaterialTheme.typography.titleSmall)
         Box(Modifier.fillMaxWidth()) {
             GradeChoiceTrigger("grade-date-lesson-trigger", { expanded = true },
                 icon = { selectedLesson?.let { LessonTypeIcon(it.lessonType) } },
                 text = { selectedLesson?.let { Text("${it.startTime}–${it.endTime}" + it.room?.let { " · $it" }.orEmpty()) }
-                    ?: Text(t("Пара з тестом")) })
+                    ?: Text(t("Class with a test")) })
             TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
                 lessons.forEach { lesson ->
                     TaktChoiceMenuItem(text = {

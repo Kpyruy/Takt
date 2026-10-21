@@ -35,11 +35,11 @@ import com.kpyruy.takt.core.ui.components.GlassSurface
 import com.kpyruy.takt.core.ui.components.TaktSurface as Surface
 
 internal fun CourseStatus.title() = when (this) {
-    CourseStatus.FULFILLED -> t("Здано")
-    CourseStatus.ENROLLED -> t("Активний")
-    CourseStatus.PLANNED -> t("Заплановано")
-    CourseStatus.NOT_ENROLLED -> t("Не записаний")
-    CourseStatus.NOT_NEEDED -> t("Не потрібний")
+    CourseStatus.FULFILLED -> t("Work completed")
+    CourseStatus.ENROLLED -> t("Active subject")
+    CourseStatus.PLANNED -> t("Scheduled")
+    CourseStatus.NOT_ENROLLED -> t("Not recorded")
+    CourseStatus.NOT_NEEDED -> t("Not needed")
 }
 internal fun CourseStatus.icon(): ImageVector = when (this) {
     CourseStatus.FULFILLED -> Icons.Outlined.CheckCircle
@@ -69,13 +69,13 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(course.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold,
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
-                Text(t("${course.credits} кредитів"), fontSize = 12.sp, lineHeight = 16.sp,
+                Text(t("${course.credits} credits"), fontSize = 12.sp, lineHeight = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Box(Modifier.width(statusColumnWidth).heightIn(min = 48.dp)
                 .clickable(role = Role.Button, onClick = onStatus).testTag("status-${course.id}")
-                .semantics { contentDescription = t("Змінити статус: ${course.title}"); stateDescription = course.status.title() },
+                .semantics { contentDescription = t("Change Status: ${course.title}"); stateDescription = course.status.title() },
             contentAlignment = Alignment.Center) {
             if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null }, Modifier.fillMaxWidth())
             else GlassSurface(Modifier.size(42.dp), shape = RoundedCornerShape(11.dp),
@@ -94,10 +94,10 @@ internal fun CourseStatusSheet(course: Course, uisManaged: Boolean = false, onSt
     TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(course.title, style = MaterialTheme.typography.headlineSmall)
-            Text(t(if (uisManaged) "${course.semester} семестр" else "${course.semester} семестр · статус можна змінити будь-коли"),
+            Text(t(if (uisManaged) "Semester ${course.semester}" else "Semester ${course.semester} · status can be changed at any time"),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
-            if (uisManaged) Text(t("Статус предмета визначає UIS"), style = MaterialTheme.typography.bodyMedium,
+            if (uisManaged) Text(t("UIS determines this subject's status"), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!uisManaged) CourseStatus.entries.forEach { status ->
                 Surface(onClick = { onStatus(status) }, modifier = Modifier.fillMaxWidth().testTag("choose-status-${status.name}"),
@@ -106,11 +106,11 @@ internal fun CourseStatusSheet(course: Course, uisManaged: Boolean = false, onSt
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Icon(status.icon(), null, Modifier.size(22.dp), tint = status.tint())
                         Text(status.title(), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                        if (status == course.status) Icon(Icons.Outlined.Check, t("Обрано"), Modifier.size(20.dp))
+                        if (status == course.status) Icon(Icons.Outlined.Check, t("Selected"), Modifier.size(20.dp))
                     }
                 }
             }
-            TextButton(onClick = onIcon, modifier = Modifier.fillMaxWidth()) { Text(t("Змінити іконку предмета")) }
+            TextButton(onClick = onIcon, modifier = Modifier.fillMaxWidth()) { Text(t("Change subject icon")) }
         }
     }
 }

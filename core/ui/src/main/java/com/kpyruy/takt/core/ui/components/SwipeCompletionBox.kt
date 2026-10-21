@@ -63,7 +63,7 @@ fun SwipeCompletionBox(
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(if (completed) "↺" else "✓")
-                    Text(if (completed) t("Відновити") else t("Виконано"))
+                    Text(if (completed) t("Restore") else t("Work done"))
                 }
             }
         },

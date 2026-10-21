@@ -3,11 +3,11 @@ package com.kpyruy.takt.core.model
 import java.time.LocalTime
 
 enum class ReminderCategory(val label: String, val academic: Boolean = false) {
-    TASK("Звичайні задачі"),
-    TEST("Тест", true), LAB("Лабораторна", true), SEMINAR("Семінар", true),
-    HOMEWORK("Домашня робота", true), PROJECT("Проєкт", true), ORAL("Усна відповідь", true),
-    EXAM("Екзамен", true), OTHER("Інша навчальна робота", true),
-    LESSON("Заняття"), EVENT("Події"), REMINDER("Нагадування");
+    TASK("Ordinary tasks"),
+    TEST("Test", true), LAB("Lab", true), SEMINAR("Seminar", true),
+    HOMEWORK("Homework", true), PROJECT("Project", true), ORAL("Oral answer", true),
+    EXAM("Exam", true), OTHER("Other academic work", true),
+    LESSON("Lessons"), EVENT("Events"), REMINDER("Reminder");
 
     companion object {
         fun forAssessment(type: GradeItemType): ReminderCategory = when (type) {
@@ -26,7 +26,7 @@ data class ReminderRule(val enabled: Boolean = true, val offsetsMinutes: List<Lo
 const val MAX_REMINDER_LEAD_MINUTES: Long = 365L * 24 * 60
 
 enum class ReminderLeadUnit(val minutes: Long, val label: String) {
-    MINUTES(1, "хв"), HOURS(60, "год"), DAYS(1440, "дн"), WEEKS(10080, "тиж")
+    MINUTES(1, "min"), HOURS(60, "h"), DAYS(1440, "days"), WEEKS(10080, "weeks")
 }
 
 data class ReminderSettings(

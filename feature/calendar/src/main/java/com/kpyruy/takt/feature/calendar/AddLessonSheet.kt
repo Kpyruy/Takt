@@ -178,7 +178,7 @@ fun AddLessonForm(
     ) {
         if (showHeading) {
             Text(
-                text = if (editingId == null) t("Додати пару") else t("Редагувати пару"),
+                text = if (editingId == null) t("Add class") else t("Edit class"),
                 style = MaterialTheme.typography.headlineSmall,
             )
         }
@@ -187,18 +187,18 @@ fun AddLessonForm(
             linkedCourseId = course?.id
         }
         if (onLoadUisLessons != null && linkedCourseId != null) {
-            Text(t("Пари з UIS"), style = MaterialTheme.typography.titleSmall)
+            Text(t("Lessons from UIS"), style = MaterialTheme.typography.titleSmall)
             when {
                 uisLoading -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     CircularProgressIndicator(Modifier.padding(3.dp), strokeWidth = 2.dp)
-                    Text(t("Завантаження пар з UIS…"))
+                    Text(t("Loading lessons from UIS…"))
                 }
                 uisLoadFailed -> Column {
-                    Text(t("Не вдалося отримати пари з UIS. Перевір підключення в налаштуваннях."),
+                    Text(t("Could not load lessons from UIS. Check the connection in Settings."),
                         color = MaterialTheme.colorScheme.error)
-                    Button(onClick = { uisReload++ }) { Text(t("Спробувати знову")) }
+                    Button(onClick = { uisReload++ }) { Text(t("Try once more")) }
                 }
-                uisLessons.isEmpty() -> Text(t("Для цього предмета немає повторюваних пар у розкладі UIS."),
+                uisLessons.isEmpty() -> Text(t("No recurring lessons for this subject in the UIS timetable."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> uisLessons.forEach { option ->
                     Surface(onClick = {
@@ -219,7 +219,7 @@ fun AddLessonForm(
                         Column(Modifier.padding(12.dp)) {
                             Text("${option.date?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) ?: option.day.shortLabel()} · ${option.start}–${option.end}",
                                 style = MaterialTheme.typography.titleSmall)
-                            Text("${t(option.lessonType.label)}${if (option.date != null) " · ${t("Разове заняття")}" else ""}${option.room?.let { " · $it" }.orEmpty()}",
+                            Text("${t(option.lessonType.label)}${if (option.date != null) " · ${t("One-time lesson")}" else ""}${option.room?.let { " · $it" }.orEmpty()}",
                                 style = MaterialTheme.typography.bodySmall)
                         }
                     }
@@ -229,7 +229,7 @@ fun AddLessonForm(
         if (linkedCourse == null || lessonType == LessonType.EVENT) OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(if (lessonType == LessonType.EVENT) t("Назва") else t("Назва предмета")) },
+            label = { Text(if (lessonType == LessonType.EVENT) t("Name") else t("Subject name")) },
             modifier = Modifier.fillMaxWidth().testTag("lesson-custom-title"),
             singleLine = true,
         )
@@ -239,27 +239,27 @@ fun AddLessonForm(
         OutlinedTextField(
             value = room,
             onValueChange = { room = it },
-            label = { Text(if (lessonType == LessonType.EVENT) t("Місце") else t("Аудиторія")) },
+            label = { Text(if (lessonType == LessonType.EVENT) t("Place") else t("Room")) },
             modifier = Modifier.fillMaxWidth().testTag("lesson-room"),
             singleLine = true,
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(t("Повторення"), style = MaterialTheme.typography.titleSmall)
+            Text(t("Recurrence"), style = MaterialTheme.typography.titleSmall)
             val recurrenceOptions = listOf(
-                ScheduleRecurrence.WEEKLY to t("Щотижня"),
-                ScheduleRecurrence.ODD_WEEKS to t("Непарні"),
-                ScheduleRecurrence.EVEN_WEEKS to t("Парні"),
+                ScheduleRecurrence.WEEKLY to t("Every week"),
+                ScheduleRecurrence.ODD_WEEKS to t("Odd week pattern"),
+                ScheduleRecurrence.EVEN_WEEKS to t("Even week pattern"),
             )
             Box(Modifier.fillMaxWidth()) {
                 LessonChoiceTrigger(
-                    if (isOneOff && onSaveOneOff != null) t("Один раз") else recurrenceOptions.first { it.first == recurrence }.second,
+                    if (isOneOff && onSaveOneOff != null) t("Once") else recurrenceOptions.first { it.first == recurrence }.second,
                     "lesson-repeat-trigger", { repeatMenuExpanded = true },
                 ) {
                     Icon(if (isOneOff && onSaveOneOff != null) Icons.Outlined.Event else Icons.Outlined.Repeat, null)
                 }
                 TaktChoiceMenu(repeatMenuExpanded, onDismissRequest = { repeatMenuExpanded = false }) {
-                    if (onSaveOneOff != null) TaktChoiceMenuItem(text = { Text(t("Один раз")) },
+                    if (onSaveOneOff != null) TaktChoiceMenuItem(text = { Text(t("Once")) },
                         modifier = Modifier.testTag("lesson-repeat-once").semantics { selected = isOneOff },
                         leadingIcon = { Icon(Icons.Outlined.Event, null) },
                         trailingIcon = { if (isOneOff) Icon(Icons.Outlined.Check, null) },
@@ -276,11 +276,11 @@ fun AddLessonForm(
             }
         }
         if (isOneOff && onSaveOneOff != null) {
-            TaktDatePickerField(label = t("Дата заняття"), value = selectedDate,
+            TaktDatePickerField(label = t("Lesson date"), value = selectedDate,
                 onValueChange = { selectedDate = it; chosenUisKey = null },
                 modifier = Modifier.fillMaxWidth().testTag("lesson-once-date"))
         } else {
-            Text(t("День тижня"), style = MaterialTheme.typography.titleSmall)
+            Text(t("Day of the week"), style = MaterialTheme.typography.titleSmall)
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DayOfWeek.entries.forEach { option ->
@@ -295,7 +295,7 @@ fun AddLessonForm(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TaktTimePickerField(
-                label = t("Початок"),
+                label = t("Start time"),
                 value = startTime,
                 onValueChange = {
                     startTime = it
@@ -304,7 +304,7 @@ fun AddLessonForm(
                 modifier = Modifier.weight(1f),
             )
             TaktTimePickerField(
-                label = t("Кінець"),
+                label = t("End"),
                 value = endTime,
                 onValueChange = {
                     endTime = it
@@ -316,7 +316,7 @@ fun AddLessonForm(
 
         if (showTimeError) {
             Text(
-                text = t("Кінець має бути пізніше початку."),
+                text = t("The end must be later than the beginning."),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -343,19 +343,19 @@ fun AddLessonForm(
             enabled = savedTitle.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (editingId == null) t("Зберегти") else t("Оновити"))
+            Text(if (editingId == null) t("Save") else t("Update"))
         }
     }
 }
 
 private fun DayOfWeek.shortLabel(): String = when (this) {
-    DayOfWeek.MONDAY -> t("Пн")
-    DayOfWeek.TUESDAY -> t("Вт")
-    DayOfWeek.WEDNESDAY -> t("Ср")
-    DayOfWeek.THURSDAY -> t("Чт")
-    DayOfWeek.FRIDAY -> t("Пт")
-    DayOfWeek.SATURDAY -> t("Сб")
-    DayOfWeek.SUNDAY -> t("Нд")
+    DayOfWeek.MONDAY -> t("Mon")
+    DayOfWeek.TUESDAY -> t("Tue")
+    DayOfWeek.WEDNESDAY -> t("Wed")
+    DayOfWeek.THURSDAY -> t("Thu")
+    DayOfWeek.FRIDAY -> t("Fri")
+    DayOfWeek.SATURDAY -> t("Sat")
+    DayOfWeek.SUNDAY -> t("Sun")
 }
 
 @Composable

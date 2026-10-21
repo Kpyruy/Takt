@@ -35,8 +35,8 @@ internal fun ManualGradeSection(
     var menuOpen by remember { mutableStateOf(false) }
     SectionCard {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Підсумкова оцінка"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-            Text(t("Авто"), style = MaterialTheme.typography.bodyMedium)
+            Text(t("Final grade"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text(t("Auto"), style = MaterialTheme.typography.bodyMedium)
             Switch(checked = autoEnabled, onCheckedChange = { enabled ->
                 autoEnabled = enabled
                 if (enabled) onManualGradeChange(null)
@@ -46,7 +46,7 @@ internal fun ManualGradeSection(
             androidx.compose.foundation.layout.Box {
                 GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
                 TextButton(onClick = { menuOpen = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                    Text(manualGrade?.name ?: t("Обрати оцінку"), Modifier.weight(1f))
+                    Text(manualGrade?.name ?: t("Choose a grade"), Modifier.weight(1f))
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                 }
                 }

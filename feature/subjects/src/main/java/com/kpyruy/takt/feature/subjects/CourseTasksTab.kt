@@ -67,10 +67,10 @@ internal fun CourseTasksTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AdmissionProgressCard(eligibility, compact = true)
-        Text(t("Курсові задачі"), fontSize = 21.sp, fontWeight = FontWeight.Bold,
+        Text(t("Course tasks"), fontSize = 21.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp))
         if (work.isEmpty()) {
-            SectionCard { Text(t("Поки немає задач."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            SectionCard { Text(t("There are no tasks yet."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
             work.forEach { entry ->
                 when (entry) {
@@ -98,16 +98,16 @@ internal fun CourseTasksTab(
                     horizontalArrangement = Arrangement.Center) {
                     Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
-                    Text(t("Додати роботу"), color = MaterialTheme.colorScheme.primary,
+                    Text(t("Add work"), color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleMedium)
                 }
             }
             TaktChoiceMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
-                TaktChoiceMenuItem(text = { Text(t("Завдання без балів")) }, onClick = {
+                TaktChoiceMenuItem(text = { Text(t("Task without points")) }, onClick = {
                     addMenuOpen = false
                     onAddTask()
                 })
-                TaktChoiceMenuItem(text = { Text(t("Оцінювана робота з балами")) }, onClick = {
+                TaktChoiceMenuItem(text = { Text(t("Graded work with points")) }, onClick = {
                     addMenuOpen = false
                     onAddGrade()
                 })

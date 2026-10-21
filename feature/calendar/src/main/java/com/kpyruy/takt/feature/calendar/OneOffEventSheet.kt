@@ -116,9 +116,9 @@ fun OneOffEventForm(
         if (showHeading) {
             Text(
                 when {
-                    initialEvent != null -> t("Редагувати подію")
-                    isReminder -> t("Нагадування")
-                    else -> t("Разова подія")
+                    initialEvent != null -> t("Edit the event")
+                    isReminder -> t("Reminder")
+                    else -> t("One time event")
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
@@ -134,7 +134,7 @@ fun OneOffEventForm(
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(if (isReminder) t("Що нагадати") else t("Назва")) },
+            label = { Text(if (isReminder) t("What to remind") else t("Name")) },
             modifier = Modifier.fillMaxWidth().testTag("oneoff-title"),
             singleLine = true,
         )
@@ -144,24 +144,24 @@ fun OneOffEventForm(
                 FilterChip(
                     selected = type == OneOffScheduleEventType.EXTRA,
                     onClick = { type = OneOffScheduleEventType.EXTRA },
-                    label = { Text(t("Додаткова пара")) },
+                    label = { Text(t("Extra class")) },
                 )
                 FilterChip(
                     selected = type == OneOffScheduleEventType.BLOCK_ACTION,
                     onClick = { type = OneOffScheduleEventType.BLOCK_ACTION },
-                    label = { Text(t("Блокова акція")) },
+                    label = { Text(t("Block action")) },
                 )
             }
         } else if (isReminder) {
             Text(
-                t("Сповіщення для нагадувань можна налаштувати в «Під себе» → «Сповіщення»."),
+                t("Configure reminder notifications in Personalize → Notifications."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         TaktDatePickerField(
-            label = t("Дата"),
+            label = t("Date"),
             value = date,
             onValueChange = {
                 date = it
@@ -175,7 +175,7 @@ fun OneOffEventForm(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TaktTimePickerField(
-                label = t("Початок"),
+                label = t("Start time"),
                 value = startTime,
                 onValueChange = {
                     startTime = it
@@ -185,7 +185,7 @@ fun OneOffEventForm(
                 modifier = Modifier.weight(1f),
             )
             TaktTimePickerField(
-                label = t("Кінець"),
+                label = t("End"),
                 value = endTime,
                 onValueChange = {
                     endTime = it
@@ -199,7 +199,7 @@ fun OneOffEventForm(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(if (lessonType == LessonType.EVENT) t("Місце") else t("Аудиторія")) },
+                label = { Text(if (lessonType == LessonType.EVENT) t("Place") else t("Room")) },
                 modifier = Modifier.fillMaxWidth().testTag("oneoff-room"),
                 singleLine = true,
             )
@@ -216,7 +216,7 @@ fun OneOffEventForm(
         Button(
             onClick = {
                 if (endTime <= startTime) {
-                    error = t("Кінець має бути пізніше початку.")
+                    error = t("The end must be later than the beginning.")
                     return@Button
                 }
                 onSave(
@@ -236,7 +236,7 @@ fun OneOffEventForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth().testTag("oneoff-save"),
         ) {
-            Text(if (initialEvent == null) t("Додати") else t("Оновити"))
+            Text(if (initialEvent == null) t("Add") else t("Update"))
         }
     }
 }

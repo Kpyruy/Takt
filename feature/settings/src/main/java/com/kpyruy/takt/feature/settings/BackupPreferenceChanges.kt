@@ -29,42 +29,42 @@ import java.time.format.DateTimeFormatter
 internal fun BackupPreferenceChanges(phone: BackupPayload, result: BackupPayload, sourceName: String) {
     val a = phone.settings
     val b = result.settings
-    PreferenceChange("cancellation", t("Скасовані пари"), a.cancellationStyle, b.cancellationStyle, sourceName, ::cancellationLabel)
-    PreferenceChange("hidden", t("Приховані заняття"), a.showHiddenLessons, b.showHiddenLessons, sourceName, ::enabledLabel)
-    PreferenceChange("parity", t("Парність тижня"), a.parityOverride, b.parityOverride, sourceName, ::parityLabel)
-    PreferenceChange("week", t("Вигляд тижня"), a.weekLayout, b.weekLayout, sourceName) {
-        when (it) { "TIMETABLE" -> t("Таймтейбл"); "COMPACT_LIST" -> t("Список"); else -> t("Невідомо") }
+    PreferenceChange("cancellation", t("Canceled classes"), a.cancellationStyle, b.cancellationStyle, sourceName, ::cancellationLabel)
+    PreferenceChange("hidden", t("Hidden classes"), a.showHiddenLessons, b.showHiddenLessons, sourceName, ::enabledLabel)
+    PreferenceChange("parity", t("Week parity"), a.parityOverride, b.parityOverride, sourceName, ::parityLabel)
+    PreferenceChange("week", t("Week view"), a.weekLayout, b.weekLayout, sourceName) {
+        when (it) { "TIMETABLE" -> t("Schedule timetable"); "COMPACT_LIST" -> t("List"); else -> t("Unknown") }
     }
     BackupFilterChanges(a.homeWorkFilter, b.homeWorkFilter, phone, result, sourceName)
-    val uis = t("Автооновлення UIS")
+    val uis = t("Automatic UIS updates")
     listOf(
-        Triple("progress", t("Прогрес"), a.uisProgressFrequency to b.uisProgressFrequency),
-        Triple("subjects", t("Предмети"), a.uisSubjectFrequency to b.uisSubjectFrequency),
-        Triple("periods", t("Періоди навчання"), a.uisPeriodFrequency to b.uisPeriodFrequency),
-        Triple("timetable", t("Розклад"), a.uisTimetableFrequency to b.uisTimetableFrequency),
+        Triple("progress", t("Progress"), a.uisProgressFrequency to b.uisProgressFrequency),
+        Triple("subjects", t("Subjects"), a.uisSubjectFrequency to b.uisSubjectFrequency),
+        Triple("periods", t("Study periods"), a.uisPeriodFrequency to b.uisPeriodFrequency),
+        Triple("timetable", t("Timetable"), a.uisTimetableFrequency to b.uisTimetableFrequency),
     ).forEach { (key, label, values) ->
         PreferenceChange("uis-$key", "$uis · $label", values.first, values.second, sourceName) { value ->
-            UisRefreshFrequency.entries.firstOrNull { it.name == value }?.let { t(it.label()) } ?: t("Невідомо")
+            UisRefreshFrequency.entries.firstOrNull { it.name == value }?.let { t(it.label()) } ?: t("Unknown")
         }
     }
-    PreferenceChange("uis-automatic", t("Автоматично застосовувати прогрес"),
+    PreferenceChange("uis-automatic", t("Apply progress automatically"),
         a.uisApplyProgressAutomatically, b.uisApplyProgressAutomatically, sourceName, ::enabledLabel)
 
     // Use the same normalized defaults and legacy TEST alias as the backup import.
     val remindersA = a.reminders.reviewModel()
     val remindersB = b.reminders.reviewModel()
-    PreferenceChange("reminders-enabled", t("Локальні нагадування"), remindersA.enabled, remindersB.enabled, sourceName, ::enabledLabel)
-    PreferenceChange("reminders-academic", t("Навчальні роботи"), remindersA.academicEnabled, remindersB.academicEnabled, sourceName, ::enabledLabel)
-    PreferenceChange("reminders-time", t("Час для робіт без часу початку"),
+    PreferenceChange("reminders-enabled", t("Local reminders"), remindersA.enabled, remindersB.enabled, sourceName, ::enabledLabel)
+    PreferenceChange("reminders-academic", t("Academic work"), remindersA.academicEnabled, remindersB.academicEnabled, sourceName, ::enabledLabel)
+    PreferenceChange("reminders-time", t("Time for work without a start time"),
         remindersA.dateOnlyTime, remindersB.dateOnlyTime, sourceName) { it.toString() }
     ReminderCategory.entries.forEach { category ->
         val old = remindersA.rule(category)
         val new = remindersB.rule(category)
-        val label = t("Нагадування") + " · " + t(category.label)
+        val label = t("Reminder") + " · " + t(category.label)
         PreferenceChange("reminders-${category.name}-enabled", label, old.enabled, new.enabled, sourceName, ::enabledLabel)
-        PreferenceChange("reminders-${category.name}-timing", "$label · ${t("Час нагадувань")}",
+        PreferenceChange("reminders-${category.name}-timing", "$label · ${t("Reminder timing")}",
             old.offsetsMinutes, new.offsetsMinutes, sourceName) { offsets ->
-            if (offsets.isEmpty()) t("Жодного часу не вибрано") else
+            if (offsets.isEmpty()) t("No reminder times selected") else
                 offsets.joinToString(" · ") { NotificationTranslations.offset(it, TaktI18n.language) }
         }
     }
@@ -73,33 +73,33 @@ internal fun BackupPreferenceChanges(phone: BackupPayload, result: BackupPayload
 @Composable
 private fun BackupFilterChanges(a: BackupHomeWorkFilter, b: BackupHomeWorkFilter,
     phone: BackupPayload, result: BackupPayload, sourceName: String) {
-    val prefix = t("Фільтри задач")
-    PreferenceChange("filter-period", "$prefix · ${t("Період")}", a.period, b.period, sourceName) {
+    val prefix = t("Task filters")
+    PreferenceChange("filter-period", "$prefix · ${t("Period")}", a.period, b.period, sourceName) {
         when (it) {
-            "SEVEN_DAYS", "SEVEN_CLASS_DAYS" -> t("7 днів")
-            "FOURTEEN_DAYS" -> t("14 днів")
-            "ALL" -> t("Усі дати")
-            "CUSTOM" -> t("Свій період")
-            else -> t("Невідомо")
+            "SEVEN_DAYS", "SEVEN_CLASS_DAYS" -> t("7 days")
+            "FOURTEEN_DAYS" -> t("14 days")
+            "ALL" -> t("All dates")
+            "CUSTOM" -> t("Custom period")
+            else -> t("Unknown")
         }
     }
     // Both the legacy single course and the current multi-course selection are portable fields.
     val coursesA = a.courseIds.ifEmpty { listOfNotNull(a.courseId) }.toSet()
     val coursesB = b.courseIds.ifEmpty { listOfNotNull(b.courseId) }.toSet()
     if (a.courseId != b.courseId || a.courseIds.toSet() != b.courseIds.toSet()) {
-        PreferenceValues("filter-courses", "$prefix · ${t("Предмети")}",
+        PreferenceValues("filter-courses", "$prefix · ${t("Subjects")}",
             courseLabels(coursesA, phone), courseLabels(coursesB, result), sourceName)
     }
-    PreferenceChange("filter-types", "$prefix · ${t("Тип задачі")}", a.types.toSet(), b.types.toSet(), sourceName) { values ->
-        if (values.isEmpty()) t("Усі типи") else values.sorted().joinToString(" · ") { value ->
-            if (value == "TASK") t("Завдання") else
-                GradeItemType.entries.firstOrNull { it.name == value }?.let { t(it.label) } ?: t("Невідомо")
+    PreferenceChange("filter-types", "$prefix · ${t("Task type")}", a.types.toSet(), b.types.toSet(), sourceName) { values ->
+        if (values.isEmpty()) t("All types") else values.sorted().joinToString(" · ") { value ->
+            if (value == "TASK") t("Assignment") else
+                GradeItemType.entries.firstOrNull { it.name == value }?.let { t(it.label) } ?: t("Unknown")
         }
     }
-    PreferenceChange("filter-completed", t("Показувати виконані"), a.includeCompleted, b.includeCompleted, sourceName, ::enabledLabel)
-    PreferenceChange("filter-undated", t("Показувати задачі без дати"), a.includeUndated, b.includeUndated, sourceName, ::enabledLabel)
-    PreferenceChange("filter-from", "$prefix · ${t("Від")}", a.fromDate, b.fromDate, sourceName, ::dateLabel)
-    PreferenceChange("filter-to", "$prefix · ${t("До")}", a.toDate, b.toDate, sourceName, ::dateLabel)
+    PreferenceChange("filter-completed", t("Show completed"), a.includeCompleted, b.includeCompleted, sourceName, ::enabledLabel)
+    PreferenceChange("filter-undated", t("Show tasks without a date"), a.includeUndated, b.includeUndated, sourceName, ::enabledLabel)
+    PreferenceChange("filter-from", "$prefix · ${t("From")}", a.fromDate, b.fromDate, sourceName, ::dateLabel)
+    PreferenceChange("filter-to", "$prefix · ${t("To")}", a.toDate, b.toDate, sourceName, ::dateLabel)
 }
 
 @Composable
@@ -112,25 +112,25 @@ private fun PreferenceValues(key: String, label: String, phone: String, file: St
     Column(Modifier.testTag("backup-preference-$key").semantics(mergeDescendants = true) {},
         verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("${t("Телефон")}: $phone", style = MaterialTheme.typography.bodyMedium)
+        Text("${t("Phone")}: $phone", style = MaterialTheme.typography.bodyMedium)
         Text("$sourceName: $file", style = MaterialTheme.typography.bodyMedium)
     }
 }
 
-private fun enabledLabel(enabled: Boolean): String = t(if (enabled) "Увімкнено" else "Вимкнено")
+private fun enabledLabel(enabled: Boolean): String = t(if (enabled) "On" else "Off")
 private fun cancellationLabel(value: String): String = t(when (value) {
-    "STRIKETHROUGH" -> "Закреслювати"; "HIDDEN" -> "Ховати"; "MARKED" -> "Позначати"; else -> "Невідомо"
+    "STRIKETHROUGH" -> "Cross out"; "HIDDEN" -> "Hide"; "MARKED" -> "To mark"; else -> "Unknown"
 })
 private fun parityLabel(value: String): String = t(when (value) {
-    "AUTO" -> "Автоматично"; "EVEN" -> "Завжди парний"; "ODD" -> "Завжди непарний"; else -> "Невідомо"
+    "AUTO" -> "Automatically"; "EVEN" -> "Always even"; "ODD" -> "Always odd"; else -> "Unknown"
 })
 private fun dateLabel(value: String?): String = value?.let {
-    runCatching { LocalDate.parse(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) }.getOrDefault(t("Невідомо"))
-} ?: t("Не вказано")
+    runCatching { LocalDate.parse(it).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) }.getOrDefault(t("Unknown"))
+} ?: t("Unspecified")
 
 private fun courseLabels(ids: Set<String>, payload: BackupPayload): String =
-    if (ids.isEmpty()) t("Усі предмети") else ids.map { id ->
-        payload.courses.firstOrNull { it.id == id }?.let { "${it.code} · ${it.title}" } ?: t("Невідомо")
+    if (ids.isEmpty()) t("All subjects") else ids.map { id ->
+        payload.courses.firstOrNull { it.id == id }?.let { "${it.code} · ${it.title}" } ?: t("Unknown")
     }.sorted().joinToString(" · ")
 
 private fun BackupReminderSettings.reviewModel(): ReminderSettings = ReminderSettings(

@@ -41,10 +41,10 @@ internal enum class SemesterState { COMPLETED, ACTIVE, FUTURE }
 
 internal fun activeCoursesLabel(count: Int): String {
     val word = when {
-        count % 100 in 11..14 -> t("активних предметів")
-        count % 10 == 1 -> t("активний предмет")
-        count % 10 in 2..4 -> t("активні предмети")
-        else -> t("активних предметів")
+        count % 100 in 11..14 -> t("active subjects")
+        count % 10 == 1 -> t("active subject")
+        count % 10 in 2..4 -> t("currently active subjects")
+        else -> t("active subjects")
     }
     return "$count $word"
 }
@@ -71,19 +71,19 @@ fun SemesterSection(
     val relevantCredits = courses.filter { it.status != CourseStatus.NOT_NEEDED }.sumOf { it.credits }
     val activeCount = courses.count { it.status == CourseStatus.ENROLLED }
     val stateLabel = when (state) {
-        SemesterState.COMPLETED -> t("закрито")
-        SemesterState.ACTIVE -> t("поточний семестр")
+        SemesterState.COMPLETED -> t("closed")
+        SemesterState.ACTIVE -> t("current semester")
         SemesterState.FUTURE -> when {
             activeCount > 0 -> activeCoursesLabel(activeCount)
-            courses.any { it.status == CourseStatus.FULFILLED } -> t("частково виконано")
-            else -> t("заплановано")
+            courses.any { it.status == CourseStatus.FULFILLED } -> t("partially completed")
+            else -> t("planned")
         }
     }
     GlassSurface(Modifier.fillMaxWidth().padding(bottom = 8.dp), shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("semester-toggle-$semester")
-                    .clickable(role = Role.Button, onClickLabel = if (expanded) t("Згорнути семестр") else t("Розгорнути семестр")) { onExpandedChange(!expanded) }
-                    .semantics { stateDescription = if (expanded) t("Розгорнуто") else t("Згорнуто") },
+                    .clickable(role = Role.Button, onClickLabel = if (expanded) t("Collapse the semester") else t("Expand the semester")) { onExpandedChange(!expanded) }
+                    .semantics { stateDescription = if (expanded) t("Expanded") else t("Collapsed") },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val circleColor = when (state) {
                     SemesterState.COMPLETED -> MaterialTheme.colorScheme.secondaryContainer
@@ -93,20 +93,20 @@ fun SemesterSection(
                 Box(Modifier.size(30.dp).background(circleColor, CircleShape)
                     .testTag("semester-$semester-${state.name.lowercase()}")
                     .semantics { stateDescription = stateLabel }, contentAlignment = Alignment.Center) {
-                    if (state == SemesterState.COMPLETED) Icon(Icons.Default.Check, t("Завершений семестр"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.secondary)
+                    if (state == SemesterState.COMPLETED) Icon(Icons.Default.Check, t("Completed semester"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.secondary)
                     else Text("$semester", color = if (state == SemesterState.ACTIVE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(t("$semester семестр" + if (state == SemesterState.ACTIVE) {
-                        if (semester % 2 == 1) " · зимовий" else " · літній"
+                    Text(t("Semester ${semester}" + if (state == SemesterState.ACTIVE) {
+                        if (semester % 2 == 1) " · winter" else " · summer"
                     } else ""),
                         style = MaterialTheme.typography.titleMedium)
                     if (activeCount > 0) Text(activeCoursesLabel(activeCount), modifier = Modifier.testTag("semester-active-count-$semester"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(if (state == SemesterState.COMPLETED) t("$earnedCredits/$relevantCredits кредитів")
-                    else t("$relevantCredits кредитів"),
+                Text(if (state == SemesterState.COMPLETED) t("${earnedCredits}/${relevantCredits} credits")
+                    else t("${relevantCredits} credits"),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, Modifier.size(19.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)

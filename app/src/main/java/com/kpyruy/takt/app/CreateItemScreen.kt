@@ -88,31 +88,31 @@ fun CreateItemScreen(
     ) {
         ScreenHeader(
             title = t(when (type) {
-                CreateItemType.COURSE -> "Додати предмет"
-                CreateItemType.CLASS -> "Додати пару"
-                CreateItemType.TASK -> "Додати завдання"
-                CreateItemType.TEST -> "Додати тест"
-                CreateItemType.EXAM -> "Додати екзамен"
-                CreateItemType.NOTE -> "Додати нотатку"
-                CreateItemType.EVENT -> "Додати подію"
-                CreateItemType.REMINDER -> "Додати нагадування"
+                CreateItemType.COURSE -> "Add course"
+                CreateItemType.CLASS -> "Add class"
+                CreateItemType.TASK -> "Add a task"
+                CreateItemType.TEST -> "Add test"
+                CreateItemType.EXAM -> "Add an exam"
+                CreateItemType.NOTE -> "Add a note"
+                CreateItemType.EVENT -> "Add event"
+                CreateItemType.REMINDER -> "Add reminder"
             }),
             subtitle = courses.firstOrNull { it.id == courseId }?.title,
             navigation = {
-                TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onBack)
+                TaktIconButton(Icons.Default.ArrowBack, t("Back"), onBack)
             },
         )
 
         if (type.requiresCourse && courseId == null) {
             SectionCard {
-                Text(t("Спочатку обери предмет."), style = MaterialTheme.typography.titleMedium)
+                Text(t("First, choose a subject."), style = MaterialTheme.typography.titleMedium)
             }
             return@Column
         }
 
         when (type) {
             CreateItemType.COURSE -> if (uisAccount) {
-                Text(t("Предмети додаються з UIS автоматично."))
+                Text(t("Subjects are added automatically from UIS."))
             } else AddCourseForm(studyPlanRepository, onSaved)
             CreateItemType.CLASS -> AddLessonForm(
                 courses = courses,
@@ -131,7 +131,7 @@ fun CreateItemScreen(
                         } catch (error: UserNotAuthenticatedException) {
                             val authenticate = authenticateDevice ?: throw error
                             val result = suspendCancellableCoroutine<DeviceAuthenticationResult> { continuation ->
-                                authenticate(t("Отримати пари з UIS")) { value ->
+                                authenticate(t("Load lessons from UIS")) { value ->
                                     if (continuation.isActive) continuation.resume(value)
                                 }
                             }

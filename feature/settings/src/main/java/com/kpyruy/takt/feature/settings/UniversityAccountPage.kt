@@ -63,12 +63,12 @@ fun UniversityAccountPage(
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ScreenHeader(title = t("Університетська система"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Назад"), onBack)
+        ScreenHeader(title = t("University system"), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Filled.ArrowBack, t("Back"), onBack)
         })
         SectionCard {
             Text("UIS", style = MaterialTheme.typography.titleLarge)
-            Text(t("Підключення до UIS STU"),
+            Text(t("Connect to STU UIS"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard {
@@ -98,14 +98,14 @@ fun UniversityAccountForm(
         if (repository.hasAccount.value) {
             authenticating = true
             try {
-                val result = awaitAuthentication(authenticate, t("Увійти в UIS"))
+                val result = awaitAuthentication(authenticate, t("Sign in to UIS"))
                 if (result == DeviceAuthenticationResult.SUCCESS) {
                     runCatching { repository.readAfterAuthentication() }
                         .onSuccess { credentials ->
                             login = credentials?.login.orEmpty()
                             password = credentials?.password.orEmpty()
                         }
-                        .onFailure { message = t("Не вдалося прочитати дані UIS. Перевір захист телефона.") }
+                        .onFailure { message = t("Could not read UIS credentials. Check your phone security.") }
                 } else message = authError(result)
             } finally { authenticating = false }
         }
@@ -113,26 +113,26 @@ fun UniversityAccountForm(
     OutlinedTextField(
         value = login,
         onValueChange = { login = it; message = null; repository.session.disconnect() },
-        label = { Text(t("Логін UIS")) }, singleLine = true, enabled = !busy,
+        label = { Text(t("UIS login")) }, singleLine = true, enabled = !busy,
         modifier = Modifier.fillMaxWidth().testTag("uis-login"),
     )
     OutlinedTextField(
         value = password,
         onValueChange = { password = it; message = null; repository.session.disconnect() },
-        label = { Text(t("Пароль UIS")) }, singleLine = true, enabled = !busy,
+        label = { Text(t("UIS password")) }, singleLine = true, enabled = !busy,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = !busy,
                 modifier = Modifier.testTag("uis-password-visibility")) {
                 Icon(if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                    contentDescription = t(if (passwordVisible) "Приховати пароль" else "Показати пароль"))
+                    contentDescription = t(if (passwordVisible) "Hide password" else "Show password"))
             }
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         modifier = Modifier.fillMaxWidth().testTag("uis-password"),
     )
     if (!hasAccount) {
-        Text(t("Якою мовою показувати назви предметів із UIS?"),
+        Text(t("Which language should UIS course names use?"),
             style = MaterialTheme.typography.titleSmall)
         androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = firstCourseLanguage == CourseNameLanguage.ENGLISH,
@@ -148,14 +148,14 @@ fun UniversityAccountForm(
                 message = null
                 passwordVisible = false
                 try {
-                    val result = awaitAuthentication(authenticate, t("Увійти в UIS"))
+                    val result = awaitAuthentication(authenticate, t("Sign in to UIS"))
                     if (result == DeviceAuthenticationResult.SUCCESS) {
                         // One local account. Submit exactly the current fields, never an older stored pair.
                         val credentials = com.kpyruy.takt.core.data.UniversityCredentials(login.trim(), password)
                         if (!hasAccount) repository.setFirstCourseNameChoice(firstCourseLanguage)
                         val saved = runCatching { repository.save(credentials.login, credentials.password) }
                         if (saved.isSuccess) repository.signIn(credentials)
-                        else message = t("Не вдалося зберегти дані UIS. Перевір логін, пароль і захист телефона.")
+                        else message = t("Could not save UIS credentials. Check the login, password, and phone security.")
                     } else message = authError(result)
                 } finally { authenticating = false }
             }
@@ -166,15 +166,15 @@ fun UniversityAccountForm(
                 authenticating = true
                 passwordVisible = false
                 try {
-                    val result = awaitAuthentication(authenticate, t("Видалити дані UIS"))
+                    val result = awaitAuthentication(authenticate, t("Remove UIS credentials"))
                     if (result == DeviceAuthenticationResult.SUCCESS) {
                         runCatching { repository.remove() }
                             .onSuccess { login = ""; password = ""; message = null }
-                            .onFailure { message = t("Не вдалося видалити дані UIS") }
+                            .onFailure { message = t("Could not remove UIS credentials") }
                     } else message = authError(result)
                 } finally { authenticating = false }
             }
-        }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(t("Видалити UIS-акаунт")) }
+        }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(t("Remove UIS account")) }
     }
     message?.let { Text(it, style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.error) }
@@ -188,8 +188,8 @@ private suspend fun awaitAuthentication(
 }
 
 private fun authError(result: DeviceAuthenticationResult): String = when (result) {
-    DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> t("Спочатку ввімкни PIN або пароль у налаштуваннях телефона")
-    DeviceAuthenticationResult.CANCELLED -> t("Підтвердження скасовано")
-    DeviceAuthenticationResult.ERROR -> t("Не вдалося підтвердити особу")
+    DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> t("First enable a PIN or password in your phone settings")
+    DeviceAuthenticationResult.CANCELLED -> t("Verification cancelled")
+    DeviceAuthenticationResult.ERROR -> t("Could not verify your identity")
     DeviceAuthenticationResult.SUCCESS -> ""
 }

@@ -39,31 +39,31 @@ internal fun TaktWelcomeScreen(onConnect: () -> Unit, onLocal: () -> Unit) {
                 Icon(Icons.Outlined.MenuBook, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.onSurface)
             }
             Text("Takt", style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp), fontWeight = FontWeight.Bold)
-            Text(t("Навчання у твоєму ритмі"), style = MaterialTheme.typography.titleLarge,
+            Text(t("Study at your own pace"), style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
-            WelcomeFeature(Icons.Outlined.CalendarMonth, t("Розклад на кожен день"),
-                t("Усі пари, аудиторії та зміни в одному місці"), Color(0xFF2671CC))
-            WelcomeFeature(Icons.Outlined.Checklist, t("Задачі та допуск"),
-                t("Контроль завдань, дедлайнів і допуску до сесії"), Color(0xFFAD721F))
-            WelcomeFeature(Icons.Outlined.BarChart, t("Оцінки й прогрес"),
-                t("Усі оцінки та твій академічний прогрес"), Color(0xFF21816B))
+            WelcomeFeature(Icons.Outlined.CalendarMonth, t("Your daily timetable"),
+                t("Classes, rooms and changes in one place"), Color(0xFF2671CC))
+            WelcomeFeature(Icons.Outlined.Checklist, t("Tasks and exam eligibility"),
+                t("Track tasks, deadlines and exam eligibility"), Color(0xFFAD721F))
+            WelcomeFeature(Icons.Outlined.BarChart, t("Grades and progress"),
+                t("Your grades and academic progress"), Color(0xFF21816B))
             Spacer(Modifier.height(6.dp))
             TaktPrimaryButton(onClick = onConnect, modifier = Modifier.fillMaxWidth().testTag("welcome-uis")) {
                 Icon(Icons.Outlined.School, null)
                 Spacer(Modifier.width(10.dp))
-                Text(t("Підключити UIS STU"))
+                Text(t("Connect UIS STU"))
             }
             GlassSurface(Modifier.fillMaxWidth()) {
                 TextButton(onClick = onLocal, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("welcome-local")) {
                     Icon(Icons.Outlined.Laptop, null)
                     Spacer(Modifier.width(10.dp))
-                    Text(t("Почати локально"), style = MaterialTheme.typography.titleMedium)
+                    Text(t("Start locally"), style = MaterialTheme.typography.titleMedium)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Outlined.Shield, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(t("Твої навчальні дані залишаються на пристрої."), style = MaterialTheme.typography.bodySmall,
+                Text(t("Your study data stays on this device."), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }

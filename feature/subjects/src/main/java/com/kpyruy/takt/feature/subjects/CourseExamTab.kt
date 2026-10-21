@@ -91,35 +91,35 @@ internal fun CourseExamTab(
                     Text(examInfo?.date?.dayOfMonth?.toString() ?: "—", fontSize = 49.sp, lineHeight = 54.sp, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(examInfo?.date?.format(DateTimeFormatter.ofPattern("MMM yyyy", TaktI18n.locale))?.uppercase(TaktI18n.locale) ?: t("Екзамен"),
+                    Text(examInfo?.date?.format(DateTimeFormatter.ofPattern("MMM yyyy", TaktI18n.locale))?.uppercase(TaktI18n.locale) ?: t("Exam"),
                         style = MaterialTheme.typography.titleMedium)
-                    Text(listOfNotNull(examInfo?.startTime?.toString(), examInfo?.room).joinToString(" · ").ifBlank { t("Додати дату й аудиторію") }, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
-                    SmallText(t("Підсумковий екзамен · спроба ${examInfo?.attemptNumber ?: 1}/${examInfo?.maxAttempts ?: 3}"))
+                    Text(listOfNotNull(examInfo?.startTime?.toString(), examInfo?.room).joinToString(" · ").ifBlank { t("Add date and room") }, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+                    SmallText(t("Final exam · attempt ${examInfo?.attemptNumber ?: 1} of ${examInfo?.maxAttempts ?: 3}"))
                 }
-                Icon(Icons.Default.CalendarMonth, t("Редагувати дані екзамену"), Modifier.size(20.dp))
+                Icon(Icons.Default.CalendarMonth, t("Edit exam data"), Modifier.size(20.dp))
             }
         }
         // Only stored coursework defines this total. Exam capacity belongs to its assessment.
-        ExamMetric(t("За семестр"), earned.displayNumber(), "/ ${maximum.displayNumber()}", Icons.Default.Assignment,
+        ExamMetric(t("For the semester"), earned.displayNumber(), "/ ${maximum.displayNumber()}", Icons.Default.Assignment,
             Modifier.fillMaxWidth().testTag("exam-semester-metric"))
         SubjectPanel {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text(t("Цільова оцінка"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    SmallText(t("${target.name} · від ${threshold.displayNumber()}%"))
+                    Text(t("Target grade"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    SmallText(t("${target.name} · from ${threshold.displayNumber()}%"))
                 }
                 Text(needed?.displayNumber() ?: "—", fontSize = 39.sp, lineHeight = 47.sp, fontWeight = FontWeight.Bold)
             }
             if (needed == null && projection.examRemainingPoints > 0) {
-                Text(t("${target.name} поки недосяжна"), Modifier.padding(vertical = 8.dp),
+                Text(t("${target.name} is currently unattainable"), Modifier.padding(vertical = 8.dp),
                     fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold)
-                SmallText(t("Навіть максимальних балів недостатньо."))
+                SmallText(t("Even the maximum points are insufficient."))
             } else {
-                SmallText(if (needed != null) t("із ${projection.examRemainingPoints.displayNumber()} балів на екзамені") else t("Немає незавершеного екзамену"))
+                SmallText(if (needed != null) t("out of ${projection.examRemainingPoints.displayNumber()} exam points") else t("There is no pending exam"))
             }
             if (needed != null) GlassSurface(Modifier.fillMaxWidth().testTag("exam-target-formula"),
                 shape = RoundedCornerShape(12.dp), tint = MaterialTheme.colorScheme.primaryContainer) {
-                Text(t("${projection.securedPoints.displayNumber()} набрано") + (if (pendingOther > 0) t(" + до ${pendingOther.displayNumber()} за інші роботи") else t(" за семестр")) + t(" + ${needed.displayNumber()} на екзамені = ${(projection.securedPoints + pendingOther + needed).displayNumber()}"),
+                Text(t("${projection.securedPoints.displayNumber()} earned") + (if (pendingOther > 0) t(" + up to ${pendingOther.displayNumber()} from other work") else t(" per semester")) + t(" + ${needed.displayNumber()} on the exam = ${(projection.securedPoints + pendingOther + needed).displayNumber()}"),
                     Modifier.padding(11.dp), style = MaterialTheme.typography.titleSmall)
             }
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {

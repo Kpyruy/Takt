@@ -58,14 +58,14 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                 Text(item.title, style = MaterialTheme.typography.titleSmall)
                 Text(buildList {
                     add(courseCode)
-                    item.durationMinutes?.let { add(t("$it хв")) }
+                    item.durationMinutes?.let { add(t("${it} min")) }
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (item.isAwaitingResult) Text(t("Очікую оцінку"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (!item.contributesToGrade) Text(t("Не входить у підсумок"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (item.isAwaitingResult) Text(t("Awaiting grade"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!item.contributesToGrade) Text(t("Excluded from the final grade"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (item.requiredForExam) {
-                    val threshold = item.minimumPointsForExam?.let { t(" · мін. ${it.pointText()} б.") }.orEmpty()
-                    Text(t("Для допуску$threshold"), style = MaterialTheme.typography.labelSmall,
+                    val threshold = item.minimumPointsForExam?.let { t(" · min. ${it.pointText()} pts") }.orEmpty()
+                    Text(t("Required for exam${threshold}"), style = MaterialTheme.typography.labelSmall,
                         color = if (item.completed && !item.meetsAdmissionRequirement) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -73,15 +73,15 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
-                        else t("до ${item.maxPoints.pointText()} б."),
+                        else t("up to ${item.maxPoints.pointText()} pts"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 item.dueDate?.let { date ->
                     val today = LocalDate.now()
                     Text(when (date) {
-                        today -> t("Сьогодні")
-                        today.plusDays(1) -> t("Завтра")
+                        today -> t("Today")
+                        today.plusDays(1) -> t("Tomorrow")
                         else -> date.format(DateTimeFormatter.ofPattern("dd.MM"))
                     }, style = MaterialTheme.typography.labelSmall,
                         color = if (!item.isSubmitted && date <= today) MaterialTheme.colorScheme.error

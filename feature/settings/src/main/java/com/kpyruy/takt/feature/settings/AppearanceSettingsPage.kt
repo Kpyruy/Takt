@@ -67,27 +67,27 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
             Surface(shadowElevation = 10.dp) {
                 Button(onClick = { onApply(draft.normalizedAppearance()) }, enabled = changed && !importingWallpaper,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).height(54.dp)) {
-                    Text(if (changed) t("Застосувати вигляд") else t("Вигляд застосовано"))
+                    Text(if (changed) t("Apply appearance") else t("Appearance applied"))
                 }
             }
         },
     ) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            ScreenHeader(title = t("Твій вигляд"), navigation = {
-                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+            ScreenHeader(title = t("Your appearance"), navigation = {
+                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
             })
-            SettingsSectionTitle(t("Освітлення"))
+            SettingsSectionTitle(t("Lighting"))
             AppearanceLightingChoices(draft, { draft = it })
-            SettingsSectionTitle(t("Палітра"))
+            SettingsSectionTitle(t("Palette"))
             AppearanceThemeChoices(draft, { draft = it })
             AppearanceWallpaperMenu(draft, settings.customWallpaper, { draft = it; wallpaperDraft = it.customWallpaper }, { importingWallpaper = it })
-            SettingsSectionTitle(t("Стиль карток"))
+            SettingsSectionTitle(t("Card style"))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
-                    Triple(CardAppearance.ELEVATED, t("Підняті"), t("Суцільний фон і м’яка тінь")),
-                    Triple(CardAppearance.TONAL_FILLED, t("Заливка"), t("Кольоровий фон без тіні")),
-                    Triple(CardAppearance.GLASS, t("Скло"), t("Напівпрозорі картки з відблиском")),
+                    Triple(CardAppearance.ELEVATED, t("Elevated"), t("Solid background and soft shadow")),
+                    Triple(CardAppearance.TONAL_FILLED, t("Filled"), t("Tinted background without shadow")),
+                    Triple(CardAppearance.GLASS, t("Glass"), t("Translucent cards with a highlight")),
                 ).forEach { (appearance, label, description) ->
                     CardStyleOption(draft, appearance, label, description) { draft = draft.copy(cardAppearance = appearance) }
                 }
@@ -101,9 +101,9 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
 fun AppearanceLightingChoices(settings: AppSettings, onChange: (AppSettings) -> Unit, tagPrefix: String = "appearance-theme") {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
-            Triple(AppThemeMode.SYSTEM, t("Системний"), Icons.Outlined.BrightnessAuto),
-            Triple(AppThemeMode.LIGHT, t("Світла"), Icons.Outlined.LightMode),
-            Triple(AppThemeMode.DARK, t("Темна"), Icons.Outlined.DarkMode),
+            Triple(AppThemeMode.SYSTEM, t("System"), Icons.Outlined.BrightnessAuto),
+            Triple(AppThemeMode.LIGHT, t("Light"), Icons.Outlined.LightMode),
+            Triple(AppThemeMode.DARK, t("Dark"), Icons.Outlined.DarkMode),
         ).forEach { (mode, label, icon) ->
             LightingOption(label, icon, settings.themeMode == mode,
                 Modifier.weight(1f).testTag("$tagPrefix-${mode.name}")) { onChange(settings.copy(themeMode = mode)) }

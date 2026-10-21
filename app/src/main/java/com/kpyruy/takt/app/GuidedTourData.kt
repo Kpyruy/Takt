@@ -14,12 +14,12 @@ internal class GuidedTourData(appearance: AppSettings, today: LocalDate = LocalD
     override val settings = MutableStateFlow(appearance.copy(currentSemester = 1, uisCurrentSemester = null,
         semesterPeriods = emptyMap(), weekLayout = WeekLayout.TIMETABLE))
     val courses = listOf(
-        Course("tour-physics", "FYZI", t("Фізика"), 6, 1, CourseStatus.ENROLLED,
+        Course("tour-physics", "FYZI", t("Physics"), 6, 1, CourseStatus.ENROLLED,
             gradingType = CourseGradingType.EXAM_LETTER, iconKey = "Atom"),
-        Course("tour-code", "PROG", t("Програмування"), 5, 1, CourseStatus.ENROLLED, iconKey = "Code"),
-        Course("tour-math", "MATH", t("Математика"), 6, 1, CourseStatus.FULFILLED,
+        Course("tour-code", "PROG", t("Programming"), 5, 1, CourseStatus.ENROLLED, iconKey = "Code"),
+        Course("tour-math", "MATH", t("Mathematics"), 6, 1, CourseStatus.FULFILLED,
             iconKey = "Functions", officialGrade = GradeLetter.A, fulfilledOn = today.minusDays(3)),
-        Course("tour-language", "LANG", t("Іноземна мова"), 3, 2, CourseStatus.PLANNED, iconKey = "Translate"),
+        Course("tour-language", "LANG", t("Foreign language"), 3, 2, CourseStatus.PLANNED, iconKey = "Translate"),
     )
     private val events = listOf(0L, 1L, 3L).flatMap { offset ->
         listOf(
@@ -29,10 +29,10 @@ internal class GuidedTourData(appearance: AppSettings, today: LocalDate = LocalD
                 LocalTime.of(11, 0), LocalTime.of(12, 30), "T 205", OneOffScheduleEventType.EXTRA, LessonType.LAB),
         )
     }
-    private val tasks = listOf(StudyTask("tour-task", courses[0].id, t("Лабораторна робота"), null,
+    private val tasks = listOf(StudyTask("tour-task", courses[0].id, t("Lab assignment"), null,
         today.plusDays(2), false, requiredForExam = true, maxPoints = 20.0, minimumPointsForExam = 10.0))
-    private val notes = listOf(CourseNote("tour-note", courses[0].id, t("Матеріали до заняття"),
-        t("Тут можна зберігати конспект, файли та корисні посилання."), today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()))
+    private val notes = listOf(CourseNote("tour-note", courses[0].id, t("Class materials"),
+        t("Keep your notes, files and useful links here."), today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()))
     val snapshot = PlanningSnapshot(courses, emptyList(), emptyList(), events,
         emptyList(), tasks, emptyList(), settings.value)
     val planning = MutableStateFlow<PlanningSnapshot?>(snapshot)

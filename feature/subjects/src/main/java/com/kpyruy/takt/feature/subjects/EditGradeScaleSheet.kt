@@ -62,9 +62,9 @@ fun EditGradeScaleSheet(
                 .padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Шкала оцінювання"), style = MaterialTheme.typography.headlineMedium)
+            Text(t("Assessment scale"), style = MaterialTheme.typography.headlineMedium)
             Text(
-                t("Мінімальний відсоток"),
+                t("Minimum percentage"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             SubjectPanel {
@@ -88,7 +88,7 @@ fun EditGradeScaleSheet(
                                 setter(it)
                                 error = null
                             },
-                            modifier = Modifier.width(100.dp).semantics { contentDescription = t("Мінімальний відсоток") + " · " + label },
+                            modifier = Modifier.width(100.dp).semantics { contentDescription = t("Minimum percentage") + " · " + label },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
@@ -100,10 +100,10 @@ fun EditGradeScaleSheet(
             GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(17.dp)) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("FX", style = MaterialTheme.typography.titleMedium)
-                    Text(t("Нижче межі E"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("Below the E threshold"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            SmallText(t("Пороги застосовуються до балів, що входять у підсумок."))
+            SmallText(t("Thresholds apply to points that count toward the final grade."))
             }
 
             if (error != null) {
@@ -121,7 +121,7 @@ fun EditGradeScaleSheet(
                     a = defaults.getValue(GradeLetter.A).compact(); b = defaults.getValue(GradeLetter.B).compact()
                     c = defaults.getValue(GradeLetter.C).compact(); d = defaults.getValue(GradeLetter.D).compact()
                     e = defaults.getValue(GradeLetter.E).compact(); error = null
-                }, modifier = Modifier.fillMaxWidth()) { Text(t("Стандартна шкала")) }
+                }, modifier = Modifier.fillMaxWidth()) { Text(t("Standard scale")) }
               }
               TaktPrimaryButton(
                 onClick = {
@@ -129,7 +129,7 @@ fun EditGradeScaleSheet(
                         it.replace(',', '.').toDoubleOrNull()
                     }
                     if (values.any { it == null }) {
-                        error = t("Усі межі мають бути числами.")
+                        error = t("All limits must be numbers.")
                         return@TaktPrimaryButton
                     }
                     val parsed = values.filterNotNull()
@@ -141,7 +141,7 @@ fun EditGradeScaleSheet(
                         parsed[4] > 0.0
 
                     if (!valid) {
-                        error = t("Межі мають спадати: A > B > C > D > E > 0.")
+                        error = t("The limits should decrease: A > B > C > D > E > 0.")
                         return@TaktPrimaryButton
                     }
 
@@ -160,7 +160,7 @@ fun EditGradeScaleSheet(
                 },
                 modifier = Modifier.weight(1f),
             ) {
-                Text(t("Зберегти"))
+                Text(t("Save"))
             }
             }
         }

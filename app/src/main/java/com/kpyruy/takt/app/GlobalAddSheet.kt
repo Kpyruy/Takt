@@ -79,8 +79,8 @@ internal fun GlobalAddContent(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Додати"), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
-                TaktIconButton(Icons.Outlined.Close, t("Закрити"), onDismiss)
+                Text(t("Add"), Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge)
+                TaktIconButton(Icons.Outlined.Close, t("Close"), onDismiss)
             }
             val actions = CreateItemType.entries.filter { allowCourseCreation || it != CreateItemType.COURSE }
             Column(Modifier.fillMaxWidth().tourTarget("add-actions"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -94,7 +94,7 @@ internal fun GlobalAddContent(
                         contentAlignment = Alignment.Center) {
                         Icon(Icons.Outlined.Bolt, null, tint = MaterialTheme.colorScheme.primary)
                     }
-                    Text(t("Швидке додавання"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    Text(t("Quick add"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -154,12 +154,12 @@ private fun CreateItemType.actionTint(): Color = when (this) {
 }
 
 private fun CreateItemType.actionHint(): String = t(when (this) {
-    CreateItemType.COURSE -> "Додати предмет"
-    CreateItemType.CLASS -> "Додати пару"
-    CreateItemType.TASK -> "Додати завдання"
-    CreateItemType.TEST -> "Додати тест"
-    CreateItemType.EXAM -> "Додати екзамен"
-    CreateItemType.NOTE -> "Додати нотатку"
-    CreateItemType.EVENT -> "Додати подію"
-    CreateItemType.REMINDER -> "Додати нагадування"
+    CreateItemType.COURSE -> "Add course"
+    CreateItemType.CLASS -> "Add class"
+    CreateItemType.TASK -> "Add a task"
+    CreateItemType.TEST -> "Add test"
+    CreateItemType.EXAM -> "Add an exam"
+    CreateItemType.NOTE -> "Add a note"
+    CreateItemType.EVENT -> "Add event"
+    CreateItemType.REMINDER -> "Add reminder"
 })

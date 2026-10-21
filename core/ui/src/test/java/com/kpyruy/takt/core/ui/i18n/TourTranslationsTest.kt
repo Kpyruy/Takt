@@ -10,14 +10,14 @@ class TourTranslationsTest {
         val original = TaktI18n.language
         try {
             TaktI18n.use(AppLanguage.SLOVAK)
-            assertEquals("Fyzika", t("Фізика"))
-            assertEquals("Dokončiť", t("Завершити"))
+            assertEquals("Fyzika", t("Physics"))
+            assertEquals("Dokončiť", t("Finish"))
         } finally { TaktI18n.use(original) }
     }
     @Test fun everyNewIconHasEnglishAndSlovakSearchableMetadata() {
         for (language in listOf(AppLanguage.ENGLISH, AppLanguage.SLOVAK)) {
             CourseIcons.all.drop(110).forEach {
-                val text = TourTranslations.lookup(it.label, language)
+                val text = TaktI18n.lookup(it.label, language)
                 assertNotNull("${it.key}: $language", text)
                 assertFalse(text!!.contains(Regex("[А-Яа-яІіЇїЄє]")))
             }
@@ -27,11 +27,11 @@ class TourTranslationsTest {
         val original = TaktI18n.language
         try {
             TaktI18n.use(AppLanguage.ENGLISH)
-            assertEquals("Tour of Takt", t("Екскурсія по Takt"))
-            assertEquals("180 icons · pick your own", tf("%d іконок · обери свою", 180))
+            assertEquals("Tour of Takt", t("Tour of Takt"))
+            assertEquals("180 icons · pick your own", tf("%d icons · pick your own", 180))
             TaktI18n.use(AppLanguage.SLOVAK)
-            assertEquals("Tutoriál je dokončený", t("Туторіал завершено"))
-            assertEquals("180 ikon · vyber si svoju", tf("%d іконок · обери свою", 180))
+            assertEquals("Tutoriál je dokončený", t("Tutorial completed"))
+            assertEquals("180 ikon · vyber si svoju", tf("%d icons · pick your own", 180))
         } finally { TaktI18n.use(original) }
     }
 }

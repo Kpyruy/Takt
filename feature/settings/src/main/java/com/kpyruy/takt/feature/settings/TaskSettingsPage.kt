@@ -50,15 +50,15 @@ internal fun TaskSettingsPage(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = t("Задачі"),
-            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack) },
+            title = t("Tasks"),
+            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack) },
         )
-        SettingsSectionTitle(t("Показувати задачі за"))
+        SettingsSectionTitle(t("Show tasks for"))
         val periods = listOf(
-            HomeWorkPeriod.SEVEN_DAYS to t("7 днів"),
-            HomeWorkPeriod.FOURTEEN_DAYS to t("14 днів"),
-            HomeWorkPeriod.ALL to t("Усі дати"),
-            HomeWorkPeriod.CUSTOM to t("Свій період"),
+            HomeWorkPeriod.SEVEN_DAYS to t("7 days"),
+            HomeWorkPeriod.FOURTEEN_DAYS to t("14 days"),
+            HomeWorkPeriod.ALL to t("All dates"),
+            HomeWorkPeriod.CUSTOM to t("Custom period"),
         )
         periods.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -82,19 +82,19 @@ internal fun TaskSettingsPage(
             }
         }
         if (filter.period == HomeWorkPeriod.CUSTOM) {
-            TaktDatePickerField(t("Від"), filter.fromDate, { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
-            TaktDatePickerField(t("До"), filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
+            TaktDatePickerField(t("From"), filter.fromDate, { onChange(filter.copy(fromDate = it)) }, Modifier.fillMaxWidth())
+            TaktDatePickerField(t("To"), filter.toDate, { onChange(filter.copy(toDate = it)) }, Modifier.fillMaxWidth())
         }
-        SettingsSectionTitle(t("Що включати"))
-        TaskToggleCard(t("Без дати"), Icons.Outlined.EventNote, filter.includeUndated) {
+        SettingsSectionTitle(t("What to include"))
+        TaskToggleCard(t("No date"), Icons.Outlined.EventNote, filter.includeUndated) {
             onChange(filter.copy(includeUndated = it))
         }
-        TaskToggleCard(t("Виконані"), Icons.Outlined.TaskAlt, filter.includeCompleted) {
+        TaskToggleCard(t("Completed tasks"), Icons.Outlined.TaskAlt, filter.includeCompleted) {
             onChange(filter.copy(includeCompleted = it))
         }
         if (filter != HomeWorkFilter()) {
             OutlinedButton(onClick = { onChange(HomeWorkFilter()) }, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Скинути фільтри задач"))
+                Text(t("Reset task filters"))
             }
         }
     }

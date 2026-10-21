@@ -48,23 +48,23 @@ internal fun LanguageSettingsPage(
         .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenHeader(
-            title = t("Мова"),
+            title = t("Language"),
             navigation = {
-                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+                TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
             },
         )
-        Text(t("Мова застосунку"), style = MaterialTheme.typography.titleLarge)
+        Text(t("Application language"), style = MaterialTheme.typography.titleLarge)
         LanguageRadioGroup(
-            options = listOf(AppLanguage.UKRAINIAN to t("Українська"), AppLanguage.ENGLISH to "English", AppLanguage.SLOVAK to "Slovenčina"),
+            options = listOf(AppLanguage.UKRAINIAN to t("Ukrainian"), AppLanguage.ENGLISH to "English", AppLanguage.SLOVAK to "Slovenčina"),
             selected = selected, tagPrefix = "language", onSelect = onSelected,
         )
-        Text(t("Мова назв предметів"), style = MaterialTheme.typography.titleLarge)
+        Text(t("Course name language"), style = MaterialTheme.typography.titleLarge)
         LanguageRadioGroup(
-            options = listOf(CourseNameLanguage.FOLLOW_APP to t("За мовою застосунку"), CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),
+            options = listOf(CourseNameLanguage.FOLLOW_APP to t("Follow app language"), CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),
             selected = courseNameLanguage, tagPrefix = "course-name", onSelect = onCourseNameSelected,
         )
         if (selected == AppLanguage.UKRAINIAN && courseNameLanguage == CourseNameLanguage.FOLLOW_APP) {
-            Text(t("Для української мови інтерфейсу"), style = MaterialTheme.typography.bodySmall,
+            Text(t("When the app is in Ukrainian"), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             LanguageRadioGroup(
                 options = listOf(CourseNameLanguage.SLOVAK to "Slovenčina", CourseNameLanguage.ENGLISH to "English"),

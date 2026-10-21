@@ -23,10 +23,10 @@ interface StudyPlanRepository {
 }
 
 class InvalidUisCourseId(val code: String) : IllegalArgumentException(
-    "UIS не повернув коректний ID для $code. Повтори імпорт.")
+    "UIS did not return a valid ID for ${code}. Try importing again.")
 
 class AmbiguousUisCourse(val code: String, val candidates: List<Course>) : IllegalStateException(
-    "Для $code є кілька локальних предметів. Обери відповідний предмет.")
+    "There are several local courses for ${code}. Choose the matching course.")
 
 fun isCanonicalUisCourseId(id: String): Boolean = Regex("uis:[1-9][0-9]*:[1-9][0-9]*").matches(id)
 

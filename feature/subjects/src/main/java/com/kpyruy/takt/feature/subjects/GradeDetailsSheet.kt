@@ -26,15 +26,15 @@ import com.kpyruy.takt.core.ui.components.TaktSurface
 import com.kpyruy.takt.core.ui.i18n.t
 
 internal enum class GradeDetailsTab(val label: String) {
-    WHEN("Коли"), RESULT("Результат"), RULES("Умови"),
+    WHEN("When"), RESULT("Result"), RULES("Rules"),
 }
 
 internal enum class GradeDateMode(val label: String) {
-    DATE("Дата"), SCHEDULE("За розкладом"),
+    DATE("Date"), SCHEDULE("By timetable"),
 }
 
 internal enum class GradeResultState(val label: String) {
-    PLANNED("Заплановано"), AWAITING("Очікую оцінку"), KNOWN("Результат відомий"),
+    PLANNED("Scheduled"), AWAITING("Awaiting grade"), KNOWN("Result known"),
 }
 
 /** View state belongs to the parent form; this sheet only edits its unsaved draft. */
@@ -51,7 +51,7 @@ internal fun GradeDetailsSheet(
     TaktFullSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().heightIn(max = maximumHeight).imePadding()
             .padding(horizontal = 20.dp).testTag("grade-details")) {
-            Text(t("Деталі"), style = MaterialTheme.typography.headlineSmall,
+            Text(t("Details"), style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 12.dp))
             TaktSegmentedTabs(
                 labels = GradeDetailsTab.entries.map { t(it.label) },
@@ -73,7 +73,7 @@ internal fun GradeDetailsSheet(
             }
             TaktPrimaryButton(onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).testTag("grade-details-done")) {
-                Text(t("Готово"))
+                Text(t("Done"))
             }
         }
     }

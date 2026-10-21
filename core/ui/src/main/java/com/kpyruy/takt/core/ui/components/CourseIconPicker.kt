@@ -31,9 +31,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CourseIconPicker(selectedKey: String?, onSelect: (String?) -> Unit, onDismiss: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf("Усі") }
+    var category by rememberSaveable { mutableStateOf("All") }
     val icons = CourseIcons.all.filter {
-        (category == "Усі" || it.category == category) &&
+        (category == "All" || it.category == category) &&
             (it.label.contains(query, true) || t(it.label).contains(query, true) || it.key.contains(query, true))
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -41,19 +41,19 @@ fun CourseIconPicker(selectedKey: String?, onSelect: (String?) -> Unit, onDismis
             shape = RoundedCornerShape(24.dp), color = Color.Transparent) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Іконка предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити іконки")) }
+                Text(t("Subject icon"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close icons")) }
             }
-            Text(tf("%d іконок · обери свою", CourseIcons.all.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tf("%d icons · pick your own", CourseIcons.all.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TaktTextField(query, { query = it }, Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                placeholder = { Text(t("Пошук іконки")) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
+                placeholder = { Text(t("Search icon")) }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(listOf("Усі") + CourseIcons.all.map { it.category }.distinct()) { name ->
+                items(listOf("All") + CourseIcons.all.map { it.category }.distinct()) { name ->
                     FilterChip(selected = name == category, onClick = { category = name }, label = { Text(t(name)) })
                 }
             }
-            TextButton(onClick = { onSelect(null) }) { Text(t("Ініціали предмета")) }
-            if (icons.isEmpty()) Text(t("Іконок не знайдено"), Modifier.padding(24.dp))
+            TextButton(onClick = { onSelect(null) }) { Text(t("Subject initials")) }
+            if (icons.isEmpty()) Text(t("No icons found"), Modifier.padding(24.dp))
             LazyVerticalGrid(columns = GridCells.Adaptive(72.dp), modifier = Modifier.fillMaxWidth().weight(1f).testTag("course-icon-grid"),
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(icons, key = { it.key }) { option ->

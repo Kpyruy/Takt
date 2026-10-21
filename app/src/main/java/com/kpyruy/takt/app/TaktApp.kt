@@ -85,14 +85,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
-private enum class Destination(val route: String, private val ukrainianLabel: String) {
-    HOME("home", "Сьогодні"),
-    CALENDAR("calendar", "Календар"),
-    SUBJECTS("subjects", "Предмети"),
-    PLAN("plan", "Прогрес"),
+private enum class Destination(val route: String, private val sourceLabel: String) {
+    HOME("home", "Today"),
+    CALENDAR("calendar", "Calendar"),
+    SUBJECTS("subjects", "Subjects"),
+    PLAN("plan", "Progress"),
 
     ;
-    val label: String get() = t(ukrainianLabel)
+    val label: String get() = t(sourceLabel)
 }
 
 private const val SETTINGS_ROUTE = "settings"
@@ -147,7 +147,7 @@ fun TaktApp(
                     if (status == DocumentSyncStatus.CONFLICT) navController.navigate(SETTINGS_ROUTE)
                 }
                 .onFailure { error ->
-                    snackbarHostState.showSnackbar(t("Не вдалося підключити Documents: ${error.message}"))
+                    snackbarHostState.showSnackbar(t("Could not connect Documents: ${t(error.message.orEmpty())}"))
                 }
         }
     }
@@ -156,8 +156,8 @@ fun TaktApp(
         delay(1500)
         if (!documentStore.isConnected) {
             val result = snackbarHostState.showSnackbar(
-                message = t("Підключіть Documents/Takt для автозбереження й відновлення даних"),
-                actionLabel = t("Підключити"),
+                message = t("Connect Documents/Takt to autosave and restore data"),
+                actionLabel = t("Connect"),
                 duration = SnackbarDuration.Long,
                 withDismissAction = true,
             )
@@ -168,9 +168,9 @@ fun TaktApp(
         if (documentStatus == DocumentSyncStatus.CONFLICT || documentStatus == DocumentSyncStatus.ERROR) {
             val result = snackbarHostState.showSnackbar(
                 message = if (documentStatus == DocumentSyncStatus.CONFLICT) {
-                    t("Копія в Documents/Takt відрізняється від даних на телефоні")
-                } else t("Не вдалося синхронізувати Documents/Takt"),
-                actionLabel = t("Перевірити"),
+                    t("The copy in Documents/Takt is different from the data on the phone")
+                } else t("Failed to sync Documents/Takt"),
+                actionLabel = t("Check"),
                 duration = SnackbarDuration.Indefinite,
                 withDismissAction = true,
             )
@@ -180,8 +180,8 @@ fun TaktApp(
     LaunchedEffect(unmigratedMaterials) {
         if (unmigratedMaterials > 0) {
             val result = snackbarHostState.showSnackbar(
-                message = t("Не вдалося скопіювати $unmigratedMaterials старих матеріалів"),
-                actionLabel = t("Деталі"),
+                message = t("Could not copy ${unmigratedMaterials} older materials"),
+                actionLabel = t("Details"),
                 duration = SnackbarDuration.Indefinite,
                 withDismissAction = true,
             )
@@ -191,8 +191,8 @@ fun TaktApp(
     LaunchedEffect(uisPreview) {
         if (uisPreview != null && currentRoute != SETTINGS_ROUTE) {
             val result = snackbarHostState.showSnackbar(
-                message = t("UIS знайшов зміни для перегляду"),
-                actionLabel = t("Переглянути"),
+                message = t("UIS found changes to review"),
+                actionLabel = t("Review"),
                 duration = SnackbarDuration.Indefinite,
                 withDismissAction = true,
             )

@@ -69,42 +69,42 @@ fun BackupReviewPage(
     var applying by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val sourceName = if (review.source == BackupReviewSource.DOCUMENTS) "Documents/Takt" else t("Файл")
+    val sourceName = if (review.source == BackupReviewSource.DOCUMENTS) "Documents/Takt" else t("File")
     val localByCode = local.courses.associateBy { it.code.uppercase(Locale.ROOT) }
     fun toggle(section: BackupSection) {
         selected = if (section in selected) selected - section else selected + section
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenHeader(title = t("Порівняння даних"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+        ScreenHeader(title = t("Compare data"), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
         })
         if (differing.isEmpty()) SectionCard {
-            Text(t("Дані збігаються"), style = MaterialTheme.typography.titleMedium)
-            Text(t("У файлі немає змін для перенесення на телефон."),
+            Text(t("Data matches"), style = MaterialTheme.typography.titleMedium)
+            Text(t("The file has no changes to bring to the phone."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        if (BackupSection.SUBJECTS in differing) BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, sourceName, t("Предмети"),
-            t("Телефон: ${local.courses.size} · $sourceName: ${source.courses.size}")) {
+        if (BackupSection.SUBJECTS in differing) BackupChoice(BackupSection.SUBJECTS, selected, ::toggle, sourceName, t("Subjects"),
+            t("Phone: ${local.courses.size} · ${sourceName}: ${source.courses.size}")) {
             source.courses.mapNotNull { course ->
                 val old = localByCode[course.code.uppercase(Locale.ROOT)]
                 if (old == null) "+ ${course.code} · ${course.title}"
                 else buildList {
-                    if (old.title != course.title) add(t("Назва"))
+                    if (old.title != course.title) add(t("Name"))
                     if (old.titleEn != course.titleEn) add("English")
                     if (old.titleSk != course.titleSk) add("Slovenčina")
-                    if (old.credits != course.credits) add(t("Кредити"))
-                    if (old.semester != course.semester) add(t("Семестр"))
-                    if (old.requirementType != course.requirementType) add(t("Тип"))
-                    if (old.gradingType != course.gradingType) add(t("Оцінювання"))
-                    if (old.syllabusUrl != course.syllabusUrl) add(t("Програма предмета"))
+                    if (old.credits != course.credits) add(t("Credits"))
+                    if (old.semester != course.semester) add(t("Semester"))
+                    if (old.requirementType != course.requirementType) add(t("Type"))
+                    if (old.gradingType != course.gradingType) add(t("Assessment"))
+                    if (old.syllabusUrl != course.syllabusUrl) add(t("Course syllabus"))
                 }.takeIf { it.isNotEmpty() }?.let { "${course.code} · ${it.joinToString(", ")}" }
             }.take(8).forEach { Text(it) }
-            Text(t("Предмети, яких немає у файлі, залишаться на телефоні."),
+            Text(t("Courses absent from the file stay on the phone."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (BackupSection.ICONS in differing) {
-                Text(t("Іконки предметів обираються окремо нижче."),
+                Text(t("Choose course icons separately below."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -112,10 +112,10 @@ fun BackupReviewPage(
             val phone = localByCode[file.code.uppercase(Locale.ROOT)]
             if (phone?.iconKey == file.iconKey) null else phone to file
         }
-        if (BackupSection.ICONS in differing) BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t("Іконки предметів"),
-            t("Відрізняються: ") + changedIcons.size) {
+        if (BackupSection.ICONS in differing) BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t("Course icons"),
+            t("Different: ") + changedIcons.size) {
             if (changedIcons.isEmpty()) {
-                Text(t("Іконки однакові або відсутні в обох джерелах."),
+                Text(t("Icons match or are absent in both sources."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             changedIcons.take(6).forEach { (phone, file) ->
@@ -128,15 +128,15 @@ fun BackupReviewPage(
                         style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Text(t("Ліворуч — телефон, праворуч — файл. Іконки можна взяти без заміни предметів чи прогресу."),
+            Text(t("Left: phone. Right: file. You can import icons without replacing courses or progress."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (BackupSection.PROGRESS in differing) BackupChoice(BackupSection.PROGRESS, selected, ::toggle, sourceName, t("Прогрес"),
+        if (BackupSection.PROGRESS in differing) BackupChoice(BackupSection.PROGRESS, selected, ::toggle, sourceName, t("Progress"),
             "") {
             val sections = if (BackupSection.SUBJECTS in selected)
                 setOf(BackupSection.SUBJECTS, BackupSection.PROGRESS) else setOf(BackupSection.PROGRESS)
             val preview = BackupMerger.merge(local, source, sections)
-            Text(t("Оцінки: ${local.gradeItems.size} → ${preview.gradeItems.size}; задачі: ${local.studyTasks.size} → ${preview.studyTasks.size}"),
+            Text(t("Grades: ${local.gradeItems.size} → ${preview.gradeItems.size}; tasks: ${local.studyTasks.size} → ${preview.studyTasks.size}"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             preview.courses.mapNotNull { result ->
                 val old = localByCode[result.code.uppercase(Locale.ROOT)]
@@ -158,70 +158,70 @@ fun BackupReviewPage(
             local.studyTasks.filter { it.id !in previewTasks }.take(3).forEach { Text("− ${it.title}") }
             if (preview.gradeItems == local.gradeItems && preview.studyTasks == local.studyTasks &&
                 preview.courses == local.courses && BackupSection.SUBJECTS !in selected) {
-                Text(t("Для прогресу нових предметів також вибери «Предмети»."),
+                Text(t("To import progress for new courses, also select Courses."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(t("Статуси, оцінки й задачі оновляться лише для предметів з однаковим кодом."),
+            Text(t("Statuses, grades and tasks update only for courses with the same code."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (BackupSection.SCHEDULE in differing) BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, sourceName, t("Розклад"),
-            t("Телефон: ${local.scheduleRules.size + local.oneOffEvents.size} · $sourceName: ${source.scheduleRules.size + source.oneOffEvents.size}")) {
+        if (BackupSection.SCHEDULE in differing) BackupChoice(BackupSection.SCHEDULE, selected, ::toggle, sourceName, t("Timetable"),
+            t("Phone: ${local.scheduleRules.size + local.oneOffEvents.size} · ${sourceName}: ${source.scheduleRules.size + source.oneOffEvents.size}")) {
             BackupScheduleChanges(local, source)
-            Text(t("Вибір розкладу замінить локальні заняття, зміни й відвідування."),
+            Text(t("Choosing the timetable replaces local classes, changes and attendance."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (BackupSection.PERIODS in differing) BackupChoice(BackupSection.PERIODS, selected, ::toggle, sourceName, t("Періоди навчання"),
-            t("Телефон: ${local.settings.semesterPeriods.size} · $sourceName: ${source.settings.semesterPeriods.size}")) {
+        if (BackupSection.PERIODS in differing) BackupChoice(BackupSection.PERIODS, selected, ::toggle, sourceName, t("Study periods"),
+            t("Phone: ${local.settings.semesterPeriods.size} · ${sourceName}: ${source.settings.semesterPeriods.size}")) {
             (local.settings.semesterPeriods.map { it.semester } + source.settings.semesterPeriods.map { it.semester })
                 .distinct().sorted().forEach { semester ->
                     val a = local.settings.semesterPeriods.firstOrNull { it.semester == semester }
                     val b = source.settings.semesterPeriods.firstOrNull { it.semester == semester }
                     if (a != b) {
-                        Text(t("$semester семестр"), style = MaterialTheme.typography.titleSmall)
-                        Text("${t("Телефон")}: ${periodLabel(a)}")
+                        Text(t("Semester ${semester}"), style = MaterialTheme.typography.titleSmall)
+                        Text("${t("Phone")}: ${periodLabel(a)}")
                         Text("$sourceName: ${periodLabel(b)}")
                     }
                 }
         }
-        if (BackupSection.MATERIALS in differing) BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t("Нотатки й матеріали"),
-            t("Нотатки: ${local.courseNotes.size} → ${source.courseNotes.size}; матеріали: ${local.examMaterials.size} → ${source.examMaterials.size}")) {
+        if (BackupSection.MATERIALS in differing) BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t("Notes and materials"),
+            t("Notes: ${local.courseNotes.size} → ${source.courseNotes.size}; materials: ${local.examMaterials.size} → ${source.examMaterials.size}")) {
             BackupNoteChanges(local, source)
-            Text(t("Нотатки й матеріали зіставляються за кодом предмета."),
+            Text(t("Notes and materials are matched by course code."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (BackupSection.TEACHERS in differing) BackupChoice(
-            BackupSection.TEACHERS, selected, ::toggle, sourceName, t("Викладачі й консультації"), "") {
+            BackupSection.TEACHERS, selected, ::toggle, sourceName, t("Teachers and consultations"), "") {
             val sections = setOf(BackupSection.TEACHERS) +
                 if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
             BackupTeachingChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
         if (BackupSection.LANGUAGE in differing) BackupChoice(
-            BackupSection.LANGUAGE, selected, ::toggle, sourceName, t("Мова"), "") {
-            BackupSettingChange(t("Мова застосунку"), languageName(local.settings.language),
+            BackupSection.LANGUAGE, selected, ::toggle, sourceName, t("Language"), "") {
+            BackupSettingChange(t("Application language"), languageName(local.settings.language),
                 languageName(source.settings.language))
-            BackupSettingChange(t("Мова назв предметів"), courseLanguageName(local.settings.courseNameLanguage),
+            BackupSettingChange(t("Course name language"), courseLanguageName(local.settings.courseNameLanguage),
                 courseLanguageName(source.settings.courseNameLanguage))
-            BackupSettingChange(t("Для української мови інтерфейсу"),
+            BackupSettingChange(t("When the app is in Ukrainian"),
                 courseLanguageName(local.settings.ukrainianCourseNameFallback),
                 courseLanguageName(source.settings.ukrainianCourseNameFallback))
         }
         if (BackupSection.APPEARANCE in differing) BackupChoice(
-            BackupSection.APPEARANCE, selected, ::toggle, sourceName, t("Вигляд"), "") {
+            BackupSection.APPEARANCE, selected, ::toggle, sourceName, t("Appearance"), "") {
             BackupAppearanceChanges(local.settings, source.settings, sourceName)
         }
         if (BackupSection.CURRENT_SEMESTER in differing) BackupChoice(
-            BackupSection.CURRENT_SEMESTER, selected, ::toggle, sourceName, t("Поточний семестр"), "") {
-            BackupSettingChange(t("Поточний семестр"), local.settings.currentSemester?.toString() ?: t("Не вказано"),
-                source.settings.currentSemester?.toString() ?: t("Не вказано"))
+            BackupSection.CURRENT_SEMESTER, selected, ::toggle, sourceName, t("Current semester"), "") {
+            BackupSettingChange(t("Current semester"), local.settings.currentSemester?.toString() ?: t("Unspecified"),
+                source.settings.currentSemester?.toString() ?: t("Unspecified"))
         }
         if (BackupSection.PREFERENCES in differing) BackupChoice(
-            BackupSection.PREFERENCES, selected, ::toggle, sourceName, t("Інші налаштування"), "") {
+            BackupSection.PREFERENCES, selected, ::toggle, sourceName, t("Other settings"), "") {
             val sections = setOf(BackupSection.PREFERENCES) +
                 if (BackupSection.SUBJECTS in selected) setOf(BackupSection.SUBJECTS) else emptySet()
             BackupPreferenceChanges(local, BackupMerger.merge(local, source, sections), sourceName)
         }
         if (BackupSection.PROGRESS in selected || BackupSection.SCHEDULE in selected) {
-            Text(t("Тести без відповідного заняття залишаться з датою, але без прив’язки до заняття."),
+            Text(t("Tests without a matching class will keep their date without a class link."),
                 modifier = Modifier.testTag("backup-lesson-link-notice"), style = MaterialTheme.typography.bodySmall)
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -229,10 +229,10 @@ fun BackupReviewPage(
             Button(onClick = { scope.launch {
                 applying = true
                 runCatching { onApply(selected) }.onSuccess { onBack() }
-                    .onFailure { error = it.message ?: t("Не вдалося застосувати вибрані дані") }
+                    .onFailure { error = it.message?.let(::t) ?: t("Could not apply selected data") }
                 applying = false
             } }, enabled = selected.isNotEmpty() && !applying, modifier = Modifier.fillMaxWidth()) {
-                Text(t("Застосувати вибрані дані"))
+                Text(t("Apply selected data"))
             }
         }
     }
@@ -248,12 +248,12 @@ private fun BackupChoice(section: BackupSection, selected: Set<BackupSection>, o
             androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(if (section in selected) t("Взяти з ") + sourceName else t("Залишити на телефоні"),
+                Text(if (section in selected) t("Use ") + sourceName else t("Keep on phone"),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (section in selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("backup-expand-${section.name}")) {
-                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, t("Переглянути зміни"))
+                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, t("Review changes"))
             }
         }
         if (summary.isNotBlank()) Text(summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -268,7 +268,7 @@ private fun BackupIcon(key: String?) {
         val icon = CourseIcons.find(key)
         if (icon == null) Text("—", modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
             style = MaterialTheme.typography.titleSmall)
-        else Icon(icon.vector, contentDescription = icon.label,
+        else Icon(icon.vector, contentDescription = t(icon.label),
             modifier = Modifier.padding(8.dp).size(20.dp))
     }
 }
@@ -278,7 +278,7 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
     val phone = local.teaching ?: BackupTeaching()
     val file = result.teaching ?: BackupTeaching()
     if (phone == file) {
-        Text(t("Для викладачів нових предметів також вибери «Предмети»."),
+        Text(t("To include teachers for new courses, also select Courses."),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
@@ -289,8 +289,8 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
         val old = phoneTeams[courseCode]
         val new = fileTeams[courseCode]
         if (old != new) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("$courseCode · ${t("Викладачі")}", style = MaterialTheme.typography.titleSmall)
-            Text("${t("Телефон")}: ${teacherTeamLabel(old?.teachers.orEmpty())}")
+            Text("$courseCode · ${t("Teaching team")}", style = MaterialTheme.typography.titleSmall)
+            Text("${t("Phone")}: ${teacherTeamLabel(old?.teachers.orEmpty())}")
             Text("$sourceName: ${teacherTeamLabel(new?.teachers.orEmpty())}")
         }
     }
@@ -308,20 +308,20 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
             Text(listOfNotNull((new ?: old)?.name, courseCodes.joinToString(" · ").takeIf { it.isNotBlank() },
                 languageName(key.second)).joinToString(" · "), style = MaterialTheme.typography.titleSmall)
             val fields = listOf(
-                Triple(t("Ім’я викладача"), old?.name, new?.name),
-                Triple(t("Посада"), old?.position, new?.position),
-                Triple(t("Університетська пошта"), old?.universityEmail, new?.universityEmail),
-                Triple(t("Пошта UIS"), old?.systemEmail, new?.systemEmail),
-                Triple(t("Адреса"), old?.officeAddress, new?.officeAddress),
-                Triple(t("Кабінет"), old?.officeNumber, new?.officeNumber),
-                Triple(t("Телефон кабінету"), old?.officePhone, new?.officePhone),
-                Triple(t("Консультаційні години"), old?.consultationHours, new?.consultationHours),
-                Triple(t("Остання перевірка університетської пошти"), old?.mailboxLastChecked, new?.mailboxLastChecked),
+                Triple(t("Teacher name"), old?.name, new?.name),
+                Triple(t("Position"), old?.position, new?.position),
+                Triple(t("University email"), old?.universityEmail, new?.universityEmail),
+                Triple(t("UIS email"), old?.systemEmail, new?.systemEmail),
+                Triple(t("Address"), old?.officeAddress, new?.officeAddress),
+                Triple(t("Office"), old?.officeNumber, new?.officeNumber),
+                Triple(t("Office phone"), old?.officePhone, new?.officePhone),
+                Triple(t("Consultation hours"), old?.consultationHours, new?.consultationHours),
+                Triple(t("University mailbox last checked"), old?.mailboxLastChecked, new?.mailboxLastChecked),
             )
             fields.filter { it.second != it.third }.forEach { (label, a, b) ->
                 Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("${t("Телефон")}: ${a ?: t("Не вказано")}")
-                Text("$sourceName: ${b ?: t("Не вказано")}")
+                Text("${t("Phone")}: ${a ?: t("Unspecified")}")
+                Text("$sourceName: ${b ?: t("Unspecified")}")
             }
         }
     }
@@ -329,14 +329,14 @@ private fun BackupTeachingChanges(local: BackupPayload, result: BackupPayload, s
 
 private fun teacherTeamLabel(teachers: List<BackupTeacher>): String = teachers.joinToString("; ") { teacher ->
     val roles = teacher.roles.map { role -> t(when (role.lowercase(Locale.ROOT)) {
-        "examiner", "skúšajúci", "zkoušející" -> "Екзаменатор"
-        "instructor", "cvičiaci", "cvičící" -> "Практичні заняття"
-        "lecturer", "prednášajúci", "přednášející" -> "Лекції"
-        "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Відповідальний за предмет"
+        "examiner", "skúšajúci", "zkoušející" -> "Examiner"
+        "instructor", "cvičiaci", "cvičící" -> "Tutorials"
+        "lecturer", "prednášajúci", "přednášející" -> "Lectures"
+        "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Course supervisor"
         else -> role
     }) }
     (listOf(teacher.name) + roles + teacher.languages).joinToString(" · ")
-}.ifBlank { t("Не вказано") }
+}.ifBlank { t("Unspecified") }
 
 @Composable
 private fun BackupSettingChange(label: String, phone: String, file: String) {
@@ -349,39 +349,39 @@ private fun BackupSettingChange(label: String, phone: String, file: String) {
 }
 
 private fun languageName(value: String): String = when (value) {
-    "UKRAINIAN" -> t("Українська")
+    "UKRAINIAN" -> t("Ukrainian")
     "ENGLISH" -> "English"
     "SLOVAK" -> "Slovenčina"
     else -> value
 }
 
 private fun courseLanguageName(value: String): String = when (value) {
-    "FOLLOW_APP" -> t("За мовою застосунку")
+    "FOLLOW_APP" -> t("Follow app language")
     "ENGLISH" -> "English"
     "SLOVAK" -> "Slovenčina"
     else -> value
 }
 
 private fun themeModeName(value: String): String = when (value) {
-    "SYSTEM" -> t("Як телефон")
-    "LIGHT" -> t("Світла")
-    "DARK" -> t("Темна")
+    "SYSTEM" -> t("Device theme")
+    "LIGHT" -> t("Light")
+    "DARK" -> t("Dark")
     else -> value
 }
 
 private fun themeFamilyName(value: String): String = when (value) {
-    "BLUE" -> t("Синя")
-    "GREEN" -> t("Зелена")
-    "PURPLE" -> t("Фіолетова")
-    "WARM" -> t("Тепла")
-    "MONOCHROME" -> t("Монохром")
+    "BLUE" -> t("Blue")
+    "GREEN" -> t("Green")
+    "PURPLE" -> t("Violet")
+    "WARM" -> t("Warm")
+    "MONOCHROME" -> t("Monochrome")
     else -> value
 }
 
 private fun cardAppearanceName(value: String): String = when (value) {
-    "GLASS" -> t("Скло")
-    "ELEVATED" -> t("Підняті")
-    "TONAL_FILLED" -> t("Заливка")
+    "GLASS" -> t("Glass")
+    "ELEVATED" -> t("Elevated")
+    "TONAL_FILLED" -> t("Filled")
     else -> value
 }
 

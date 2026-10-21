@@ -52,7 +52,7 @@ internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolea
                 horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Icon(Icons.Default.School, null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(t("Допуск до екзамену"), style = MaterialTheme.typography.titleMedium)
+                    Text(t("Exam eligibility"), style = MaterialTheme.typography.titleMedium)
                 if (eligibility.requiredCount > 0) {
                     LinearProgressIndicator(
                         progress = { (eligibility.completedCount.toFloat() / eligibility.requiredCount).coerceIn(0f, 1f) },
@@ -62,10 +62,10 @@ internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolea
                         trackColor = MaterialTheme.colorScheme.primaryContainer,
                     )
                 } else {
-                    Text(t("Вимоги не позначено"), style = MaterialTheme.typography.bodySmall,
+                    Text(t("Requirements not marked"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                    if (eligibility.requiredCount > 0) SmallText(t("Виконайте всі обов’язкові вимоги для допуску."))
+                    if (eligibility.requiredCount > 0) SmallText(t("Complete all requirements for exam eligibility."))
                 }
                 Text(if (eligibility.requiredCount > 0) "${eligibility.completedCount} / ${eligibility.requiredCount}" else "—",
                     style = MaterialTheme.typography.titleMedium)
@@ -85,9 +85,9 @@ internal fun AdmissionProgressCard(eligibility: ExamEligibility, compact: Boolea
         contentColor = when { !hasRequirements -> MaterialTheme.colorScheme.onSurfaceVariant; complete -> MaterialTheme.colorScheme.onPrimaryContainer; else -> warningText },
     ) {
         Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(t("ДОПУСК ДО ЕКЗАМЕНУ"), fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
-            Text(when { !hasRequirements -> t("Вимоги не позначено"); complete -> t("Умови допуску виконано"); else -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("Залишилась 1 робота") else t("Залишилось ${eligibility.requiredCount - eligibility.completedCount} робіт") }, fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold)
-            Text(if (hasRequirements) t("${eligibility.completedCount} з ${eligibility.requiredCount} обов’язкових уже виконано.") else t("Додай обов’язкові роботи в «Задачах»."), fontSize = 12.sp, lineHeight = 16.sp)
+            Text(t("EXAM ELIGIBILITY"), fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(when { !hasRequirements -> t("Requirements not marked"); complete -> t("Exam requirements met"); else -> if (eligibility.requiredCount - eligibility.completedCount == 1) t("1 task left") else t("Remaining work: ${eligibility.requiredCount - eligibility.completedCount}") }, fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Bold)
+            Text(if (hasRequirements) t("Completed ${eligibility.completedCount} of ${eligibility.requiredCount} required tasks.") else t("Add required work in Tasks."), fontSize = 12.sp, lineHeight = 16.sp)
             if (hasRequirements) LinearProgressIndicator(gapSize = 0.dp, drawStopIndicator = {}, progress = { (eligibility.completedCount.toFloat() / eligibility.requiredCount).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(5.dp), color = if (complete) MaterialTheme.colorScheme.primary else warningText, trackColor = warningText.copy(alpha = .2f))
         }
     }
@@ -100,16 +100,16 @@ internal fun CourseworkProgressCard(gradeItems: List<GradeItem>, projection: Gra
     val maximum = coursework.sumOf { it.maxPoints }
     SubjectPanel {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            SmallText(t("Набрано за семестр"))
+            SmallText(t("Earned this semester"))
             if (maximum > 0) Text("${(earned / maximum * 100).toInt()}%", fontSize = 12.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.primary)
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(earned.displayNumber(), fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold)
-            Text(t("/ ${maximum.displayNumber()} балів"), Modifier.padding(bottom = 7.dp), fontSize = 17.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("/ ${maximum.displayNumber()} points"), Modifier.padding(bottom = 7.dp), fontSize = 17.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (maximum > 0) LinearProgressIndicator(gapSize = 0.dp, drawStopIndicator = {}, progress = { (earned / maximum).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(5.dp))
-        currentGrade?.let { SmallText(t("Поточна оцінка") + ": " + it.name) }
-        SmallText(when { gradeItems.none { it.type == GradeItemType.EXAM } -> t("Поточні результати за завершені роботи."); projection.examRemainingPoints > 0 -> t("На екзамені доступно ще ${projection.examRemainingPoints.displayNumber()} балів."); else -> t("Результат екзамену зафіксовано окремо.") })
+        currentGrade?.let { SmallText(t("Current grade") + ": " + it.name) }
+        SmallText(when { gradeItems.none { it.type == GradeItemType.EXAM } -> t("Current results from completed work."); projection.examRemainingPoints > 0 -> t("${projection.examRemainingPoints.displayNumber()} points are still available on the exam."); else -> t("The result of the exam is recorded separately.") })
     }
 }
 
@@ -121,18 +121,18 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
     val courseworkMaximum = coursework.sumOf { it.maxPoints }
     val pending = gradeItems.any { it.contributesToGrade && !it.completed }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        MetricCard(label = t("Набрано за семестр"), value = courseworkEarned.displayNumber() + " / " + courseworkMaximum.displayNumber(), modifier = Modifier.weight(1f))
-        MetricCard(label = t("Ще на екзамені"), value = if (exams.isEmpty()) "—" else projection.examRemainingPoints.displayNumber(), modifier = Modifier.weight(1f))
+        MetricCard(label = t("Earned this semester"), value = courseworkEarned.displayNumber() + " / " + courseworkMaximum.displayNumber(), modifier = Modifier.weight(1f))
+        MetricCard(label = t("Still on the exam"), value = if (exams.isEmpty()) "—" else projection.examRemainingPoints.displayNumber(), modifier = Modifier.weight(1f))
     }
     if (exams.isEmpty()) {
         SectionCard {
-            Text(t("Екзамен ще не додано"), style = MaterialTheme.typography.titleMedium)
-            Text(t("Додай екзамен у вкладці «Задачі», щоб побачити можливий результат."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("The exam has not been added yet"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Add an exam in Tasks to see a possible result."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
     SectionCard {
-        Text(if (pending) t("Досяжний максимум") else t("Результат за балами"), style = MaterialTheme.typography.titleMedium)
+        Text(if (pending) t("Achievable maximum") else t("Result by points"), style = MaterialTheme.typography.titleMedium)
         Text(
             projection.maximumPossiblePoints.displayNumber() + " / " + projection.totalPoints.displayNumber() +
                 if (projection.totalPoints > 0) " · " + (projection.maximumPossibleLetter?.name ?: "—") else "",
@@ -140,7 +140,7 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
             color = MaterialTheme.colorScheme.primary,
         )
         if (manualGrade != null) {
-            Text(t("Оцінка, виставлена вручну · ${manualGrade.name}"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Manual Grade · ${manualGrade.name}"), style = MaterialTheme.typography.titleMedium)
         }
         val secured = projection.securedPoints
         val available = (projection.maximumPossiblePoints - secured).coerceAtLeast(0.0)
@@ -148,7 +148,7 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
         if (projection.totalPoints > 0) {
             Row(
                 Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small)
-                    .semantics { contentDescription = t("${secured.displayNumber()} балів набрано, до ${available.displayNumber()} ще доступно") },
+                    .semantics { contentDescription = t("${secured.displayNumber()} points earned, up to ${available.displayNumber()} still available") },
             ) {
                 if (secured > 0) Box(Modifier.weight(secured.toFloat()).height(8.dp).background(MaterialTheme.colorScheme.primary))
                 if (available > 0) Box(Modifier.weight(available.toFloat()).height(8.dp).background(MaterialTheme.colorScheme.primaryContainer))
@@ -156,8 +156,8 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
             }
         }
         Text(
-            if (pending) t("${secured.displayNumber()} набрано + до ${available.displayNumber()} за незавершені роботи. Це потенціал, а не отримана оцінка.")
-            else t("Оцінку розраховано з балів за завершені роботи."),
+            if (pending) t("${secured.displayNumber()} earned + up to ${available.displayNumber()} from unfinished work. This is potential, not an earned grade.")
+            else t("The grade is calculated from points for completed work."),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -168,7 +168,7 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
     val available = (projection.maximumPossiblePoints - secured).coerceAtLeast(0.0)
     val unavailable = (projection.totalPoints - projection.maximumPossiblePoints).coerceAtLeast(0.0)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(if (pending) t("Досяжний максимум") else t("Результат за балами"), fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(if (pending) t("Achievable maximum") else t("Result by points"), fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
         Text("${projection.maximumPossiblePoints.displayNumber()} / ${projection.totalPoints.displayNumber()}", fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
     }
     if (projection.totalPoints > 0) Row(Modifier.fillMaxWidth().height(9.dp).clip(RoundedCornerShape(9.dp))) {
@@ -176,8 +176,8 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
         if (available > 0) Box(Modifier.weight(available.toFloat()).height(9.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = .35f)))
         if (unavailable > 0) Box(Modifier.weight(unavailable.toFloat()).height(9.dp).background(MaterialTheme.colorScheme.outlineVariant))
     }
-    Text(t("${secured.displayNumber()} набрано   ·   ${available.displayNumber()} доступно   ·   ${unavailable.displayNumber()} втрачено"), fontSize = 12.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    SmallText(if (pending) t("Це потенціал, а не отримана оцінка.") else t("Оцінку розраховано з завершених робіт."))
+    Text(t("${secured.displayNumber()} earned   ·   ${available.displayNumber()} available   ·   ${unavailable.displayNumber()} lost"), fontSize = 12.sp, lineHeight = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    SmallText(if (pending) t("This is a potential result, not an earned grade.") else t("The grade is calculated from completed works."))
 }
 
 @Composable internal fun CompactAdmission(eligibility: ExamEligibility, next: String?, onClick: () -> Unit) {
@@ -189,7 +189,7 @@ internal fun ExamProgressCards(gradeItems: List<GradeItem>, projection: GradePro
         Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("${eligibility.completedCount}/${eligibility.requiredCount}", fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.Bold)
             Column(Modifier.weight(1f)) {
-                Text(if(eligibility.requiredCount == 0) t("Вимоги не позначено") else if(complete) t("Умови допуску виконано") else if (eligibility.requiredCount - eligibility.completedCount == 1) t("Ще одна робота до допуску") else t("Ще ${eligibility.requiredCount - eligibility.completedCount} робіт до допуску"), fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(if(eligibility.requiredCount == 0) t("Requirements not marked") else if(complete) t("Exam requirements met") else if (eligibility.requiredCount - eligibility.completedCount == 1) t("One more task for exam eligibility") else t("Remaining work for exam eligibility: ${eligibility.requiredCount - eligibility.completedCount}"), fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold)
                 if(next != null) Text(next, fontSize = 12.sp, lineHeight = 18.sp)
             }
             Icon(Icons.Default.ChevronRight, null, Modifier.size(20.dp))

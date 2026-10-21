@@ -132,27 +132,27 @@ fun HomeScreen(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(t("Сьогодні"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text(t("Today"), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                 Text(selectedDate.format(weekday).replaceFirstChar { it.uppercase() } + ", " +
                     selectedDate.format(DateTimeFormatter.ofPattern("d MMMM", locale)),
                     style = MaterialTheme.typography.bodyLarge, color = muted)
             }
-            TaktIconButton(Icons.Outlined.Settings, t("Налаштування"), onClick = onOpenSettings)
+            TaktIconButton(Icons.Outlined.Settings, t("Settings"), onClick = onOpenSettings)
         }
         Spacer(Modifier.height(16.dp))
         key(today) { HomeWeekStrip(selected = selectedDate, onSelect = { selectedDate = it }) }
         Spacer(Modifier.height(22.dp))
         if (courses.isEmpty()) {
             SectionCard {
-                Text(t("Створи свій розклад"), style = MaterialTheme.typography.titleMedium)
-                Text(t(if (allowCourseCreation) "Спочатку додай предмет, потім пару." else "Предмети завантажуються з UIS."), color = muted)
-                if (allowCourseCreation) Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text(t("Додати предмет")) }
+                Text(t("Create your schedule"), style = MaterialTheme.typography.titleMedium)
+                Text(t(if (allowCourseCreation) "Add a subject first, then a class." else "Subjects are loaded from UIS."), color = muted)
+                if (allowCourseCreation) Button(onClick = onAddCourse, modifier = Modifier.fillMaxWidth()) { Text(t("Add course")) }
             }
             Spacer(Modifier.height(16.dp))
         }
-        Text(t("Твій день"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(t("Your day"), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
-        if (events.isEmpty()) Text(t("Пар на цей день немає"), style = MaterialTheme.typography.bodyMedium, color = muted)
+        if (events.isEmpty()) Text(t("No classes on this day"), style = MaterialTheme.typography.bodyMedium, color = muted)
         Column(Modifier.tourTarget("home-lessons").drawBehind {
             if (events.isNotEmpty()) drawLine(accent.copy(alpha = .24f),
                 Offset(timeWidth.toPx() + 4.dp.toPx(), 20.dp.toPx()),
@@ -165,9 +165,9 @@ fun HomeScreen(
                 val subjectColor = taktSubjectColor(event.courseId ?: event.title)
                 val course = courses.firstOrNull { it.id == event.courseId }
                 val status = when (event.status) {
-                    ScheduleEventStatus.CANCELLED -> t("Скасовано")
-                    ScheduleEventStatus.MOVED -> t("Перенесено")
-                    ScheduleEventStatus.ONE_OFF -> t("Разова подія")
+                    ScheduleEventStatus.CANCELLED -> t("Cancelled")
+                    ScheduleEventStatus.MOVED -> t("Rescheduled")
+                    ScheduleEventStatus.ONE_OFF -> t("One time event")
                     ScheduleEventStatus.NORMAL -> null
                 }
                 Row(Modifier.fillMaxWidth().drawBehind {
@@ -187,14 +187,14 @@ fun HomeScreen(
                             Text(event.title, style = MaterialTheme.typography.titleMedium,
                                 textDecoration = if (cancelled && settings.cancellationStyle == CancellationDisplayStyle.STRIKETHROUGH) TextDecoration.LineThrough else null)
                             Text(listOfNotNull(event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.label?.let(::t), event.room,
-                                status, t("до ${event.endTime.format(time)}")).joinToString(" · "),
+                                status, t("by ${event.endTime.format(time)}")).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall, color = muted)
-                            if (event.isAbsent) Text(t("Пропущено"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                            if (event.isAbsent) Text(t("Absent"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                         }
                         if (CourseWork.hasTestOnLesson(event, events, assessmentDeadlines)) LessonTestBadge(compact = true)
                         if (active) {
                             val minutes = Duration.between(now, event.startTime).toMinutes()
-                            Text(if (minutes > 0) t("$minutes хв") else t("Зараз"),
+                            Text(if (minutes > 0) t("${minutes} min") else t("Now"),
                                 Modifier.testTag("home-active-${event.id}").glassSurface(RoundedCornerShape(50), accent.copy(alpha = .18f))
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall, color = accent)
@@ -203,7 +203,7 @@ fun HomeScreen(
                 }
                 val following = events.getOrNull(index + 1)
                 val minutes = following?.let { Duration.between(event.endTime, it.startTime).toMinutes() } ?: 0
-                if (minutes > 0) Text(t("Перерва") + " · " + formatDurationMinutes(minutes),
+                if (minutes > 0) Text(t("Break") + " · " + formatDurationMinutes(minutes),
                     Modifier.padding(start = timeWidth + 12.dp, top = 4.dp, bottom = 4.dp),
                     style = MaterialTheme.typography.bodySmall, color = muted)
                 else Spacer(Modifier.height(9.dp))

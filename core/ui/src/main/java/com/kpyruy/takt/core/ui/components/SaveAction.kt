@@ -50,9 +50,9 @@ fun rememberSaveAction(): SaveAction {
 fun SaveErrorDialog(action: SaveAction) {
     if (action.failed) AlertDialog(onDismissRequest = action::dismissError,
         modifier = Modifier.testTag("save-error-dialog"),
-        title = { Text(t("Не вдалося зберегти зміни")) },
-        text = { Text(t("Твої зміни залишилися у формі. Перевір вільне місце та спробуй зберегти ще раз.")) },
+        title = { Text(t("Could not save changes")) },
+        text = { Text(t("Your changes are still in the form. Check available storage and try saving again.")) },
         confirmButton = { TextButton(onClick = action::dismissError, modifier = Modifier.testTag("save-error-dismiss")) {
-            Text(t("Повернутися до змін"))
+            Text(t("Return to changes"))
         } })
 }

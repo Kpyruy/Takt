@@ -13,43 +13,43 @@ object TaktI18n {
 
     fun use(preference: AppLanguage) { language = preference }
 
-    val locale: Locale
-        get() = when (language) {
-            AppLanguage.SLOVAK -> Locale.forLanguageTag("sk")
-            AppLanguage.ENGLISH -> Locale.ENGLISH
-            else -> Locale.forLanguageTag("uk")
-        }
+    val locale: Locale get() = locale(language)
 
-    fun text(ukrainian: String): String = when (language) {
-        AppLanguage.ENGLISH -> enTranslations[ukrainian]
-            ?: ReviewTranslations.lookup(ukrainian, language)
-            ?: DocumentTranslations.lookup(ukrainian, language)
-            ?: WallpaperTranslations.lookup(ukrainian, language)
-            ?: TeachingTranslations.lookup(ukrainian, language)
-            ?: TourTranslations.lookup(ukrainian, language)
-            ?: NotificationTranslations.lookup(ukrainian, AppLanguage.ENGLISH)
-            ?: dynamicTranslations.firstNotNullOfOrNull { it.translate(ukrainian, AppLanguage.ENGLISH) }
-            ?: ukrainian
-        AppLanguage.SLOVAK -> skTranslations[ukrainian]
-            ?: ReviewTranslations.lookup(ukrainian, language)
-            ?: DocumentTranslations.lookup(ukrainian, language)
-            ?: WallpaperTranslations.lookup(ukrainian, language)
-            ?: TeachingTranslations.lookup(ukrainian, language)
-            ?: TourTranslations.lookup(ukrainian, language)
-            ?: NotificationTranslations.lookup(ukrainian, AppLanguage.SLOVAK)
-            ?: dynamicTranslations.firstNotNullOfOrNull { it.translate(ukrainian, AppLanguage.SLOVAK) }
-            ?: ukrainian
-        else -> ukrainian
+    fun locale(language: AppLanguage): Locale = when (language) {
+        AppLanguage.SLOVAK -> Locale.forLanguageTag("sk")
+        AppLanguage.ENGLISH -> Locale.ENGLISH
+        AppLanguage.UKRAINIAN -> Locale.forLanguageTag("uk")
+    }
+
+    internal fun lookup(source: String, language: AppLanguage): String? =
+        staticTranslations[source]?.text(source, language)
+            ?: dynamicTranslations.firstNotNullOfOrNull { it.translate(source, language) }
+
+    /** Explicit language is safe for background work and never changes Compose state. */
+    fun text(source: String, language: AppLanguage = this.language): String = lookup(source, language) ?: source
+}
+
+internal data class LocalizedText(
+    val ukrainian: String,
+    val slovak: String,
+    val english: String? = null,
+) {
+    fun text(source: String, language: AppLanguage): String = when (language) {
+        AppLanguage.UKRAINIAN -> ukrainian
+        AppLanguage.SLOVAK -> slovak
+        AppLanguage.ENGLISH -> english ?: source
     }
 }
 
 private val placeholder = Regex("__ARG(\\d+)__")
 
 internal class DynamicTranslation(
-    source: String,
-    private val english: String,
+    private val source: String,
+    private val ukrainian: String,
     private val slovak: String,
 ) {
+    internal val specificity: Int = placeholder.replace(source, "").length
+    private val argumentIndices = placeholder.findAll(source).map { it.groupValues[1].toInt() }.toList()
     private val pattern = Regex(
         "^" + placeholder.split(source).joinToString("(.*?)") { Regex.escape(it) } + "$",
         RegexOption.DOT_MATCHES_ALL,
@@ -57,27 +57,28 @@ internal class DynamicTranslation(
 
     fun translate(value: String, language: AppLanguage): String? {
         val match = pattern.matchEntire(value) ?: return null
-        val translated = if (language == AppLanguage.SLOVAK) slovak else english
+        val translated = when (language) {
+            AppLanguage.UKRAINIAN -> ukrainian
+            AppLanguage.SLOVAK -> slovak
+            AppLanguage.ENGLISH -> source
+        }
         return placeholder.replace(translated) { marker ->
-            match.groupValues[marker.groupValues[1].toInt() + 1]
+            val group = argumentIndices.indexOf(marker.groupValues[1].toInt()) + 1
+            match.groupValues[group]
         }
     }
 }
 
-fun t(ukrainian: String): String = TaktI18n.text(ukrainian)
+fun t(source: String): String = TaktI18n.text(source)
 
 fun formatDurationMinutes(minutes: Long): String {
     val hours = minutes / 60
     val remainingMinutes = minutes % 60
-    val (hourUnit, minuteUnit) = when (TaktI18n.language) {
-        AppLanguage.UKRAINIAN -> "год" to "хв"
-        AppLanguage.ENGLISH, AppLanguage.SLOVAK -> "h" to "min"
-    }
     return listOfNotNull(
-        hours.takeIf { it > 0 }?.let { "$it $hourUnit" },
-        remainingMinutes.takeIf { it > 0 || hours == 0L }?.let { "$it $minuteUnit" },
+        hours.takeIf { it > 0 }?.let { "$it ${t("h")}" },
+        remainingMinutes.takeIf { it > 0 || hours == 0L }?.let { "$it ${t("min")}" },
     ).joinToString(" ")
 }
 
-fun tf(ukrainianFormat: String, vararg arguments: Any?): String =
-    String.format(TaktI18n.locale, t(ukrainianFormat), *arguments)
+fun tf(sourceFormat: String, vararg arguments: Any?): String =
+    String.format(TaktI18n.locale, t(sourceFormat), *arguments)

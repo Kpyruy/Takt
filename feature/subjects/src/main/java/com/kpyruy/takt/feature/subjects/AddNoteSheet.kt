@@ -117,7 +117,7 @@ fun AddNoteForm(
                         }.onSuccess { attachment ->
                             attachments = attachments + attachment
                             attachmentError = null
-                        }.onFailure { attachmentError = t("Не вдалося додати файл: ${it.message}") }
+                        }.onFailure { attachmentError = t("Failed to add file: ${t(it.message.orEmpty())}") }
                     }
                 } finally {
                     copyingFiles = false
@@ -129,34 +129,34 @@ fun AddNoteForm(
         if (uri != null) scope.launch {
             runCatching { documentStore.connect(uri) }
                 .onSuccess { filesPicker.launch(arrayOf("*/*")) }
-                .onFailure { attachmentError = t("Не вдалося підключити папку: ${it.message}") }
+                .onFailure { attachmentError = t("Failed to mount folder: ${t(it.message.orEmpty())}") }
         }
     }
 
     if (showLinkDialog) Dialog(onDismissRequest = { showLinkDialog = false }) {
         GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp)) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(t("Додати посилання"), style = MaterialTheme.typography.headlineSmall)
+                Text(t("Add link"), style = MaterialTheme.typography.headlineSmall)
                 TaktTextField(linkUrl, { linkUrl = it; linkError = false },
-                    label = { Text(t("Адреса посилання")) }, singleLine = true,
+                    label = { Text(t("Link URL")) }, singleLine = true,
                     isError = linkError, modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     leadingIcon = { Icon(Icons.Default.Link, null) },
                     trailingIcon = { if (linkUrl.isNotBlank()) IconButton(onClick = { linkUrl = ""; linkError = false }) {
-                        Icon(Icons.Default.Close, t("Очистити"))
+                        Icon(Icons.Default.Close, t("Clear"))
                     } })
                 TaktTextField(linkTitle, { linkTitle = it },
-                    label = { Text(t("Назва (необов’язково)")) }, singleLine = true,
+                    label = { Text(t("Name (optional)")) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(), leadingIcon = { Icon(Icons.Default.Description, null) },
                     trailingIcon = { if (linkTitle.isNotBlank()) IconButton(onClick = { linkTitle = "" }) {
-                        Icon(Icons.Default.Close, t("Очистити"))
+                        Icon(Icons.Default.Close, t("Clear"))
                     } })
-                if (linkError) Text(t("Вкажи коректне посилання https:// або http://"),
+                if (linkError) Text(t("Enter a valid https:// or http:// link"),
                     color = MaterialTheme.colorScheme.error)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(50)) {
-                        TextButton(onClick = { showLinkDialog = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(t("Скасувати")) }
+                        TextButton(onClick = { showLinkDialog = false }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(t("Cancel")) }
                     }
                     TaktPrimaryButton(onClick = {
                         runCatching { NoteAttachment.webLink(linkUrl, linkTitle) }
@@ -164,7 +164,7 @@ fun AddNoteForm(
                                 attachments = attachments + attachment
                                 linkUrl = ""; linkTitle = ""; linkError = false; showLinkDialog = false
                             }.onFailure { linkError = true }
-                    }, modifier = Modifier.weight(1f)) { Text(t("Додати")) }
+                    }, modifier = Modifier.weight(1f)) { Text(t("Add")) }
                 }
             }
         }
@@ -176,25 +176,25 @@ fun AddNoteForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialNote == null) t("Додати нотатку") else t("Редагувати нотатку"),
+                if (initialNote == null) t("Add a note") else t("Edit note"),
                 style = MaterialTheme.typography.headlineMedium,
             )
         }
         TaktTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(t("Заголовок")) },
+            label = { Text(t("Title")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         TaktTextField(
             value = content,
             onValueChange = { content = it },
-            label = { Text(t("Нотатка")) },
+            label = { Text(t("Note")) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 5,
         )
-        Text(t("Вкладення"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(t("Attachments"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         attachments.forEach { attachment ->
             Row(modifier = Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(17.dp)).padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically) {
@@ -203,7 +203,7 @@ fun AddNoteForm(
                 Spacer(Modifier.width(9.dp))
                 Text(attachment.name, modifier = Modifier.weight(1f))
                 IconButton(onClick = { attachments = attachments - attachment }) {
-                    Icon(Icons.Default.Close, contentDescription = t("Прибрати вкладення"))
+                    Icon(Icons.Default.Close, contentDescription = t("Remove attachments"))
                 }
             }
         }
@@ -213,18 +213,18 @@ fun AddNoteForm(
                     if (documentStore.isConnected) filesPicker.launch(arrayOf("*/*")) else folderPicker.launch(null)
                 }, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
                     Icon(Icons.Default.AttachFile, contentDescription = null)
-                    Text(t("Додати файл"))
+                    Text(t("Add file"))
                 }
             }
             GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(18.dp)) {
                 TextButton(onClick = { showLinkDialog = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
                     Icon(Icons.Default.Link, contentDescription = null)
-                    Text(t("Додати посилання"))
+                    Text(t("Add link"))
                 }
             }
         }
         attachmentError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (copyingFiles) Text(t("Копіювання файлів…"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (copyingFiles) Text(t("Copying files…"), color = MaterialTheme.colorScheme.onSurfaceVariant)
         TaktPrimaryButton(
             onClick = {
                 onSave(
@@ -241,7 +241,7 @@ fun AddNoteForm(
             enabled = !copyingFiles && title.isNotBlank() && (content.isNotBlank() || attachments.isNotEmpty()),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialNote == null) t("Зберегти") else t("Оновити"))
+            Text(if (initialNote == null) t("Save") else t("Update"))
         }
     }
 }

@@ -62,14 +62,14 @@ internal fun CalendarSettingsPage(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(
-            title = t("Календар і розклад"),
-            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack) },
+            title = t("Calendar and schedule"),
+            navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack) },
         )
-        SettingsSectionTitle(t("Вигляд тижня"))
+        SettingsSectionTitle(t("Week view"))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf(
-                WeekLayout.TIMETABLE to t("Таймтейбл"),
-                WeekLayout.COMPACT_LIST to t("Список"),
+                WeekLayout.TIMETABLE to t("Schedule timetable"),
+                WeekLayout.COMPACT_LIST to t("List"),
             ).forEach { (layout, label) ->
                 CalendarChoiceCard(
                     title = label,
@@ -81,34 +81,34 @@ internal fun CalendarSettingsPage(
                         Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("09:00", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             Box(Modifier.size(3.dp, 25.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
-                            Text(t("Лекція"), style = MaterialTheme.typography.labelSmall)
+                            Text(t("Lecture"), style = MaterialTheme.typography.labelSmall)
                         }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(t("ПН · 2 пари"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            Text(t("09:00  Лекція"), style = MaterialTheme.typography.labelSmall)
+                            Text(t("Mon · 2 classes"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(t("09:00 Lecture"), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
             }
         }
-        SettingsSectionTitle(t("Скасовані пари"))
+        SettingsSectionTitle(t("Canceled classes"))
         CalendarPopupChoice(
             selected = settings.cancellationStyle,
             options = listOf(
-                CancellationDisplayStyle.STRIKETHROUGH to t("Закреслювати"),
-                CancellationDisplayStyle.MARKED to t("Позначати"),
-                CancellationDisplayStyle.HIDDEN to t("Ховати"),
+                CancellationDisplayStyle.STRIKETHROUGH to t("Cross out"),
+                CancellationDisplayStyle.MARKED to t("To mark"),
+                CancellationDisplayStyle.HIDDEN to t("Hide"),
             ),
             onSelected = onCancellationStyle,
         ) { style ->
             when (style) {
-                CancellationDisplayStyle.STRIKETHROUGH -> Text(t("09:00  Теорія права"),
+                CancellationDisplayStyle.STRIKETHROUGH -> Text(t("09:00 Theory of law"),
                     textDecoration = TextDecoration.LineThrough, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                CancellationDisplayStyle.MARKED -> Text(t("09:00  Теорія права  ·  Скасовано"),
+                CancellationDisplayStyle.MARKED -> Text(t("09:00 Theory of law · Cancelled"),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                CancellationDisplayStyle.HIDDEN -> Text(t("Скасовані пари зникнуть із розкладу"),
+                CancellationDisplayStyle.HIDDEN -> Text(t("Canceled classes will disappear from the schedule"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -116,16 +116,16 @@ internal fun CalendarSettingsPage(
         if (settings.cancellationStyle == CancellationDisplayStyle.HIDDEN) {
             SectionCard {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(t("Показувати приховані"), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                    Text(t("Show hidden"), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     Switch(checked = settings.showHiddenLessons, onCheckedChange = onShowHiddenLessons)
                 }
             }
         }
-        SettingsSectionTitle(t("Парність тижня"))
+        SettingsSectionTitle(t("Week parity"))
         val parityOptions = listOf(
-            ParityOverride.AUTO to t("Автоматично"),
-            ParityOverride.EVEN to t("Завжди парний"),
-            ParityOverride.ODD to t("Завжди непарний"),
+            ParityOverride.AUTO to t("Automatically"),
+            ParityOverride.EVEN to t("Always even"),
+            ParityOverride.ODD to t("Always odd"),
         )
         CalendarPopupChoice(settings.parityOverride, parityOptions, onParityOverride)
     }

@@ -48,21 +48,21 @@ internal enum class PaletteRole { PRIMARY, SECONDARY, TERTIARY }
 
 @Composable
 internal fun PaletteRole.label(): String = when (this) {
-    PaletteRole.PRIMARY -> t("Основний колір")
-    PaletteRole.SECONDARY -> t("Другий колір")
-    PaletteRole.TERTIARY -> t("Третій колір")
+    PaletteRole.PRIMARY -> t("Primary color")
+    PaletteRole.SECONDARY -> t("Secondary color")
+    PaletteRole.TERTIARY -> t("Tertiary color")
 }
 
 @Composable
 private fun familyLabel(family: ThemeFamily): String = when (family) {
-    ThemeFamily.BLUE -> t("Синя")
-    ThemeFamily.GREEN -> t("Зелена")
-    ThemeFamily.PURPLE -> t("Фіолетова")
-    ThemeFamily.WARM -> t("Тепла")
-    ThemeFamily.MONOCHROME -> t("Монохром")
-    ThemeFamily.ROSE -> t("Рожева")
-    ThemeFamily.AMBER -> t("Бурштинова")
-    ThemeFamily.CYAN -> t("Блакитна")
+    ThemeFamily.BLUE -> t("Blue")
+    ThemeFamily.GREEN -> t("Green")
+    ThemeFamily.PURPLE -> t("Violet")
+    ThemeFamily.WARM -> t("Warm")
+    ThemeFamily.MONOCHROME -> t("Monochrome")
+    ThemeFamily.ROSE -> t("Rose")
+    ThemeFamily.AMBER -> t("Amber")
+    ThemeFamily.CYAN -> t("Cyan")
 }
 
 /** Both Appearance and onboarding open the same transactional palette editor. */
@@ -74,7 +74,7 @@ fun AppearanceThemeChoices(settings: AppSettings, onChange: (AppSettings) -> Uni
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(t("Палітра й власні теми"), style = MaterialTheme.typography.titleSmall)
+                Text(t("Palette & custom themes"), style = MaterialTheme.typography.titleSmall)
                 Text(settings.selectedCustomTheme?.name ?: familyLabel(settings.themeFamily),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 PaletteDots(taktThemePreviewColors(settings, false))
@@ -109,23 +109,23 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                 val shortPreview = maxHeight < 480.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
                 Column(Modifier.fillMaxSize().testTag("palette-popup")) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (editor != null) TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), { closeEditor() })
-                        Text(if (editor == null) t("Палітра й власні теми") else t("Редагувати тему"),
+                        if (editor != null) TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), { closeEditor() })
+                        Text(if (editor == null) t("Palette & custom themes") else t("Edit theme"),
                             Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                         TextButton(onClick = dismiss, modifier = Modifier.testTag("palette-popup-cancel")) {
-                            Text(t("Скасувати"))
+                            Text(t("Cancel"))
                         }
                     }
                     val currentEditor = editor
                     val validHex = normalizeThemeHex(primaryInput)
-                    val previewTheme = currentEditor?.let { it.copy(name = it.name.trim().ifEmpty { t("Нова тема") }.take(40)) }
+                    val previewTheme = currentEditor?.let { it.copy(name = it.name.trim().ifEmpty { t("New theme") }.take(40)) }
                     val previewSettings = if (previewTheme != null) draft.withPreview(previewTheme) else draft
                     // Pin the sample outside both preset and editor scroll containers. When IME or
                     // a small window reduces height, use a two-row sample of all three roles.
                     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (!shortPreview) Text(t("Попередній перегляд"), style = MaterialTheme.typography.titleSmall)
-                        TaktSegmentedTabs(listOf(t("Світла"), t("Темна")), if (previewDark) 1 else 0,
+                        if (!shortPreview) Text(t("Live preview"), style = MaterialTheme.typography.titleSmall)
+                        TaktSegmentedTabs(listOf(t("Light"), t("Dark")), if (previewDark) 1 else 0,
                             { previewDark = it == 1 }, Modifier.testTag("palette-preview-mode"))
                         AppearanceLivePreview(
                             previewSettings.copy(themeMode = if (previewDark) AppThemeMode.DARK else AppThemeMode.LIGHT),
@@ -134,7 +134,7 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)
                         .testTag("palette-popup-content"), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         if (currentEditor == null) {
-                            Text(t("Готові палітри"), style = MaterialTheme.typography.titleSmall)
+                            Text(t("Preset palettes"), style = MaterialTheme.typography.titleSmall)
                             ThemeFamily.entries.chunked(2).forEach { pair ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     pair.forEach { family ->
@@ -146,7 +146,7 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                                     }
                                 }
                             }
-                            Text(t("Власні теми"), style = MaterialTheme.typography.titleSmall)
+                            Text(t("Custom themes"), style = MaterialTheme.typography.titleSmall)
                             draft.customThemes.forEach { theme ->
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     PaletteOption(theme.name, taktThemePreviewColors(draft.withPreview(theme), previewDark),
@@ -157,13 +157,13 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                         TextButton(onClick = { openEditor(theme) }, modifier = Modifier.testTag("theme-edit-${theme.id}")) {
                                             Icon(Icons.Outlined.Edit, null, Modifier.size(18.dp))
-                                            Spacer(Modifier.width(6.dp)); Text(t("Редагувати тему"))
+                                            Spacer(Modifier.width(6.dp)); Text(t("Edit theme"))
                                         }
                                         IconButton(onClick = {
                                             draft = draft.copy(customThemes = draft.customThemes.filterNot { it.id == theme.id },
                                                 selectedCustomThemeId = draft.selectedCustomThemeId.takeUnless { it == theme.id })
                                         }, modifier = Modifier.testTag("theme-delete-${theme.id}")) {
-                                            Icon(Icons.Outlined.DeleteOutline, t("Видалити тему") + ": " + theme.name)
+                                            Icon(Icons.Outlined.DeleteOutline, t("Delete theme") + ": " + theme.name)
                                         }
                                     }
                                 }
@@ -172,15 +172,15 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                                 val colors = taktThemePreviewColors(draft, false)
                                 openEditor(CustomColorTheme(UUID.randomUUID().toString(), "", colors[0].hex(), colors[1].hex(), colors[2].hex()))
                             }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("theme-create")) {
-                                Icon(Icons.Outlined.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t("Створити тему"))
+                                Icon(Icons.Outlined.Add, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(t("Create theme"))
                             }
                         } else {
                             val duplicate = draft.customThemes.any { it.id != currentEditor.id && it.name.equals(currentEditor.name.trim(), true) }
                             TaktTextField(currentEditor.name, { editor = currentEditor.copy(name = it) },
-                                Modifier.fillMaxWidth().testTag("theme-name"), label = { Text(t("Назва теми")) }, singleLine = true,
+                                Modifier.fillMaxWidth().testTag("theme-name"), label = { Text(t("Theme name")) }, singleLine = true,
                                 isError = currentEditor.name.length > 40 || duplicate,
-                                supportingText = { Text(if (duplicate) t("Тема з такою назвою вже існує") else t("Від 1 до 40 символів")) })
-                            Text(t("Три незалежні кольори"), style = MaterialTheme.typography.titleSmall)
+                                supportingText = { Text(if (duplicate) t("A theme with this name already exists") else t("1 to 40 characters")) })
+                            Text(t("Three independent colors"), style = MaterialTheme.typography.titleSmall)
                             val roleColors = taktThemePreviewColors(previewSettings, false)
                             PaletteRole.entries.forEachIndexed { index, role ->
                                 val roleHex = currentEditor.colorHex(role, roleColors[index])
@@ -203,10 +203,10 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                             TaktTextField(primaryInput, {
                                 primaryInput = it
                                 normalizeThemeHex(it)?.let { hex -> editor = currentEditor.copy(primaryHex = hex) }
-                            }, Modifier.fillMaxWidth().testTag("theme-hex"), label = { Text(t("Основний колір")) },
+                            }, Modifier.fillMaxWidth().testTag("theme-hex"), label = { Text(t("Primary color")) },
                                 singleLine = true, isError = validHex == null,
-                                supportingText = { Text(t("HEX: #RRGGBB, наприклад #B52D67")) })
-                            Text(t("Зміни кольорів видно одразу. Збереження — лише після застосування."),
+                                supportingText = { Text(t("HEX: #RRGGBB, for example #B52D67")) })
+                            Text(t("Color changes appear immediately. Saved only after applying."),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -215,17 +215,17 @@ private fun AppearancePaletteSheet(initial: AppSettings, tagPrefix: String, onDi
                         val current = editor
                         if (current == null) {
                             TaktPrimaryButton(onClick = { onApply(draft.normalizedAppearance()) },
-                                modifier = Modifier.fillMaxWidth().testTag("palette-popup-apply")) { Text(t("Застосувати палітру")) }
+                                modifier = Modifier.fillMaxWidth().testTag("palette-popup-apply")) { Text(t("Apply palette")) }
                         } else {
                             val clean = current.normalizedOrNull()
                             val duplicate = draft.customThemes.any { it.id != current.id && it.name.equals(current.name.trim(), true) }
-                            TextButton(onClick = { closeEditor() }, modifier = Modifier.testTag("theme-cancel")) { Text(t("Скасувати")) }
+                            TextButton(onClick = { closeEditor() }, modifier = Modifier.testTag("theme-cancel")) { Text(t("Cancel")) }
                             TaktPrimaryButton(enabled = clean != null && validHex != null && !duplicate, onClick = {
                                 val theme = checkNotNull(clean)
                                 draft = draft.copy(customThemes = draft.customThemes.filterNot { it.id == theme.id } + theme,
                                     selectedCustomThemeId = theme.id)
                                 closeEditor()
-                            }, modifier = Modifier.weight(1f).testTag("theme-save")) { Text(t("Зберегти тему")) }
+                            }, modifier = Modifier.weight(1f).testTag("theme-save")) { Text(t("Save theme")) }
                         }
                     }
                     val role = pickerRole

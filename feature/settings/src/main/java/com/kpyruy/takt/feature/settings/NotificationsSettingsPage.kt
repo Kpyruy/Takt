@@ -43,13 +43,13 @@ fun NotificationsSettingsPage(settings: ReminderSettings, onChange: ((ReminderSe
         return
     }
     if (academic) {
-        NotificationsPageFrame(t("Навчальні роботи"), { academic = false }) {
+        NotificationsPageFrame(t("Academic work"), { academic = false }) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onChange { it.withAllAcademic(true) } }, Modifier.weight(1f).testTag("reminder_academic_all")) {
-                    Text(t("Вибрати всі типи"))
+                    Text(t("Select all types"))
                 }
                 OutlinedButton(onClick = { onChange { it.withAllAcademic(false) } }, Modifier.weight(1f).testTag("reminder_academic_none")) {
-                    Text(t("Вимкнути всі типи"))
+                    Text(t("Disable all types"))
                 }
             }
             ReminderCategory.entries.filter { it.academic }.forEach { category ->
@@ -59,31 +59,31 @@ fun NotificationsSettingsPage(settings: ReminderSettings, onChange: ((ReminderSe
         }
         return
     }
-    NotificationsPageFrame(t("Сповіщення"), onBack) {
+    NotificationsPageFrame(t("Notifications"), onBack) {
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Outlined.Notifications, null, tint = MaterialTheme.colorScheme.primary)
-                Text(t("Локальні нагадування"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Text(t("Local reminders"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 Switch(settings.enabled, { onChange { current -> current.copy(enabled = !current.enabled) } }, Modifier.testTag("reminder_global_switch"))
             }
-            Text(t(if (settings.enabled) "Нагадування перед заняттями, подіями й термінами робіт."
-                else "Усі нагадування вимкнено"), style = MaterialTheme.typography.bodySmall)
+            Text(t(if (settings.enabled) "Reminders before lessons, events and work due dates."
+                else "All reminders are off"), style = MaterialTheme.typography.bodySmall)
         }
         if (settings.enabled) NotificationPermissionCard() else {
-            Text(t("Дозволи не потрібні, поки нагадування вимкнено."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("No permissions are needed while reminders are off."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(t("Навчальні роботи"), style = MaterialTheme.typography.titleMedium)
+                    Text(t("Academic work"), style = MaterialTheme.typography.titleMedium)
                     Text(t(if (ReminderCategory.entries.filter { it.academic }.all { settings.rule(it).enabled })
-                        "Усі типи робіт" else "Вибрані типи робіт"), style = MaterialTheme.typography.bodySmall,
+                        "All work types" else "Selected work types"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(settings.academicEnabled, { onChange { current -> current.copy(academicEnabled = !current.academicEnabled) } }, Modifier.testTag("reminder_academic_switch"))
             }
             OutlinedButton(onClick = { academic = true }, Modifier.fillMaxWidth().testTag("reminder_academic_types")) {
-                Text(t("Типи й час нагадувань"))
+                Text(t("Types and reminder timing"))
             }
         }
         listOf(ReminderCategory.TASK, ReminderCategory.LESSON, ReminderCategory.EVENT, ReminderCategory.REMINDER).forEach { category ->
@@ -91,9 +91,9 @@ fun NotificationsSettingsPage(settings: ReminderSettings, onChange: ((ReminderSe
                 { onChange { current -> current.withRule(category, current.rule(category).copy(enabled = !current.rule(category).enabled)) } }, { selected = category })
         }
         SectionCard {
-            TaktTimePickerField(t("Час для робіт без часу початку"), settings.dateOnlyTime,
+            TaktTimePickerField(t("Time for work without a start time"), settings.dateOnlyTime,
                 { onChange { current -> current.copy(dateOnlyTime = it) } }, Modifier.fillMaxWidth().testTag("reminder_date_only_time"))
-            Text(t("Для задач і робіт із датою. Тест із прив’язаним заняттям використовує його початок."),
+            Text(t("For tasks and work with a date. A test linked to a lesson uses its start time."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -118,27 +118,27 @@ private fun NotificationPermissionCard() {
     }
     val systemSettings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { refresh() }
     SectionCard(modifier = Modifier.testTag("reminder_permissions")) {
-        Text(t("Дозволи Android"), style = MaterialTheme.typography.titleMedium)
+        Text(t("Android permissions"), style = MaterialTheme.typography.titleMedium)
         if (coordinatorStatus?.lastError != null) {
-            Text(t("Не вдалося оновити нагадування."), color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = { coordinator?.requestRefresh() }, Modifier.fillMaxWidth()) { Text(t("Спробувати ще раз")) }
+            Text(t("Could not refresh reminders."), color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = { coordinator?.requestRefresh() }, Modifier.fillMaxWidth()) { Text(t("Try again")) }
         }
-        Text(t(if (permissions.notificationsAllowed) "Сповіщення дозволено" else "Сповіщення заблоковано"),
+        Text(t(if (permissions.notificationsAllowed) "Notifications allowed" else "Notifications blocked"),
             Modifier.testTag("reminder_notification_permission_status"))
         if (!permissions.notificationsAllowed && Build.VERSION.SDK_INT >= 33) {
             TaktPrimaryButton(onClick = { request.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                modifier = Modifier.fillMaxWidth().testTag("reminder_request_notifications")) { Text(t("Дозволити сповіщення")) }
+                modifier = Modifier.fillMaxWidth().testTag("reminder_request_notifications")) { Text(t("Allow notifications")) }
         }
-        if (permissions.blockedChannels.isNotEmpty()) Text(t("Частину каналів вимкнено в Android."))
+        if (permissions.blockedChannels.isNotEmpty()) Text(t("Some channels are disabled in Android."))
         OutlinedButton(onClick = { systemSettings.launch(AndroidReminderPermissions.notificationSettingsIntent(context)) },
-            Modifier.fillMaxWidth().testTag("reminder_android_notification_settings")) { Text(t("Налаштування сповіщень Android")) }
-        Text(t(if (permissions.exactAlarmsAllowed) "Точні нагадування дозволено"
-            else "Приблизний час: Android може затримати нагадування."), Modifier.testTag("reminder_exact_permission_status"))
+            Modifier.fillMaxWidth().testTag("reminder_android_notification_settings")) { Text(t("Android notification settings")) }
+        Text(t(if (permissions.exactAlarmsAllowed) "Exact reminders allowed"
+            else "Approximate timing: Android may delay reminders."), Modifier.testTag("reminder_exact_permission_status"))
         if (!permissions.exactAlarmsAllowed && Build.VERSION.SDK_INT >= 31) {
             OutlinedButton(onClick = { systemSettings.launch(AndroidReminderPermissions.exactAlarmSettingsIntent(context)) },
-                Modifier.fillMaxWidth().testTag("reminder_request_exact")) { Text(t("Дозволити точний час")) }
+                Modifier.fillMaxWidth().testTag("reminder_request_exact")) { Text(t("Allow exact timing")) }
         }
-        Text(t("Android може обмежувати доставку через енергозбереження або примусову зупинку."),
+        Text(t("Battery restrictions or force stopping may prevent Android delivery."),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -152,12 +152,12 @@ private fun ReminderCategoryCard(category: ReminderCategory, rule: ReminderRule,
                 Text(t(category.label), style = MaterialTheme.typography.titleMedium)
                 Text(if (rule.enabled && rule.offsetsMinutes.isNotEmpty()) rule.offsetsMinutes.joinToString(" · ") {
                     NotificationTranslations.offset(it, TaktI18n.language)
-                } else t("Вимкнено"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else t("Off"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(rule.enabled, onEnabled, Modifier.testTag("reminder_rule_${category.name}"))
         }
         OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("reminder_edit_${category.name}")) {
-            Text(t("Час нагадувань"))
+            Text(t("Reminder timing"))
         }
     }
 }
@@ -170,15 +170,15 @@ private fun ReminderCategoryPage(category: ReminderCategory, rule: ReminderRule,
     NotificationsPageFrame(t(category.label), onBack) {
         SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Увімкнено"), Modifier.weight(1f))
+                Text(t("On"), Modifier.weight(1f))
                 Switch(rule.enabled, { onChange { current -> current.copy(enabled = !current.enabled) } }, Modifier.testTag("reminder_rule_${category.name}"))
             }
-            Text(t("До початку або терміну"), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (rule.offsetsMinutes.isEmpty()) Text(t("Жодного часу не вибрано"))
+            Text(t("Before start or due date"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (rule.offsetsMinutes.isEmpty()) Text(t("No reminder times selected"))
             rule.offsetsMinutes.forEach { minutes ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(NotificationTranslations.offset(minutes, TaktI18n.language), Modifier.weight(1f))
-                    TaktIconButton(Icons.Outlined.DeleteOutline, t("Видалити час"),
+                    TaktIconButton(Icons.Outlined.DeleteOutline, t("Remove timing"),
                         { onChange { current -> current.copy(offsetsMinutes = current.offsetsMinutes - minutes) } },
                         modifier = Modifier.testTag("reminder_remove_${category.name}_$minutes"))
                 }
@@ -193,7 +193,7 @@ private fun ReminderCategoryPage(category: ReminderCategory, rule: ReminderRule,
                 }
             }
             OutlinedButton(onClick = { custom = true }, modifier = Modifier.fillMaxWidth().testTag("reminder_custom_${category.name}")) {
-                Text(t("Додати інший час"))
+                Text(t("Add custom timing"))
             }
         }
     }
@@ -209,16 +209,16 @@ private fun CustomReminderOffset(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
     var menu by remember { mutableStateOf(false) }
     val count = amount.toLongOrNull()
     val minutes = count?.takeIf { it > 0 && it <= MAX_REMINDER_LEAD_MINUTES / unit.minutes }?.times(unit.minutes)
-    AlertDialog(onDismissRequest = onDismiss, title = { Text(t("Додати інший час")) },
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(t("Add custom timing")) },
         modifier = Modifier.glassSurface(MaterialTheme.shapes.extraLarge), containerColor = androidx.compose.ui.graphics.Color.Transparent,
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                TaktTextField(amount, { amount = it.filter(Char::isDigit).take(7) }, label = { Text(t("Кількість")) },
+                TaktTextField(amount, { amount = it.filter(Char::isDigit).take(7) }, label = { Text(t("Amount")) },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth().testTag("reminder_custom_amount"))
                 Box {
                     OutlinedButton(onClick = { menu = true }, modifier = Modifier.fillMaxWidth().testTag("reminder_custom_unit")) {
-                        Text(t("Одиниця часу") + ": " + t(unit.label))
+                        Text(t("Time unit") + ": " + t(unit.label))
                     }
                     TaktChoiceMenu(menu, { menu = false }) {
                         ReminderLeadUnit.entries.forEach { choice ->
@@ -227,11 +227,11 @@ private fun CustomReminderOffset(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
                         }
                     }
                 }
-                Text(t("Введіть додатний час, не більше 365 днів."), style = MaterialTheme.typography.bodySmall)
+                Text(t("Enter a positive time, up to 365 days."), style = MaterialTheme.typography.bodySmall)
             }
         }, confirmButton = { TaktPrimaryButton(onClick = { minutes?.let(onAdd) }, enabled = minutes != null,
-            modifier = Modifier.testTag("reminder_custom_add")) { Text(t("Додати")) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Скасувати")) } })
+            modifier = Modifier.testTag("reminder_custom_add")) { Text(t("Add")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Cancel")) } })
 }
 
 @Composable
@@ -239,7 +239,7 @@ private fun NotificationsPageFrame(title: String, onBack: () -> Unit, content: @
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ScreenHeader(title = title, navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack) })
+        ScreenHeader(title = title, navigation = { TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack) })
         content()
     }
 }

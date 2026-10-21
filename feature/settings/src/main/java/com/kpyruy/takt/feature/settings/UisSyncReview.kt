@@ -75,31 +75,31 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
     val remotePeriod = data.period
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (showHeading) Text(t("Порівняння з UIS"), style = MaterialTheme.typography.titleLarge)
+        if (showHeading) Text(t("Compare with UIS"), style = MaterialTheme.typography.titleLarge)
         action.message?.let { Text(t(it), color = MaterialTheme.colorScheme.primary) }
         action.error?.let {
             Text(t(it), color = MaterialTheme.colorScheme.error)
-            TextButton(enabled = !action.running, onClick = { scope.launch { repository.retrySyncAction() } }) { Text(t("Повторити")) }
+            TextButton(enabled = !action.running, onClick = { scope.launch { repository.retrySyncAction() } }) { Text(t("Retry")) }
         }
-        if (action.running) Text(t("Збереження…"))
+        if (action.running) Text(t("Saving…"))
         if (UisSyncSection.PERIODS in data.availableSections && remotePeriod != null && data.localPeriod != remotePeriod) {
-            Text(t("Навчальний період"), style = MaterialTheme.typography.titleMedium)
-            Text(t("Локально: ${data.localPeriod?.studyStart ?: "—"} – ${data.localPeriod?.studyEnd ?: "—"}; іспити ${data.localPeriod?.examStart ?: "—"} – ${data.localPeriod?.examEnd ?: "—"}"))
-            Text(t("UIS: ${remotePeriod.studyStart} – ${remotePeriod.studyEnd}; іспити ${remotePeriod.examStart} – ${remotePeriod.examEnd}"))
+            Text(t("Academic period"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Local: ${data.localPeriod?.studyStart ?: "—"} – ${data.localPeriod?.studyEnd ?: "—"}; exams ${data.localPeriod?.examStart ?: "—"} – ${data.localPeriod?.examEnd ?: "—"}"))
+            Text(t("UIS: ${remotePeriod.studyStart} – ${remotePeriod.studyEnd}; exams ${remotePeriod.examStart} – ${remotePeriod.examEnd}"))
             OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyPeriod() } }) {
-                Text(t("Оновити період"))
+                Text(t("Update period"))
             }
         }
         if (UisSyncSection.PROGRESS in data.availableSections &&
             (data.localEarnedCredits != data.earnedCredits || data.localRequiredCredits != data.requiredCredits)) {
-            Text(t("Кредити UIS"), style = MaterialTheme.typography.titleMedium)
-            Text(t("Локально: ${data.localEarnedCredits ?: "—"} із ${data.localRequiredCredits ?: "—"}; UIS: ${data.earnedCredits ?: "—"} із ${data.requiredCredits ?: "—"}"))
-            OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyCredits() } }) { Text(t("Оновити кредити UIS")) }
+            Text(t("UIS credits"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Local: ${data.localEarnedCredits ?: "—"} of ${data.localRequiredCredits ?: "—"}; UIS: ${data.earnedCredits ?: "—"} of ${data.requiredCredits ?: "—"}"))
+            OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyCredits() } }) { Text(t("Update UIS credits")) }
         }
         if (progress.isNotEmpty()) {
-            Text(t("Прогрес · ${progress.size} змін"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Progress · ${progress.size} changes"), style = MaterialTheme.typography.titleMedium)
             OutlinedButton(enabled = !action.running, onClick = { scope.launch { repository.applyAllProgress() } }) {
-                Text(t("Оновити весь прогрес"))
+                Text(t("Update all progress"))
             }
             progress.forEach { (local, remote) ->
                 SectionCard {
@@ -114,21 +114,21 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 val nextGrade = remote.officialGrade ?: local.officialGrade
                 val nextDate = remote.fulfilledOn ?: local.fulfilledOn
                 if (local.officialGrade != nextGrade) {
-                    Text(t("Офіційна оцінка UIS") + ": ${local.officialGrade?.name ?: "—"} → ${nextGrade?.name ?: "—"}",
+                    Text(t("Official UIS grade") + ": ${local.officialGrade?.name ?: "—"} → ${nextGrade?.name ?: "—"}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (local.fulfilledOn != nextDate) {
-                    Text(t("Дата складання") + ": ${local.fulfilledOn ?: "—"} → ${nextDate ?: "—"}",
+                    Text(t("Completion date") + ": ${local.fulfilledOn ?: "—"} → ${nextDate ?: "—"}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(enabled = !action.running, onClick = { scope.launch { repository.applyProgress(remote.id) } }) {
-                    Text(t("Оновити прогрес предмета"))
+                    Text(t("Update course progress"))
                 }
                 }
             }
         }
         if (metadata.isNotEmpty()) {
-            Text(t("Предмети · ${metadata.size} змін"), style = MaterialTheme.typography.titleMedium)
+            Text(t("Courses · ${metadata.size} changes"), style = MaterialTheme.typography.titleMedium)
             metadata.forEach { remote ->
                 SectionCard {
                 val local = data.localCourses.matchingUisCourse(remote)
@@ -138,16 +138,16 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                     if (candidates.size > 1) selectingCourse = remote
                     else scope.launch { repository.applyCourse(remote.id) }
                 }) {
-                    Text(t(if (local == null) "Додати предмет" else "Оновити предмет"))
+                    Text(t(if (local == null) "Add course" else "Update course"))
                 }
                 }
             }
         }
         if (addedRules.isNotEmpty() || addedEvents.isNotEmpty() || removedRules.isNotEmpty() || removedEvents.isNotEmpty()) {
-            Text(t("Розклад · ${addedRules.size + addedEvents.size} нових, ${removedRules.size + removedEvents.size} лише локально"),
+            Text(t("Timetable · ${addedRules.size + addedEvents.size} new, ${removedRules.size + removedEvents.size} local only"),
                 style = MaterialTheme.typography.titleMedium)
             OutlinedButton(enabled = !action.running, onClick = { confirmReplacement = true },
-                modifier = Modifier.fillMaxWidth()) { Text(t("Замінити весь розклад розкладом UIS")) }
+                modifier = Modifier.fillMaxWidth()) { Text(t("Replace the entire timetable with UIS")) }
             addedRules.forEach { rule ->
                 TimetableDifference(enabled = !action.running, title = rule.title,
                     details = rule.dayOfWeek.getDisplayName(TextStyle.FULL, TaktI18n.locale) + " · ${rule.startTime}–${rule.endTime}" +
@@ -163,7 +163,7 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
                 }
             }
             if (removedRules.isNotEmpty() || removedEvents.isNotEmpty()) {
-                Text(t("Лише локально: ${removedRules.size + removedEvents.size} занять. Вони зникнуть лише після повної заміни."),
+                Text(t("Local only: ${removedRules.size + removedEvents.size} classes. They are removed only by full replacement."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 removedRules.forEach { rule -> Text("${rule.dayOfWeek} ${rule.startTime}–${rule.endTime} · ${rule.title}") }
                 removedEvents.forEach { event -> Text("${event.date} ${event.startTime}–${event.endTime} · ${event.title}") }
@@ -174,39 +174,39 @@ fun UisSyncReview(repository: UniversityAccountRepository, showHeading: Boolean 
             (UisSyncSection.PERIODS !in data.availableSections || data.localPeriod == remotePeriod) &&
             (UisSyncSection.PROGRESS !in data.availableSections ||
                 data.localEarnedCredits == data.earnedCredits && data.localRequiredCredits == data.requiredCredits)) {
-            Text(t("Дані збігаються"))
+            Text(t("Data matches"))
         }
-        TextButton(enabled = !action.running, onClick = repository::dismissPreview) { Text(t("Залишити локальні дані")) }
+        TextButton(enabled = !action.running, onClick = repository::dismissPreview) { Text(t("Keep local data")) }
     }
     selectingCourse?.let { remote ->
         AlertDialog(
             onDismissRequest = { selectingCourse = null },
-            title = { Text(t("Обери відповідний предмет")) },
+            title = { Text(t("Choose the matching course")) },
             text = { Column {
                 Text("${remote.code} · ${settings.displayCourseTitle(remote)}")
-                Text(t("Особисті дані обраного предмета буде перенесено до ID UIS."))
+                Text(t("Personal data from the selected course will be transferred to the UIS ID."))
                 data.localCourses.filter { it.matchesUisCourse(remote) }.forEach { candidate ->
                     TextButton(enabled = !action.running, onClick = {
                         selectingCourse = null
                         scope.launch { repository.applyCourse(remote.id, candidate.id) }
                     }) {
-                        Text("${candidate.title} · ${candidate.semester} сем. · ${candidate.credits} кр. · ${if (candidate.id.startsWith("uis:")) "UIS" else "Локальний"}")
+                        Text(listOf(candidate.title, t("Semester ${candidate.semester}"), t("${candidate.credits} credits"), if (candidate.id.startsWith("uis:")) "UIS" else t("Local mode")).joinToString(" · "))
                     }
                 }
             } },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { selectingCourse = null }) { Text(t("Скасувати")) } },
+            dismissButton = { TextButton(onClick = { selectingCourse = null }) { Text(t("Cancel")) } },
         )
     }
     if (confirmReplacement) AlertDialog(
         onDismissRequest = { confirmReplacement = false },
-        title = { Text(t("Замінити розклад?")) },
-        text = { Text(t("Усі локальні заняття та їх зміни буде видалено. Якщо маєш резервну копію, з неї можна відновити розклад.")) },
+        title = { Text(t("Replace timetable?")) },
+        text = { Text(t("All local classes and their changes will be removed. You can restore the timetable if you have a backup.")) },
         confirmButton = { TextButton(enabled = !action.running, onClick = {
             confirmReplacement = false
             scope.launch { repository.replaceSchedule() }
-        }) { Text(t("Замінити")) } },
-        dismissButton = { TextButton(onClick = { confirmReplacement = false }) { Text(t("Скасувати")) } },
+        }) { Text(t("Replace")) } },
+        dismissButton = { TextButton(onClick = { confirmReplacement = false }) { Text(t("Cancel")) } },
     )
 }
 
@@ -228,7 +228,7 @@ private fun TimetableDifference(title: String, details: String, enabled: Boolean
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
         OutlinedButton(enabled = enabled, onClick = onAdd, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.Add, null, Modifier.padding(end = 8.dp).size(18.dp))
-            Text(t("Додати заняття"))
+            Text(t("Add lesson"))
         }
     }
 }
@@ -239,11 +239,11 @@ private fun sameSubject(local: Course, remote: Course) =
         local.gradingType == remote.gradingType && local.requirementType == remote.requirementType
 
 private fun statusLabel(status: CourseStatus): String = t(when (status) {
-    CourseStatus.FULFILLED -> "Здано"
-    CourseStatus.ENROLLED -> "Активний"
-    CourseStatus.PLANNED -> "Заплановано"
-    CourseStatus.NOT_ENROLLED -> "Не записаний"
-    CourseStatus.NOT_NEEDED -> "Не потрібний"
+    CourseStatus.FULFILLED -> "Work completed"
+    CourseStatus.ENROLLED -> "Active subject"
+    CourseStatus.PLANNED -> "Scheduled"
+    CourseStatus.NOT_ENROLLED -> "Not recorded"
+    CourseStatus.NOT_NEEDED -> "Not needed"
 })
 
 private fun sameRule(a: ScheduleRule, b: ScheduleRule) =

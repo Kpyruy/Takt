@@ -50,20 +50,20 @@ class TaktDocumentStore(
                 treeUri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
             )
-            val selected = DocumentFile.fromTreeUri(context, treeUri) ?: error("Папку не знайдено")
+            val selected = DocumentFile.fromTreeUri(context, treeUri) ?: error("Folder not found")
             require(selected.name == "Documents" || selected.name == "Takt") {
-                "Оберіть папку Documents або Documents/Takt"
+                "Choose the Documents or Documents/Takt folder"
             }
             val root = if (selected.name == "Takt") selected
                 else selected.findFile("Takt") ?: selected.createDirectory("Takt")
-            requireNotNull(root) { "Не вдалося створити Documents/Takt" }
-            require(root.isDirectory) { "Takt має бути папкою" }
+            requireNotNull(root) { "Could not create Documents/Takt" }
+            require(root.isDirectory) { "Takt must be a folder" }
             preferences.edit().putString("tree_uri", treeUri.toString()).apply()
             val remote = readBestBackup(root)
             val local = backupRepository.exportJson()
             when {
                 remote == null -> {
-                    require(!hasBackupFile(root)) { "Копія даних пошкоджена. Файл не перезаписано." }
+                    require(!hasBackupFile(root)) { "The data copy is damaged. The file was not overwritten." }
                     writeBackup(root, local)
                 }
                 sameData(remote, local) -> {
@@ -113,7 +113,7 @@ class TaktDocumentStore(
 
     suspend fun restoreFromDocuments() = mutex.withLock {
         withContext(Dispatchers.IO) {
-            val remote = readBestBackup(requireRoot()) ?: error("У Documents/Takt немає даних")
+            val remote = readBestBackup(requireRoot()) ?: error("There is no data in Documents/Takt")
             backupRepository.importJson(remote)
             rememberHash(remote)
             if (migrateLegacyMaterials()) writeBackup(requireRoot(), backupRepository.exportJson())
@@ -124,7 +124,7 @@ class TaktDocumentStore(
     /** Read a stable candidate without changing local data or acknowledging a conflict. */
     suspend fun readBackupForReview(): String = mutex.withLock {
         withContext(Dispatchers.IO) {
-            readBestBackup(requireRoot()) ?: error("У Documents/Takt немає даних")
+            readBestBackup(requireRoot()) ?: error("There is no data in Documents/Takt")
         }
     }
 
@@ -134,9 +134,9 @@ class TaktDocumentStore(
         fromBackup: Set<BackupSection>,
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
-            val current = readBestBackup(requireRoot()) ?: error("У Documents/Takt немає даних")
+            val current = readBestBackup(requireRoot()) ?: error("There is no data in Documents/Takt")
             check(BackupPayloadCodec.decode(current) == BackupPayloadCodec.decode(reviewedRaw)) {
-                "Копія в Documents/Takt змінилась. Переглянь відмінності ще раз."
+                "The copy in Documents/Takt has changed. Review the differences again."
             }
             backupRepository.importSelectedJson(reviewedRaw, expectedLocalRaw, fromBackup)
             val merged = backupRepository.exportJson()
@@ -227,16 +227,16 @@ class TaktDocumentStore(
         val root = requireRoot()
         val folderName = safeCourseCode(courseCode)
         val folder = root.findFile(folderName) ?: root.createDirectory(folderName)
-            ?: error("Не вдалося створити папку предмета")
+            ?: error("Could not create the course folder")
         val displayName = sourceName(source)
         val fileName = UUID.randomUUID().toString().take(8) + "-" + safeFileName(displayName)
         val mime = resolver.getType(source) ?: "application/octet-stream"
-        val target = folder.createFile(mime, fileName) ?: error("Не вдалося створити файл")
+        val target = folder.createFile(mime, fileName) ?: error("Could not create the file")
         try {
             resolver.openInputStream(source).use { input ->
-                requireNotNull(input) { "Не вдалося прочитати файл" }
+                requireNotNull(input) { "Could not read the file" }
                 resolver.openOutputStream(target.uri, "wt").use { output ->
-                    requireNotNull(output) { "Не вдалося записати файл" }
+                    requireNotNull(output) { "Could not write the file" }
                     input.copyTo(output)
                 }
             }
@@ -252,8 +252,8 @@ class TaktDocumentStore(
         withContext(Dispatchers.IO) {
             val root = requireRoot()
             val code = CourseDocumentPaths.courseFolder(courseCode)
-            val folder = root.findFile(code) ?: root.createDirectory(code) ?: error("Не вдалося створити папку предмета")
-            val target = folder.createFile(mime, CourseDocumentPaths.fileName(name)) ?: error("Не вдалося створити файл")
+            val folder = root.findFile(code) ?: root.createDirectory(code) ?: error("Could not create the course folder")
+            val target = folder.createFile(mime, CourseDocumentPaths.fileName(name)) ?: error("Could not create the file")
             try {
                 source.inputStream().use { input -> resolver.openOutputStream(target.uri, "wt").use { output ->
                     copyCancellable(input, requireNotNull(output))
@@ -286,7 +286,7 @@ class TaktDocumentStore(
         return if (selected.name == "Takt") selected else selected.findFile("Takt") ?: selected.createDirectory("Takt")
     }
 
-    private fun requireRoot() = rootOrNull() ?: error("Спочатку підключіть Documents/Takt у налаштуваннях")
+    private fun requireRoot() = rootOrNull() ?: error("Connect Documents/Takt in settings first")
 
     private fun readBestBackup(root: DocumentFile): String? {
         for (name in listOf("data.json", "data.previous.json")) {
@@ -303,7 +303,7 @@ class TaktDocumentStore(
     private fun mainIsValid(root: DocumentFile): Boolean = root.findFile("data.json")?.let { main ->
         runCatching {
             resolver.openInputStream(main.uri)?.bufferedReader()?.use { BackupPayloadCodec.decode(it.readText()) }
-                ?: error("Не вдалося прочитати data.json")
+                ?: error("Could not read data.json")
         }.isSuccess
     } ?: false
 
@@ -312,7 +312,7 @@ class TaktDocumentStore(
         val main = root.findFile("data.json")
         if (main != null && mainIsValid(root)) {
             val previous = root.findFile("data.previous.json") ?: root.createFile("application/json", "data.previous.json")
-                ?: error("Не вдалося створити попередню копію")
+                ?: error("Could not create a previous copy")
             resolver.openInputStream(main.uri).use { input ->
                 resolver.openOutputStream(previous.uri, "wt").use { output ->
                     requireNotNull(input); requireNotNull(output)
@@ -320,11 +320,11 @@ class TaktDocumentStore(
                 }
             }
         }
-        val target = main ?: root.createFile("application/json", "data.json") ?: error("Не вдалося створити data.json")
+        val target = main ?: root.createFile("application/json", "data.json") ?: error("Could not create data.json")
         resolver.openOutputStream(target.uri, "wt")?.bufferedWriter()?.use { it.write(raw) }
-            ?: error("Не вдалося записати data.json")
+            ?: error("Could not write data.json")
         require(resolver.openInputStream(target.uri)?.bufferedReader()?.use { it.readText() } == raw) {
-            "Не вдалося перевірити data.json після запису"
+            "Could not verify data.json after writing"
         }
         rememberHash(raw)
     }

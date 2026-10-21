@@ -28,7 +28,7 @@ fun CourseLinkSelector(courses: List<Course>, selectedId: String?, onChange: (Co
     val shape = RoundedCornerShape(20.dp)
     val interaction = remember { MutableInteractionSource() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Предмет"), style = MaterialTheme.typography.titleSmall)
+        Text(t("Subject"), style = MaterialTheme.typography.titleSmall)
         Box(Modifier.fillMaxWidth()) {
             TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(interaction).clip(shape)
                 .clickable(interactionSource = interaction, indication = null, role = Role.Button,
@@ -37,17 +37,17 @@ fun CourseLinkSelector(courses: List<Course>, selectedId: String?, onChange: (Co
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     selectedCourse?.let { CourseAvatar(it) }
-                    Text(selectedCourse?.title ?: t("Без прив’язки до предмета"), Modifier.weight(1f))
+                    Text(selectedCourse?.title ?: t("No subject linked"), Modifier.weight(1f))
                     Icon(Icons.Outlined.ExpandMore, contentDescription = null)
                 }
             }
             TaktChoiceMenu(expanded, onDismissRequest = { expanded = false }) {
-                TaktChoiceMenuItem(text = { Text(t("Без прив’язки")) },
+                TaktChoiceMenuItem(text = { Text(t("Without binding")) },
                     trailingIcon = { if (selectedId == null) Icon(Icons.Outlined.Check, null) },
                     onClick = { onChange(null); expanded = false })
                 if (activeCourses.isEmpty()) {
                     Text(
-                        t("Немає активних предметів"),
+                        t("There are no active subjects"),
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

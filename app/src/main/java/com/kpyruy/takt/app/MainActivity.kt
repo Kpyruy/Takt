@@ -84,8 +84,8 @@ class MainActivity : FragmentActivity() {
                 }
             }
             if (showRecovery) AlertDialog(onDismissRequest = {},
-                title = { Text(t("Відновлення даних не завершене")) },
-                text = { Text(t("Перевір вільне місце на пристрої та повтори відновлення. До завершення попередні дані залишаються захищеними.")) },
+                title = { Text(t("Data recovery is unfinished")) },
+                text = { Text(t("Check the available storage on your device and retry recovery. Your previous data remains protected until recovery finishes.")) },
                 confirmButton = { Button(enabled = restoreStatus != BackupRestoreStatus.RESTORING, onClick = {
                     scope.launch {
                         try {
@@ -94,7 +94,7 @@ class MainActivity : FragmentActivity() {
                         } catch (cancelled: CancellationException) { throw cancelled }
                         catch (_: Exception) { showRecovery = true }
                     }
-                }) { Text(t("Повторити відновлення")) } })
+                }) { Text(t("Retry recovery")) } })
             val settings by dataContainer.settingsRepository.settings.collectAsStateWithLifecycle()
             val releaseState by taktApplication.appReleaseRepository.state.collectAsStateWithLifecycle()
             val hasUniversityAccount by dataContainer.universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
@@ -113,7 +113,7 @@ class MainActivity : FragmentActivity() {
                     catch (_: Exception) { UisAutoSyncOutcome.FAILED }
                     if (outcome == UisAutoSyncOutcome.NEEDS_DEVICE_AUTH) {
                         val result = suspendCancellableCoroutine<DeviceAuthenticationResult> { continuation ->
-                            authenticateForAccount(t("Перевірити UIS")) { value ->
+                            authenticateForAccount(t("Check UIS")) { value ->
                                 if (continuation.isActive) continuation.resume(value)
                             }
                         }
@@ -162,12 +162,12 @@ class MainActivity : FragmentActivity() {
                                                 dataContainer.firstRunRepository.complete()
                                                 showOnboarding = false
                                                 null
-                                            } else t("У копії немає предметів. Налаштуй Takt для себе.")
+                                            } else t("There are no subjects in the copy. Customize Takt for yourself.")
                                         }
-                                        DocumentSyncStatus.CONFLICT -> t("Дані відрізняються. Перевір копію в налаштуваннях.")
-                                        else -> t("Не вдалося відновити дані")
+                                        DocumentSyncStatus.CONFLICT -> t("Data differs. Check the backup in Settings.")
+                                        else -> t("Failed to restore data")
                                     }
-                                }.getOrElse { it.message ?: t("Не вдалося відновити дані") }
+                                }.getOrElse { it.message?.let(::t) ?: t("Failed to restore data") }
                             },
                         )
                         showOnboarding == false && showGuidedTour -> GuidedTourScreen(
@@ -219,13 +219,13 @@ class MainActivity : FragmentActivity() {
 
     private fun requestUnlock() {
         if (deviceAuthenticator.isShowing) return
-        deviceAuthenticator.authenticate(t("Розблокувати Takt")) { result ->
+        deviceAuthenticator.authenticate(t("Unlock Takt")) { result ->
             when (result) {
                 DeviceAuthenticationResult.SUCCESS -> { (application as TaktApplication).deviceUnlocked = true; unlockMessage = null }
-                DeviceAuthenticationResult.CANCELLED -> unlockMessage = t("Підтвердження скасовано")
+                DeviceAuthenticationResult.CANCELLED -> unlockMessage = t("Verification cancelled")
                 DeviceAuthenticationResult.DEVICE_LOCK_REQUIRED -> unlockMessage =
-                    t("Для доступу налаштуй PIN або пароль телефона")
-                DeviceAuthenticationResult.ERROR -> unlockMessage = t("Не вдалося підтвердити особу")
+                    t("Set up a phone PIN or password to continue")
+                DeviceAuthenticationResult.ERROR -> unlockMessage = t("Could not verify your identity")
             }
         }
     }

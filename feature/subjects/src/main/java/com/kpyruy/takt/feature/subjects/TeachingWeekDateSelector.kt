@@ -65,13 +65,13 @@ internal fun TeachingWeekDateSelector(
 ) {
     val formatter = DateTimeFormatter.ofPattern("EEE d MMM", TaktI18n.locale)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(t("Навчальний тиждень"), style = MaterialTheme.typography.titleSmall)
+        Text(t("Teaching week"), style = MaterialTheme.typography.titleSmall)
         when (options.setupIssue) {
             TeachingWeekSetupIssue.SEMESTER_PERIOD -> Text(
-                t("Налаштуй період навчання семестру в налаштуваннях або обери «Дату»."),
+                t("Set the semester study period in settings or choose Date."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             TeachingWeekSetupIssue.COURSE_SCHEDULE -> Text(
-                t("Додай повторювані пари цього предмета або обери «Дату»."),
+                t("Add recurring classes for this course or choose Date."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             null -> {
                 var expanded by remember { mutableStateOf(false) }
@@ -87,8 +87,8 @@ internal fun TeachingWeekDateSelector(
                         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(week?.let { "${t("Навчальний тиждень")} ${it.number}" }
-                                    ?: t("Обери навчальний тиждень"), style = MaterialTheme.typography.bodyLarge)
+                                Text(week?.let { "${t("Teaching week")} ${it.number}" }
+                                    ?: t("Choose a teaching week"), style = MaterialTheme.typography.bodyLarge)
                                 week?.let {
                                     Text("${it.start.format(formatter)} – ${it.end.format(formatter)}",
                                         style = MaterialTheme.typography.bodySmall,
@@ -103,7 +103,7 @@ internal fun TeachingWeekDateSelector(
                             TaktChoiceMenuItem(
                                 text = {
                                     Column {
-                                        Text("${t("Навчальний тиждень")} ${option.number}")
+                                        Text("${t("Teaching week")} ${option.number}")
                                         Text("${option.start.format(formatter)} – ${option.end.format(formatter)}",
                                             style = MaterialTheme.typography.bodySmall)
                                     }
@@ -123,13 +123,13 @@ internal fun TeachingWeekDateSelector(
                 }
                 if (week != null) {
                     if (week.occurrences.isEmpty()) Text(
-                        t("У цьому навчальному тижні немає пари за розкладом. Обери «Дату»."),
+                        t("No scheduled class this teaching week. Choose Date."),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else {
                         val selectedOccurrence = week.occurrences.firstOrNull { dueDate == it.date && lessonId == it.id }
                         val lessonShape = RoundedCornerShape(18.dp)
                         val lessonInteraction = remember { MutableInteractionSource() }
-                        Text(t("Обери пару цього тижня"), style = MaterialTheme.typography.titleSmall)
+                        Text(t("Choose a lesson this week"), style = MaterialTheme.typography.titleSmall)
                         Box(Modifier.fillMaxWidth()) {
                             TaktSurface(modifier = Modifier.fillMaxWidth().taktPressFeedback(lessonInteraction).clip(lessonShape)
                                 .clickable(indication = null, interactionSource = lessonInteraction, role = Role.Button,
@@ -139,7 +139,7 @@ internal fun TeachingWeekDateSelector(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     Icon(Icons.Outlined.Event, null)
                                     Column(Modifier.weight(1f)) {
-                                        if (selectedOccurrence == null) Text(t("Обери пару цього тижня"))
+                                        if (selectedOccurrence == null) Text(t("Choose a lesson this week"))
                                         else {
                                             Text("${selectedOccurrence.date.format(formatter)} · ${selectedOccurrence.startTime}–${selectedOccurrence.endTime}")
                                             Text(t(selectedOccurrence.lessonType.label) + selectedOccurrence.room?.let { " · $it" }.orEmpty(),

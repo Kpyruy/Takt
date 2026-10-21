@@ -99,32 +99,32 @@ fun AddTaskForm(
     ) {
         if (showHeading) {
             Text(
-                if (initialTask == null) t("Додати завдання") else t("Редагувати завдання"),
+                if (initialTask == null) t("Add a task") else t("Edit task"),
                 style = MaterialTheme.typography.headlineMedium,
             )
         }
         TaktTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(t("Назва")) },
+            label = { Text(t("Name")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         TaktTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text(t("Опис")) },
+            label = { Text(t("Description")) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 2,
         )
         TaktDatePickerField(
-            label = t("Дедлайн"),
+            label = t("Deadline"),
             value = dueDate,
             onValueChange = { dueDate = it },
             modifier = Modifier.fillMaxWidth(),
         )
         if (dueDate != null) {
-            TextButton(onClick = { dueDate = null }) { Text(t("Без дедлайну")) }
+            TextButton(onClick = { dueDate = null }) { Text(t("No deadline")) }
         }
 
         if (initialTask?.maxPoints == null) Row(Modifier.fillMaxWidth().glassSurface(RoundedCornerShape(18.dp)).toggleable(
@@ -133,7 +133,7 @@ fun AddTaskForm(
             onValueChange = { completed = it },
         ).padding(12.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Виконано"), Modifier.weight(1f))
+            Text(t("Work done"), Modifier.weight(1f))
             Switch(completed, onCheckedChange = null)
         }
 
@@ -147,16 +147,16 @@ fun AddTaskForm(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = requiredForExam, onCheckedChange = null)
-            Text(t("Потрібно для допуску до екзамену"))
+            Text(t("Required for the exam"))
         }
 
         if (initialTask?.maxPoints != null) {
-            Text(t("Бали (раніше створене завдання)"), style = MaterialTheme.typography.titleSmall)
+            Text(t("Points (previously created task)"), style = MaterialTheme.typography.titleSmall)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TaktTextField(
                     value = earnedText,
                     onValueChange = { earnedText = it; error = null },
-                    label = { Text(t("Отримано")) },
+                    label = { Text(t("Received")) },
                     enabled = maxText.isNotBlank(),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
@@ -169,7 +169,7 @@ fun AddTaskForm(
                         if (it.isBlank()) { earnedText = ""; minimumText = "" }
                         error = null
                     },
-                    label = { Text(t("Максимум")) },
+                    label = { Text(t("Maximum")) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = error != null,
@@ -179,7 +179,7 @@ fun AddTaskForm(
                 TaktTextField(
                     value = minimumText,
                     onValueChange = { minimumText = it; error = null },
-                    label = { Text(t("Мінімум балів для допуску")) },
+                    label = { Text(t("Minimum points for exam eligibility")) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = error != null,
@@ -199,11 +199,11 @@ fun AddTaskForm(
                 val minimum = minimumInput?.replace(',', '.')?.toDoubleOrNull()
                 when {
                     maxInput != null && (max == null || !max.isFinite() || max <= 0.0) ->
-                        error = t("Максимум має бути числом більшим за 0.")
+                        error = t("Maximum must be a number greater than 0.")
                     earnedInput != null && (earned == null || !earned.isFinite() || earned < 0.0 || earned > (max ?: 0.0)) ->
-                        error = t("Отримані бали мають бути від 0 до максимуму.")
+                        error = t("The obtained points should be from 0 to the maximum.")
                     minimumInput != null && (minimum == null || !minimum.isFinite() || minimum < 0.0 || minimum > (max ?: 0.0)) ->
-                        error = t("Мінімум має бути від 0 до максимуму балів.")
+                        error = t("The minimum must be from 0 to the maximum of points.")
                     else -> onSave(
                         StudyTask(
                             id = initialTask?.id ?: UUID.randomUUID().toString(),
@@ -223,7 +223,7 @@ fun AddTaskForm(
             enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (initialTask == null) t("Зберегти") else t("Оновити"))
+            Text(if (initialTask == null) t("Save") else t("Update"))
         }
     }
 }

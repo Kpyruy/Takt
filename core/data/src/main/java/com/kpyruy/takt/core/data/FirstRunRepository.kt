@@ -18,6 +18,6 @@ class FirstRunRepository(context: Context, private val data: TaktDataContainer) 
     }
 
     suspend fun complete() = withContext(Dispatchers.IO) {
-        check(preferences.edit().putBoolean("complete", true).commit()) { "Не вдалося завершити налаштування" }
+        check(preferences.edit().putBoolean("complete", true).commit()) { "Could not complete setup" }
     }
 }

@@ -24,9 +24,9 @@ class RoomStudyPlanRepository(
     private val dao = database.courseDao()
     override suspend fun upsertImportedCourses(courses: List<Course>, selectedLocalIds: Map<String, String>): Int {
         courses.forEach { if (!isCanonicalUisCourseId(it.id)) throw InvalidUisCourseId(it.code) }
-        require(courses.map { it.id }.distinct().size == courses.size) { "Повторні ID предметів UIS. Повтори імпорт." }
+        require(courses.map { it.id }.distinct().size == courses.size) { "Duplicate UIS course IDs. Try importing again." }
         require(courses.map { it.code.uppercase(Locale.ROOT) }.distinct().size == courses.size) {
-            "UIS повернув неоднозначні коди предметів. Повтори імпорт."
+            "UIS returned ambiguous course codes. Try importing again."
         }
         return database.withTransaction {
             val existing = dao.getAllSnapshot()
@@ -38,7 +38,7 @@ class RoomStudyPlanRepository(
                     (!it.id.startsWith("uis:") || it.id.substringBeforeLast(':') == course.id.substringBeforeLast(':')) }
                 val chosen = selectedLocalIds[course.id]?.let { selected ->
                     candidates.firstOrNull { it.id == selected }
-                        ?: error("Обраний предмет більше не доступний для ${course.code}. Повтори перевірку.")
+                        ?: error("The selected course is no longer available for ${course.code}. Check again.")
                 }
                 val offline = candidates.filter { it.id != course.id }
                 val source = chosen ?: when {
@@ -91,19 +91,19 @@ class RoomStudyPlanRepository(
         val oldScale = scales.firstOrNull { it.courseId == oldId }
         val newScale = scales.firstOrNull { it.courseId == newId }
         require(oldScale == null || newScale == null || oldScale.copy(courseId = newId) == newScale) {
-            "Предмет уже має іншу шкалу оцінювання. Узгодь шкали перед імпортом UIS."
+            "This course already has a different grading scale. Reconcile the scales before importing from UIS."
         }
         val overrides = grade.getOverridesSnapshot()
         val oldOverride = overrides.firstOrNull { it.courseId == oldId }
         val newOverride = overrides.firstOrNull { it.courseId == newId }
         require(oldOverride == null || newOverride == null || oldOverride.grade == newOverride.grade) {
-            "Предмет уже має інший ручний підсумок. Узгодь підсумки перед імпортом UIS."
+            "This course already has a different manual result. Reconcile the results before importing from UIS."
         }
         val exams = exam.getExamInfoSnapshot()
         val oldExam = exams.firstOrNull { it.courseId == oldId }
         val newExam = exams.firstOrNull { it.courseId == newId }
         require(oldExam == null || newExam == null || oldExam.copy(courseId = newId) == newExam) {
-            "Предмет уже має інші дані екзамену. Узгодь дані перед імпортом UIS."
+            "This course already has different exam details. Reconcile the details before importing from UIS."
         }
         database.scheduleDao().remapRules(oldId, newId)
         database.scheduleDao().remapOneOffEvents(oldId, newId)
@@ -121,15 +121,15 @@ class RoomStudyPlanRepository(
     override suspend fun addCourse(title: String, code: String, credits: Int, semester: Int): String {
         val cleanTitle = title.trim()
         val cleanCode = code.trim().uppercase(Locale.ROOT)
-        require(cleanTitle.isNotBlank()) { "Вкажи назву предмета" }
+        require(cleanTitle.isNotBlank()) { "Enter the course name" }
         require(cleanCode.isNotBlank() && cleanCode.length <= 32 &&
             cleanCode.all { it.isLetterOrDigit() || it == '_' || it == '-' || it == '.' }) {
-            "Код: до 32 літер, цифр, крапок або дефісів"
+            "Code: up to 32 letters, digits, dots or hyphens"
         }
-        require(credits in 0..60) { "Кредити мають бути від 0 до 60" }
-        require(semester in 1..30) { "Семестр має бути від 1 до 30" }
+        require(credits in 0..60) { "Credits must be between 0 and 60" }
+        require(semester in 1..30) { "Semester must be between 1 and 30" }
         require(dao.getAllSnapshot().none { it.code.equals(cleanCode, ignoreCase = true) }) {
-            "Предмет з таким кодом уже є"
+            "A course with this code already exists"
         }
         val id = UUID.randomUUID().toString()
         dao.insertAll(listOf(CourseEntity(id, cleanCode, cleanTitle, credits, semester,

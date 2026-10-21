@@ -41,7 +41,7 @@ internal fun PlanningLoadingScreen() {
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text(t("Завантаження розкладу"), style = MaterialTheme.typography.labelMedium,
+        Text(t("Loading schedule"), style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         LoadingBar(174.dp, 28.dp, placeholder)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

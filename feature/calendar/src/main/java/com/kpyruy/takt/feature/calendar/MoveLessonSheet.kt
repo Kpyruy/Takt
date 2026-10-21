@@ -52,11 +52,11 @@ fun MoveLessonSheet(
                 .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(t("Перенести пару"), style = MaterialTheme.typography.headlineSmall)
+            Text(t("Move class"), style = MaterialTheme.typography.headlineSmall)
             Text(event.title, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             TaktDatePickerField(
-                label = t("Нова дата"),
+                label = t("New date"),
                 value = targetDate,
                 onValueChange = {
                     targetDate = it
@@ -70,7 +70,7 @@ fun MoveLessonSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TaktTimePickerField(
-                    label = t("Початок"),
+                    label = t("Start time"),
                     value = startTime,
                     onValueChange = {
                         startTime = it
@@ -79,7 +79,7 @@ fun MoveLessonSheet(
                     modifier = Modifier.weight(1f),
                 )
                 TaktTimePickerField(
-                    label = t("Кінець"),
+                    label = t("End"),
                     value = endTime,
                     onValueChange = {
                         endTime = it
@@ -92,7 +92,7 @@ fun MoveLessonSheet(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text(t("Аудиторія")) },
+                label = { Text(t("Room")) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -104,7 +104,7 @@ fun MoveLessonSheet(
             Button(
                 onClick = {
                     if (endTime <= startTime) {
-                        error = t("Кінець має бути пізніше початку.")
+                        error = t("The end must be later than the beginning.")
                         return@Button
                     }
                     onSave(
@@ -122,7 +122,7 @@ fun MoveLessonSheet(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(t("Перенести"))
+                Text(t("Move"))
             }
         }
     }

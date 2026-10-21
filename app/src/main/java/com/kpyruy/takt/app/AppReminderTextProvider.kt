@@ -10,9 +10,9 @@ import java.time.ZoneId
 
 internal object AppReminderTextProvider : ReminderTextProvider {
     override fun channelName(id: String, language: AppLanguage): String = NotificationTranslations.text(when (id) {
-        ReminderChannels.WORK -> "Навчальна робота й задачі"
-        ReminderChannels.LESSON -> "Заняття"
-        else -> "Події й нагадування"
+        ReminderChannels.WORK -> "Academic work and tasks"
+        ReminderChannels.LESSON -> "Lessons"
+        else -> "Events and reminders"
     }, language)
 
     override fun notification(reminder: PlannedReminder, language: AppLanguage, zone: ZoneId) = ReminderNotificationText(

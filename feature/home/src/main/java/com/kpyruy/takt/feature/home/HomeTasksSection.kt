@@ -101,19 +101,19 @@ internal fun HomeTasksSection(
 
     Column(Modifier.fillMaxWidth().testTag("home-tasks-section")) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(t("Найближчі роботи"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            Text(t("Upcoming work"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             Text((overdue.size + upcoming.size).toString(), Modifier.testTag("home-tasks-count"),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = { showFilters = true }, modifier = Modifier.testTag("home-tasks-filter")) {
-                Icon(Icons.Outlined.Tune, t("Фільтри задач"))
+                Icon(Icons.Outlined.Tune, t("Task filters"))
             }
         }
         if (filter.period != HomeWorkPeriod.FOURTEEN_DAYS || filter.selectedCourseIds.isNotEmpty()) Text(periodSummary(filter), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         if (overdue.isEmpty() && upcoming.isEmpty()) {
-            Text(t("За цим фільтром задач немає"), style = MaterialTheme.typography.bodyMedium,
+            Text(t("There are no tasks for this filter"), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             val renderEntry: @Composable (HomeWorkEntry) -> Unit = { entry ->
@@ -129,7 +129,7 @@ internal fun HomeTasksSection(
             }
             upcoming.forEach { renderEntry(it) }
             if (overdue.isNotEmpty()) {
-                Text(t("Прострочені · ${overdue.size}"), style = MaterialTheme.typography.titleSmall,
+                Text(t("Overdue · ${overdue.size}"), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("home-overdue-heading").padding(vertical = 6.dp))
                 overdue.forEach { renderEntry(it) }
             }
@@ -145,10 +145,10 @@ internal fun HomeTasksSection(
 }
 
 private fun periodSummary(filter: HomeWorkFilter): String = when (filter.period) {
-    HomeWorkPeriod.SEVEN_DAYS -> t("Найближчі 7 днів")
-    HomeWorkPeriod.FOURTEEN_DAYS -> t("Найближчі 14 днів")
-    HomeWorkPeriod.ALL -> t("Усі дати")
-    HomeWorkPeriod.CUSTOM -> t("Обраний період")
+    HomeWorkPeriod.SEVEN_DAYS -> t("The next 7 days")
+    HomeWorkPeriod.FOURTEEN_DAYS -> t("The next 14 days")
+    HomeWorkPeriod.ALL -> t("All dates")
+    HomeWorkPeriod.CUSTOM -> t("Selected period")
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -164,18 +164,18 @@ private fun HomeTaskFilterSheet(
             .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Фільтри задач"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити фільтри")) }
+                Text(t("Task filters"), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close filters")) }
             }
             HomeFilterChoices(filter, courses, onChange)
             SectionCard {
-                Text(t("Показувати"), style = MaterialTheme.typography.titleSmall,
+                Text(t("Show"), style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth().clickable { onChange(filter.copy(includeUndated = !filter.includeUndated)) },
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Event, null, Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary)
-                    Text(t("Показувати задачі без дати"), Modifier.weight(1f).padding(start = 12.dp))
+                    Text(t("Show tasks without a date"), Modifier.weight(1f).padding(start = 12.dp))
                     Checkbox(filter.includeUndated, onCheckedChange = null)
                 }
                 HorizontalDivider()
@@ -183,11 +183,11 @@ private fun HomeTaskFilterSheet(
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.CheckCircle, null, Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary)
-                    Text(t("Показувати виконані"), Modifier.weight(1f).padding(start = 12.dp))
+                    Text(t("Show completed"), Modifier.weight(1f).padding(start = 12.dp))
                     Checkbox(filter.includeCompleted, onCheckedChange = null)
                 }
             }
-            Button(onClick = onDismiss, Modifier.fillMaxWidth().testTag("home-filter-done")) { Text(t("Готово")) }
+            Button(onClick = onDismiss, Modifier.fillMaxWidth().testTag("home-filter-done")) { Text(t("Done")) }
         }
     }
 }

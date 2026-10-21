@@ -79,21 +79,21 @@ internal fun CourseSettingsSheet(
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(t("Налаштування предмета"), style = MaterialTheme.typography.headlineSmall)
+                    Text(t("Subject settings"), style = MaterialTheme.typography.headlineSmall)
                     Text(course.title + " · " + course.code, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Закрити налаштування предмета")) }
+                IconButton(onClick = onDismiss) { Icon(Icons.Outlined.Close, t("Close subject settings")) }
             }
             SubjectPanel {
-                Text(if (uisManaged) t("Дані з UIS") else t("Предмет"), style = MaterialTheme.typography.titleMedium)
+                Text(if (uisManaged) t("UIS data") else t("Subject"), style = MaterialTheme.typography.titleMedium)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     Column(Modifier.weight(1f)) {
-                        SmallText(t("Кількість кредитів"))
+                        SmallText(t("Number of credits"))
                         Text(course.credits.toString(), style = MaterialTheme.typography.headlineSmall)
                     }
                     Column(Modifier.weight(1f)) {
-                        SmallText(t("Семестр"))
+                        SmallText(t("Semester"))
                         Text(course.semester.toString(), style = MaterialTheme.typography.headlineSmall)
                     }
                 }
@@ -102,12 +102,12 @@ internal fun CourseSettingsSheet(
                 Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CourseAvatar(course)
-                    Text(t("Іконка предмета"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Text(t("Subject icon"), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SettingsLabel(t("СТАТУС ПРЕДМЕТА"))
+                SettingsLabel(t("SUBJECT STATUS"))
                 Surface(onClick = { statusExpanded = !statusExpanded },
                     enabled = !uisManaged,
                     modifier = Modifier.fillMaxWidth().testTag("settings-status-${course.status.name}"),
@@ -119,11 +119,11 @@ internal fun CourseSettingsSheet(
                         Icon(statusIcon(course.status), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                         Text(statusText(course.status), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                         if (!uisManaged) Icon(if (statusExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                            if (statusExpanded) t("Згорнути статуси") else t("Змінити статус"),
+                            if (statusExpanded) t("Collapse statuses") else t("Change status"),
                             tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-                if (uisManaged) Text(t("Статус предмета визначає UIS"), style = MaterialTheme.typography.bodySmall,
+                if (uisManaged) Text(t("UIS determines this subject's status"), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 AnimatedVisibility(statusExpanded && !uisManaged) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -145,7 +145,7 @@ internal fun CourseSettingsSheet(
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SettingsLabel(t("ОЦІНЮВАННЯ"))
+                SettingsLabel(t("ASSESSMENT"))
                 Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     GradingChoice("A–FX", course.gradingType != CourseGradingType.PASS_FAIL,
                         Modifier.weight(1f)) {
@@ -153,34 +153,34 @@ internal fun CourseSettingsSheet(
                             onGrading(CourseGradingType.CONTINUOUS_LETTER)
                         }
                     }
-                    GradingChoice(t("Зараховано / ні"), course.gradingType == CourseGradingType.PASS_FAIL,
+                    GradingChoice(t("Pass / fail"), course.gradingType == CourseGradingType.PASS_FAIL,
                         Modifier.weight(1f)) { onGrading(CourseGradingType.PASS_FAIL) }
                 }
             }
             if (course.gradingType == CourseGradingType.PASS_FAIL) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SettingsLabel(t("ПІДСУМОК"))
+                    SettingsLabel(t("SUMMARY"))
                     Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ResultChoice(t("Зараховано"), course.passFailResult == PassFailResult.PASSED,
+                        ResultChoice(t("Passed"), course.passFailResult == PassFailResult.PASSED,
                             Modifier.weight(1f)) { onResult(PassFailResult.PASSED) }
-                        ResultChoice(t("Не зараховано"), course.passFailResult == PassFailResult.FAILED,
+                        ResultChoice(t("Failed"), course.passFailResult == PassFailResult.FAILED,
                             Modifier.weight(1f)) { onResult(PassFailResult.FAILED) }
                     }
                     if (course.passFailResult != null) {
-                        TextButton(onClick = { onResult(null) }) { Text(t("Очистити результат")) }
+                        TextButton(onClick = { onResult(null) }) { Text(t("Clear the result")) }
                     }
                 }
             } else {
                 GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onScale), shape = RoundedCornerShape(18.dp)) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Tune, null, Modifier.size(20.dp))
-                        Text(t("Шкала оцінювання"), Modifier.weight(1f).padding(start = 12.dp),
+                        Text(t("Assessment scale"), Modifier.weight(1f).padding(start = 12.dp),
                             style = MaterialTheme.typography.titleMedium)
                         Icon(Icons.Outlined.ChevronRight, null)
                     }
                 }
             }
-            TaktPrimaryButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(t("Готово")) }
+            TaktPrimaryButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(t("Done")) }
         }
     }
 }
@@ -216,11 +216,11 @@ private fun ResultChoice(label: String, selected: Boolean, modifier: Modifier, o
 }
 
 private fun statusText(status: CourseStatus) = when(status) {
-    CourseStatus.FULFILLED -> t("Здано")
-    CourseStatus.ENROLLED -> t("Активний")
-    CourseStatus.PLANNED -> t("Заплановано")
-    CourseStatus.NOT_ENROLLED -> t("Не записаний")
-    CourseStatus.NOT_NEEDED -> t("Не потрібний")
+    CourseStatus.FULFILLED -> t("Work completed")
+    CourseStatus.ENROLLED -> t("Active subject")
+    CourseStatus.PLANNED -> t("Scheduled")
+    CourseStatus.NOT_ENROLLED -> t("Not recorded")
+    CourseStatus.NOT_NEEDED -> t("Not needed")
 }
 private fun statusIcon(status: CourseStatus): ImageVector = when(status) {
     CourseStatus.FULFILLED -> Icons.Outlined.CheckCircle

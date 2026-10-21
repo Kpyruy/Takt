@@ -71,7 +71,7 @@ fun TaktDatePickerField(
         onValueChange = {},
         readOnly = true,
         label = { Text(label) },
-        placeholder = { Text(t("Оберіть дату")) },
+        placeholder = { Text(t("Choose a date")) },
         trailingIcon = { Icon(Icons.Outlined.CalendarMonth, null) },
         modifier = modifier
             .clickable { showPicker = true }
@@ -100,19 +100,19 @@ fun TaktDatePickerField(
                         showPicker = false
                     },
                 ) {
-                    Text(t("Готово"))
+                    Text(t("Done"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text(t("Скасувати"))
+                    Text(t("Cancel"))
                 }
             },
         ) {
             // Dialog creates its own Android configuration, so apply the app locale here too.
             TaktNativeLocale {
                 DatePicker(state = state, title = {
-                    Text(t("Оберіть дату"), Modifier.padding(start = 24.dp, top = 16.dp), style = MaterialTheme.typography.labelLarge)
+                    Text(t("Choose a date"), Modifier.padding(start = 24.dp, top = 16.dp), style = MaterialTheme.typography.labelLarge)
                 }, colors = DatePickerDefaults.colors(containerColor = Color.Transparent))
             }
         }
@@ -166,12 +166,12 @@ fun TaktTimePickerField(
                         showPicker = false
                     },
                 ) {
-                    Text(t("Готово"))
+                    Text(t("Done"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text(t("Скасувати"))
+                    Text(t("Cancel"))
                 }
             },
             text = {

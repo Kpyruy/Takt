@@ -37,23 +37,23 @@ internal fun NextClassCard(event: ResolvedScheduleEvent, now: LocalTime, onClick
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(if (current) t("Зараз триває") else t("Наступна пара"), style = MaterialTheme.typography.labelMedium)
+                Text(if (current) t("Now in progress") else t("Following class"), style = MaterialTheme.typography.labelMedium)
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
             Text(event.title, style = MaterialTheme.typography.headlineSmall)
-            Text(listOfNotNull(event.room?.let { t("Аудиторія $it") },
+            Text(listOfNotNull(event.room?.let { t("Room ${it}") },
                 when (event.status) {
-                    ScheduleEventStatus.MOVED -> t("Перенесено")
-                    ScheduleEventStatus.ONE_OFF -> t("Разова подія")
+                    ScheduleEventStatus.MOVED -> t("Rescheduled")
+                    ScheduleEventStatus.ONE_OFF -> t("One time event")
                     else -> null
-                }).joinToString(" · ").ifBlank { t("Аудиторію ще не вказано") },
+                }).joinToString(" · ").ifBlank { t("Room not specified yet") },
                 style = MaterialTheme.typography.bodySmall)
             HorizontalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.24f))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Text("${event.startTime.format(time)}–${event.endTime.format(time)}",
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                Text(if (current) t("Зараз") else t("Через ${Duration.between(now, event.startTime).toMinutes()} хв"),
+                Text(if (current) t("Now") else t("In ${Duration.between(now, event.startTime).toMinutes()} min"),
                     style = MaterialTheme.typography.labelMedium)
             }
         }

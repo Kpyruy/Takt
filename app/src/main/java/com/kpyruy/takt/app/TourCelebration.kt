@@ -56,13 +56,13 @@ internal fun TourCelebration(onFinish: () -> Unit) {
                     Icon(Icons.Outlined.Check, null, Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primary)
                 }
             }
-            Text(t("Туторіал завершено"), style = MaterialTheme.typography.headlineMedium,
+            Text(t("Tutorial completed"), style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text(t("Приємного користування аплікацією"), style = MaterialTheme.typography.bodyLarge,
+            Text(t("Enjoy using the app"), style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
             TaktPrimaryButton(onClick = onFinish, modifier = Modifier.fillMaxWidth().testTag("tour-done")) {
-                Text(t("До Takt"))
+                Text(t("Open Takt"))
             }
         }
     }

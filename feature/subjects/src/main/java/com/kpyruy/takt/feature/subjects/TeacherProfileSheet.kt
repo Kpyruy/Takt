@@ -76,8 +76,8 @@ fun TeacherProfileSheet(
         Column(Modifier.fillMaxWidth().testTag("teacher-profile").verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Профіль викладача"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TaktIconButton(Icons.Outlined.Close, t("Закрити"), onDismiss)
+                Text(t("Lecturer profile"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                TaktIconButton(Icons.Outlined.Close, t("Close"), onDismiss)
             }
             GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(25.dp)) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -108,38 +108,38 @@ fun TeacherProfileSheet(
             error?.let { TeacherLoadProblem(it, authenticate, { reload++ }, onSettings) }
             profile?.let { person ->
                 SectionCard {
-                    Text(t("Контакти"), style = MaterialTheme.typography.titleMedium)
+                    Text(t("Contacts"), style = MaterialTheme.typography.titleMedium)
                     person.universityEmail?.let { address ->
-                        TeacherEmailRow(t("Університетська пошта"), address, "teacher-email-university") { composeMail(address) }
+                        TeacherEmailRow(t("University email"), address, "teacher-email-university") { composeMail(address) }
                     }
                     person.systemEmail?.let { address ->
-                        TeacherEmailRow(t("Пошта UIS"), address, "teacher-email-uis") { composeMail(address) }
+                        TeacherEmailRow(t("UIS email"), address, "teacher-email-uis") { composeMail(address) }
                     }
-                    if (person.universityEmail == null && person.systemEmail == null) Text(t("Пошту не вказано в UIS."),
+                    if (person.universityEmail == null && person.systemEmail == null) Text(t("No email address is listed in UIS."),
                         color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    person.officePhone?.let { TeacherDetail(t("Телефон кабінету"), it) }
-                    if (mailFailure) Text(t("Не знайдено застосунку для пошти."), color = MaterialTheme.colorScheme.error,
+                    person.officePhone?.let { TeacherDetail(t("Office phone"), it) }
+                    if (mailFailure) Text(t("No email app was found."), color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall)
                 }
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.MeetingRoom, null, tint = MaterialTheme.colorScheme.primary)
-                        Text(t("Кабінет і консультації"), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Office and consultations"), style = MaterialTheme.typography.titleMedium)
                     }
-                    TeacherDetail(t("Кабінет"), person.officeNumber ?: t("Не вказано в UIS"), "teacher-office")
-                    person.officeAddress?.let { TeacherDetail(t("Адреса"), it) }
+                    TeacherDetail(t("Office"), person.officeNumber ?: t("Not listed in UIS"), "teacher-office")
+                    person.officeAddress?.let { TeacherDetail(t("Address"), it) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    TeacherDetail(t("Консультаційні години"), person.consultationHours ?: t("Не вказані в UIS"), "teacher-hours")
+                    TeacherDetail(t("Consultation hours"), person.consultationHours ?: t("Items not listed in UIS"), "teacher-hours")
                 }
                 person.mailboxLastChecked?.let { timestamp ->
                     GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
                         Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Icon(Icons.Outlined.MarkEmailRead, null, tint = MaterialTheme.colorScheme.primary)
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(t("Остання перевірка університетської пошти"), style = MaterialTheme.typography.labelMedium)
+                                Text(t("University mailbox last checked"), style = MaterialTheme.typography.labelMedium)
                                 Text(formatMailboxTimestamp(timestamp), style = MaterialTheme.typography.titleSmall,
                                     modifier = Modifier.testTag("teacher-mailbox-checked"))
-                                Text(t("За даними UIS"), style = MaterialTheme.typography.bodySmall,
+                                Text(t("As reported by UIS"), style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -148,9 +148,9 @@ fun TeacherProfileSheet(
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(onClick = { runCatching { uriHandler.openUri(teacher.profileUrl) } }, Modifier.weight(1f)) {
-                    Text(t("Профіль у UIS"))
+                    Text(t("Profile in UIS"))
                 }
-                TextButton(onClick = { if (!loading) reload++ }, enabled = !loading) { Text(t("Оновити")) }
+                TextButton(onClick = { if (!loading) reload++ }, enabled = !loading) { Text(t("Update")) }
             }
         }
     }

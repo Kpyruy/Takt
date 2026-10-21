@@ -3,15 +3,15 @@ package com.kpyruy.takt.core.model
 import java.time.LocalDate
 
 enum class GradeItemType(val label: String) {
-    TEST("Тест"),
-    MIDTERM("Тест"), // Legacy backup value; new work uses TEST.
-    LAB("Лабораторна"),
-    SEMINAR("Семінар"),
-    HOMEWORK("Домашня робота"),
-    PROJECT("Проєкт"),
-    ORAL("Усна відповідь"),
-    EXAM("Екзамен"),
-    OTHER("Інше"),
+    TEST("Test"),
+    MIDTERM("Test"), // Legacy backup value; new work uses TEST.
+    LAB("Lab"),
+    SEMINAR("Seminar"),
+    HOMEWORK("Homework"),
+    PROJECT("Project"),
+    ORAL("Oral answer"),
+    EXAM("Exam"),
+    OTHER("Other"),
 }
 
 data class GradeItem(

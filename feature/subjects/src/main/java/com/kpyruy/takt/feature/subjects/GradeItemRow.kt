@@ -81,11 +81,11 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                 }
                 Box {
                     IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(40.dp)) {
-                        Icon(Icons.Default.MoreVert, contentDescription = t("Дії оцінювання"))
+                        Icon(Icons.Default.MoreVert, contentDescription = t("Assessment actions"))
                     }
                     TaktChoiceMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        TaktChoiceMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
-                        TaktChoiceMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+                        TaktChoiceMenuItem(text = { Text(t("Edit")) }, onClick = { menuOpen = false; onEdit() })
+                        TaktChoiceMenuItem(text = { Text(t("Delete")) }, onClick = { menuOpen = false; onDelete() })
                     }
                 }
             }
@@ -94,10 +94,10 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                 item.dueDate?.let {
                     AssessmentDetailChip(item.type.datePrefix() + it.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), Icons.Outlined.CalendarMonth)
                 }
-                item.durationMinutes?.let { AssessmentDetailChip(t("$it хв"), Icons.Outlined.Schedule) }
-                AssessmentDetailChip(if (item.contributesToGrade) t("Входить у підсумок") else t("Не входить у підсумок"), Icons.Outlined.Description)
-                if (item.requiredForExam) AssessmentDetailChip(t("Для допуску"), Icons.Outlined.Lock)
-                item.minimumPointsForExam?.let { AssessmentDetailChip(t("Мінімум ") + it.displayNumber() + t(" б."), Icons.Outlined.BarChart) }
+                item.durationMinutes?.let { AssessmentDetailChip(t("${it} min"), Icons.Outlined.Schedule) }
+                AssessmentDetailChip(if (item.contributesToGrade) t("Counts toward the final grade") else t("Excluded from the final grade"), Icons.Outlined.Description)
+                if (item.requiredForExam) AssessmentDetailChip(t("Required for exam"), Icons.Outlined.Lock)
+                item.minimumPointsForExam?.let { AssessmentDetailChip(t("Minimum ") + it.displayNumber() + t(" pts"), Icons.Outlined.BarChart) }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
@@ -105,16 +105,16 @@ fun GradeItemRow(item: GradeItem, onEdit: () -> Unit, onDelete: () -> Unit, toda
                 Icon(if (item.completed) Icons.Outlined.CheckCircle else if (overdue) Icons.Outlined.ErrorOutline else Icons.Outlined.Schedule,
                     null, Modifier.size(18.dp), tint = if (overdue) MaterialTheme.colorScheme.error else accentText)
                 Text(when {
-                    item.isAwaitingResult -> t("Очікую оцінку")
+                    item.isAwaitingResult -> t("Awaiting grade")
                     overdue -> overdueLabel(item.dueDate!!, today)
-                    item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Поріг не виконано")
-                    item.completed -> t("Результат записано")
-                    else -> t("Очікується")
+                    item.completed && item.requiredForExam && !item.meetsAdmissionRequirement -> t("Threshold not met")
+                    item.completed -> t("Result recorded")
+                    else -> t("Pending")
                 }, modifier = Modifier.weight(1f).padding(start = 7.dp), style = MaterialTheme.typography.labelMedium,
                     color = if (overdue || (item.completed && item.requiredForExam && !item.meetsAdmissionRequirement))
                         MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t("б.")}"
-                        else "${t("Макс.")} ${item.maxPoints.displayNumber()} ${t("б.")}",
+                Text(if (item.completed) "${item.earnedPoints.displayNumber()} / ${item.maxPoints.displayNumber()} ${t("pts")}"
+                        else "${t("Max.")} ${item.maxPoints.displayNumber()} ${t("pts")}",
                         style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -132,7 +132,7 @@ internal fun AssessmentDetailChip(label: String, icon: androidx.compose.ui.graph
 }
 
 internal fun GradeItemType.datePrefix(): String =
-    if (this == GradeItemType.TEST || this == GradeItemType.MIDTERM) t("На ") else t("До ")
+    if (this == GradeItemType.TEST || this == GradeItemType.MIDTERM) t("On ") else t("Due ")
 
 internal fun Double.displayNumber(): String =
     if (this % 1.0 == 0.0) toInt().toString() else "%.1f".format(this)

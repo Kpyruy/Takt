@@ -249,7 +249,7 @@ fun CalendarScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ScreenHeader(
-            title = t("Календар"),
+            title = t("Calendar"),
             subtitle = headerSubtitle,
             action = { CalendarPeriodArrows(::navigatePrevious, ::navigateNext) },
         )
@@ -369,7 +369,7 @@ fun CalendarScreen(
                         val datedAssessments = assessmentsByDate[selectedDate].orEmpty()
                         if (deadlines.isNotEmpty() || datedAssessments.isNotEmpty()) {
                             SectionCard {
-                                Text(t("Дедлайни"), style = MaterialTheme.typography.titleMedium)
+                                Text(t("Deadlines"), style = MaterialTheme.typography.titleMedium)
                                 deadlines.forEachIndexed { index, task ->
                                     if (index > 0) HorizontalDivider()
                                     CalendarDeadlineRow(
@@ -445,9 +445,9 @@ private fun SelectedDayAgenda(
 
         if (events.isEmpty()) {
             SectionCard {
-                Text(t("На цей день занять немає"))
+                Text(t("There are no classes on this day"))
                 Text(
-                    t("Додай пару або разову подію кнопкою + внизу праворуч."),
+                    t("Add a class or one-off event with the + button at the bottom right."),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

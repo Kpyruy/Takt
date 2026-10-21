@@ -142,10 +142,10 @@ fun WeekTimetable(
                                 val muted = event.isVisuallyMuted(clock)
                                 val accentColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
                                 val status = when {
-                                    event.isAbsent -> t("Пропущено")
-                                    event.status == ScheduleEventStatus.CANCELLED -> t("Скасовано")
-                                    event.status == ScheduleEventStatus.MOVED -> t("Перенесено")
-                                    event.status == ScheduleEventStatus.ONE_OFF -> t("Разова подія")
+                                    event.isAbsent -> t("Absent")
+                                    event.status == ScheduleEventStatus.CANCELLED -> t("Cancelled")
+                                    event.status == ScheduleEventStatus.MOVED -> t("Rescheduled")
+                                    event.status == ScheduleEventStatus.ONE_OFF -> t("One time event")
                                     else -> null
                                 }
                                 TaktSurface(
@@ -156,7 +156,7 @@ fun WeekTimetable(
                                         .semantics {
                                             contentDescription = listOfNotNull(event.title, t(event.lessonType.label),
                                                 "${event.startTime}–${event.endTime}", event.room, status,
-                                                if (hasTest(event)) t("тест") else null).joinToString(", ")
+                                                if (hasTest(event)) t("test") else null).joinToString(", ")
                                         }
                                         .lessonInteraction({ onEventClick(event) }, { onEventLongClick(event) }),
                                     shape = MaterialTheme.shapes.small,

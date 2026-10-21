@@ -31,20 +31,20 @@ fun AddCalendarItemSheet(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(t("Що додати?"))
+            Text(t("What to add?"))
             Button(
                 onClick = onAddRecurring,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Repeat, contentDescription = null)
-                Text(t("Повторювана пара"))
+                Text(t("Recurring class"))
             }
             OutlinedButton(
                 onClick = onAddOneOff,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Event, contentDescription = null)
-                Text(t("Разова подія / блокова акція"))
+                Text(t("One-off event / block event"))
             }
         }
     }

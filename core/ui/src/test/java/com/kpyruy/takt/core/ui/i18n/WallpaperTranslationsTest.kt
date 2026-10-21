@@ -6,10 +6,10 @@ import org.junit.Test
 
 class WallpaperTranslationsTest {
     @Test fun imagePickerAndFailureCopyHaveEnglishAndSlovakTranslations() {
-        assertEquals("Choose your photo", WallpaperTranslations.lookup("Обрати своє фото", AppLanguage.ENGLISH))
-        assertEquals("Vybrať vlastnú fotografiu", WallpaperTranslations.lookup("Обрати своє фото", AppLanguage.SLOVAK))
-        assertEquals("Use built-in background", WallpaperTranslations.lookup("Вбудований фон", AppLanguage.ENGLISH))
+        assertEquals("Choose your photo", TaktI18n.lookup("Choose your photo", AppLanguage.ENGLISH))
+        assertEquals("Vybrať vlastnú fotografiu", TaktI18n.lookup("Choose your photo", AppLanguage.SLOVAK))
+        assertEquals("Use built-in background", TaktI18n.lookup("Use built-in background", AppLanguage.ENGLISH))
         assertEquals("Fotografiu sa nepodarilo otvoriť. Vyber iný obrázok do 24 MB a 64 Mpx.",
-            WallpaperTranslations.lookup("Не вдалося відкрити фото. Обери інше зображення до 24 МБ і 64 Мп.", AppLanguage.SLOVAK))
+            TaktI18n.lookup("Could not open this photo. Choose another image up to 24 MB and 64 MP.", AppLanguage.SLOVAK))
     }
 }

@@ -71,19 +71,19 @@ fun WeekCompactList(
                         Row(Modifier.fillMaxWidth().padding(bottom = 7.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            Text(localizedCount(events.size, "пара", "пари", "пар", "class", "classes", "hodina", "hodiny", "hodín"),
+                            Text(com.kpyruy.takt.core.ui.i18n.formatLessonCount(events.size),
                                 Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (workCount > 0) {
                                 Icon(Icons.Outlined.Assignment, null, Modifier.size(15.dp),
                                     tint = MaterialTheme.colorScheme.tertiary)
-                                Text(localizedCount(workCount, "робота", "роботи", "робіт", "task", "tasks", "úloha", "úlohy", "úloh"),
+                                Text(com.kpyruy.takt.core.ui.i18n.formatWorkCount(workCount),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.tertiary)
                             }
                         }
                         if (events.isEmpty()) {
-                            Text(t("Пар немає"), Modifier.padding(vertical = 8.dp),
+                            Text(t("No classes"), Modifier.padding(vertical = 8.dp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else events.forEachIndexed { index, event ->
@@ -101,27 +101,6 @@ fun WeekCompactList(
     }
 }
 
-private fun ukrainianCount(count: Int, one: String, few: String, many: String): String = when {
-    count % 100 in 11..14 -> many
-    count % 10 == 1 -> one
-    count % 10 in 2..4 -> few
-    else -> many
-}
-
-private fun localizedCount(
-    count: Int,
-    ukOne: String, ukFew: String, ukMany: String,
-    enOne: String, enMany: String,
-    skOne: String, skFew: String, skMany: String,
-): String {
-    val noun = when (TaktI18n.language) {
-        AppLanguage.ENGLISH -> if (count == 1) enOne else enMany
-        AppLanguage.SLOVAK -> when (count) { 1 -> skOne; in 2..4 -> skFew; else -> skMany }
-        else -> ukrainianCount(count, ukOne, ukFew, ukMany)
-    }
-    return "$count $noun"
-}
-
 @Composable
 private fun WeekLessonRow(
     event: ResolvedScheduleEvent,
@@ -134,9 +113,9 @@ private fun WeekLessonRow(
     val muted = event.isVisuallyMuted(clock)
     val accentColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else subjectColor
     val status = when {
-        event.isAbsent -> t("Пропущено")
-        event.status == ScheduleEventStatus.CANCELLED -> t("Скасовано")
-        event.status == ScheduleEventStatus.MOVED -> t("Перенесено")
+        event.isAbsent -> t("Absent")
+        event.status == ScheduleEventStatus.CANCELLED -> t("Cancelled")
+        event.status == ScheduleEventStatus.MOVED -> t("Rescheduled")
         else -> null
     }
     Row(Modifier.fillMaxWidth().testTag("week-lesson-${event.id}")
@@ -159,13 +138,13 @@ private fun WeekLessonRow(
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (event.lessonType == LessonType.UNSPECIFIED) {
-                    Icon(Icons.Outlined.Event, t("Подія"), Modifier.size(16.dp),
+                    Icon(Icons.Outlined.Event, t("Event"), Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else LessonTypeIcon(event.lessonType)
                 Text(buildList {
                     event.lessonType.takeUnless { it == LessonType.UNSPECIFIED }?.let { add(t(it.label)) }
                     event.room?.takeIf { it.isNotBlank() }?.let(::add)
-                    add(t("до ${event.endTime.format(time)}"))
+                    add(t("by ${event.endTime.format(time)}"))
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)

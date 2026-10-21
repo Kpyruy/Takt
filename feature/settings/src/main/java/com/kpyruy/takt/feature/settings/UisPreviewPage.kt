@@ -19,8 +19,8 @@ fun UisPreviewPage(repository: UniversityAccountRepository, onBack: () -> Unit) 
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        ScreenHeader(t("Зміни з UIS"), subtitle = t("Переглянь перед застосуванням"), navigation = {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), onBack)
+        ScreenHeader(t("UIS changes"), subtitle = t("Review before applying"), navigation = {
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), onBack)
         })
         UisSyncReview(repository, showHeading = false)
     }

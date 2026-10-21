@@ -46,8 +46,8 @@ internal fun AppearanceWallpaperMenu(draft: AppSettings, appliedReference: Strin
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(Icons.Outlined.Wallpaper, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(t("Фон"), style = MaterialTheme.typography.titleSmall)
-                Text(t(if (draft.customWallpaper == null) "Стандартний фон" else "Власне фото"),
+                Text(t("Background"), style = MaterialTheme.typography.titleSmall)
+                Text(t(if (draft.customWallpaper == null) "Built-in background" else "Custom photo"),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Outlined.ChevronRight, null)
@@ -56,8 +56,8 @@ internal fun AppearanceWallpaperMenu(draft: AppSettings, appliedReference: Strin
     if (open) TaktFullSheet(onDismissRequest = { if (!importing) open = false }) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(.82f).testTag("appearance-wallpaper-menu")) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t("Фон"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                TaktIconButton(Icons.Outlined.Close, t("Закрити"), { if (!importing) open = false })
+                Text(t("Background"), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                TaktIconButton(Icons.Outlined.Close, t("Close"), { if (!importing) open = false })
             }
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
                 .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -68,7 +68,7 @@ internal fun AppearanceWallpaperMenu(draft: AppSettings, appliedReference: Strin
             }
             TaktPrimaryButton(onClick = { open = false }, enabled = !importing,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)
-                    .testTag("appearance-wallpaper-done")) { Text(t("Готово")) }
+                    .testTag("appearance-wallpaper-done")) { Text(t("Done")) }
         }
     }
 }
@@ -103,23 +103,23 @@ internal fun AppearanceWallpaperChoices(draft: AppSettings, appliedReference: St
                 TaktGlassBackground(Modifier.matchParentSize()) {
                 GlassSurface(Modifier.fillMaxWidth().padding(22.dp), shape = MaterialTheme.shapes.medium) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(t("Твій простір"), style = MaterialTheme.typography.titleMedium)
-                        Text(t("Твій день у власному настрої"), style = MaterialTheme.typography.bodyMedium)
+                        Text(t("Your space"), style = MaterialTheme.typography.titleMedium)
+                        Text(t("Your day, your atmosphere"), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 }
             }
         }
-        Text(t("Фото зберігається на цьому пристрої. Зміни набудуть чинності після застосування."),
+        Text(t("The photo is saved on this device. Apply to use your changes."),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TaktPrimaryButton(onClick = { picker.launch(arrayOf("image/*")) }, enabled = !importing,
             modifier = Modifier.fillMaxWidth().testTag("appearance-wallpaper-choose")) {
-            Text(t(if (importing) "Підготовка фото…" else "Обрати своє фото"))
+            Text(t(if (importing) "Preparing photo…" else "Choose your photo"))
         }
         if (draft.customWallpaper != null) TextButton(
             onClick = { failed = false; onChange(currentDraft.copy(customWallpaper = null)) }, enabled = !importing,
-            modifier = Modifier.fillMaxWidth().testTag("appearance-wallpaper-reset")) { Text(t("Вбудований фон")) }
-        if (failed) Text(t("Не вдалося відкрити фото. Обери інше зображення до 24 МБ і 64 Мп."),
+            modifier = Modifier.fillMaxWidth().testTag("appearance-wallpaper-reset")) { Text(t("Use built-in background")) }
+        if (failed) Text(t("Could not open this photo. Choose another image up to 24 MB and 64 MP."),
             color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.testTag("appearance-wallpaper-error"))
     }

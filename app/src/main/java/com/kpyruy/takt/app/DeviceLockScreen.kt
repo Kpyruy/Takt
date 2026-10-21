@@ -28,7 +28,7 @@ internal fun DeviceLockScreen(message: String?, onUnlock: () -> Unit) {
     Box(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.Center) {
         Row(Modifier.fillMaxWidth().align(Alignment.TopCenter), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Назад"), { activity?.finish() })
+            TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t("Back"), { activity?.finish() })
             Text("Takt", style = MaterialTheme.typography.titleLarge)
         }
         GlassSurface(Modifier.fillMaxWidth()) {
@@ -40,22 +40,22 @@ internal fun DeviceLockScreen(message: String?, onUnlock: () -> Unit) {
                 Box(Modifier.size(80.dp).glassSurface(), contentAlignment = Alignment.Center) {
                     Icon(Icons.Outlined.MenuBook, null, Modifier.size(46.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                Text(t("Твої дані захищено"), style = MaterialTheme.typography.headlineSmall,
+                Text(t("Your data is protected"), style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                Text(t("Підтвердь особу через захист телефона, щоб відкрити свої дані."),
+                Text(t("Use your phone security to access your data."),
                     style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 IconButton(onClick = onUnlock, modifier = Modifier.size(96.dp).glassSurface(shape = CircleShape)) {
-                    Icon(Icons.Outlined.Fingerprint, t("Розблокувати"), Modifier.size(60.dp),
+                    Icon(Icons.Outlined.Fingerprint, t("Unlock"), Modifier.size(60.dp),
                         tint = MaterialTheme.colorScheme.primary)
                 }
-                Text(t("Розблокувати"), style = MaterialTheme.typography.titleLarge)
+                Text(t("Unlock"), style = MaterialTheme.typography.titleLarge)
                 message?.let { Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center) }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
                 TextButton(onClick = onUnlock) {
                     Icon(Icons.Outlined.Lock, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(t("Використати блокування екрана"), textAlign = TextAlign.Center)
+                    Text(t("Use screen lock"), textAlign = TextAlign.Center)
                 }
             }
         }

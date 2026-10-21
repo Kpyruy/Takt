@@ -61,7 +61,7 @@ fun MonthCalendar(
             else MaterialTheme.typography.bodyMedium
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                listOf(t("Пн"), t("Вт"), t("Ср"), t("Чт"), t("Пт"), t("Сб"), t("Нд")).forEach { label ->
+                listOf(t("Mon"), t("Tue"), t("Wed"), t("Thu"), t("Fri"), t("Sat"), t("Sun")).forEach { label ->
                     Text(
                         text = label,
                         modifier = Modifier.weight(1f),
@@ -95,9 +95,9 @@ fun MonthCalendar(
                                     selected = isSelected
                                     contentDescription = buildList {
                                         add(date.toString())
-                                        if (markers.lessons) add(t("пари"))
-                                        if (markers.work) add(t("задачі"))
-                                        if (markers.exams) add(t("іспит"))
+                                        if (markers.lessons) add(t("classes"))
+                                        if (markers.work) add(t("tasks"))
+                                        if (markers.exams) add(t("exam"))
                                     }.joinToString(", ")
                                 }
                                 .clickable { onSelect(date) },
@@ -159,9 +159,9 @@ fun MonthCalendar(
             FlowRow(Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                MonthLegendItem(MaterialTheme.colorScheme.primary, t("Пари"))
-                MonthLegendItem(MaterialTheme.colorScheme.tertiary, t("Задачі"))
-                MonthLegendItem(MaterialTheme.colorScheme.error, t("Іспити"))
+                MonthLegendItem(MaterialTheme.colorScheme.primary, t("Classes"))
+                MonthLegendItem(MaterialTheme.colorScheme.tertiary, t("Tasks"))
+                MonthLegendItem(MaterialTheme.colorScheme.error, t("Exams"))
             }
         }
     }

@@ -69,10 +69,10 @@ fun WeekDaySelector(
         state = pagerState,
         modifier = Modifier.fillMaxWidth().testTag("calendar-week-strip").semantics {
             customActions = listOf(
-                CustomAccessibilityAction(t("Попередній тиждень")) {
+                CustomAccessibilityAction(t("The previous week")) {
                     onWeekChange(currentWeek.minusWeeks(1).plusDays((currentWeekday - 1).toLong())); true
                 },
-                CustomAccessibilityAction(t("Наступний тиждень")) {
+                CustomAccessibilityAction(t("Next week")) {
                     onWeekChange(currentWeek.plusWeeks(1).plusDays((currentWeekday - 1).toLong())); true
                 },
             )

@@ -54,7 +54,7 @@ fun CourseNoteCard(
     val updatedDate = remember(note.updatedAtEpochMillis) { noteUpdatedDate(note.updatedAtEpochMillis) }
     Column(
         Modifier.fillMaxWidth().testTag("note-preview-${note.id}")
-            .clickable(onClickLabel = t("Відкрити нотатку")) { readerOpen = true }.padding(16.dp),
+            .clickable(onClickLabel = t("Open note")) { readerOpen = true }.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
@@ -103,11 +103,11 @@ internal fun NoteActionsMenu(onEdit: () -> Unit, onDelete: () -> Unit, modifier:
     var menuOpen by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { menuOpen = true }, modifier = modifier) {
-            Icon(Icons.Default.MoreVert, contentDescription = t("Дії нотатки"))
+            Icon(Icons.Default.MoreVert, contentDescription = t("Note actions"))
         }
         TaktChoiceMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            TaktChoiceMenuItem(text = { Text(t("Редагувати")) }, onClick = { menuOpen = false; onEdit() })
-            TaktChoiceMenuItem(text = { Text(t("Видалити")) }, onClick = { menuOpen = false; onDelete() })
+            TaktChoiceMenuItem(text = { Text(t("Edit")) }, onClick = { menuOpen = false; onEdit() })
+            TaktChoiceMenuItem(text = { Text(t("Delete")) }, onClick = { menuOpen = false; onDelete() })
         }
     }
 }

@@ -40,27 +40,27 @@ internal fun BackupScheduleChanges(phone: BackupPayload, file: BackupPayload) {
     val incoming = file.scheduleRules.associateBy { it.id }
     val codes = (phone.courses + file.courses).associate { it.id to it.code }
     val rules = file.scheduleRules.filter { old[it.id] != it } + phone.scheduleRules.filter { it.id !in incoming }
-    if (rules.isNotEmpty()) Text(t("Повторювані заняття"), style = MaterialTheme.typography.titleSmall)
+    if (rules.isNotEmpty()) Text(t("Recurring lessons"), style = MaterialTheme.typography.titleSmall)
     rules.take(12).forEach { rule ->
         val removed = rule.id !in incoming
         val day = runCatching { DayOfWeek.of(rule.dayOfWeek).getDisplayName(TextStyle.FULL, TaktI18n.locale) }.getOrDefault("—")
-        val recurrence = t(when (rule.recurrence) { "ODD_WEEKS" -> "Непарні тижні"; "EVEN_WEEKS" -> "Парні тижні"; else -> "Щотижня" })
+        val recurrence = t(when (rule.recurrence) { "ODD_WEEKS" -> "Odd weeks"; "EVEN_WEEKS" -> "Even weeks"; else -> "Every week" })
         val type = runCatching { t(LessonType.valueOf(rule.lessonType).label) }.getOrDefault("")
         BackupChangeRow(rule.title, "$day · ${time(rule.startMinute)}–${time(rule.endMinute)}",
             listOfNotNull(codes[rule.courseId], type.takeIf(String::isNotBlank), rule.room?.takeIf(String::isNotBlank), recurrence).joinToString(" · "),
-            if (removed) t("Видалено") else if (rule.id in old) t("Змінено") else t("Додано"))
+            if (removed) t("Removed") else if (rule.id in old) t("Changed") else t("Added"))
     }
     val oldEvents = phone.oneOffEvents.associateBy { it.id }
     val events = file.oneOffEvents.associateBy { it.id }
     val changed = file.oneOffEvents.filter { oldEvents[it.id] != it } + phone.oneOffEvents.filter { it.id !in events }
-    if (changed.isNotEmpty()) Text(t("Окремі заняття"), style = MaterialTheme.typography.titleSmall)
+    if (changed.isNotEmpty()) Text(t("One-off lessons"), style = MaterialTheme.typography.titleSmall)
     changed.take(12).forEach { event ->
         val date = runCatching { LocalDate.ofEpochDay(event.dateEpochDay).format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) }.getOrDefault("—")
         BackupChangeRow(event.title, "$date · ${time(event.startMinute)}–${time(event.endMinute)}",
             listOfNotNull(codes[event.courseId], event.room?.takeIf(String::isNotBlank)).joinToString(" · "),
-            if (event.id !in events) t("Видалено") else if (event.id in oldEvents) t("Змінено") else t("Додано"))
+            if (event.id !in events) t("Removed") else if (event.id in oldEvents) t("Changed") else t("Added"))
     }
-    if (rules.size > 12 || changed.size > 12) Text(t("Показано перші зміни. Застосовується весь вибраний розділ."), style = MaterialTheme.typography.bodySmall)
+    if (rules.size > 12 || changed.size > 12) Text(t("First changes shown. The entire selected section will be applied."), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -70,13 +70,13 @@ internal fun BackupNoteChanges(phone: BackupPayload, file: BackupPayload) {
     val notes = file.courseNotes.filter { old[it.id] != it }
     notes.take(8).forEach { note ->
         BackupChangeRow(note.title, codes[note.courseId].orEmpty(),
-            note.content.replace(Regex("\\s+"), " ").take(180), if (note.id in old) t("Змінено") else t("Додано"))
-        if (note.attachments.isNotEmpty()) Text(t("Вкладення") + ": " + note.attachments.joinToString(", ") { it.name }, style = MaterialTheme.typography.bodySmall)
+            note.content.replace(Regex("\\s+"), " ").take(180), if (note.id in old) t("Changed") else t("Added"))
+        if (note.attachments.isNotEmpty()) Text(t("Attachments") + ": " + note.attachments.joinToString(", ") { it.name }, style = MaterialTheme.typography.bodySmall)
     }
     file.examMaterials.filter { item -> phone.examMaterials.none { it == item } }.take(6).forEach { item ->
-        BackupChangeRow(item.title, codes[item.courseId].orEmpty(), t("Навчальний матеріал"), t("Додано"))
+        BackupChangeRow(item.title, codes[item.courseId].orEmpty(), t("Study material"), t("Added"))
     }
-    if (notes.isEmpty() && phone.courseNotes != file.courseNotes) Text(t("Змінено вміст або склад нотаток."), style = MaterialTheme.typography.bodySmall)
+    if (notes.isEmpty() && phone.courseNotes != file.courseNotes) Text(t("Note contents or selection changed."), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -102,7 +102,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
     // Each property owns one shared row, so longer names and missing photos cannot shift the comparison.
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AppearanceComparisonRow(
-            left = { Text(t("Телефон"), Modifier.testTag("backup-appearance-phone"), style = MaterialTheme.typography.labelLarge) },
+            left = { Text(t("Phone"), Modifier.testTag("backup-appearance-phone"), style = MaterialTheme.typography.labelLarge) },
             right = { Text(sourceName, Modifier.testTag("backup-appearance-file"), style = MaterialTheme.typography.labelLarge) },
         )
         AppearanceComparisonRow(
@@ -117,7 +117,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             left = { Text(appearanceModeName(phonePreview), style = MaterialTheme.typography.bodySmall) },
             right = { Text(appearanceModeName(filePreview), style = MaterialTheme.typography.bodySmall) },
         )
-        Text(t("Стиль карток"), style = MaterialTheme.typography.labelLarge)
+        Text(t("Card style"), style = MaterialTheme.typography.labelLarge)
         AppearanceComparisonRow(
             left = { AppearanceMaterial(phonePreview, phonePhoto, "backup-appearance-phone-material") },
             right = { AppearanceMaterial(filePreview, filePhoto, "backup-appearance-file-material") },
@@ -126,7 +126,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             left = { Text(appearanceMaterialName(phonePreview), style = MaterialTheme.typography.bodySmall) },
             right = { Text(appearanceMaterialName(filePreview), style = MaterialTheme.typography.bodySmall) },
         )
-        Text(t("Фон"), style = MaterialTheme.typography.labelLarge)
+        Text(t("Background"), style = MaterialTheme.typography.labelLarge)
         AppearanceComparisonRow(
             left = { AppearanceWallpaper(phone, phonePreview, phonePhoto, "backup-appearance-phone-background") },
             right = { AppearanceWallpaper(file, filePreview, filePhoto, "backup-appearance-file-background") },
@@ -136,7 +136,7 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             right = { Text(appearanceWallpaperName(file), style = MaterialTheme.typography.bodySmall) },
         )
         if (phone.customThemes.isNotEmpty() || file.customThemes.isNotEmpty()) {
-            Text(t("Збережені теми"), style = MaterialTheme.typography.labelLarge)
+            Text(t("Saved themes"), style = MaterialTheme.typography.labelLarge)
             AppearanceComparisonRow(
                 left = { Text(phone.customThemes.joinToString(", ") { it.name }.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall) },
                 right = { Text(file.customThemes.joinToString(", ") { it.name }.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall) },
@@ -173,7 +173,7 @@ private fun AppearanceMaterial(settings: AppSettings, photo: Bitmap?, tag: Strin
             TaktGlassBackground(Modifier.matchParentSize(), photoPreview = photo) {
                 GlassSurface(Modifier.align(Alignment.Center).padding(12.dp).fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(t("Заняття"), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        Text(t("Lessons"), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                         Box(Modifier.fillMaxWidth(.7f).height(5.dp).clip(RoundedCornerShape(3.dp))
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = .5f)))
                         Box(Modifier.fillMaxWidth(.45f).height(5.dp).clip(RoundedCornerShape(3.dp))
@@ -211,9 +211,9 @@ private fun AppearanceWallpaper(source: BackupSettings, settings: AppSettings, b
             .background(MaterialTheme.colorScheme.surfaceVariant).testTag(tag), contentAlignment = Alignment.Center) {
             val ready = bitmap
             when {
-                ready != null -> Image(ready.asImageBitmap(), t("Власне фото"), Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+                ready != null -> Image(ready.asImageBitmap(), t("Custom photo"), Modifier.matchParentSize(), contentScale = ContentScale.Crop)
                 photo == null && source.wallpaperRecorded -> TaktGlassBackground(Modifier.matchParentSize()) {}
-                else -> Text(t(if (photo != null) "Фото недоступне" else "Фото не включено в цю копію"),
+                else -> Text(t(if (photo != null) "Photo unavailable" else "Photo not included in this backup"),
                     Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -231,26 +231,26 @@ private fun BackupSettings.appearancePreviewSettings() = AppSettings(
 
 @Composable
 private fun appearanceThemeName(settings: AppSettings): String = settings.selectedCustomTheme?.name ?: t(when (settings.themeFamily) {
-    ThemeFamily.GREEN -> "Зелена"; ThemeFamily.PURPLE -> "Фіолетова"; ThemeFamily.WARM -> "Тепла"
-    ThemeFamily.MONOCHROME -> "Монохром"; ThemeFamily.ROSE -> "Рожева"; ThemeFamily.AMBER -> "Бурштинова"
-    ThemeFamily.CYAN -> "Блакитна"; ThemeFamily.BLUE -> "Синя"
+    ThemeFamily.GREEN -> "Green"; ThemeFamily.PURPLE -> "Violet"; ThemeFamily.WARM -> "Warm"
+    ThemeFamily.MONOCHROME -> "Monochrome"; ThemeFamily.ROSE -> "Rose"; ThemeFamily.AMBER -> "Amber"
+    ThemeFamily.CYAN -> "Cyan"; ThemeFamily.BLUE -> "Blue"
 })
 
 @Composable
 private fun appearanceModeName(settings: AppSettings): String = t(when (settings.themeMode) {
-    AppThemeMode.DARK -> "Темна"; AppThemeMode.LIGHT -> "Світла"; AppThemeMode.SYSTEM -> "Як телефон"
+    AppThemeMode.DARK -> "Dark"; AppThemeMode.LIGHT -> "Light"; AppThemeMode.SYSTEM -> "Device theme"
 })
 
 @Composable
 private fun appearanceMaterialName(settings: AppSettings): String = t(when (settings.cardAppearance) {
-    CardAppearance.GLASS -> "Скло"; CardAppearance.TONAL_FILLED -> "Заливка"; CardAppearance.ELEVATED -> "Підняті"
+    CardAppearance.GLASS -> "Glass"; CardAppearance.TONAL_FILLED -> "Filled"; CardAppearance.ELEVATED -> "Elevated"
 })
 
 @Composable
 private fun appearanceWallpaperName(settings: BackupSettings): String = t(when {
-    settings.wallpaper != null -> "Власне фото"
-    settings.wallpaperRecorded -> "Вбудований фон"
-    else -> "Фото не включено в цю копію"
+    settings.wallpaper != null -> "Custom photo"
+    settings.wallpaperRecorded -> "Use built-in background"
+    else -> "Photo not included in this backup"
 })
 
 private fun time(value: Int) = if (value in 0..1440) "%02d:%02d".format(value / 60, value % 60) else "—"

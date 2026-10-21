@@ -119,7 +119,7 @@ class UniversityAccountRepository(
             mutableSyncAction.value = UisSyncActionState()
             throw cancelled
         } catch (error: Exception) {
-            mutableSyncAction.value = UisSyncActionState(error = error.message ?: "Не вдалося зберегти зміни UIS. Повтори перевірку.")
+            mutableSyncAction.value = UisSyncActionState(error = error.message ?: "Could not save UIS changes. Check again.")
         } finally { actionMutex.unlock() }
     }
 
@@ -408,7 +408,7 @@ class UniversityAccountRepository(
             throw cancelled
         } catch (error: Exception) {
             mutableImportProgress.value = previous.copy(running = false,
-                error = if (error is InvalidUisCourseId) error.message else "Не вдалося автоматично перевірити UIS. Спробуй вручну.")
+                error = if (error is InvalidUisCourseId) error.message else "Could not check UIS automatically. Try manually.")
             UisAutoSyncOutcome.FAILED.also { mutableLastCheckOutcome.value = it }
         }
     }
@@ -514,14 +514,14 @@ class UniversityAccountRepository(
         } catch (error: Exception) {
             mutableImportProgress.value = previous.copy(running = false, error = when (error) {
                 is InvalidUisCourseId -> error.message
-                is IOException -> "Не вдалося завантажити дані UIS. Перевір з’єднання."
-                is IllegalStateException, is IllegalArgumentException -> "Не вдалося розпізнати навчальний план, календар або розклад UIS."
-                else -> "Не вдалося імпортувати дані UIS."
+                is IOException -> "Could not download UIS data. Check your connection."
+                is IllegalStateException, is IllegalArgumentException -> "Could not read the UIS study plan, calendar, or timetable."
+                else -> "Could not import UIS data."
             })
         }
     }
 
-    suspend fun applyCourse(courseId: String, selectedLocalId: String? = null) = performPreviewAction("Предмет оновлено") {
+    suspend fun applyCourse(courseId: String, selectedLocalId: String? = null) = performPreviewAction("Course updated") {
         val preview = mutablePreview.value ?: return@performPreviewAction
         val remote = preview.courses.firstOrNull { it.id == courseId } ?: return@performPreviewAction
         studyPlanRepository?.upsertImportedCourses(listOf(remote),
@@ -530,7 +530,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun applyProgress(courseId: String) = performPreviewAction("Прогрес оновлено") {
+    suspend fun applyProgress(courseId: String) = performPreviewAction("Progress updated") {
         val preview = mutablePreview.value ?: return@performPreviewAction
         if (UisSyncSection.PROGRESS !in preview.availableSections) return@performPreviewAction
         val remote = preview.courses.firstOrNull { it.id == courseId } ?: return@performPreviewAction
@@ -568,7 +568,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun addRule(id: String) = performPreviewAction("Заняття додано") {
+    suspend fun addRule(id: String) = performPreviewAction("Lesson added") {
         if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return@performPreviewAction
         refreshLocalPreview()
         mutablePreview.value?.rules?.firstOrNull { it.id == id }?.let {
@@ -578,7 +578,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun addOneOff(id: String) = performPreviewAction("Заняття додано") {
+    suspend fun addOneOff(id: String) = performPreviewAction("Lesson added") {
         if (UisSyncSection.TIMETABLE !in mutablePreview.value?.availableSections.orEmpty()) return@performPreviewAction
         refreshLocalPreview()
         mutablePreview.value?.oneOffEvents?.firstOrNull { it.id == id }?.let {
@@ -588,7 +588,7 @@ class UniversityAccountRepository(
         refreshLocalPreview()
     }
 
-    suspend fun replaceSchedule() = performPreviewAction("Розклад UIS збережено") {
+    suspend fun replaceSchedule() = performPreviewAction("UIS timetable saved") {
         refreshLocalPreview()
         val preview = mutablePreview.value ?: return@performPreviewAction
         if (UisSyncSection.TIMETABLE !in preview.availableSections) return@performPreviewAction
@@ -605,7 +605,7 @@ class UniversityAccountRepository(
             val remote = mutablePreview.value?.courses?.firstOrNull { it.id.substringAfterLast(':') == subjectId }
             val code = remote?.code
             require((subjectId == null || remote != null && courseId == remote.id) && (courseId == null || courseId in ids)) {
-                "Спочатку імпортуй предмет ${code ?: subjectId.orEmpty()} з UIS, потім повтори додавання розкладу."
+                "Import course ${code ?: subjectId.orEmpty()} from UIS first, then try adding the timetable again."
             }
         }
     }

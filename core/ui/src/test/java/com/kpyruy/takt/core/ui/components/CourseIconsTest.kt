@@ -38,7 +38,7 @@ class CourseIconsTest {
         assertEquals(listOf("School", "MenuBook", "AutoStories"), options.take(3).map { it.key })
         assertEquals(listOf("StarOutline", "FavoriteBorder", "Diamond"), options.slice(107..109).map { it.key })
         assertEquals(
-            listOf("Навчання", "Наука", "Технології", "Інженерія", "Економіка", "Мови й творчість", "Спорт та інше"),
+            listOf("Study", "Science", "Technologies", "Engineering", "Economy", "Languages and creativity", "Sports and more"),
             options.map { it.category }.distinct(),
         )
         options.forEach { assertSame(it, CourseIcons.find(it.key)) }

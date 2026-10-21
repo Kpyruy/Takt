@@ -150,14 +150,14 @@ fun SubjectDetailScreen(
     if (item == null) {
         Column(Modifier.fillMaxSize().padding(20.dp)) {
             ScreenHeader(
-                title = t("Предмет"),
+                title = t("Subject"),
                 navigation = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = t("Назад"))
+                        Icon(Icons.Default.ArrowBack, contentDescription = t("Back"))
                     }
                 },
             )
-            Text(t("Предмет не знайдено"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t("Subject not found"), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -184,7 +184,7 @@ fun SubjectDetailScreen(
         Column(Modifier.fillMaxWidth().testTag("subject-header"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TaktIconButton(Icons.Default.ArrowBack, t("Назад"), onClick = {
+                TaktIconButton(Icons.Default.ArrowBack, t("Back"), onClick = {
                     if (selectedTab == "exam") selectedTab = "overview" else onBack()
                 }, modifier = Modifier.testTag("subject-header-back"))
                 val avatarInteraction = remember { MutableInteractionSource() }
@@ -193,16 +193,16 @@ fun SubjectDetailScreen(
                     .clickable(interactionSource = avatarInteraction, indication = null, role = Role.Button,
                         onClick = { showIconPicker = true })
                     .testTag("subject-header-avatar").tourTarget("subject-icon").semantics {
-                        contentDescription = t("Змінити іконку предмета")
+                        contentDescription = t("Change subject icon")
                     }) { CourseAvatar(item, Modifier.fillMaxSize()) }
                 Text(item.title, Modifier.weight(1f).testTag("subject-header-title"),
                     fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
-                TaktIconButton(Icons.Default.MoreHoriz, t("Налаштування предмета"),
+                TaktIconButton(Icons.Default.MoreHoriz, t("Subject settings"),
                     onClick = { showSettings = true }, modifier = Modifier.testTag("subject-header-menu"))
             }
             // 48dp back control + 10dp gap: metadata starts at the avatar, below all controls.
-            Text(item.code + " · " + item.credits + t(" кредитів · ") + t("${item.semester} семестр"),
+            Text(item.code + " · " + item.credits + t(" credits · ") + t("Semester ${item.semester}"),
                 Modifier.fillMaxWidth().padding(start = 58.dp).testTag("subject-header-metadata"),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -390,8 +390,8 @@ fun SubjectDetailScreen(
 }
 
 private fun subjectTabLabel(tab: String): String = when (tab) {
-    "tasks" -> t("Задачі")
-    "exam" -> t("Екзамен")
-    "notes" -> t("Нотатки")
-    else -> t("Огляд")
+    "tasks" -> t("Tasks")
+    "exam" -> t("Exam")
+    "notes" -> t("Notes")
+    else -> t("Overview")
 }

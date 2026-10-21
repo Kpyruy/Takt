@@ -5,5 +5,5 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 internal fun overdueLabel(date: LocalDate, today: LocalDate): String =
-    t("Прострочено") + " · " + date.format(DateTimeFormatter.ofPattern(
+    t("Overdue") + " · " + date.format(DateTimeFormatter.ofPattern(
         if (date.year == today.year) "dd.MM" else "dd.MM.yyyy"))

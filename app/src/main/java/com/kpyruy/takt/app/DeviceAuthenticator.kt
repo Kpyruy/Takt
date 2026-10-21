@@ -37,7 +37,7 @@ internal class DeviceAuthenticator(private val activity: FragmentActivity) {
         pending = onResult
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             @Suppress("DEPRECATION")
-            val intent = keyguard.createConfirmDeviceCredentialIntent(title, t("Підтвердь особу для Takt"))
+            val intent = keyguard.createConfirmDeviceCredentialIntent(title, t("Verify your identity for Takt"))
             if (intent == null) finish(DeviceAuthenticationResult.ERROR)
             else credentialLauncher.launch(intent)
             return
@@ -57,7 +57,7 @@ internal class DeviceAuthenticator(private val activity: FragmentActivity) {
             })
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
-            .setSubtitle(t("Відбиток, обличчя або PIN телефона"))
+            .setSubtitle(t("Fingerprint, face, or phone PIN"))
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL)
             .build()

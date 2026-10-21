@@ -81,10 +81,10 @@ fun StudyPlanScreen(
     if (courses.isEmpty()) {
         Column(Modifier.fillMaxSize()
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            ScreenHeader(title = t("Твій шлях"))
-            Text(t(if (uisAccount) "Предмети завантажуються з UIS." else "Додай перший предмет, щоб бачити свій прогрес."),
+            ScreenHeader(title = t("Your progress"))
+            Text(t(if (uisAccount) "Subjects are loaded from UIS." else "Add the first subject to see your progress."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!uisAccount) Button(onClick = onAddCourse) { Text(t("Додати предмет")) }
+            if (!uisAccount) Button(onClick = onAddCourse) { Text(t("Add course")) }
         }
         return
     }
@@ -95,27 +95,27 @@ fun StudyPlanScreen(
     ) {
         item {
             ScreenHeader(
-                title = t("Твій шлях"),
-                subtitle = t("Навчальний план"),
+                title = t("Your progress"),
+                subtitle = t("Study plan"),
                 action = {
                     Box {
                         TaktIconButton(
                             icon = Icons.Default.MoreHoriz,
-                            contentDescription = t("Керування навчальним планом"),
+                            contentDescription = t("Curriculum management"),
                             onClick = { menuExpanded = true },
                             modifier = Modifier.testTag("progress-menu"),
                         )
                         TaktChoiceMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                             TaktChoiceMenuItem(
-                                text = { Text(t("Знайти предмет")) },
+                                text = { Text(t("Find a subject")) },
                                 modifier = Modifier.testTag("progress-search-open"),
                                 onClick = { menuExpanded = false; searchOpen = true },
                             )
-                            TaktChoiceMenuItem(text = { Text(t("Розгорнути весь план")) }, onClick = {
+                            TaktChoiceMenuItem(text = { Text(t("Expand the whole plan")) }, onClick = {
                                 expandedSemesters = semesters.keys.toSet()
                                 menuExpanded = false
                             })
-                            TaktChoiceMenuItem(text = { Text(t("Згорнути всі семестри")) }, onClick = {
+                            TaktChoiceMenuItem(text = { Text(t("Collapse all semesters")) }, onClick = {
                                 expandedSemesters = emptySet()
                                 menuExpanded = false
                             })
@@ -131,7 +131,7 @@ fun StudyPlanScreen(
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
                                 Text(displayedEarned.toString(), style = MaterialTheme.typography.headlineLarge.copy(fontSize = 40.sp, lineHeight = 52.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.9).sp))
-                                Text(t(" / $displayedTotal кредитів"), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(t(" / ${displayedTotal} credits"), modifier = Modifier.padding(bottom = 5.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (!stackSemesterControl) CurrentSemesterControl(currentSemester) { selectingSemester = true }
                         }
@@ -143,13 +143,13 @@ fun StudyPlanScreen(
                             drawStopIndicator = {},
                             trackColor = MaterialTheme.colorScheme.outlineVariant,
                         )
-                        Text(t("$completedSemesters із ${semesters.size} семестрів завершено"),
+                        Text(t("${completedSemesters} of ${semesters.size} semesters completed"),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             Spacer(Modifier.height(16.dp))
-            TaktSegmentedTabs(listOf(t("План"), t("Активні"), t("Здані")), filter, { filter = it },
+            TaktSegmentedTabs(listOf(t("Plan"), t("Active"), t("Completed")), filter, { filter = it },
                 railCornerRadius = 12.dp, modifier = Modifier.tourTarget("progress-tabs"))
             Spacer(Modifier.height(12.dp))
         }
@@ -163,7 +163,7 @@ fun StudyPlanScreen(
                 }
                 Spacer(Modifier.height(8.dp))
             }
-            if (filtered.isEmpty()) item { Text(if (filter == 1) t("Активних предметів ще немає. Обери їх у плані.") else t("Зданих предметів ще немає."), style = MaterialTheme.typography.bodySmall) }
+            if (filtered.isEmpty()) item { Text(if (filter == 1) t("There are no active subjects yet. Choose them in the plan.") else t("No completed subjects yet."), style = MaterialTheme.typography.bodySmall) }
         }
         if (filter == 0) semesters.forEach { (semester, semesterCourses) ->
             item(key = "semester-$semester") {
@@ -218,9 +218,9 @@ private fun CurrentSemesterControl(semester: Int?, onClick: () -> Unit) {
         Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 9.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Icon(Icons.Default.School, null, Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
-            Text(if (semester != null) t("$semester семестр") else t("Обрати семестр"), style = MaterialTheme.typography.labelSmall,
+            Text(if (semester != null) t("Semester ${semester}") else t("Choose a semester"), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary)
-            Icon(Icons.Default.ExpandMore, t("Обрати семестр"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.ExpandMore, t("Choose a semester"), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }

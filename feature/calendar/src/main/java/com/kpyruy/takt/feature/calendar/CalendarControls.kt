@@ -89,7 +89,7 @@ internal fun CalendarViewTabs(
     BindTaktTourAction("calendar-week-list") { weekMenuExpanded = false; onWeekLayoutSelected(WeekLayout.COMPACT_LIST) }
     BindTaktTourAction("calendar-week-timetable") { weekMenuExpanded = false; onWeekLayoutSelected(WeekLayout.TIMETABLE) }
     val density = LocalDensity.current
-    val labels = listOf(t("День"), t("Тиждень"), t("Місяць"))
+    val labels = listOf(t("Day"), t("Week"), t("Month"))
     val textStyle = MaterialTheme.typography.titleSmall
     val measurer = rememberTextMeasurer()
     val neededWidth = remember(labels, textStyle, density) {
@@ -150,7 +150,7 @@ internal fun CalendarViewTabs(
                                 }
                             }
                         } else null,
-                        onLongClickLabel = if (index == 1) t("Вибрати вигляд тижня") else null,
+                        onLongClickLabel = if (index == 1) t("Choose a view of the week") else null,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -167,7 +167,7 @@ internal fun CalendarViewTabs(
                             onClick = ::openWeekMenu,
                             modifier = Modifier.size(28.dp).tourTarget("calendar-week-layout"),
                         ) {
-                            Icon(Icons.Default.KeyboardArrowDown, t("Вибрати вигляд тижня"), Modifier.size(19.dp))
+                            Icon(Icons.Default.KeyboardArrowDown, t("Choose a view of the week"), Modifier.size(19.dp))
                         }
                     }
                 }
@@ -176,8 +176,8 @@ internal fun CalendarViewTabs(
                         focusable = LocalTaktTourActions.current == null,
                         modifier = Modifier.tourTarget("calendar-week-menu-popup")) {
                         listOf(
-                            WeekLayout.TIMETABLE to t("Таймтейбл"),
-                            WeekLayout.COMPACT_LIST to t("Список"),
+                            WeekLayout.TIMETABLE to t("Schedule timetable"),
+                            WeekLayout.COMPACT_LIST to t("List"),
                         ).forEach { (layout, title) ->
                             DropdownMenuItem(
                                 text = { Text(title) },
@@ -206,7 +206,7 @@ internal fun CalendarPeriodArrows(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        TaktIconButton(Icons.Default.ChevronLeft, t("Попередній період"), onPrevious, Modifier.size(40.dp))
-        TaktIconButton(Icons.Default.ChevronRight, t("Наступний період"), onNext, Modifier.size(40.dp))
+        TaktIconButton(Icons.Default.ChevronLeft, t("Previous period"), onPrevious, Modifier.size(40.dp))
+        TaktIconButton(Icons.Default.ChevronRight, t("The next period"), onNext, Modifier.size(40.dp))
     }
 }

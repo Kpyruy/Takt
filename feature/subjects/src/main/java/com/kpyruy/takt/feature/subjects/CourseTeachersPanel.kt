@@ -48,18 +48,18 @@ internal fun CourseTeachersPanel(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.Groups, null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(10.dp))
-            Text(t("Викладачі"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            Text(t("Teaching team"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             if (repository != null && connected && hasSyllabus) TaktIconButton(Icons.Outlined.Refresh,
-                t("Оновити викладачів"), { if (!loading) reload++ }, Modifier.testTag("teachers-refresh"))
+                t("Refresh teaching team"), { if (!loading) reload++ }, Modifier.testTag("teachers-refresh"))
         }
         when {
-            !hasSyllabus -> SmallText(t("Викладачі з’являться після імпорту предмета з UIS."))
+            !hasSyllabus -> SmallText(t("Teaching staff will appear after importing this subject from UIS."))
             (!connected || repository == null) && teachers == null -> {
-                SmallText(t("Підключи UIS, щоб переглядати викладачів і контакти."))
-                TextButton(onClick = onSettings) { Text(t("Відкрити налаштування")) }
+                SmallText(t("Connect UIS to view teaching staff and contacts."))
+                TextButton(onClick = onSettings) { Text(t("Open settings")) }
             }
             loading && teachers == null -> LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = 16.dp))
-            teachers?.isEmpty() == true && error == null -> SmallText(t("У програмі предмета викладачів не вказано."))
+            teachers?.isEmpty() == true && error == null -> SmallText(t("No teaching staff are listed in the syllabus."))
         }
         teachers.orEmpty().forEachIndexed { index, teacher ->
             if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -72,7 +72,7 @@ internal fun CourseTeachersPanel(
                     Text(teacher.roles.joinToString(" · ", transform = ::teacherRoleLabel),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(Icons.Outlined.ChevronRight, t("Профіль викладача"), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Outlined.ChevronRight, t("Lecturer profile"), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         error?.let { failure ->
@@ -86,10 +86,10 @@ internal fun CourseTeachersPanel(
 }
 
 internal fun teacherRoleLabel(role: String): String = t(when (role.lowercase()) {
-    "examiner", "skúšajúci", "zkoušející" -> "Екзаменатор"
-    "instructor", "cvičiaci", "cvičící" -> "Практичні заняття"
-    "lecturer", "prednášajúci", "přednášející" -> "Лекції"
-    "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Відповідальний за предмет"
+    "examiner", "skúšajúci", "zkoušející" -> "Examiner"
+    "instructor", "cvičiaci", "cvičící" -> "Tutorials"
+    "lecturer", "prednášajúci", "přednášející" -> "Lectures"
+    "person responsible for course", "garant predmetu", "garant předmětu", "supervisor" -> "Course supervisor"
     else -> role
 })
 
@@ -102,21 +102,21 @@ internal fun TeacherLoadProblem(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(t(when (failure) {
-            is TeachingAuthenticationRequired -> "Підтвердь доступ до UIS, щоб завантажити контакти."
-            is TeachingSessionUnavailable -> "Увійди в UIS або підтвердь код у налаштуваннях."
-            else -> "Не вдалося завантажити контакти. Перевір з’єднання та спробуй ще раз."
+            is TeachingAuthenticationRequired -> "Confirm UIS access to load contacts."
+            is TeachingSessionUnavailable -> "Sign in to UIS or enter the verification code in settings."
+            else -> "Could not load contacts. Check your connection and try again."
         }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = {
             when (failure) {
-                is TeachingAuthenticationRequired -> authenticate(t("Контакти викладачів UIS")) { if (it == DeviceAuthenticationResult.SUCCESS) retry() }
+                is TeachingAuthenticationRequired -> authenticate(t("UIS teaching contacts")) { if (it == DeviceAuthenticationResult.SUCCESS) retry() }
                 is TeachingSessionUnavailable -> onSettings()
                 else -> retry()
             }
         }, modifier = Modifier.testTag("teacher-retry")) {
             Text(t(when (failure) {
-                is TeachingAuthenticationRequired -> "Підтвердити доступ"
-                is TeachingSessionUnavailable -> "Відкрити налаштування"
-                else -> "Спробувати ще раз"
+                is TeachingAuthenticationRequired -> "Confirm access"
+                is TeachingSessionUnavailable -> "Open settings"
+                else -> "Try again"
             }))
         }
     }
