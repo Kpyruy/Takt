@@ -58,9 +58,11 @@ private fun SubjectAvatar(color: Color, modifier: Modifier, content: @Composable
     val shape = RoundedCornerShape(13.dp)
     val base = if (LocalTaktCardAppearance.current == CardAppearance.TONAL_FILLED)
         MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-    val foreground = readableAccentColor(color, color.copy(alpha = .16f).compositeOver(base))
+    // Match the painted background to the contrast calculation, including photo-backed glass.
+    val fill = color.copy(alpha = .16f).compositeOver(base)
+    val foreground = readableAccentColor(color, fill)
     // A restrained subject-colour tile avoids the white glass rim around this small icon.
-    Box(modifier.size(46.dp).clip(shape).background(color.copy(alpha = .16f), shape)
+    Box(modifier.size(46.dp).clip(shape).background(fill, shape)
         .border(.75.dp, color.copy(alpha = .28f), shape), contentAlignment = Alignment.Center) {
         content(foreground)
     }
