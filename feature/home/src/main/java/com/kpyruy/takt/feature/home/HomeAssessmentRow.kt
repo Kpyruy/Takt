@@ -51,13 +51,7 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                 Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.testTag("home-assessment-glyph-${item.id}"))
             }
             Column(Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.titleSmall)
-                Text(buildList {
-                    add(courseCode)
-                    item.durationMinutes?.let { add(t(uiMessage(UiKey.FORMAT_VALUE_MIN, it))) }
-                }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                HomeWorkTitle(item.title, courseCode)
                 WorkRequirementIcons(
                     requiredForExam = item.requiredForExam,
                     minimumPointsForExam = item.minimumPointsForExam,
@@ -65,6 +59,7 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                     contributesToGrade = item.contributesToGrade,
                     tagPrefix = "home-assessment-${item.id}",
                 )
+                if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -83,6 +78,8 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                         color = if (!item.isSubmitted && date <= today) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                item.durationMinutes?.let { Text(t(uiMessage(UiKey.FORMAT_VALUE_MIN, it)),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     }

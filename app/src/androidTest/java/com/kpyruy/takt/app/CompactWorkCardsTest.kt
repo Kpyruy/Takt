@@ -66,8 +66,8 @@ class CompactWorkCardsTest {
                 }
             }
         }
-        compose.onNodeWithText(task.title).assertIsDisplayed()
-        compose.onNodeWithText("FYZI_6B · Today").assertIsDisplayed()
+        compose.onNodeWithText("${task.title} | FYZI_6B").assertIsDisplayed()
+        compose.onNodeWithText("Today").assertIsDisplayed()
         compose.onNodeWithText("2 / 10 pts").assertIsDisplayed()
         // Descriptions remain available to accessibility services without taking up a text line.
         compose.onAllNodesWithText("Required for exam").assertCountEquals(0)
@@ -112,9 +112,9 @@ class CompactWorkCardsTest {
             }
         }
         compose.onNodeWithTag("home-task-compact-code").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("PY_6B · Today").assertIsDisplayed()
+        compose.onNodeWithText("Course code task | PY_6B").assertIsDisplayed()
         compose.onNodeWithTag("home-assessment-compact-assessment").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("PY_6B").assertIsDisplayed()
+        compose.onNodeWithText("Admission quiz | PY_6B").assertIsDisplayed()
         captureStudiesScreenshot("compact-work-home.png")
         compose.onNodeWithText(course.title).assertDoesNotExist()
         compose.onNodeWithTag("home-assessment-compact-assessment-excluded", useUnmergedTree = true).performClick()

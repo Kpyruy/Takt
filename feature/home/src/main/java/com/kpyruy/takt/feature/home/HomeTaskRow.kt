@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SwipeCompletionBox
@@ -54,11 +53,8 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
                 }
             }
             Column(Modifier.weight(1f)) {
-                Text(task.title, style = MaterialTheme.typography.titleSmall,
-                    color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (task.completed) TextDecoration.LineThrough else null)
-                Text(listOfNotNull(courseCode, due).joinToString(" · "), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                HomeWorkTitle(task.title, courseCode, completed = task.completed,
+                    titleColor = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 WorkRequirementIcons(
                     requiredForExam = task.requiredForExam,
                     minimumPointsForExam = task.minimumPointsForExam,
@@ -66,10 +62,15 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
                     tagPrefix = "home-task-${task.id}",
                 )
             }
-            task.maxPoints?.let { maximum ->
-                Text(if (task.earnedPoints != null) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_PTS, task.earnedPoints?.pointText(), maximum.pointText())) else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, maximum.pointText())),
-                    Modifier.glassSurface(tint = MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            if (task.maxPoints != null || due != null) Column(horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                task.maxPoints?.let { maximum ->
+                    Text(if (task.earnedPoints != null) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_PTS, task.earnedPoints?.pointText(), maximum.pointText())) else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, maximum.pointText())),
+                        Modifier.glassSurface(tint = MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+                due?.let { Text(it, style = MaterialTheme.typography.labelSmall,
+                    color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     }
