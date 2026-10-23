@@ -71,8 +71,6 @@ fun SemesterSection(
     onCourseStatus: (Course) -> Unit,
     compactPreview: Boolean = false,
 ) {
-    var showAllCourses by rememberSaveable(courses.map { it.id }) { mutableStateOf(false) }
-    val displayedCourses = if (compactPreview && !showAllCourses) courses.take(4) else courses
     val state = semesterState(courses, isCurrent)
     val earnedCredits = courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
     val relevantCredits = courses.filter { it.status != CourseStatus.NOT_NEEDED }.sumOf { it.credits }
@@ -126,17 +124,12 @@ fun SemesterSection(
             AnimatedVisibility(visible = expanded) {
                 Column(Modifier.padding(top = 9.dp)) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    displayedCourses.forEach { course ->
+                    courses.forEach { course ->
                         ProgressCourseRow(course, gradeRepository, onOpen = { onCourseClick(course.id) },
                             onStatus = { onCourseStatus(course) }, compactPresentation = compactPreview)
-                        if (course != displayedCourses.last()) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        if (course != courses.last()) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                    if (compactPreview && !showAllCourses && courses.size > displayedCourses.size) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        androidx.compose.material3.TextButton(onClick = { showAllCourses = true }, modifier = Modifier.testTag("studies-more-courses-$semester")) {
-                            Text(t(uiMessage(UiKey.STUDIES_MORE_COURSES, courses.size - displayedCourses.size)))
-                        }
-                    }
+
                 }
             }
         }

@@ -29,10 +29,10 @@ class StudiesIntegrationUiTest {
             })
             val source=StudentHubSnapshot(StudentIdentity("15","Alex Novak","Slovak University of Technology"),
                 listOf(StudentStudy("101","Automation & Control",degree="Bc.",periodLabel="2025–2028",active=true,currentSemester=3,
-                    earnedCredits=86,requiredCredits=185,feesLoaded=true,scholarshipsLoaded=true,
+                    earnedCredits=86,requiredCredits=185,titleEn="Industrial Informatics, Automation and Robotics",titleSk="Priemyselná informatika, automatizácia a robotika",feesLoaded=true,scholarshipsLoaded=true,
                     fees=listOf(StudentFee("isic","101","ISIC renewal",2200,paidMinor=0,status=StudentFeeStatus.UNPAID,dueDate=LocalDate.of(2026,10,31),issuedDate=LocalDate.of(2026,10,10),recordUrl="https://is.stuba.sk/auth/student/financovani.pl?studium=101;detail=1")),
                     scholarships=listOf(ScholarshipPayment("oct","101","Merit scholarship",20000,paidOn=LocalDate.of(2026,10,12))),updatedAtEpochMillis=1792741260000),
-                    StudentStudy("202","Applied Informatics",degree="Bc.",periodLabel="2023–2025",active=false,earnedCredits=78,requiredCredits=180)),
+                    StudentStudy("202","Applied Informatics",titleEn="Applied Informatics",titleSk="Aplikovaná informatika",degree="Bc.",periodLabel="2023–2025",active=false,earnedCredits=78,requiredCredits=180)),
                 currentStudyId="101",viewedStudyId="101",showPreviousStudies=true)
             RoomStudentHubStore(data.database).write(source)
             data.awaitRestoredPlanning()
@@ -43,6 +43,8 @@ class StudiesIntegrationUiTest {
         compose.onNodeWithTag("root-add").assertIsDisplayed()
         compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
         capture("studies-overview.png")
+        compose.onNodeWithTag("studies-study-selector").performClick();capture("studies-switcher-long.png")
+        compose.onNodeWithTag("studies-selector-done").performClick()
         compose.onNodeWithTag("studies-tab-1").performClick();capture("studies-progress.png")
         compose.onNodeWithTag("studies-tab-2").performClick();capture("studies-finances.png")
         compose.onNodeWithTag("studies-fee-isic").performScrollTo().performClick()
@@ -86,6 +88,8 @@ internal fun captureStudiesScreenshot(name: String) {
         view.postInvalidateOnAnimation()
     }
     check(frameCommitted.await(5, java.util.concurrent.TimeUnit.SECONDS)) { "Native frame did not commit" }
+    // Dialog window fade-in runs on Android's clock, independently of Compose's test clock.
+    instrumentation.uiAutomation.waitForIdle(300, 5_000)
     val bitmap = instrumentation.uiAutomation.takeScreenshot()
     instrumentation.targetContext.openFileOutput(name, 0).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     bitmap.recycle()

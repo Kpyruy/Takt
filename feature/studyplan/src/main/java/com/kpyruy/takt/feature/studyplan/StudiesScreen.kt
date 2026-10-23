@@ -1,6 +1,10 @@
 package com.kpyruy.takt.feature.studyplan
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.*
@@ -60,14 +64,12 @@ fun StudiesScreen(
     val settings = planning?.settings ?: settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings()).value
     val hasAccount by universityAccountRepository.hasAccount.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(studentHubRepository, hasAccount) { if (hasAccount) studentHubRepository.refresh() }
     var editingCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     var iconCourseId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectingSemester by rememberSaveable { mutableStateOf(false) }
     StudiesContent(
-        state = state, localCourses = courses, settings = settings, gradeRepository = gradeRepository,
+        state = state, localCourses = courses, settings = settings, gradeRepository = gradeRepository, uisManaged = hasAccount,
         onSelectStudy = { scope.launch { studentHubRepository.selectStudy(it) } },
-        onPreviousStudiesChanged = { scope.launch { studentHubRepository.setPreviousStudiesVisible(it) } },
         onDisplayNameChanged = { scope.launch { studentHubRepository.setDisplayName(it) } },
         onRefresh = { scope.launch { studentHubRepository.refresh() } },
         onCourseClick = onCourseClick, onCourseStatus = { editingCourseId = it.id },
@@ -85,7 +87,7 @@ fun StudiesScreen(
             scope.launch { repository.setIcon(course.id, key) }; iconCourseId = null
         }, onDismiss = { iconCourseId = null })
     }
-    if (selectingSemester) CurrentSemesterSheet(
+    if (selectingSemester && !hasAccount) CurrentSemesterSheet(
         semesters = courses.groupBy { it.semester }.mapValues { (_, value) -> value.count { it.status == CourseStatus.ENROLLED } },
         currentSemester = settings.effectiveCurrentSemester(courses), manualSemester = settings.currentSemester,
         onSelect = { selected -> scope.launch { settingsRepository.setCurrentSemester(selected); selectingSemester = false } },
@@ -101,8 +103,8 @@ fun StudiesContent(
     localCourses: List<Course> = emptyList(),
     settings: AppSettings = AppSettings(),
     gradeRepository: GradeRepository? = null,
+    uisManaged: Boolean = false,
     onSelectStudy: (String) -> Unit = {},
-    onPreviousStudiesChanged: (Boolean) -> Unit = {},
     onDisplayNameChanged: (String) -> Unit = {},
     onRefresh: () -> Unit = {},
     onCourseClick: (String) -> Unit = {},
@@ -115,7 +117,9 @@ fun StudiesContent(
     initialTab: Int = 0,
     initialProgressFilter: Int = 0,
 ) {
-    val snapshot = state.snapshot
+    val snapshot = remember(state.snapshot, settings.language, settings.ukrainianCourseNameFallback) {
+        state.snapshot?.let { source -> source.copy(studies = source.studies.map { it.copy(title = settings.displayStudyTitle(it)) }) }
+    }
     val study = snapshot?.viewedStudy()
     val archived = study != null && study.id != snapshot.currentStudyId
     // Only the selected current study can use live course IDs, grades, status or semester controls.
@@ -132,7 +136,6 @@ fun StudiesContent(
     var nameDraft by rememberSaveable(snapshot?.displayName, snapshot?.ownerKey) { mutableStateOf(snapshot?.displayName?.takeIf { it.isNotBlank() } ?: snapshot?.identity?.name.orEmpty()) }
     var search by rememberSaveable { mutableStateOf(false) }
     var expandedSemesters by rememberSaveable(study?.id, currentSemester) { mutableStateOf(currentSemester?.let(::setOf).orEmpty()) }
-    var showFuture by rememberSaveable(study?.id) { mutableStateOf(false) }
     val detailChanged by rememberUpdatedState(onDetailChanged)
     LaunchedEffect(detail != null) { detailChanged(detail != null) }
     DisposableEffect(Unit) { onDispose { detailChanged(false) } }
@@ -158,12 +161,11 @@ fun StudiesContent(
                 else -> t(UiKey.STUDIES_TITLE)
             }
             ScreenHeader(title = detailTitle,
-                subtitle = if (detail == null) t(UiKey.STUDIES_SUBTITLE) else null,
                 navigation = if (detail != null) ({ TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), { detail = null }, Modifier.testTag("studies-back")) }) else null,
                 action = if (detail == null || detail == "profile") ({ TaktIconButton(Icons.Outlined.Settings, t(UiKey.TEXT_SETTINGS), onOpenSettings, Modifier.testTag("studies-settings")) }) else null)
         }
         when {
-            detail == "profile" -> profileItems(snapshot, study, onEditName = { editName = true }, onPreviousStudiesChanged = onPreviousStudiesChanged,
+            detail == "profile" -> profileItems(snapshot, study, onEditName = { editName = true },
                 onSelectStudy = { id -> onSelectStudy(id); detail = null })
             detail == "isic" || detail?.startsWith("fee:") == true -> feeItems(selectedFee ?: isic, study, snapshot?.identity, onOpenPaymentRecord)
             archivedCourse != null -> item {
@@ -176,21 +178,12 @@ fun StudiesContent(
                         modifier = Modifier.testTag("studies-tabs"), tabTag = { "studies-tab-$it" })
                 }
                 if (archived) item { StudyPane { Text(t(UiKey.STUDIES_ARCHIVE_NOTE), style = MaterialTheme.typography.bodySmall); snapshot?.currentStudyId?.let { id -> TextButton(onClick = { onSelectStudy(id) }, modifier = Modifier.testTag("studies-return-current")) { Text(t(UiKey.STUDIES_RETURN_CURRENT)) } } } }
-                if (state.problem != null || state.loading) item { StudyStatus(state, onRefresh, onOpenSettings) }
+                if (state.problem != null && !state.loading) item { StudyStatus(state, onRefresh, onOpenSettings) }
                 when (tab) {
                     0 -> {
-                        item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived }) }
+                        item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged }) }
                         item { SectionHeading(t(UiKey.STUDIES_FINANCES), action = { TextButton(onClick = { tab = 2 }) { Text(t(UiKey.STUDIES_VIEW_ALL)) } }) }
-                        item(key = "finance-tiles") {
-                            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                val outstanding = study?.takeIf { it.feesLoaded }?.outstandingFees()
-                                FinanceTile(t(UiKey.STUDIES_PAYMENTS_DUE), outstanding.money(), Icons.Outlined.AccountBalanceWallet,
-                                    study?.fees?.filter { it.status == StudentFeeStatus.UNPAID || it.status == StudentFeeStatus.PARTIAL }?.minByOrNull { it.dueDate ?: LocalDate.MAX }?.let { it.title + (it.dueDate?.let { date -> " · ${dateText(date)}" } ?: "") }, Modifier.weight(1f).fillMaxHeight()) { tab = 2 }
-                                val scholarship = study?.takeIf { it.scholarshipsLoaded }?.scholarships?.maxByOrNull { it.paidOn ?: LocalDate.MIN }
-                                FinanceTile(t(UiKey.STUDIES_LAST_SCHOLARSHIP), scholarship?.let { money(it.amountMinor, it.currency) } ?: unavailable(), Icons.Outlined.AccountBalance,
-                                    scholarship?.paidOn?.let { "${t(UiKey.STUDIES_PAID)} · ${dateText(it)}" }, Modifier.weight(1f).fillMaxHeight()) { tab = 2 }
-                            }
-                        }
+                        item(key = "finance-tiles") { FinanceSummary(study) { tab = 2 } }
                         item(key = "profile-isic") { StudyPane {
                             NavigationRow(Icons.Outlined.School, t(UiKey.STUDIES_PROFILE), t(UiKey.STUDIES_PROFILE_SUBTITLE), "studies-profile") { detail = "profile" }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -198,7 +191,7 @@ fun StudiesContent(
                         } }
                     }
                     1 -> {
-                        item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived }) }
+                        item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged }) }
                         item {
                             TaktSegmentedTabs(listOf(t(UiKey.TEXT_PLAN), t(UiKey.TEXT_ACTIVE), t(UiKey.TEXT_COMPLETED)), filter, { filter = it },
                                 modifier = Modifier.tourTarget("progress-tabs"), tabTag = { "studies-progress-filter-$it" })
@@ -213,8 +206,7 @@ fun StudiesContent(
                         }
                         if (filter == 0) {
                             val semesters = courses.groupBy { it.semester }.toSortedMap()
-                            val visibleSemesters = semesters.filterKeys { showFuture || currentSemester == null || it <= currentSemester }
-                            visibleSemesters.forEach { (semester, semesterCourses) ->
+                            semesters.forEach { (semester, semesterCourses) ->
                                 item(key = "semester-$semester") {
                                     if (!archived && gradeRepository != null) SemesterSection(semester, semesterCourses, gradeRepository, semester == currentSemester, semester in expandedSemesters,
                                         { expanded -> expandedSemesters = if (expanded) expandedSemesters + semester else expandedSemesters - semester }, openCourse, onCourseStatus, compactPreview = true)
@@ -222,12 +214,7 @@ fun StudiesContent(
                                         { expandedSemesters = if (semester in expandedSemesters) expandedSemesters - semester else expandedSemesters + semester }, openCourse)
                                 }
                             }
-                            if (semesters.keys.any { currentSemester != null && it > currentSemester }) item {
-                                TextButton(onClick = { showFuture = !showFuture }, modifier = Modifier.testTag("studies-future-semesters")) {
-                                    val future = semesters.keys.filter { currentSemester != null && it > currentSemester }
-                                    Text(if (showFuture) t(UiKey.STUDIES_HIDE_FUTURE_SEMESTERS) else tf(UiKey.STUDIES_SHOW_FUTURE_SEMESTERS, if (future.size == 1) future.first().toString() else "${future.first()}–${future.last()}")); Icon(if (showFuture) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
-                                }
-                            }
+
                         } else {
                             val filtered = courses.filter { it.status == if (filter == 1) CourseStatus.ENROLLED else CourseStatus.FULFILLED }
                             items(filtered, key = { "course-${it.id}" }) { course -> StudyPane {
@@ -246,31 +233,23 @@ fun StudiesContent(
                 Modifier.fillMaxWidth().padding(top = 2.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } }
     }
-    if (selector) TaktFullSheet(onDismissRequest = { selector = false }) {
+    if (selector) TaktFullSheet(onDismissRequest = { selector = false }, containerColor = MaterialTheme.colorScheme.surface) {
         LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item { Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(t(UiKey.STUDIES_SELECT_STUDY), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
                 TaktIconButton(Icons.Outlined.Close, t(UiKey.ACTION_CLOSE), { selector = false })
             } }
             val currentStudies = snapshot?.studies.orEmpty().filter { it.id == snapshot?.currentStudyId }
+            if (currentStudies.isNotEmpty()) item { Muted(t(UiKey.STUDIES_CURRENT)) }
             items(currentStudies, key = { it.id }) { item ->
-                StudyChoiceRow(item, item.id == study?.id, true) { onSelectStudy(item.id) }
+                StudyChoiceRow(item, item.id == study?.id) { onSelectStudy(item.id) }
             }
-            item {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(snapshot?.showPreviousStudies ?: false, onPreviousStudiesChanged, Modifier.testTag("studies-selector-previous"))
-                    Text(t(UiKey.STUDIES_INCLUDE_PREVIOUS), Modifier.weight(1f))
-                }
-            }
-            if (snapshot?.showPreviousStudies == true) items(snapshot.studies.filter { it.id != snapshot.currentStudyId }, key = { it.id }) { item ->
-                StudyChoiceRow(item, item.id == study?.id, false) { onSelectStudy(item.id) }
+            val otherStudies = snapshot?.studies.orEmpty().filter { it.id != snapshot?.currentStudyId }
+            if (otherStudies.isNotEmpty()) item { Muted(t(UiKey.STUDIES_HISTORY)) }
+            items(otherStudies, key = { it.id }) { item ->
+                StudyChoiceRow(item, item.id == study?.id) { onSelectStudy(item.id) }
             }
             if (snapshot?.studies.isNullOrEmpty()) item { Text(unavailable(), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            item {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Muted(t(UiKey.STUDIES_SELECTOR_NOTE), Modifier.padding(top = 12.dp))
-            }
             item { FilledTonalButton(onClick = { selector = false }, modifier = Modifier.fillMaxWidth().testTag("studies-selector-done")) { Text(t(UiKey.TEXT_DONE)) } }
         }
     }
@@ -284,14 +263,18 @@ fun StudiesContent(
 }
 
 @Composable
-private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, current: Boolean, onSelect: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag("studies-select-${study.id}")
-        .selectable(selected, role = androidx.compose.ui.semantics.Role.RadioButton, onClick = onSelect),
+private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, onSelect: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+        .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .12f) else Color.Transparent)
+        .testTag("studies-select-${study.id}")
+        .selectable(selected, role = androidx.compose.ui.semantics.Role.RadioButton, onClick = onSelect)
+        .padding(horizontal = 12.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         RadioButton(selected, onClick = null)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(study.title, fontWeight = FontWeight.SemiBold)
-            Muted(listOfNotNull(study.university, study.periodLabel, t(if (current) UiKey.STUDIES_CURRENT else UiKey.STUDIES_PREVIOUS)).joinToString(" · "))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(study.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            val metadata = listOfNotNull(study.degree, study.periodLabel).joinToString(" · ")
+            if (metadata.isNotBlank()) Muted(metadata)
         }
     }
 }
@@ -333,7 +316,7 @@ private fun CreditCard(study: StudentStudy?, courses: List<Course>, semester: In
         }
         LinearProgressIndicator(progress = { if (earned != null && required != null && required > 0) (earned.toFloat() / required).coerceIn(0f, 1f) else 0f },
             modifier = Modifier.fillMaxWidth().height(5.dp), gapSize = 0.dp, drawStopIndicator = {}, trackColor = MaterialTheme.colorScheme.outlineVariant)
-        Row(Modifier.fillMaxWidth().heightIn(min = 32.dp).then(if (onChooseSemester != null) Modifier.clickable(onClick = onChooseSemester) else Modifier), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 32.dp).testTag("studies-current-semester").then(if (onChooseSemester != null) Modifier.clickable(onClick = onChooseSemester) else Modifier), verticalAlignment = Alignment.CenterVertically) {
             Muted(semester?.let { tf(UiKey.FORMAT_SEMESTER_VALUE, it) + t(if (it % 2 == 1) UiKey.TEXT_WINTER_11577647 else UiKey.TEXT_SUMMER_16945261) } ?: unavailable(), Modifier.weight(1f))
             if (onChooseSemester != null) Icon(Icons.Outlined.ExpandMore, t(UiKey.TEXT_CHOOSE_A_SEMESTER), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -341,11 +324,39 @@ private fun CreditCard(study: StudentStudy?, courses: List<Course>, semester: In
 }
 
 @Composable
-private fun FinanceTile(label: String, value: String, icon: ImageVector, note: String?, modifier: Modifier, onClick: () -> Unit) {
+private fun FinanceSummary(study: StudentStudy?, onClick: () -> Unit) {
+    val outstanding = study?.takeIf { it.feesLoaded }?.outstandingFees()
+    val payment = study?.fees?.filter { it.status == StudentFeeStatus.UNPAID || it.status == StudentFeeStatus.PARTIAL }
+        ?.minByOrNull { it.dueDate ?: LocalDate.MAX }
+    val scholarship = study?.takeIf { it.scholarshipsLoaded }?.scholarships?.maxByOrNull { it.paidOn ?: LocalDate.MIN }
+    val payments: @Composable (Modifier) -> Unit = { modifier ->
+        FinanceTile(t(UiKey.STUDIES_PAYMENTS_DUE), outstanding.money(), outstanding == null, Icons.Outlined.AccountBalanceWallet,
+            payment?.let { it.title + (it.dueDate?.let { date -> " · ${dateText(date)}" } ?: "") },
+            modifier, "studies-payments-value", onClick)
+    }
+    val scholarships: @Composable (Modifier) -> Unit = { modifier ->
+        FinanceTile(t(UiKey.STUDIES_LAST_SCHOLARSHIP), scholarship?.let { money(it.amountMinor, it.currency) } ?: unavailable(),
+            scholarship == null, Icons.Outlined.AccountBalance, scholarship?.paidOn?.let { "${t(UiKey.STUDIES_PAID)} · ${dateText(it)}" },
+            modifier, "studies-scholarship-value", onClick)
+    }
+    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth < 280.dp * fontScale) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            payments(Modifier.fillMaxWidth()); scholarships(Modifier.fillMaxWidth())
+        } else Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            payments(Modifier.weight(1f).fillMaxHeight()); scholarships(Modifier.weight(1f).fillMaxHeight())
+        }
+    }
+}
+
+@Composable
+private fun FinanceTile(label: String, value: String, unavailable: Boolean, icon: ImageVector, note: String?, modifier: Modifier, valueTag: String, onClick: () -> Unit) {
     StudyPane(modifier.clickable(onClick = onClick)) {
         Icon(icon, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
         Muted(label)
-        Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Text(value, Modifier.fillMaxWidth().testTag(valueTag),
+            style = if (unavailable) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.headlineSmall,
+            fontWeight = if (unavailable) FontWeight.Medium else FontWeight.SemiBold)
         if (note != null) Muted(note)
     }
 }
@@ -387,7 +398,7 @@ private fun LazyListScope.financeItems(study: StudentStudy?, onFeeClick: (Studen
     }
 }
 
-private fun LazyListScope.profileItems(snapshot: StudentHubSnapshot?, study: StudentStudy?, onEditName: () -> Unit, onPreviousStudiesChanged: (Boolean) -> Unit, onSelectStudy: (String) -> Unit) {
+private fun LazyListScope.profileItems(snapshot: StudentHubSnapshot?, study: StudentStudy?, onEditName: () -> Unit, onSelectStudy: (String) -> Unit) {
     item { StudyPane(Modifier.testTag("studies-profile-hero")) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
             EntityIconTile(MaterialTheme.colorScheme.primary, Modifier.size(62.dp)) { color ->
@@ -416,11 +427,7 @@ private fun LazyListScope.profileItems(snapshot: StudentHubSnapshot?, study: Stu
     item { SectionHeading(t(UiKey.STUDIES_HISTORY)) }
     item { StudyPane {
         snapshot?.studies?.firstOrNull { it.id == snapshot.currentStudyId }?.let { item -> NavigationRow(Icons.Outlined.School, item.title, listOfNotNull(item.periodLabel, t(UiKey.STUDIES_CURRENT)).joinToString(" · "), "studies-history-${item.id}") { onSelectStudy(item.id) } }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(snapshot?.showPreviousStudies ?: false, onPreviousStudiesChanged, Modifier.testTag("studies-include-previous")); Text(t(UiKey.STUDIES_INCLUDE_PREVIOUS), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        }
-        if (snapshot?.showPreviousStudies == true) snapshot.studies.filter { it.id != snapshot.currentStudyId }.forEach { item ->
+        if (snapshot != null) snapshot.studies.filter { it.id != snapshot.currentStudyId }.forEach { item ->
             NavigationRow(Icons.Outlined.History, item.title, listOfNotNull(item.periodLabel, t(UiKey.STUDIES_PREVIOUS)).joinToString(" · "), "studies-history-${item.id}") { onSelectStudy(item.id) }
         }
     } }
@@ -475,8 +482,10 @@ private fun ReadOnlyCourse(course: Course, onClick: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag("studies-readonly-course-${course.id}").then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         CourseAvatar(course, Modifier.size(36.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) { Text(course.title, style = MaterialTheme.typography.titleSmall); Muted(tf(UiKey.FORMAT_VALUE_CREDITS_6F9D64BE, course.credits) + " · " + course.status.title()) }
-        if (course.officialGrade != null) Text(course.officialGrade!!.name, style = MaterialTheme.typography.labelLarge)
-        else Icon(course.status.icon(), null, Modifier.size(20.dp), tint = course.status.tint())
+        Box(Modifier.width(88.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)).testTag("studies-result-${course.id}"), contentAlignment = Alignment.Center) {
+            if (course.officialGrade != null) CourseGradeBadge(course.officialGrade!!, course.fulfilledOn, Modifier.fillMaxWidth())
+            else Icon(course.status.icon(), null, Modifier.size(20.dp), tint = course.status.tint())
+        }
     }
 }
 

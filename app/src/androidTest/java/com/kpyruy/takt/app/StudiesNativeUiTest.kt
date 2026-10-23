@@ -4,7 +4,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.kpyruy.takt.core.model.*
@@ -50,14 +55,93 @@ class StudiesNativeUiTest {
     @After fun resetLanguage() { TaktI18n.use(AppLanguage.ENGLISH) }
 
     private fun show(state: StudentHubState = StudentHubState(snapshot), language: AppLanguage = AppLanguage.ENGLISH,
-                     settings: AppSettings = AppSettings(), courseClick: (String) -> Unit = {}, courseStatus: (Course) -> Unit = {}, gradeRepository: GradeRepository? = null, openRecord: (String) -> Unit = {}, detailChanged: (Boolean) -> Unit = {}) {
+                     settings: AppSettings = AppSettings(), uisManaged: Boolean = false, courseClick: (String) -> Unit = {}, courseStatus: (Course) -> Unit = {}, gradeRepository: GradeRepository? = null, openRecord: (String) -> Unit = {}, detailChanged: (Boolean) -> Unit = {}) {
         compose.setContent {
             TaktI18n.use(language)
             TaktTheme(settings) { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
-                StudiesContent(state, settings = settings, localCourses = listOf(live), onCourseClick = courseClick, onCourseStatus = courseStatus, gradeRepository = gradeRepository,
+                StudiesContent(state, settings = settings.copy(language = language), uisManaged = uisManaged, localCourses = listOf(live), onCourseClick = courseClick, onCourseStatus = courseStatus, gradeRepository = gradeRepository,
                     onOpenPaymentRecord = openRecord, onDetailChanged = detailChanged)
             } }
         }
+    }
+
+    @Test fun cachedRefreshNeverAddsALoadingPane() {
+        show(StudentHubState(snapshot, loading = true))
+        compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
+        compose.onNodeWithTag("studies-status").assertDoesNotExist()
+    }
+
+    @Test fun allStudiesAreAvailableWithoutAnOptIn() {
+        show(StudentHubState(snapshot.copy(showPreviousStudies = false)))
+        compose.onNodeWithTag("studies-study-selector").performClick()
+        compose.onNodeWithTag("studies-select-previous").assertExists()
+        compose.onNodeWithTag("studies-selector-previous").assertDoesNotExist()
+    }
+
+    @Test fun planShowsEverySemesterAndEveryCourseWithoutMoreButtons() {
+        val full = (1..7).map { live.copy(id = "course-$it", title = "Course $it") } + live.copy(id = "future", semester = 6, status = CourseStatus.PLANNED)
+        compose.setContent {
+            TaktI18n.use(AppLanguage.ENGLISH)
+            TaktTheme { StudiesContent(StudentHubState(snapshot), localCourses = full, gradeRepository = object : GradeRepository by forbiddenGrades {
+                override fun observeManualGrade(courseId: String): Flow<GradeLetter?> = kotlinx.coroutines.flow.flowOf(null)
+            }) }
+        }
+        compose.onNodeWithTag("studies-tab-1").performClick()
+        compose.onNodeWithTag("studies-more-courses-3").assertDoesNotExist()
+        compose.onNodeWithTag("studies-screen").performScrollToNode(hasTestTag("progress-course-course-7"))
+        compose.onNodeWithTag("progress-course-course-7").assertIsDisplayed()
+        compose.onNodeWithTag("studies-screen").performScrollToNode(hasTestTag("semester-toggle-6"))
+        compose.onNodeWithTag("semester-toggle-6").assertIsDisplayed()
+        compose.onNodeWithTag("studies-future-semesters").assertDoesNotExist()
+    }
+
+    @Test fun mixedGradesAndStatusesHaveTheSameHorizontalCenter() {
+        val rows = listOf(live.copy(id = "grade", officialGrade = GradeLetter.E, fulfilledOn = LocalDate.of(2026, 5, 10)),
+            live.copy(id = "clock"), live.copy(id = "minus", status = CourseStatus.NOT_ENROLLED))
+        compose.setContent {
+            TaktI18n.use(AppLanguage.ENGLISH)
+            TaktTheme { com.kpyruy.takt.feature.studyplan.SemesterSection(3, rows, object : GradeRepository by forbiddenGrades {
+                override fun observeManualGrade(courseId: String): Flow<GradeLetter?> = kotlinx.coroutines.flow.flowOf(null)
+            }, true, true, {}, {}, {}, compactPreview = true) }
+        }
+        val centers = listOf("grade", "clock", "minus").map { compose.onNodeWithTag("status-$it").fetchSemanticsNode().boundsInRoot.center.x }
+        assertEquals(centers[0], centers[1], 1f)
+        assertEquals(centers[0], centers[2], 1f)
+    }
+
+    @Test fun uisSemesterIsReadOnlyButLocalSemesterKeepsItsAction() {
+        var picks = 0
+        compose.setContent {
+            var managed by remember { mutableStateOf(true) }
+            TaktTheme { Column {
+                androidx.compose.material3.TextButton(onClick = { managed = false }, modifier = Modifier.testTag("local-mode")) { androidx.compose.material3.Text("Local") }
+                StudiesContent(StudentHubState(snapshot), localCourses = listOf(live), uisManaged = managed, onChooseSemester = { picks++ })
+            } }
+        }
+        compose.onNodeWithTag("studies-current-semester").assertHasNoClickAction()
+        compose.onNodeWithTag("local-mode").performClick()
+        compose.onNodeWithTag("studies-current-semester").performClick()
+        compose.runOnIdle { assertEquals(1, picks) }
+    }
+
+    @Test fun unavailableScholarshipFitsNarrowSlovakLayoutWithLargeFonts() {
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, 1.5f)) {
+                TaktI18n.use(AppLanguage.SLOVAK)
+                TaktTheme { Box(Modifier.width(320.dp).fillMaxHeight()) {
+                    StudiesContent(StudentHubState(snapshot.copy(studies = listOf(current.copy(scholarships = emptyList(), titleSk = "Priemyselná informatika, automatizácia a robotika")))),
+                        settings = AppSettings(language = AppLanguage.SLOVAK), uisManaged = true)
+                } }
+            }
+        }
+        compose.onNodeWithTag("studies-screen").performScrollToNode(hasText("Nedostupné"))
+        compose.onNodeWithTag("studies-scholarship-value", useUnmergedTree = true).assertTextEquals("Nedostupné")
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+                assertTrue(action(layouts)); assertEquals(1, layouts.single().lineCount); assertFalse(layouts.single().hasVisualOverflow)
+            }
+        capture("studies-scholarship-narrow-sk.png")
     }
 
     @Test fun overviewUsesApprovedOrderAndAllThreeStudyTabs() {
@@ -224,6 +308,10 @@ class StudiesNativeUiTest {
         compose.onNodeWithTag("studies-outstanding").assertIsDisplayed()
         compose.onNodeWithTag("studies-fee-isic").assertIsDisplayed()
         capture("studies-dark-elevated.png")
+        compose.onNodeWithTag("studies-study-selector").performClick()
+        compose.onNodeWithTag("studies-select-current").assertIsSelected()
+        capture("studies-switcher-dark.png")
+        compose.onNodeWithTag("studies-selector-done").performClick()
     }
 
     @Test fun lightFilledStudySelectorMatchesApprovedSelectionFlow() {
@@ -231,13 +319,8 @@ class StudiesNativeUiTest {
         compose.onNodeWithTag("studies-study-selector").performClick()
         compose.onNodeWithTag("studies-select-current").assertIsSelected()
         compose.onNodeWithTag("studies-select-previous").assertIsNotSelected()
-        compose.onNodeWithTag("studies-selector-previous").assertIsOn()
+        compose.onNodeWithTag("studies-selector-previous").assertDoesNotExist()
         compose.onNodeWithTag("studies-selector-done").assertIsDisplayed()
-        val current = compose.onNodeWithTag("studies-select-current").fetchSemanticsNode().boundsInRoot
-        val checkbox = compose.onNodeWithTag("studies-selector-previous").fetchSemanticsNode().boundsInRoot
-        val previous = compose.onNodeWithTag("studies-select-previous").fetchSemanticsNode().boundsInRoot
-        assertTrue(current.bottom <= checkbox.top)
-        assertTrue(checkbox.bottom <= previous.top)
         capture("studies-switcher.png")
         compose.onNodeWithTag("studies-selector-done").performClick()
         compose.onNodeWithTag("studies-study-selector").assertIsDisplayed()
@@ -248,11 +331,12 @@ class StudiesNativeUiTest {
         captureStudiesScreenshot(name)
     }
 
-    @Test fun slovakChromePreservesUniversityDataStrings() {
-        show(language = AppLanguage.SLOVAK)
+    @Test fun slovakChromeUsesOfficialSlovakProgrammeTitle() {
+        show(StudentHubState(snapshot.copy(studies = listOf(current.copy(titleEn = current.title, titleSk = "Automatizácia a robotika")))), language = AppLanguage.SLOVAK)
         compose.onNodeWithText("Štúdium").assertExists()
         compose.onNodeWithText("Prehľad").assertExists()
         compose.onNodeWithTag("studies-tab-2").assertTextEquals("Financie")
-        compose.onNodeWithText("Automation & Control").assertExists()
+        compose.onNodeWithText("Automatizácia a robotika").assertExists()
+        compose.onNodeWithText("Automation & Control").assertDoesNotExist()
     }
 }

@@ -62,7 +62,7 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
         .collectAsStateWithLifecycle(initialValue = null).value else null
     val grade = course.officialGrade ?: manualGrade
     // Reserve the same date-capable column for every status, including icon-only rows.
-    val statusColumnWidth = (if (compactPresentation && grade == null) 48.dp else 88.dp) * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val statusColumnWidth = 88.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
     Row(Modifier.fillMaxWidth().heightIn(min = if (compactPresentation) 64.dp else 72.dp).padding(vertical = 8.dp).testTag("progress-course-${course.id}"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.weight(1f).clickable(onClick = onOpen),
