@@ -199,15 +199,7 @@ fun BackupReviewPage(
         }
         if (BackupSection.STUDIES in differing) BackupChoice(
             BackupSection.STUDIES, selected, ::toggle, sourceName, t(UiKey.STUDIES_TITLE), "") {
-            BackupSettingChange(t(UiKey.STUDIES_PROFILE),
-                local.studentHub?.identity?.name ?: t(UiKey.TEXT_UNSPECIFIED),
-                source.studentHub?.identity?.name ?: t(UiKey.TEXT_UNSPECIFIED))
-            BackupSettingChange(t(UiKey.STUDIES_DISPLAY_NAME),
-                local.studentHub?.displayName?.takeIf { it.isNotBlank() } ?: t(UiKey.TEXT_UNSPECIFIED),
-                source.studentHub?.displayName?.takeIf { it.isNotBlank() } ?: t(UiKey.TEXT_UNSPECIFIED))
-            BackupSettingChange(t(UiKey.STUDIES_HISTORY),
-                local.studentHub?.studies?.joinToString(" · ") { it.title } ?: t(UiKey.TEXT_UNSPECIFIED),
-                source.studentHub?.studies?.joinToString(" · ") { it.title } ?: t(UiKey.TEXT_UNSPECIFIED))
+            BackupStudyChanges(local.studentHub, source.studentHub, sourceName)
         }
         if (BackupSection.LANGUAGE in differing) BackupChoice(
             BackupSection.LANGUAGE, selected, ::toggle, sourceName, t(UiKey.TEXT_LANGUAGE), "") {
