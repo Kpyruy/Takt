@@ -6,6 +6,13 @@ import org.junit.Test
 class StudentHubModelsTest {
     private fun study(fees: List<StudentFee> = emptyList(), loaded: Boolean = true) = StudentStudy(
         "101", "Programme", active = true, fees = fees, feesLoaded = loaded)
+    @Test fun programmeLanguageFollowsAppAndRetainsOfficialFallbacks() {
+        val study = study().copy(titleEn = "Automation and Robotics", titleSk = "Automatizácia a robotika")
+        assertEquals("Automatizácia a robotika", AppSettings(language = AppLanguage.SLOVAK, courseNameLanguage = CourseNameLanguage.ENGLISH).displayStudyTitle(study))
+        assertEquals("Automation and Robotics", AppSettings(language = AppLanguage.ENGLISH).displayStudyTitle(study))
+        assertEquals("Automatizácia a robotika", AppSettings(language = AppLanguage.UKRAINIAN, ukrainianCourseNameFallback = CourseNameLanguage.SLOVAK).displayStudyTitle(study))
+        assertEquals("Programme", AppSettings(language = AppLanguage.SLOVAK).displayStudyTitle(study.copy(titleSk = null)))
+    }
     @Test fun outstandingUsesMinorUnitsAndKeepsCurrenciesSeparate() {
         val data = study(listOf(
             StudentFee("one", "101", "ISIC", 2200, "EUR", 500, StudentFeeStatus.PARTIAL),

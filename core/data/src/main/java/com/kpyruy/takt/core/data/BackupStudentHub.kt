@@ -29,13 +29,14 @@ data class BackupStudentStudy(val id: String, val title: String, val active: Boo
     val currentSemester: Int? = null, val earnedCredits: Int? = null, val requiredCredits: Int? = null,
     val courses: List<BackupCourse> = emptyList(), val fees: List<BackupStudentFee> = emptyList(),
     val scholarships: List<BackupScholarshipPayment> = emptyList(), val feesLoaded: Boolean = false,
-    val scholarshipsLoaded: Boolean = false, val updatedAtEpochMillis: Long? = null, val periodId: String? = null) {
+    val scholarshipsLoaded: Boolean = false, val updatedAtEpochMillis: Long? = null, val periodId: String? = null,
+    val titleEn: String? = null, val titleSk: String? = null) {
     fun toModel() = StudentStudy(id,title,university,degree,periodLabel,active,currentSemester,earnedCredits,requiredCredits,
         courses.map { Course(it.id,it.code,it.title,it.credits,it.semester,CourseStatus.fromStorage(it.status),
             CourseRequirementType.valueOf(it.requirementType),it.syllabusUrl,CourseGradingType.valueOf(it.gradingType),
             it.passFailResult?.let(PassFailResult::valueOf),it.iconKey,it.titleEn,it.titleSk,it.officialGrade?.let(GradeLetter::valueOf),
             it.fulfilledOnEpochDay?.let(LocalDate::ofEpochDay)) }, fees.map { it.toModel() },scholarships.map { it.toModel() },feesLoaded,
-        scholarshipsLoaded,updatedAtEpochMillis,periodId)
+        scholarshipsLoaded,updatedAtEpochMillis,periodId,titleEn,titleSk)
 }
 @Serializable
 data class BackupStudentHub(val identity: BackupStudentIdentity? = null, val studies: List<BackupStudentStudy> = emptyList(),
@@ -53,7 +54,7 @@ data class BackupStudentHub(val identity: BackupStudentIdentity? = null, val stu
         fun date(value: Long?) { if(value!=null) require(value in LocalDate.of(1900,1,1).toEpochDay()..LocalDate.of(2200,12,31).toEpochDay()) }
         studies.forEach { study ->
             require(study.id.matches(Regex("[A-Za-z0-9:_-]{1,128}")) && study.title.isNotBlank() && study.title.length <= 2000)
-            require(listOf(study.university,study.degree,study.periodLabel).all { it == null || it.length <= 2000 })
+            require(listOf(study.university,study.degree,study.periodLabel,study.titleEn,study.titleSk).all { it == null || it.length <= 2000 })
             require(study.courses.size <= 1000 && study.fees.size <= 2000 && study.scholarships.size <= 2000)
             require(study.fees.map { it.id }.distinct().size == study.fees.size)
             require(study.scholarships.map { it.id }.distinct().size == study.scholarships.size)
@@ -92,4 +93,4 @@ fun StudentHubSnapshot.toBackupStudentHub() = BackupStudentHub(identity?.let { B
             c.gradingType.name,c.passFailResult?.name,c.iconKey,c.titleEn,c.titleSk,c.officialGrade?.name,c.fulfilledOn?.toEpochDay()) },
         s.fees.map { BackupStudentFee(it.id,it.studyId,it.title,it.amountMinor,it.currency,it.paidMinor,it.status.name,it.dueDate?.toEpochDay(),it.issuedDate?.toEpochDay(),it.recordUrl) },
         s.scholarships.map { BackupScholarshipPayment(it.id,it.studyId,it.title,it.amountMinor,it.currency,it.paidOn?.toEpochDay(),it.periodLabel) },
-        s.feesLoaded,s.scholarshipsLoaded,s.updatedAtEpochMillis,s.periodId) },currentStudyId,viewedStudyId,displayName,showPreviousStudies,ownerKey)
+        s.feesLoaded,s.scholarshipsLoaded,s.updatedAtEpochMillis,s.periodId,s.titleEn,s.titleSk) },currentStudyId,viewedStudyId,displayName,showPreviousStudies,ownerKey)

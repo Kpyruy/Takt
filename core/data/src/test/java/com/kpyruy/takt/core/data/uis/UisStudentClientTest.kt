@@ -22,7 +22,10 @@ class UisStudentClientTest {
             enqueue("""<table><tr><th>Choose</th><th>Faculty</th><th>Study</th><th>Progress of study</th></tr>
                 <tr><td><span aria-label=Active></span></td><td>FEI</td><td>Other</td><td>enrolled<a href="studium.pl?studium=303;obdobi=700">Details</a></td></tr>
                 <tr><td><a href="moje_studium.pl?studium=101">Choose</a></td><td>MTF</td><td>Current</td><td>enrolled<a href="studium.pl?studium=101;obdobi=741">Details</a></td></tr></table>""")
-            for(title in listOf("Other","Current"))enqueue("""<table><tr><td>Programme:</td><td>$title</td></tr><tr><td>Beginning of study:</td><td>09/01/2025</td></tr></table>""")
+            for(title in listOf("Other","Current")) {
+                enqueue("""<table><tr><td>Programme:</td><td>$title</td></tr><tr><td>Beginning of study:</td><td>09/01/2025</td></tr></table>""")
+                enqueue("""<table><tr><td>Študijný program:</td><td>Slovak $title</td></tr></table>""")
+            }
             val overview=client.readStudentHubOverview()
             assertEquals("101",overview.currentStudyId)
             enqueue(plan("101","741"));enqueue(plan("101","741"))
@@ -42,8 +45,12 @@ class UisStudentClientTest {
             server.enqueue(MockResponse().setBody(auth))
             assertEquals(UisResult.CONNECTED,client.login("fixture","fixture"))
             enqueue("""<div id=log>Logged in: Alex Novak</div><table><tr><th>Choose</th><th>Faculty</th><th>Study</th><th>Progress of study</th></tr><tr><td>Active</td><td>MTF</td><td>Current<br>full-time 3</td><td>enrolled<a href="studium.pl?studium=101;obdobi=741">Details</a></td></tr><tr><td><a href="moje_studium.pl?studium=202">Choose</a></td><td>MTF</td><td>Old</td><td>ended<a href="studium.pl?studium=202;obdobi=722">Details</a></td></tr></table>""")
-            for(title in listOf("Current","Old"))enqueue("""<table><tr><td>Programme:</td><td>$title</td></tr><tr><td>Beginning of study:</td><td>09/01/2025</td></tr></table>""")
+            for(title in listOf("Current","Old")) {
+                enqueue("""<table><tr><td>Programme:</td><td>$title</td></tr><tr><td>Beginning of study:</td><td>09/01/2025</td></tr></table>""")
+                enqueue("""<table><tr><td>Študijný program:</td><td>Slovak $title</td></tr></table>""")
+            }
             val overview=client.readStudentHubOverview();assertEquals("101",overview.currentStudyId)
+            assertEquals("Slovak Current",overview.studies.first().titleSk)
             enqueue(plan("202","722"))
             enqueue(plan("202","722").replace("Physics","Fyzika"))
             enqueue("""<table><tr><th>Code</th><th>Course name</th><th>Result</th><th>Entered</th></tr><tr><td>PHYS</td><td>Physics</td><td>(A)</td><td></td></tr></table>""")

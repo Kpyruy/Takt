@@ -66,6 +66,11 @@ internal object UisStudentParser {
         val name=d.selectFirst("#log")?.ownText()?.substringAfter("Logged in:","")?.trim().orEmpty()
         return StudentHubSnapshot(identity=name.takeIf { it.isNotBlank() }?.let { StudentIdentity(name=it,university="STU") },studies=studies,currentStudyId=selected.id,viewedStudyId=selected.id)
     }
+    fun programmeTitle(html: String): String? = Jsoup.parse(html).select("table tr").firstNotNullOfOrNull { row ->
+        val c=cells(row)
+        if (c.size == 2 && norm(c[0].text()).removeSuffix(":") in setOf("programme", "program", "študijný program"))
+            c[1].text().trim().takeIf { it.isNotBlank() } else null
+    }
     fun studyDetails(html:String,base:StudentStudy):Pair<StudentStudy,String?> {
         val d=Jsoup.parse(html)
         val fields=d.select("table tr").mapNotNull { row -> val c=cells(row);if(c.size==2)norm(c[0].text()).removeSuffix(":") to c[1].text().trim() else null }.toMap()
@@ -74,7 +79,7 @@ internal object UisStudentParser {
         fun credits(key:String)=fields[key]?.replace(Regex("\\s"),"")?.toIntOrNull()
         val selected=d.selectFirst("select[name=studium] option[selected]")?.text().orEmpty()
         val semester=Regex("term\\s+(\\d+)\\s*,\\s*year\\s+(\\d+)",RegexOption.IGNORE_CASE).find(selected)?.let { (it.groupValues[2].toInt()-1)*2+if(it.groupValues[1].toInt()%2==1)1 else 2 }
-        return base.copy(title=fields.getValue("programme"),degree=fields["your prospective academic degree"],
+        return base.copy(title=fields.getValue("programme"),titleEn=fields.getValue("programme"),degree=fields["your prospective academic degree"],
             periodLabel=start?.let { if(end!=null)"${it.year}–${end.year}" else "${it.year}–…" },currentSemester=semester?:base.currentSemester,
             earnedCredits=credits("number of credits obtained during your whole course of study"),
             requiredCredits=credits("number of credits required to complete your study")) to fields["user's identification number"]

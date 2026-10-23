@@ -16,7 +16,8 @@ data class StudentStudy(val id: String, val title: String, val university: Strin
     val currentSemester: Int? = null, val earnedCredits: Int? = null, val requiredCredits: Int? = null,
     val courses: List<Course> = emptyList(), val fees: List<StudentFee> = emptyList(),
     val scholarships: List<ScholarshipPayment> = emptyList(), val feesLoaded: Boolean = false,
-    val scholarshipsLoaded: Boolean = false, val updatedAtEpochMillis: Long? = null, val periodId: String? = null)
+    val scholarshipsLoaded: Boolean = false, val updatedAtEpochMillis: Long? = null, val periodId: String? = null,
+    val titleEn: String? = null, val titleSk: String? = null)
 data class StudentHubSnapshot(val identity: StudentIdentity? = null, val studies: List<StudentStudy> = emptyList(),
     val currentStudyId: String? = null, val viewedStudyId: String? = null,
     val displayName: String = "", val showPreviousStudies: Boolean = false, val ownerKey: String? = null)

@@ -1,5 +1,6 @@
 package com.kpyruy.takt.core.data
 
+import kotlinx.coroutines.launch
 import com.kpyruy.takt.core.model.uiMessage
 import com.kpyruy.takt.core.model.UiKey
 import android.content.Context
@@ -193,6 +194,15 @@ class UniversityAccountRepository(
             action()
         } }, stableWrite = { action -> coordinated(action) })
 
+    private var studentRefreshJob: kotlinx.coroutines.Job? = null
+
+    /** Called only from successful sign-in or an unlocked foreground entry, never by a screen. */
+    @Synchronized
+    fun refreshStudentHubInBackground() {
+        if (!hasAccount.value || session.state.value == UisResult.SECOND_FACTOR || studentRefreshJob?.isActive == true) return
+        studentRefreshJob = studentScope.launch { studentHubRepository.refresh() }
+    }
+
     private fun studentOwnerKey(login:String)=java.security.MessageDigest.getInstance("SHA-256")
         .digest(login.trim().lowercase(java.util.Locale.ROOT).toByteArray()).joinToString(""){"%02x".format(it.toInt() and 255)}
 
@@ -220,6 +230,7 @@ class UniversityAccountRepository(
             pendingAutoSections = null
             fetchAutomatic(sections, LocalDate.now())
         } else importAfterLogin()
+        if (session.state.value == UisResult.CONNECTED) refreshStudentHubInBackground()
     }
 
     suspend fun retryImport() = accountOperations.run { importAfterLogin(manual = true) }
@@ -441,7 +452,13 @@ class UniversityAccountRepository(
         edit.apply()
     }
 
-    private suspend fun importAfterLogin(manual: Boolean = false) = coordinated { importAfterLoginStable(manual) }
+    private suspend fun importAfterLogin(manual: Boolean = false) {
+        coordinated {
+            if (session.state.value == UisResult.CONNECTED) settingsRepository?.setCurrentSemester(null)
+            importAfterLoginStable(manual)
+        }
+        if (session.state.value == UisResult.CONNECTED) refreshStudentHubInBackground()
+    }
 
     private suspend fun importAfterLoginStable(manual: Boolean) {
         if (session.state.value != UisResult.CONNECTED || studyPlanRepository == null) return

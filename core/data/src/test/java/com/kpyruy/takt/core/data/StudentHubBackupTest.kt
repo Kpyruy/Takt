@@ -6,7 +6,7 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class StudentHubBackupTest {
-    private val study = StudentStudy("101", "Programme", active = true, earnedCredits = 86,
+    private val study = StudentStudy("101", "Programme", active = true, titleEn = "Automation", titleSk = "Automatizácia", earnedCredits = 86,
         requiredCredits = 185, feesLoaded = true, scholarshipsLoaded = true,
         fees = listOf(StudentFee("one", "101", "ISIC", 2200, paidMinor = 0, status = StudentFeeStatus.UNPAID,
             dueDate = LocalDate.of(2026, 10, 31), recordUrl = "https://is.stuba.sk/auth/student/financovani.pl?studium=101;detail=1")),

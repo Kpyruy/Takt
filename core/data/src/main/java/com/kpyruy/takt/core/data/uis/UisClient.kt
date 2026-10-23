@@ -128,7 +128,9 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
             if (!isAuthenticated(details)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
             val (enriched, id) = UisStudentParser.studyDetails(details.html, study)
             if (study.id == overview.currentStudyId) personId = id
-            enriched
+            val slovakDetails = exchange(origin.resolve("auth/student/studium.pl?studium=${study.id};lang=sk")!!)
+            if (!isAuthenticated(slovakDetails)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+            enriched.copy(titleSk = UisStudentParser.programmeTitle(slovakDetails.html))
         }
         studies.firstOrNull { it.id == overview.currentStudyId }?.let { current ->
             current.periodId?.let { primaryStudyContext = current.id to it }

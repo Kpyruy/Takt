@@ -125,6 +125,7 @@ class MainActivity : FragmentActivity() {
                             catch (_: Exception) { /* The next foreground check can retry. */ }
                         }
                     }
+                    repository.refreshStudentHubInBackground()
                 }
             }
 

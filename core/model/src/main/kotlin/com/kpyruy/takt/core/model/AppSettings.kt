@@ -133,9 +133,17 @@ data class AppSettings(
         return (if (selected == CourseNameLanguage.SLOVAK) course.titleSk else course.titleEn)
             ?.takeIf { it.isNotBlank() } ?: course.title
     }
+    fun displayStudyTitle(study: StudentStudy): String {
+        val localized = when (language) {
+            AppLanguage.ENGLISH -> study.titleEn
+            AppLanguage.SLOVAK -> study.titleSk
+            AppLanguage.UKRAINIAN -> if (ukrainianCourseNameFallback == CourseNameLanguage.SLOVAK) study.titleSk else study.titleEn
+        }
+        return localized?.takeIf { it.isNotBlank() } ?: study.title
+    }
     fun effectiveCurrentSemester(courses: List<Course>): Int? =
-        currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }
-            ?: uisCurrentSemester
+        uisCurrentSemester
+            ?: currentSemester?.takeIf { selected -> courses.any { it.semester == selected } }
             ?: courses.filter { it.status == CourseStatus.ENROLLED }.maxOfOrNull { it.semester }
             ?: courses.filter { it.status != CourseStatus.FULFILLED && it.status != CourseStatus.NOT_NEEDED }
                 .minOfOrNull { it.semester }

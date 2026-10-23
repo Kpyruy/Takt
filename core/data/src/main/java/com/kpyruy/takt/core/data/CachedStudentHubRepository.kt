@@ -39,7 +39,7 @@ class CachedStudentHubRepository(
         val fresh=loadOverview()
         persist(requestGeneration) { old ->
             val studies=fresh.studies.map { item -> old?.studies?.firstOrNull { it.id==item.id }?.let { cached ->
-                item.copy(courses=cached.courses,fees=cached.fees,scholarships=cached.scholarships,
+                item.copy(titleEn=item.titleEn?:cached.titleEn,titleSk=item.titleSk?:cached.titleSk,courses=cached.courses,fees=cached.fees,scholarships=cached.scholarships,
                     feesLoaded=cached.feesLoaded,scholarshipsLoaded=cached.scholarshipsLoaded,updatedAtEpochMillis=cached.updatedAtEpochMillis)
             } ?: item }
             fresh.copy(studies=studies,viewedStudyId=old?.viewedStudyId?.takeIf { id->studies.any{it.id==id} }?:fresh.currentStudyId,
