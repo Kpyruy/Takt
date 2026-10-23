@@ -65,6 +65,7 @@ class RoomStudyPlanRepository(
                     gradingType = course.gradingType.name,
                     passFailResult = course.passFailResult?.name ?: previous?.passFailResult ?: target?.passFailResult,
                     iconKey = previous?.iconKey ?: target?.iconKey,
+                    colorKey = previous?.colorKey ?: target?.colorKey,
                     titleEn = course.titleEn ?: previous?.titleEn ?: target?.titleEn,
                     titleSk = course.titleSk ?: previous?.titleSk ?: target?.titleSk,
                     officialGrade = course.officialGrade?.name ?: previous?.officialGrade ?: target?.officialGrade,
@@ -161,6 +162,11 @@ class RoomStudyPlanRepository(
         dao.updateIcon(courseId, iconKey)
     }
 
+    override suspend fun setColor(courseId: String, colorKey: String?) {
+        require(colorKey == null || com.kpyruy.takt.core.model.CourseColor.fromKey(colorKey) != null)
+        dao.updateColor(courseId, colorKey)
+    }
+
     override suspend fun updateStatus(courseId: String, status: CourseStatus) {
         dao.updateStatus(courseId, status.storageValue)
     }
@@ -214,4 +220,5 @@ private fun CourseEntity.toDomain() = Course(
     titleSk = titleSk,
     officialGrade = officialGrade?.let { runCatching { GradeLetter.valueOf(it) }.getOrNull() },
     fulfilledOn = fulfilledOnEpochDay?.let(LocalDate::ofEpochDay),
+    colorKey = colorKey,
 )

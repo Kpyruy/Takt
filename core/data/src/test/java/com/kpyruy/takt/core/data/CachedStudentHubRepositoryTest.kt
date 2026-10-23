@@ -10,6 +10,20 @@ import java.io.IOException
 class CachedStudentHubRepositoryTest {
     private fun source()=StudentHubSnapshot(StudentIdentity(name="Alex"),listOf(StudentStudy("101","Current",active=true),
         StudentStudy("202","Previous",active=false)),"101","101",ownerKey="owner")
+    @Test fun refreshingCachedCoursesKeepsTheirManualPaletteColor() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val store = InMemoryStudentHubStore()
+        val course = Course("uis:101:1", "C", "Course", 5, 1, CourseStatus.ENROLLED, colorKey = "TEAL")
+        store.write(source().copy(studies = listOf(source().studies.first().copy(courses = listOf(course)))))
+        try {
+            val repo = CachedStudentHubRepository(store, scope, { source() },
+                { it.copy(courses = listOf(course.copy(title = "Updated", colorKey = null))) }, { true }, { "owner" })
+            repo.refresh()
+            assertEquals("Updated", store.read()!!.viewedStudy()!!.courses.single().title)
+            assertEquals("TEAL", store.read()!!.viewedStudy()!!.courses.single().colorKey)
+        } finally { scope.cancel() }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test fun transientFailureRetriesInBackgroundAndKeepsCachedRecords() = runTest {
         val store = InMemoryStudentHubStore(); store.write(source())

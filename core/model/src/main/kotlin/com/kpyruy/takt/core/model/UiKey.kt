@@ -2,6 +2,12 @@ package com.kpyruy.takt.core.model
 
 /** Stable identifiers: translated display text belongs only in the UI catalogs. */
 object UiKey {
+    const val APPEARANCE_ADD_PLACEMENT = "appearance.add_placement"
+    const val APPEARANCE_ADD_CENTER = "appearance.add_center"
+    const val APPEARANCE_ADD_FLOATING = "appearance.add_floating"
+    const val BACKUP_COURSE_APPEARANCE = "backup.course_appearance"
+
+
     const val STUDIES_SELECTOR_NOTE = "studies.selector_note"
     const val STUDIES_SHOW_FUTURE_SEMESTERS = "studies.show_future_semesters"
     const val STUDIES_HIDE_FUTURE_SEMESTERS = "studies.hide_future_semesters"
@@ -1443,5 +1449,12 @@ object UiKey {
     const val FORMAT_IMPORT_ERROR = "feedback.import_error"
     const val FORMAT_ONBOARDING_STEP = "onboarding.step"
     const val COLOR_HEX = "appearance.hex"
+    const val SUBJECT_COLOR = "subject.color"
+    const val SUBJECT_COLOR_CLOSE = "subject.color.close"
+    const val SUBJECT_COLOR_OPTION = "subject.color.option"
+    const val SUBJECT_COLOR_AUTOMATIC = "subject.color.automatic"
+    const val WORK_EXCLUDED_FROM_GRADE_DESCRIPTION = "work.excluded_from_grade.description"
+    const val WORK_REQUIRED_FOR_EXAM_DESCRIPTION = "work.required_for_exam.description"
+    const val WORK_ADMISSION_WARNING_DESCRIPTION = "work.admission_warning.description"
     const val DOCUMENTS_FOLDER = "documents.folder"
 }

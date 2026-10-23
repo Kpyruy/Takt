@@ -6,7 +6,8 @@ import androidx.compose.ui.graphics.Color
 import com.kpyruy.takt.core.ui.components.LocalCourseCodeKeys
 
 @Composable
-fun taktSubjectColor(subjectKey: String?): Color {
+fun taktSubjectColor(subjectKey: String?, colorKey: String? = com.kpyruy.takt.core.ui.components.LocalCourseColorKeys.current[subjectKey]): Color {
+    com.kpyruy.takt.core.model.CourseColor.fromKey(colorKey)?.let { return Color(it.argb) }
     val colors = LocalTaktSubjectColors.current
     if (colors.isEmpty()) return MaterialTheme.colorScheme.primary
     val code = LocalCourseCodeKeys.current[subjectKey] ?: subjectKey

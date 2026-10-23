@@ -142,9 +142,10 @@ private fun TourScene(
     val selected = when (scene) { "home" -> 0; "calendar" -> 1; "progress" -> 3; else -> 2 }
     val root = scene in setOf("home", "calendar", "subjects", "progress")
     Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentWindowInsets = WindowInsets(0),
+        floatingActionButton = { if (root && example.snapshot.settings.addButtonPlacement == com.kpyruy.takt.core.model.AddButtonPlacement.FLOATING) TaktFloatingAddFab {} },
         bottomBar = { if (root) TaktBottomNavigation(labels.mapIndexed { index, label ->
             TaktNavItem(label, icons[index], index == selected) { }
-        }, centerContent = { TaktAddFab {} }) }) { padding ->
+        }, centerContent = if (example.snapshot.settings.addButtonPlacement == com.kpyruy.takt.core.model.AddButtonPlacement.CENTER) ({ TaktAddFab {} }) else null) }) { padding ->
         Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())
             .captureTaktContentBackdrop(enabled = root)) {
             when (scene) {

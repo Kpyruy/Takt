@@ -62,6 +62,7 @@ object BackupMerger {
                     fulfilledOnEpochDay = if (BackupSection.PROGRESS in fromBackup || old == null) source.fulfilledOnEpochDay
                         else old.fulfilledOnEpochDay,
                     iconKey = if (BackupSection.ICONS in fromBackup) source.iconKey else old?.iconKey,
+                    colorKey = if (BackupSection.ICONS in fromBackup) source.colorKey else old?.colorKey,
                 )
             }
             imported + local.courses.filter { it.code.uppercase(Locale.ROOT) !in incomingByCode }
@@ -74,6 +75,7 @@ object BackupMerger {
                     officialGrade = if (BackupSection.PROGRESS in fromBackup) source.officialGrade else old.officialGrade,
                     fulfilledOnEpochDay = if (BackupSection.PROGRESS in fromBackup) source.fulfilledOnEpochDay else old.fulfilledOnEpochDay,
                     iconKey = if (BackupSection.ICONS in fromBackup) source.iconKey else old.iconKey,
+                    colorKey = if (BackupSection.ICONS in fromBackup) source.colorKey else old.colorKey,
                 )
             }
         } else local.courses
@@ -125,6 +127,7 @@ object BackupMerger {
                 else phoneSettings.customThemes,
             selectedCustomThemeId = if (BackupSection.APPEARANCE in fromBackup) fileSettings.selectedCustomThemeId
                 else phoneSettings.selectedCustomThemeId,
+            addButtonPlacement = if (BackupSection.APPEARANCE in fromBackup) fileSettings.addButtonPlacement else phoneSettings.addButtonPlacement,
             cardAppearance = if (BackupSection.APPEARANCE in fromBackup) fileSettings.cardAppearance
                 else phoneSettings.cardAppearance,
             currentSemester = if (BackupSection.CURRENT_SEMESTER in fromBackup) fileSettings.currentSemester

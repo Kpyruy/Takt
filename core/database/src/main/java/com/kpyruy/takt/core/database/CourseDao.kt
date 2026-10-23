@@ -41,6 +41,9 @@ interface CourseDao {
     @Query("UPDATE courses SET iconKey = :iconKey WHERE id = :courseId OR id = (SELECT courseId FROM course_id_aliases WHERE oldId = :courseId)")
     suspend fun updateIcon(courseId: String, iconKey: String?)
 
+    @Query("UPDATE courses SET colorKey = :colorKey WHERE id = :courseId OR id = (SELECT courseId FROM course_id_aliases WHERE oldId = :courseId)")
+    suspend fun updateColor(courseId: String, colorKey: String?)
+
     @Query("DELETE FROM courses WHERE id = :courseId")
     suspend fun deleteById(courseId: String)
 

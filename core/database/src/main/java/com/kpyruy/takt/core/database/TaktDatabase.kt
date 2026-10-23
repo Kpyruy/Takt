@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExamInfoEntity::class,
         ExamMaterialEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 abstract class TaktDatabase : RoomDatabase() {
@@ -37,6 +37,12 @@ abstract class TaktDatabase : RoomDatabase() {
     abstract fun examDao(): ExamDao
 
     companion object {
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE courses ADD COLUMN colorKey TEXT")
+            }
+        }
+
         val MIGRATION_19_20 = object : Migration(19, 20) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS student_hub (id INTEGER NOT NULL PRIMARY KEY, payloadJson TEXT NOT NULL)")

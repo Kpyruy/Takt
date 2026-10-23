@@ -132,6 +132,7 @@ fun SubjectDetailScreen(
     SaveErrorDialog(saves)
     val haptics = rememberTaktHaptics()
     var showIconPicker by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableStateOf(if (initialTab == "grades") "tasks" else initialTab) }
     if (guidedTab != null) LaunchedEffect(guidedTab) { selectedTab = guidedTab }
@@ -301,12 +302,20 @@ fun SubjectDetailScreen(
             showIconPicker = false
         }, onDismiss = { showIconPicker = false })
     }
+    if (showColorPicker) {
+        com.kpyruy.takt.core.ui.components.CourseColorPicker(item.colorKey, onSelect = { key ->
+            saves.queue { repository.setColor(item.id, key) }
+            showColorPicker = false
+            showSettings = true
+        }, onDismiss = { showColorPicker = false; showSettings = true })
+    }
     if (showSettings) {
         CourseSettingsSheet(
             course = item,
             uisManaged = uisManaged,
             onDismiss = { showSettings = false },
             onIcon = { showSettings = false; showIconPicker = true },
+            onColor = { showSettings = false; showColorPicker = true },
             onStatus = { status -> if (!uisManaged) saves.queue { repository.updateStatus(item.id, status) } },
             onGrading = { type -> saves.queue { repository.setGradingType(item.id, type) } },
             onResult = { result -> saves.queue { repository.setPassFailResult(item.id, result) } },

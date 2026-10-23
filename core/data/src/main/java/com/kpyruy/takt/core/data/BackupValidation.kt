@@ -25,6 +25,7 @@ internal fun BackupPayload.validated(): BackupPayload {
             enumValue<CourseRequirementType>(it.requirementType)
             enumValue<CourseGradingType>(it.gradingType)
             it.passFailResult?.let { value -> enumValue<PassFailResult>(value) }
+            it.colorKey?.let { value -> enumValue<CourseColor>(value) }
             it.officialGrade?.let { value -> enumValue<GradeLetter>(value) }
             it.fulfilledOnEpochDay?.let(::date)
         }
@@ -185,6 +186,7 @@ internal fun BackupPayload.validated(): BackupPayload {
 private fun BackupSettings.validate(courseIds: Set<String>) {
     enumValue<CancellationDisplayStyle>(cancellationStyle)
     enumValue<ParityOverride>(parityOverride)
+    enumValue<com.kpyruy.takt.core.model.AddButtonPlacement>(addButtonPlacement)
     enumValue<CardAppearance>(cardAppearance)
     enumValue<ThemeFamily>(themeFamily)
     enumValue<AppThemeMode>(themeMode)

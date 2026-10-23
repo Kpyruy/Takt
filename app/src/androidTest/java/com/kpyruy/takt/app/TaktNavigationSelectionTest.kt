@@ -50,4 +50,28 @@ class TaktNavigationSelectionTest {
         assertEquals(subject.center.x, returned.center.x, 1f)
         captureStudiesScreenshot("navigation-add-reset.png")
     }
+    @Test fun floatingAddSitsAboveFourTabsAndDoesNotMoveTheirSelection() {
+        compose.setContent {
+            var selected by remember { mutableIntStateOf(0) }
+            var add by remember { mutableStateOf(false) }
+            val labels = listOf("Today", "Calendar", "Subjects", "Studies")
+            val icons = listOf(TaktIcons.Home, TaktIcons.Calendar, TaktIcons.Book, TaktIcons.Progress)
+            TaktTheme { TaktGlassBackground {
+                androidx.compose.material3.Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    floatingActionButton = { TaktFloatingAddFab(add) { add = true } },
+                    bottomBar = { TaktBottomNavigation(labels.mapIndexed { index, label ->
+                        TaktNavItem(label, icons[index], selected == index) { selected = index; add = false }
+                    }) }) { Box(Modifier.padding(it)) }
+            } }
+        }
+        val add = compose.onNodeWithTag("root-add").fetchSemanticsNode().boundsInRoot
+        val rail = compose.onNodeWithTag("root-navigation").fetchSemanticsNode().boundsInRoot
+        assertTrue(add.bottom < rail.top)
+        compose.onNodeWithTag("root-add").performClick().assertIsSelected()
+        compose.onNode(hasText("Today") and hasClickAction()).assertIsSelected()
+        compose.onNode(hasText("Studies") and hasClickAction()).performClick().assertIsSelected()
+        compose.onNodeWithTag("root-add").assertIsNotSelected()
+        captureStudiesScreenshot("navigation-floating-add.png")
+    }
+
 }

@@ -80,7 +80,13 @@ class CachedStudentHubRepository(
         val selected=accepted(store.read())?.viewedStudy()?:return
         val fresh=loadStudy(selected)
         require(fresh.id==selected.id)
-        persist(requestGeneration) { old -> requireNotNull(old).copy(studies=old.studies.map { if(it.id==fresh.id)fresh else it }) }
+        persist(requestGeneration) { old ->
+            requireNotNull(old).copy(studies = old.studies.map { cached ->
+                if (cached.id != fresh.id) cached else fresh.copy(courses = fresh.courses.map { remote ->
+                    remote.copy(colorKey = cached.courses.firstOrNull { it.id == remote.id }?.colorKey ?: remote.colorKey)
+                })
+            })
+        }
     }
     override suspend fun selectStudy(studyId:String) {
         edit { it.withViewedStudy(studyId) }

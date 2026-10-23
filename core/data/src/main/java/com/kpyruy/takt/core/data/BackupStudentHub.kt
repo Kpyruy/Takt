@@ -35,7 +35,7 @@ data class BackupStudentStudy(val id: String, val title: String, val active: Boo
         courses.map { Course(it.id,it.code,it.title,it.credits,it.semester,CourseStatus.fromStorage(it.status),
             CourseRequirementType.valueOf(it.requirementType),it.syllabusUrl,CourseGradingType.valueOf(it.gradingType),
             it.passFailResult?.let(PassFailResult::valueOf),it.iconKey,it.titleEn,it.titleSk,it.officialGrade?.let(GradeLetter::valueOf),
-            it.fulfilledOnEpochDay?.let(LocalDate::ofEpochDay)) }, fees.map { it.toModel() },scholarships.map { it.toModel() },feesLoaded,
+            it.fulfilledOnEpochDay?.let(LocalDate::ofEpochDay),it.colorKey) }, fees.map { it.toModel() },scholarships.map { it.toModel() },feesLoaded,
         scholarshipsLoaded,updatedAtEpochMillis,periodId,titleEn,titleSk)
 }
 @Serializable
@@ -90,7 +90,7 @@ internal object StudentHubCodec {
 fun StudentHubSnapshot.toBackupStudentHub() = BackupStudentHub(identity?.let { BackupStudentIdentity(it.personId,it.name,it.university,it.studentNumber,it.faculty) },
     studies.map { s -> BackupStudentStudy(s.id,s.title,s.active,s.university,s.degree,s.periodLabel,s.currentSemester,s.earnedCredits,s.requiredCredits,
         s.courses.map { c -> BackupCourse(c.id,c.code,c.title,c.credits,c.semester,c.status.storageValue,c.requirementType.name,c.syllabusUrl,
-            c.gradingType.name,c.passFailResult?.name,c.iconKey,c.titleEn,c.titleSk,c.officialGrade?.name,c.fulfilledOn?.toEpochDay()) },
+            c.gradingType.name,c.passFailResult?.name,c.iconKey,c.titleEn,c.titleSk,c.officialGrade?.name,c.fulfilledOn?.toEpochDay(),c.colorKey) },
         s.fees.map { BackupStudentFee(it.id,it.studyId,it.title,it.amountMinor,it.currency,it.paidMinor,it.status.name,it.dueDate?.toEpochDay(),it.issuedDate?.toEpochDay(),it.recordUrl) },
         s.scholarships.map { BackupScholarshipPayment(it.id,it.studyId,it.title,it.amountMinor,it.currency,it.paidOn?.toEpochDay(),it.periodLabel) },
         s.feesLoaded,s.scholarshipsLoaded,s.updatedAtEpochMillis,s.periodId,s.titleEn,s.titleSk) },currentStudyId,viewedStudyId,displayName,showPreviousStudies,ownerKey)

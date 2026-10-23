@@ -47,19 +47,23 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
     var wallpaperDraft by rememberSaveable { mutableStateOf(settings.customWallpaper) }
     val draftSaver = remember(settings) { listSaver<AppSettings, String>(
         save = { value -> listOf(value.themeMode.name, value.themeFamily.name, value.cardAppearance.name,
-            value.selectedCustomThemeId.orEmpty(), value.customWallpaper.orEmpty()) + value.customThemes.flatMap {
+            value.selectedCustomThemeId.orEmpty(), value.customWallpaper.orEmpty(), value.addButtonPlacement.name) + value.customThemes.flatMap {
                 listOf(it.id, it.name, it.primaryHex, it.secondaryHex.orEmpty(), it.tertiaryHex.orEmpty())
             } },
-        restore = { values -> settings.copy(themeMode = AppThemeMode.valueOf(values[0]),
+        restore = { values ->
+            // Android may retain an open editor's saved state across an app update.
+            val hasPlacement = values.size >= 6 && (values.size - 6) % 5 == 0
+            settings.copy(themeMode = AppThemeMode.valueOf(values[0]),
             themeFamily = ThemeFamily.valueOf(values[1]), cardAppearance = CardAppearance.valueOf(values[2]),
             selectedCustomThemeId = values[3].ifEmpty { null }, customWallpaper = values[4].ifEmpty { null },
-            customThemes = values.drop(5).chunked(5).map { CustomColorTheme(it[0], it[1], it[2],
+            addButtonPlacement = if (hasPlacement) AddButtonPlacement.valueOf(values[5]) else settings.addButtonPlacement,
+            customThemes = values.drop(if (hasPlacement) 6 else 5).chunked(5).map { CustomColorTheme(it[0], it[1], it[2],
                 it[3].ifEmpty { null }, it[4].ifEmpty { null }) }).normalizedAppearance() }
     ) }
     var draft by rememberSaveable(stateSaver = draftSaver) { mutableStateOf(settings.normalizedAppearance().copy(customWallpaper = wallpaperDraft)) }
     var importingWallpaper by remember { mutableStateOf(false) }
     val changed = draft.customWallpaper != settings.customWallpaper || draft.themeMode != settings.themeMode || draft.themeFamily != settings.themeFamily ||
-        draft.cardAppearance != settings.cardAppearance || draft.customThemes != settings.customThemes ||
+        draft.addButtonPlacement != settings.addButtonPlacement || draft.cardAppearance != settings.cardAppearance || draft.customThemes != settings.customThemes ||
         draft.selectedCustomThemeId != settings.selectedCustomThemeId
     Scaffold(
         containerColor = Color.Transparent,
@@ -83,6 +87,22 @@ internal fun AppearanceSettingsPage(settings: AppSettings, onBack: () -> Unit, o
             SettingsSectionTitle(t(UiKey.TEXT_PALETTE))
             AppearanceThemeChoices(draft, { draft = it })
             AppearanceWallpaperMenu(draft, settings.customWallpaper, { draft = it; wallpaperDraft = it.customWallpaper }, { importingWallpaper = it })
+            SettingsSectionTitle(t(UiKey.APPEARANCE_ADD_PLACEMENT))
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                AddButtonPlacement.entries.forEach { placement ->
+                    val selected = draft.addButtonPlacement == placement
+                    Surface(Modifier.weight(1f).fillMaxHeight().testTag("appearance-add-${placement.name}")
+                        .selectable(selected, role = Role.RadioButton, onClick = { draft = draft.copy(addButtonPlacement = placement) }),
+                        shape = MaterialTheme.shapes.medium,
+                        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            AddPlacementPreview(placement)
+                            Text(t(if (placement == AddButtonPlacement.CENTER) UiKey.APPEARANCE_ADD_CENTER else UiKey.APPEARANCE_ADD_FLOATING), style = MaterialTheme.typography.labelMedium)
+                            Box(Modifier.height(18.dp)) { if (selected) Icon(Icons.Outlined.Check, null, Modifier.size(18.dp)) }
+                        }
+                    }
+                }
+            }
             SettingsSectionTitle(t(UiKey.TEXT_CARD_STYLE))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
@@ -166,6 +186,21 @@ private fun LightingOption(label: String, icon: ImageVector, selected: Boolean, 
             Icon(icon, null, Modifier.size(22.dp), tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
             Text(label, style = MaterialTheme.typography.labelMedium,
                 color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+private fun AddPlacementPreview(placement: AddButtonPlacement) {
+    val fill = MaterialTheme.colorScheme.primaryContainer
+    Column(Modifier.fillMaxWidth().height(56.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
+        if (placement == AddButtonPlacement.FLOATING) Text("+", Modifier.padding(end = 4.dp), color = MaterialTheme.colorScheme.primary)
+        Row(Modifier.fillMaxWidth().height(26.dp).clip(CircleShape).background(fill).padding(horizontal = 7.dp),
+            horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            repeat(if (placement == AddButtonPlacement.CENTER) 5 else 4) { index ->
+                if (placement == AddButtonPlacement.CENTER && index == 2) Text("+", style = MaterialTheme.typography.labelSmall)
+                else Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary.copy(alpha = .65f), MaterialTheme.shapes.extraSmall))
+            }
         }
     }
 }

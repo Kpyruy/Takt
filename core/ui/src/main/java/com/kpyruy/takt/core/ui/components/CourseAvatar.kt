@@ -28,13 +28,15 @@ import com.kpyruy.takt.core.ui.theme.readableAccentColor
 import com.kpyruy.takt.core.ui.theme.LocalTaktCardAppearance
 import com.kpyruy.takt.core.model.CardAppearance
 
+val LocalCourseColorKeys = staticCompositionLocalOf<Map<String, String?>> { emptyMap() }
+
 val LocalCourseCodeKeys = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 
 val LocalCourseIconKeys = staticCompositionLocalOf<Map<String, String?>> { emptyMap() }
 
 @Composable
 fun CourseAvatar(course: Course, modifier: Modifier = Modifier) {
-    val color = taktSubjectColor(course.id)
+    val color = taktSubjectColor(course.id, course.colorKey)
     val icon = CourseIcons.find(course.iconKey)
     EntityIconTile(color, modifier) { foreground ->
         if (icon != null) Icon(icon.vector, t(icon.label), Modifier.size(26.dp), tint = foreground)

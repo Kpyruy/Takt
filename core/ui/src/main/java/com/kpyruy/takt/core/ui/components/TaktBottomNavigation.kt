@@ -111,3 +111,13 @@ fun TaktAddFab(selected: Boolean = false, onClick: () -> Unit) {
         Icon(Icons.Default.Add, t(UiKey.TEXT_ADD), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
     }
 }
+
+/** Standalone add control for the optional four-tab navigation layout. */
+@Composable
+fun TaktFloatingAddFab(selected: Boolean = false, onClick: () -> Unit) {
+    Box(Modifier.size(56.dp).glassSurface(CircleShape,
+        if (selected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Unspecified)
+        .testTag("floating-add"), contentAlignment = Alignment.Center) {
+        TaktAddFab(selected, onClick)
+    }
+}

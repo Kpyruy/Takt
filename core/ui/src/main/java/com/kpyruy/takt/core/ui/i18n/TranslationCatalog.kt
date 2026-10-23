@@ -4,6 +4,16 @@ import com.kpyruy.takt.core.model.UiKey
 
 /** Explicit values for every language; keys never double as display text. */
 internal val staticTranslations: Map<String, LocalizedText> = mapOf(
+    UiKey.APPEARANCE_ADD_PLACEMENT to LocalizedText("Add button", "Кнопка додавання", "Tlačidlo pridania"),
+    UiKey.APPEARANCE_ADD_CENTER to LocalizedText("In navigation", "У навігації", "V navigácii"),
+    UiKey.APPEARANCE_ADD_FLOATING to LocalizedText("Floating button", "Окрема кнопка", "Plávajúce tlačidlo"),
+    UiKey.BACKUP_COURSE_APPEARANCE to LocalizedText("Course icons and colors", "Іконки й кольори предметів", "Ikony a farby predmetov"),
+
+
+    UiKey.SUBJECT_COLOR to LocalizedText("Subject color", "Колір предмета", "Farba predmetu"),
+    UiKey.SUBJECT_COLOR_CLOSE to LocalizedText("Close colors", "Закрити палітру", "Zavrieť paletu farieb"),
+    UiKey.SUBJECT_COLOR_OPTION to LocalizedText("Color __ARG0__", "Колір __ARG0__", "Farba __ARG0__"),
+    UiKey.SUBJECT_COLOR_AUTOMATIC to LocalizedText("Automatic color", "Автоматичний колір", "Automatická farba"),
     UiKey.STUDIES_SELECTOR_NOTE to LocalizedText("The selected study applies to Overview, Progress and Finances. Your current timetable stays separate.", "Обране навчання відображається в огляді, прогресі та фінансах. Поточний розклад залишається окремим.", "Vybrané štúdium sa zobrazuje v prehľade, priebehu a financiách. Aktuálny rozvrh zostáva samostatný."),
     UiKey.STUDIES_SHOW_FUTURE_SEMESTERS to LocalizedText("Show semesters __ARG0__", "Показати семестри __ARG0__", "Zobraziť semestre __ARG0__"),
     UiKey.STUDIES_HIDE_FUTURE_SEMESTERS to LocalizedText("Hide future semesters", "Приховати майбутні семестри", "Skryť budúce semestre"),
@@ -1445,5 +1455,8 @@ internal val staticTranslations: Map<String, LocalizedText> = mapOf(
     UiKey.FORMAT_IMPORT_ERROR to LocalizedText("Import error: __ARG0__", "Помилка імпорту: __ARG0__", "Chyba importu: __ARG0__"),
     UiKey.FORMAT_ONBOARDING_STEP to LocalizedText("TAKT  ·  __ARG0__ / 3", "TAKT  ·  __ARG0__ / 3", "TAKT  ·  __ARG0__ / 3"),
     UiKey.COLOR_HEX to LocalizedText("HEX", "HEX", "HEX"),
+    UiKey.WORK_EXCLUDED_FROM_GRADE_DESCRIPTION to LocalizedText("This work does not count toward the final grade.", "Ця робота не враховується в підсумковій оцінці.", "Táto práca sa nezapočítava do výslednej známky."),
+    UiKey.WORK_REQUIRED_FOR_EXAM_DESCRIPTION to LocalizedText("Complete this work to qualify for the exam.", "Цю роботу потрібно виконати для допуску до іспиту.", "Túto prácu treba splniť na pripustenie ku skúške."),
+    UiKey.WORK_ADMISSION_WARNING_DESCRIPTION to LocalizedText("The minimum score for exam admission has not been reached.", "Мінімального бала для допуску до іспиту ще не досягнуто.", "Minimálny počet bodov na pripustenie ku skúške ešte nebol dosiahnutý."),
     UiKey.DOCUMENTS_FOLDER to LocalizedText("Documents/Takt", "Documents/Takt", "Documents/Takt"),
 )

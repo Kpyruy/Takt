@@ -44,6 +44,7 @@ internal fun CourseEntity.toBackup() = BackupCourse(
     titleSk = titleSk,
     officialGrade = officialGrade,
     fulfilledOnEpochDay = fulfilledOnEpochDay,
+    colorKey = colorKey,
 )
 
 internal fun BackupCourse.toEntity() = CourseEntity(
@@ -62,6 +63,7 @@ internal fun BackupCourse.toEntity() = CourseEntity(
     titleSk = titleSk,
     officialGrade = officialGrade,
     fulfilledOnEpochDay = fulfilledOnEpochDay,
+    colorKey = colorKey,
 )
 
 internal fun ScheduleRuleEntity.toBackup() = BackupScheduleRule(
@@ -286,6 +288,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
     showHiddenLessons = showHiddenLessons,
     parityOverride = parityOverride.name,
     cardAppearance = cardAppearance.name,
+    addButtonPlacement = addButtonPlacement.name,
     themeFamily = themeFamily.name,
     customThemes = com.kpyruy.takt.core.model.normalizeCustomThemes(customThemes)
         .map { BackupCustomColorTheme(it.id, it.name, it.primaryHex, it.secondaryHex, it.tertiaryHex) },
@@ -306,6 +309,7 @@ internal fun AppSettings.toBackup() = BackupSettings(
 )
 
 internal fun BackupSettings.toModel(localUisCurrentSemester: Int? = null, localWallpaper: String? = null) = AppSettings(
+    addButtonPlacement = com.kpyruy.takt.core.model.AddButtonPlacement.valueOf(addButtonPlacement),
     customWallpaper = com.kpyruy.takt.core.model.normalizeWallpaperReference(localWallpaper),
     reminders = reminders.toModel(),
     customThemes = customThemes.map {

@@ -41,9 +41,11 @@ object StoredSettingsCodec {
         selectedCustomThemeId: String? = null,
         reminders: String? = null,
         customWallpaper: String? = null,
+        addButtonPlacement: String? = null,
     ): AppSettings {
         val default = AppSettings()
         return AppSettings(
+            addButtonPlacement = enumValueOrNull<com.kpyruy.takt.core.model.AddButtonPlacement>(addButtonPlacement) ?: default.addButtonPlacement,
             cancellationStyle = enumValueOrNull<CancellationDisplayStyle>(cancellationStyle)
                 ?: default.cancellationStyle,
             showHiddenLessons = showHiddenLessons,

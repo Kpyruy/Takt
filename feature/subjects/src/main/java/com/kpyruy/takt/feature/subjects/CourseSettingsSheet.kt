@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,6 +69,7 @@ internal fun CourseSettingsSheet(
     uisManaged: Boolean = false,
     onDismiss: () -> Unit,
     onIcon: () -> Unit,
+    onColor: () -> Unit,
     onStatus: (CourseStatus) -> Unit,
     onGrading: (CourseGradingType) -> Unit,
     onResult: (PassFailResult?) -> Unit,
@@ -104,6 +106,16 @@ internal fun CourseSettingsSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CourseAvatar(course)
                     Text(t(UiKey.TEXT_SUBJECT_ICON), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                    Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            GlassSurface(Modifier.fillMaxWidth().clickable(onClick = onColor).testTag("course-color-open"), shape = RoundedCornerShape(18.dp)) {
+                Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    com.kpyruy.takt.core.ui.components.EntityIconTile(com.kpyruy.takt.core.ui.theme.taktSubjectColor(course.id, course.colorKey)) { foreground ->
+                        Icon(Icons.Outlined.Palette, null, Modifier.size(25.dp), tint = foreground)
+                    }
+                    Text(t(UiKey.SUBJECT_COLOR), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                     Icon(Icons.Outlined.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

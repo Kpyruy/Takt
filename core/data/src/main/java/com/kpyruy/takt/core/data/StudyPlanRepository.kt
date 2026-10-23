@@ -16,6 +16,7 @@ interface StudyPlanRepository {
     fun observeSemester(semester: Int): Flow<List<Course>>
     fun observeCourse(courseId: String): Flow<Course?>
     suspend fun setIcon(courseId: String, iconKey: String?)
+    suspend fun setColor(courseId: String, colorKey: String?)
     suspend fun updateStatus(courseId: String, status: CourseStatus)
     suspend fun setGradingType(courseId: String, gradingType: CourseGradingType)
     suspend fun setPassFailResult(courseId: String, result: PassFailResult?)
@@ -45,6 +46,6 @@ fun prepareAutomaticCourseImports(remote: List<Course>, local: List<Course>, imp
             previous == null -> course.takeIf { importMetadata }
             !importMetadata -> previous.copy(id = course.id)
             else -> course.copy(status = previous.status, passFailResult = previous.passFailResult,
-                officialGrade = previous.officialGrade, fulfilledOn = previous.fulfilledOn)
+                officialGrade = previous.officialGrade, fulfilledOn = previous.fulfilledOn, colorKey = previous.colorKey)
         }
     }

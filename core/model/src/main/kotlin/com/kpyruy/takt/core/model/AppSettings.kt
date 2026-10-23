@@ -85,6 +85,8 @@ data class UisAutoSyncSettings(
     val applyProgressAutomatically: Boolean = true,
 )
 
+enum class AddButtonPlacement { CENTER, FLOATING }
+
 enum class WeekLayout {
     TIMETABLE,
     COMPACT_LIST,
@@ -111,6 +113,7 @@ data class AppSettings(
     val reminders: ReminderSettings = ReminderSettings(),
     /** App-private imported file name; never a picker URI or a portable backup field. */
     val customWallpaper: String? = null,
+    val addButtonPlacement: AddButtonPlacement = AddButtonPlacement.CENTER,
 ) {
     val selectedCustomTheme: CustomColorTheme?
         get() = customThemes.firstOrNull { it.id == selectedCustomThemeId }?.normalizedOrNull()

@@ -62,6 +62,7 @@ internal class GuidedTourData(appearance: AppSettings, today: LocalDate = LocalD
     override suspend fun importedCourseChoices() = emptySet<String>()
     override suspend fun addCourse(title: String, code: String, credits: Int, semester: Int) = "tour-only"
     override suspend fun setIcon(courseId: String, iconKey: String?) = Unit
+    override suspend fun setColor(courseId: String, colorKey: String?) = Unit
     override suspend fun updateStatus(courseId: String, status: CourseStatus) = Unit
     override suspend fun setGradingType(courseId: String, gradingType: CourseGradingType) = Unit
     override suspend fun setPassFailResult(courseId: String, result: PassFailResult?) = Unit

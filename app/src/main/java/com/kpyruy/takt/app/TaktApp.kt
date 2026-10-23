@@ -72,6 +72,8 @@ import com.kpyruy.takt.core.data.StudyContentRepository
 import com.kpyruy.takt.core.data.StudyPlanRepository
 import com.kpyruy.takt.core.data.UniversityAccountRepository
 import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
+import com.kpyruy.takt.core.ui.components.LocalCourseColorKeys
+import com.kpyruy.takt.core.ui.components.TaktFloatingAddFab
 import com.kpyruy.takt.core.ui.components.TaktAddFab
 import com.kpyruy.takt.core.ui.components.TaktBottomNavigation
 import com.kpyruy.takt.core.ui.components.TaktNavItem
@@ -277,20 +279,25 @@ fun TaktApp(
         }
     }
 
-    CompositionLocalProvider(LocalCourseIconKeys provides courseIconKeys, LocalCourseCodeKeys provides courses.associate { it.id to it.code }) {
+    CompositionLocalProvider(LocalCourseIconKeys provides courseIconKeys, LocalCourseCodeKeys provides courses.associate { it.id to it.code }, LocalCourseColorKeys provides courses.associate { it.id to it.colorKey }) {
     actionEvent?.let { event ->
         ScheduleEventEditor(event, scheduleRepository, courses, onDismiss = { actionEvent = null })
     }
     TaktContentBackdropHost {
     Scaffold(
         snackbarHost = { if (currentRoute != SETTINGS_ROUTE) SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            if (showRootNavigation && snapshotState.value!!.settings.addButtonPlacement == com.kpyruy.takt.core.model.AddButtonPlacement.FLOATING)
+                TaktFloatingAddFab(selected = showGlobalAdd) { showGlobalAdd = true }
+        },
         containerColor = Color.Transparent,
         bottomBar = {
             if (showRootNavigation) {
                 TaktBottomNavigation(
                     items = navItems,
                     centerSelected = showGlobalAdd,
-                    centerContent = { TaktAddFab(selected = showGlobalAdd) { showGlobalAdd = true } },
+                    centerContent = if (snapshotState.value!!.settings.addButtonPlacement == com.kpyruy.takt.core.model.AddButtonPlacement.CENTER)
+                        ({ TaktAddFab(selected = showGlobalAdd) { showGlobalAdd = true } }) else null,
                 )
             }
         },

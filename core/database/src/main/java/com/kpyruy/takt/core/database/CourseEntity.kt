@@ -22,4 +22,5 @@ data class CourseEntity(
     val titleSk: String? = null,
     val officialGrade: String? = null,
     val fulfilledOnEpochDay: Long? = null,
+    val colorKey: String? = null,
 )

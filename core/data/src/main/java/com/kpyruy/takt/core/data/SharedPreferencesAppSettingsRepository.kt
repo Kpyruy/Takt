@@ -94,10 +94,11 @@ class SharedPreferencesAppSettingsRepository(
         val clean = appearance.normalizedAppearance()
         change({
             putString(KEY_THEME_MODE, clean.themeMode.name); putString(KEY_THEME_FAMILY, clean.themeFamily.name)
+            putString(KEY_ADD_PLACEMENT, clean.addButtonPlacement.name)
             putString(KEY_CARD_APPEARANCE, clean.cardAppearance.name)
             putString(KEY_CUSTOM_THEMES, CustomThemesCodec.encode(clean.customThemes))
             putString(KEY_SELECTED_CUSTOM_THEME, clean.selectedCustomThemeId); putString(KEY_CUSTOM_WALLPAPER, clean.customWallpaper)
-        }) { it.copy(themeMode = clean.themeMode, themeFamily = clean.themeFamily, cardAppearance = clean.cardAppearance,
+        }) { it.copy(addButtonPlacement = clean.addButtonPlacement, themeMode = clean.themeMode, themeFamily = clean.themeFamily, cardAppearance = clean.cardAppearance,
             customThemes = clean.customThemes, selectedCustomThemeId = clean.selectedCustomThemeId, customWallpaper = clean.customWallpaper) }
     }
     override suspend fun setWeekLayout(layout: WeekLayout) =
@@ -153,6 +154,7 @@ class SharedPreferencesAppSettingsRepository(
         val clean = value.normalizedAppearance()
         check(preferences.edit().apply {
             putString(KEY_CANCELLATION_STYLE, clean.cancellationStyle.name); putBoolean(KEY_SHOW_HIDDEN, clean.showHiddenLessons)
+            putString(KEY_ADD_PLACEMENT, clean.addButtonPlacement.name)
             putString(KEY_PARITY_OVERRIDE, clean.parityOverride.name); putString(KEY_CARD_APPEARANCE, clean.cardAppearance.name)
             putString(KEY_THEME_FAMILY, clean.themeFamily.name); putString(KEY_THEME_MODE, clean.themeMode.name)
             putString(KEY_CUSTOM_THEMES, CustomThemesCodec.encode(clean.customThemes)); putString(KEY_SELECTED_CUSTOM_THEME, clean.selectedCustomThemeId)
@@ -196,9 +198,11 @@ class SharedPreferencesAppSettingsRepository(
         selectedCustomThemeId = preferences.getString(KEY_SELECTED_CUSTOM_THEME, null),
         reminders = preferences.getString(KEY_REMINDERS, null),
         customWallpaper = preferences.getString(KEY_CUSTOM_WALLPAPER, null),
+        addButtonPlacement = preferences.getString(KEY_ADD_PLACEMENT, null),
     )
 
     private companion object {
+        const val KEY_ADD_PLACEMENT = "add_button_placement"
         const val PREFS_NAME = "takt_settings"
         const val KEY_CUSTOM_WALLPAPER = "custom_wallpaper"
         const val KEY_REMINDERS = "local_reminders_v1"

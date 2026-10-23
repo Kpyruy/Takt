@@ -54,6 +54,7 @@ data class BackupCourse(
     val titleSk: String? = null,
     val officialGrade: String? = null,
     val fulfilledOnEpochDay: Long? = null,
+    val colorKey: String? = null,
 )
 
 @Serializable
@@ -211,6 +212,7 @@ data class BackupSettings(
     val wallpaperRecorded: Boolean = false,
     val wallpaper: BackupWallpaper? = null,
     val reminders: BackupReminderSettings = BackupReminderSettings(),
+    val addButtonPlacement: String = "CENTER",
 )
 
 @Serializable

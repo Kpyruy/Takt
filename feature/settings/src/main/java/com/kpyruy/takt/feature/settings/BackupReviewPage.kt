@@ -112,9 +112,9 @@ fun BackupReviewPage(
         }
         val changedIcons = source.courses.mapNotNull { file ->
             val phone = localByCode[file.code.uppercase(Locale.ROOT)]
-            if (phone?.iconKey == file.iconKey) null else phone to file
+            if (phone?.iconKey == file.iconKey && phone?.colorKey == file.colorKey) null else phone to file
         }
-        if (BackupSection.ICONS in differing) BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t(UiKey.TEXT_COURSE_ICONS),
+        if (BackupSection.ICONS in differing) BackupChoice(BackupSection.ICONS, selected, ::toggle, sourceName, t(UiKey.BACKUP_COURSE_APPEARANCE),
             t(UiKey.TEXT_DIFFERENT) + changedIcons.size) {
             if (changedIcons.isEmpty()) {
                 Text(t(UiKey.TEXT_ICONS_MATCH_OR_ARE_ABSENT_IN_BOTH_SOURCES),
@@ -123,9 +123,9 @@ fun BackupReviewPage(
             changedIcons.take(6).forEach { (phone, file) ->
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    BackupIcon(phone?.iconKey)
+                    BackupIcon(phone?.iconKey, phone?.colorKey)
                     Text("→", style = MaterialTheme.typography.titleMedium)
-                    BackupIcon(file.iconKey)
+                    BackupIcon(file.iconKey, file.colorKey)
                     Text("${file.code} · ${file.title}", modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall)
                 }
@@ -276,8 +276,10 @@ private fun BackupChoice(section: BackupSection, selected: Set<BackupSection>, o
 }
 
 @Composable
-private fun BackupIcon(key: String?) {
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer,
+private fun BackupIcon(key: String?, colorKey: String? = null) {
+    Surface(color = com.kpyruy.takt.core.model.CourseColor.fromKey(colorKey)?.let {
+        androidx.compose.ui.graphics.Color(it.argb).copy(alpha = .22f)
+    } ?: MaterialTheme.colorScheme.secondaryContainer,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)) {
         val icon = CourseIcons.find(key)
         if (icon == null) Text("—", modifier = Modifier.padding(horizontal = 13.dp, vertical = 7.dp),
@@ -353,7 +355,7 @@ private fun teacherTeamLabel(teachers: List<BackupTeacher>): String = teachers.j
 }.ifBlank { t(UiKey.TEXT_UNSPECIFIED) }
 
 @Composable
-private fun BackupSettingChange(label: String, phone: String, file: String) {
+internal fun BackupSettingChange(label: String, phone: String, file: String) {
     if (phone == file) return
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium,

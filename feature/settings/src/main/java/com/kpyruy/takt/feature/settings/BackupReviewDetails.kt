@@ -118,6 +118,9 @@ internal fun BackupAppearanceChanges(phone: BackupSettings, file: BackupSettings
             left = { Text(appearanceModeName(phonePreview), style = MaterialTheme.typography.bodySmall) },
             right = { Text(appearanceModeName(filePreview), style = MaterialTheme.typography.bodySmall) },
         )
+        BackupSettingChange(t(UiKey.APPEARANCE_ADD_PLACEMENT),
+            t(if (phone.addButtonPlacement == "FLOATING") UiKey.APPEARANCE_ADD_FLOATING else UiKey.APPEARANCE_ADD_CENTER),
+            t(if (file.addButtonPlacement == "FLOATING") UiKey.APPEARANCE_ADD_FLOATING else UiKey.APPEARANCE_ADD_CENTER))
         Text(t(UiKey.TEXT_CARD_STYLE), style = MaterialTheme.typography.labelLarge)
         AppearanceComparisonRow(
             left = { AppearanceMaterial(phonePreview, phonePhoto, "backup-appearance-phone-material") },
