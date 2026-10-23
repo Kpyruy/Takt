@@ -2,12 +2,14 @@ package com.kpyruy.takt.feature.home
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 
@@ -19,7 +21,8 @@ internal fun HomeWorkTitle(
     completed: Boolean = false,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
-    Row(Modifier.fillMaxWidth()) {
+    // Match the visible 17 dp glyph centered in each 32 dp requirement button.
+    Row(Modifier.fillMaxWidth().padding(start = 8.dp)) {
         Text(title, Modifier.weight(1f, fill = false).alignByBaseline(),
             style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 21.sp), color = titleColor,
             textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None,

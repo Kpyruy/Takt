@@ -62,7 +62,7 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                 )
                 if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 20.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Column(Modifier.padding(end = 7.dp), horizontalAlignment = Alignment.End) {
                 Text(
                     if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
                         else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, item.maxPoints.pointText())),

@@ -63,7 +63,7 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
                     tagPrefix = "home-task-${task.id}",
                 )
             }
-            if (task.maxPoints != null || due != null) Column(horizontalAlignment = Alignment.End,
+            if (task.maxPoints != null || due != null) Column(Modifier.padding(end = 7.dp), horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 task.maxPoints?.let { maximum ->
                     Text(if (task.earnedPoints != null) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_PTS, task.earnedPoints?.pointText(), maximum.pointText())) else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, maximum.pointText())),
