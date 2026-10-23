@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -81,7 +80,8 @@ import com.kpyruy.takt.core.ui.motion.rememberTaktHaptics
 import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.home.HomeScreen
 import com.kpyruy.takt.feature.settings.SettingsScreen
-import com.kpyruy.takt.feature.studyplan.StudyPlanScreen
+import com.kpyruy.takt.feature.studyplan.StudiesScreen
+import androidx.compose.ui.platform.LocalContext
 import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.SubjectsScreen
 import kotlinx.coroutines.launch
@@ -92,7 +92,7 @@ private enum class Destination(val route: String, private val sourceLabel: Strin
     HOME("home", UiKey.TEXT_TODAY),
     CALENDAR("calendar", UiKey.TEXT_CALENDAR),
     SUBJECTS("subjects", UiKey.TEXT_SUBJECTS),
-    PLAN("plan", UiKey.TEXT_PROGRESS),
+    PLAN("plan", UiKey.STUDIES_TITLE),
 
     ;
     val label: String get() = t(sourceLabel)
@@ -132,7 +132,9 @@ fun TaktApp(
     }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route ?: Destination.HOME.route
-    val showRootNavigation = Destination.entries.any { it.route == currentRoute }
+    var studiesDetailVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val showRootNavigation = Destination.entries.any { it.route == currentRoute } && !(currentRoute == Destination.PLAN.route && studiesDetailVisible)
     val courseIconKeys = remember(courses) { courses.associate { it.id to it.iconKey } }
     val scope = rememberCoroutineScope()
     val saves = rememberSaveAction()
@@ -286,13 +288,10 @@ fun TaktApp(
             if (showRootNavigation) {
                 TaktBottomNavigation(
                     items = navItems,
+                    centerContent = { TaktAddFab { showGlobalAdd = true } },
                 )
             }
         },
-        floatingActionButton = {
-            if (showRootNavigation) TaktAddFab { showGlobalAdd = true }
-        },
-        floatingActionButtonPosition = FabPosition.End,
     ) { padding ->
         NavHost(
             navController = navController,
@@ -355,14 +354,23 @@ fun TaktApp(
                 )
             }
             composable(Destination.PLAN.route) {
-                StudyPlanScreen(
+                StudiesScreen(
                     repository = repository,
                     gradeRepository = gradeRepository,
                     settingsRepository = settingsRepository,
                     universityAccountRepository = universityAccountRepository,
+                    studentHubRepository = universityAccountRepository.studentHubRepository,
                     planning = snapshotState.value,
                     onCourseClick = ::openCourse,
                     onAddCourse = { startCreate(CreateItemType.COURSE) },
+                    onOpenSettings = { navController.navigate(SETTINGS_ROUTE) },
+                    onDetailChanged = { studiesDetailVisible = it },
+                    onOpenPaymentRecord = { url ->
+                        val target = Uri.parse(url)
+                        if (target.scheme == "https" && target.host == "is.stuba.sk" && target.path == "/auth/student/financovani.pl")
+                            runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, target)) }
+                                .onFailure { scope.launch { snackbarHostState.showSnackbar(t(UiKey.TEXT_COULD_NOT_OPEN_THE_LINK)) } }
+                    },
                 )
             }
             composable(SETTINGS_ROUTE) {

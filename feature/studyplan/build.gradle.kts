@@ -14,6 +14,7 @@ android {
     buildFeatures { compose = true }
 }
 dependencies {
+    implementation(libs.activity.compose)
     implementation(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:ui"))

@@ -57,13 +57,13 @@ internal fun CourseStatus.icon(): ImageVector = when (this) {
 }
 
 @Composable
-internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository, onOpen: () -> Unit, onStatus: () -> Unit) {
+internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository, onOpen: () -> Unit, onStatus: () -> Unit, compactPresentation: Boolean = false) {
     val manualGrade = if (course.officialGrade == null) remember(gradeRepository, course.id) { gradeRepository.observeManualGrade(course.id) }
         .collectAsStateWithLifecycle(initialValue = null).value else null
     val grade = course.officialGrade ?: manualGrade
     // Reserve the same date-capable column for every status, including icon-only rows.
-    val statusColumnWidth = 88.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
-    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(vertical = 8.dp).testTag("progress-course-${course.id}"),
+    val statusColumnWidth = (if (compactPresentation && grade == null) 48.dp else 88.dp) * LocalDensity.current.fontScale.coerceAtLeast(1f)
+    Row(Modifier.fillMaxWidth().heightIn(min = if (compactPresentation) 64.dp else 72.dp).padding(vertical = 8.dp).testTag("progress-course-${course.id}"),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.weight(1f).clickable(onClick = onOpen),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -71,7 +71,7 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(course.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold,
                     maxLines = 3, overflow = TextOverflow.Ellipsis)
-                Text(t(uiMessage(UiKey.FORMAT_VALUE_CREDITS_6F9D64BE, course.credits)), fontSize = 12.sp, lineHeight = 16.sp,
+                Text(t(uiMessage(UiKey.FORMAT_VALUE_CREDITS_6F9D64BE, course.credits)) + if (compactPresentation) " · " + course.status.title() else "", fontSize = 12.sp, lineHeight = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -80,6 +80,7 @@ internal fun ProgressCourseRow(course: Course, gradeRepository: GradeRepository,
                 .semantics { contentDescription = t(uiMessage(UiKey.FORMAT_CHANGE_STATUS_VALUE, course.title)); stateDescription = course.status.title() },
             contentAlignment = Alignment.Center) {
             if (grade != null) CourseGradeBadge(grade, course.fulfilledOn.takeIf { course.officialGrade != null }, Modifier.fillMaxWidth())
+            else if (compactPresentation) Icon(course.status.icon(), null, Modifier.size(20.dp), tint = course.status.tint())
             else GlassSurface(Modifier.size(42.dp), shape = RoundedCornerShape(11.dp),
                 tint = MaterialTheme.colorScheme.primaryContainer) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

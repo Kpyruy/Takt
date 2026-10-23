@@ -32,7 +32,10 @@ import com.kpyruy.takt.feature.calendar.CalendarScreen
 import com.kpyruy.takt.feature.home.HomeScreen
 import com.kpyruy.takt.feature.settings.DeviceAuthenticationRequest
 import com.kpyruy.takt.feature.settings.SettingsScreen
-import com.kpyruy.takt.feature.studyplan.StudyPlanScreen
+import com.kpyruy.takt.feature.studyplan.StudiesContent
+import com.kpyruy.takt.core.model.StudentHubState
+import com.kpyruy.takt.core.model.StudentHubSnapshot
+import com.kpyruy.takt.core.model.StudentStudy
 import com.kpyruy.takt.feature.subjects.SubjectDetailScreen
 import com.kpyruy.takt.feature.subjects.SubjectsScreen
 
@@ -134,14 +137,14 @@ private fun TourScene(
     releases: AppReleaseRepository,
     authenticate: DeviceAuthenticationRequest,
 ) {
-    val labels = listOf(t(UiKey.TEXT_TODAY), t(UiKey.TEXT_CALENDAR), t(UiKey.TEXT_SUBJECTS), t(UiKey.TEXT_PROGRESS))
+    val labels = listOf(t(UiKey.TEXT_TODAY), t(UiKey.TEXT_CALENDAR), t(UiKey.TEXT_SUBJECTS), t(UiKey.STUDIES_TITLE))
     val icons = listOf(TaktIcons.Home, TaktIcons.Calendar, TaktIcons.Book, TaktIcons.Progress)
     val selected = when (scene) { "home" -> 0; "calendar" -> 1; "progress" -> 3; else -> 2 }
     val root = scene in setOf("home", "calendar", "subjects", "progress")
     Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentWindowInsets = WindowInsets(0),
         bottomBar = { if (root) TaktBottomNavigation(labels.mapIndexed { index, label ->
             TaktNavItem(label, icons[index], index == selected) { }
-        }) }, floatingActionButton = { if (root) TaktAddFab {} }) { padding ->
+        }, centerContent = { TaktAddFab {} }) }) { padding ->
         Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())
             .captureTaktContentBackdrop(enabled = root)) {
             when (scene) {
@@ -155,8 +158,14 @@ private fun TourScene(
                     examRepository = example, documentStore = data.documentStore,
                     courseId = example.courses.first().id, onBack = {},
                     guidedTab = when (step.tab) { 1 -> "tasks"; 3 -> "notes"; else -> "overview" })
-                "progress" -> StudyPlanScreen(example, example, example, data.universityAccountRepository,
-                    {}, {}, example.snapshot, guidedFilter = step.tab)
+                "progress" -> StudiesContent(
+                    state = StudentHubState(StudentHubSnapshot(studies = listOf(StudentStudy(
+                        "tour-study", t(UiKey.STUDIES_LOCAL_STUDY), active = true,
+                        earnedCredits = example.courses.filter { it.status == com.kpyruy.takt.core.model.CourseStatus.FULFILLED }.sumOf { it.credits },
+                        requiredCredits = example.courses.sumOf { it.credits }, courses = example.courses)),
+                        currentStudyId = "tour-study", viewedStudyId = "tour-study")),
+                    localCourses = example.courses, settings = example.snapshot.settings, gradeRepository = example,
+                    initialTab = 1, initialProgressFilter = step.tab)
                 "add" -> Box(Modifier.fillMaxSize().padding(top = 18.dp).glassSurface(RoundedCornerShape(28.dp))) {
                     GlobalAddContent(true, {}, {}, {})
                 }

@@ -20,7 +20,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kpyruy.takt.core.ui.components.EntityIconTile
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -67,7 +69,10 @@ fun SemesterSection(
     onExpandedChange: (Boolean) -> Unit,
     onCourseClick: (String) -> Unit,
     onCourseStatus: (Course) -> Unit,
+    compactPreview: Boolean = false,
 ) {
+    var showAllCourses by rememberSaveable(courses.map { it.id }) { mutableStateOf(false) }
+    val displayedCourses = if (compactPreview && !showAllCourses) courses.take(4) else courses
     val state = semesterState(courses, isCurrent)
     val earnedCredits = courses.filter { it.status == CourseStatus.FULFILLED }.sumOf { it.credits }
     val relevantCredits = courses.filter { it.status != CourseStatus.NOT_NEEDED }.sumOf { it.credits }
@@ -81,8 +86,8 @@ fun SemesterSection(
             else -> t(UiKey.TEXT_PLANNED)
         }
     }
-    GlassSurface(Modifier.fillMaxWidth().padding(bottom = 8.dp), shape = RoundedCornerShape(20.dp)) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
+    GlassSurface(Modifier.fillMaxWidth().padding(bottom = 8.dp), shape = RoundedCornerShape(if (compactPreview) 23.dp else 20.dp)) {
+        Column(Modifier.padding(horizontal = if (compactPreview) 17.dp else 12.dp, vertical = if (compactPreview) 13.dp else 9.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("semester-toggle-$semester")
                     .clickable(role = Role.Button, onClickLabel = if (expanded) t(UiKey.TEXT_COLLAPSE_THE_SEMESTER) else t(UiKey.TEXT_EXPAND_THE_SEMESTER)) { onExpandedChange(!expanded) }
                     .semantics { stateDescription = if (expanded) t(UiKey.TEXT_EXPANDED) else t(UiKey.TEXT_COLLAPSED) },
@@ -92,7 +97,11 @@ fun SemesterSection(
                     SemesterState.ACTIVE -> MaterialTheme.colorScheme.primary
                     SemesterState.FUTURE -> MaterialTheme.colorScheme.surfaceVariant
                 }
-                Box(Modifier.size(30.dp).background(circleColor, CircleShape)
+                if (compactPreview) EntityIconTile(MaterialTheme.colorScheme.primary, Modifier.size(39.dp)) { tint ->
+                    if (state == SemesterState.COMPLETED) Icon(Icons.Default.Check, t(UiKey.TEXT_COMPLETED_SEMESTER), Modifier.size(18.dp), tint = tint)
+                    else Text("$semester", color = tint, fontWeight = FontWeight.SemiBold)
+                }
+                else Box(Modifier.size(30.dp).background(circleColor, CircleShape)
                     .testTag("semester-$semester-${state.name.lowercase()}")
                     .semantics { stateDescription = stateLabel }, contentAlignment = Alignment.Center) {
                     if (state == SemesterState.COMPLETED) Icon(Icons.Default.Check, t(UiKey.TEXT_COMPLETED_SEMESTER), Modifier.size(17.dp), tint = MaterialTheme.colorScheme.secondary)
@@ -104,7 +113,8 @@ fun SemesterSection(
                         t(if (semester % 2 == 1) UiKey.TEXT_WINTER_11577647 else UiKey.TEXT_SUMMER_16945261)
                     } else "",
                         style = MaterialTheme.typography.titleMedium)
-                    if (activeCount > 0) Text(activeCoursesLabel(activeCount), modifier = Modifier.testTag("semester-active-count-$semester"), style = MaterialTheme.typography.bodySmall,
+                    if (compactPreview && isCurrent) Text(t(UiKey.TEXT_CURRENT_SEMESTER_A9B3EA6D), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else if (activeCount > 0) Text(activeCoursesLabel(activeCount), modifier = Modifier.testTag("semester-active-count-$semester"), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(if (state == SemesterState.COMPLETED) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_CREDITS, earnedCredits, relevantCredits))
@@ -116,10 +126,16 @@ fun SemesterSection(
             AnimatedVisibility(visible = expanded) {
                 Column(Modifier.padding(top = 9.dp)) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    courses.forEach { course ->
+                    displayedCourses.forEach { course ->
                         ProgressCourseRow(course, gradeRepository, onOpen = { onCourseClick(course.id) },
-                            onStatus = { onCourseStatus(course) })
-                        if (course != courses.last()) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            onStatus = { onCourseStatus(course) }, compactPresentation = compactPreview)
+                        if (course != displayedCourses.last()) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                    if (compactPreview && !showAllCourses && courses.size > displayedCourses.size) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        androidx.compose.material3.TextButton(onClick = { showAllCourses = true }, modifier = Modifier.testTag("studies-more-courses-$semester")) {
+                            Text(t(uiMessage(UiKey.STUDIES_MORE_COURSES, courses.size - displayedCourses.size)))
+                        }
                     }
                 }
             }
