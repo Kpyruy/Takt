@@ -12,9 +12,11 @@ import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,7 +29,7 @@ import com.kpyruy.takt.core.model.UiKey
 import com.kpyruy.takt.core.model.uiMessage
 import com.kpyruy.takt.core.ui.i18n.t
 
-/** Compact disclosures with full accessible descriptions and independent 48 dp touch targets. */
+/** Compact disclosures with full accessible descriptions and a short, evenly spaced row. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WorkRequirementIcons(
@@ -63,9 +65,11 @@ fun WorkRequirementIcons(
 private fun RequirementIcon(icon: ImageVector, description: String, tag: String, warning: Boolean = false) {
     var expanded by remember(description) { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(48.dp).testTag(tag)) {
-            Icon(icon, contentDescription = description, modifier = Modifier.size(19.dp),
-                tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 32.dp) {
+            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(32.dp).testTag(tag)) {
+                Icon(icon, contentDescription = description, modifier = Modifier.size(15.dp),
+                    tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         TaktChoiceMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             Text(description, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
