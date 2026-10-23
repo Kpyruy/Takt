@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 
 /** Reserve space for the complete code before measuring the single-line title. */
@@ -20,11 +21,11 @@ internal fun HomeWorkTitle(
 ) {
     Row(Modifier.fillMaxWidth()) {
         Text(title, Modifier.weight(1f, fill = false).alignByBaseline(),
-            style = MaterialTheme.typography.titleSmall, color = titleColor,
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 21.sp), color = titleColor,
             textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (courseCode.isNotBlank()) Text(" | $courseCode", Modifier.alignByBaseline(),
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 20.sp), color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1, softWrap = false)
     }
 }

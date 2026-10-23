@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
@@ -43,12 +44,12 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
     }
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag("home-assessment-${item.id}")) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            EntityIconTile(subjectColor, Modifier.size(40.dp)) { foreground ->
-                Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.testTag("home-assessment-glyph-${item.id}"))
+            EntityIconTile(subjectColor, Modifier.size(46.dp)) { foreground ->
+                Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(27.dp).testTag("home-assessment-glyph-${item.id}"))
             }
             Column(Modifier.weight(1f)) {
                 HomeWorkTitle(item.title, courseCode)
@@ -59,13 +60,13 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                     contributesToGrade = item.contributesToGrade,
                     tagPrefix = "home-assessment-${item.id}",
                 )
-                if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 20.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     if (item.completed) "${item.earnedPoints.pointText()}/${item.maxPoints.pointText()}"
                         else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, item.maxPoints.pointText())),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp, lineHeight = 20.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 item.dueDate?.let { date ->
@@ -74,12 +75,12 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                         today -> t(UiKey.TEXT_TODAY)
                         today.plusDays(1) -> t(UiKey.TEXT_TOMORROW_456A73BB)
                         else -> date.format(DateTimeFormatter.ofPattern("dd.MM"))
-                    }, style = MaterialTheme.typography.labelSmall,
+                    }, style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, lineHeight = 19.sp),
                         color = if (!item.isSubmitted && date <= today) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 item.durationMinutes?.let { Text(t(uiMessage(UiKey.FORMAT_VALUE_MIN, it)),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, lineHeight = 19.sp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
     }

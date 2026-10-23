@@ -65,9 +65,9 @@ fun WorkRequirementIcons(
 private fun RequirementIcon(icon: ImageVector, description: String, tag: String, warning: Boolean = false) {
     var expanded by remember(description) { mutableStateOf(false) }
     Box {
-        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 24.dp) {
-            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(width = 32.dp, height = 24.dp).testTag(tag)) {
-                Icon(icon, contentDescription = description, modifier = Modifier.size(15.dp),
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 26.dp) {
+            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(width = 32.dp, height = 26.dp).testTag(tag)) {
+                Icon(icon, contentDescription = description, modifier = Modifier.size(17.dp),
                     tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }

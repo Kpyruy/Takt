@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SwipeCompletionBox
 import com.kpyruy.takt.core.ui.components.EntityIconTile
@@ -43,13 +44,13 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
     SwipeCompletionBox(completed = task.completed, onCompletedChange = onCompletedChange) {
         Row(Modifier.fillMaxWidth().testTag("home-task-${task.id}").animateContentSize()
             .glassSurface(tint = if (overdue) MaterialTheme.colorScheme.errorContainer else androidx.compose.ui.graphics.Color.Unspecified)
-            .padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            EntityIconTile(com.kpyruy.takt.core.ui.theme.taktSubjectColor(task.courseId), Modifier.size(40.dp)) { foreground ->
+            .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            EntityIconTile(com.kpyruy.takt.core.ui.theme.taktSubjectColor(task.courseId), Modifier.size(46.dp)) { foreground ->
                 IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
-                    modifier = Modifier.size(40.dp)) {
+                    modifier = Modifier.size(46.dp)) {
                     Icon(if (task.completed) Icons.Outlined.CheckCircle else Icons.Outlined.Assignment,
-                        task.title, tint = foreground)
+                        task.title, tint = foreground, modifier = Modifier.size(27.dp))
                 }
             }
             Column(Modifier.weight(1f)) {
@@ -67,9 +68,9 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
                 task.maxPoints?.let { maximum ->
                     Text(if (task.earnedPoints != null) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_PTS, task.earnedPoints?.pointText(), maximum.pointText())) else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, maximum.pointText())),
                         Modifier.glassSurface(tint = MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, lineHeight = 19.sp), color = MaterialTheme.colorScheme.primary)
                 }
-                due?.let { Text(it, style = MaterialTheme.typography.labelSmall,
+                due?.let { Text(it, style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp, lineHeight = 19.sp),
                     color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
