@@ -32,7 +32,7 @@ class RoomBackupRepository(
     private val mutex get() = runtime.mutex
     private val mutableRestoreStatus get() = runtime.status
     val restoreStatus: StateFlow<BackupRestoreStatus> = mutableRestoreStatus.asStateFlow()
-    override val changes: Flow<Unit> get() = teachingStore?.snapshot?.map { Unit } ?: emptyFlow()
+    override val changes: Flow<Unit> get() = merge(teachingStore?.snapshot?.map { Unit } ?: emptyFlow(), database.studentHubDao().observe().map { Unit })
 
     suspend fun <T> withStableData(read: suspend () -> T): T = withContext(Dispatchers.IO) { mutex.withLock {
         recoverPendingLocked(); read()
@@ -65,6 +65,7 @@ class RoomBackupRepository(
                 courseNotes = database.studyContentDao().getNotesSnapshot().map { it.toBackup() },
                 examInfo = database.examDao().getExamInfoSnapshot().map { it.toBackup() },
                 examMaterials = database.examDao().getMaterialsSnapshot().map { it.toBackup() },
+                studentHub = database.studentHubDao().read()?.let { StudentHubCodec.json.decodeFromString<BackupStudentHub>(it.payloadJson).validated() },
                 teaching = teachingStore?.snapshot?.value?.forCourses(courses.map { it.code }),
                 settings = settings.toBackup().copy(wallpaperRecorded = wallpaperStore != null &&
                     (settings.customWallpaper == null || photo != null), wallpaper = photo),
@@ -240,6 +241,8 @@ class RoomBackupRepository(
         val studyDao = database.studyContentDao()
         val examDao = database.examDao()
 
+        database.studentHubDao().clear()
+        payload.studentHub?.let { database.studentHubDao().put(com.kpyruy.takt.core.database.StudentHubEntity(payloadJson = StudentHubCodec.json.encodeToString(it))) }
         examDao.deleteAllMaterials()
         examDao.deleteAllExamInfo()
         studyDao.deleteAllNotes()

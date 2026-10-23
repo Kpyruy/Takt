@@ -87,6 +87,7 @@ class UniversityAccountRepository(
     val settingsRepository: AppSettingsRepository? = null,
     teachingStore: TeachingStore = TeachingStore(),
     private val backupCoordinator: RoomBackupRepository? = null,
+    studentHubStore: StudentHubStore = InMemoryStudentHubStore(),
 ) {
     val session = com.kpyruy.takt.core.data.uis.UisSession()
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -177,6 +178,23 @@ class UniversityAccountRepository(
         }
         if (session.state.value != UisResult.CONNECTED) throw TeachingSessionUnavailable()
     }
+
+    private val studentScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+    val studentHubRepository = CachedStudentHubRepository(studentHubStore,studentScope,
+        loadOverview = { session.readStudentHubOverview() }, loadStudy = { session.readStudentStudy(it) },
+        hasAccount = { hasAccount.value }, ownerKey = { preferences.getString("student_owner_key",null) },
+        coordinate = { action -> withAccountSession {
+            if (session.state.value == UisResult.SECOND_FACTOR) throw TeachingSessionUnavailable()
+            ensureTeachingSession()
+            if(preferences.getString("student_owner_key",null)==null) {
+                val login=readAfterAuthentication()?.login ?: throw TeachingAuthenticationRequired()
+                check(preferences.edit().putString("student_owner_key",studentOwnerKey(login)).commit())
+            }
+            action()
+        } }, stableWrite = { action -> coordinated(action) })
+
+    private fun studentOwnerKey(login:String)=java.security.MessageDigest.getInstance("SHA-256")
+        .digest(login.trim().lowercase(java.util.Locale.ROOT).toByteArray()).joinToString(""){"%02x".format(it.toInt() and 255)}
 
     private var pendingSubjectByEventId: Map<String, String> = emptyMap()
     private var pendingAutoSections: Set<UisSyncSection>? = null
@@ -708,12 +726,14 @@ class UniversityAccountRepository(
                 .putString(CIPHERTEXT, Base64.encodeToString(ciphertext, Base64.NO_WRAP))
                 .putString(IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
             if (!sameAccount) {
+                studentHubRepository.clear()
                 teachingCache.clear()
                 documentsCache.clear()
                 edit.remove(EARNED_CREDITS).remove(REQUIRED_CREDITS).remove(INITIAL_IMPORT_DONE)
                     .remove(PROGRESS_BASELINE).remove(AUTO_INVALID_DAY)
                 UisSyncSection.entries.forEach { edit.remove("uis_auto_last_${it.name}") }
             }
+            edit.putString("student_owner_key",studentOwnerKey(cleanLogin))
             check(edit.commit()) { "Could not save UIS credentials" }
             if (!sameAccount) settingsRepository?.setUisCurrentSemester(null)
             activeState.value = true
@@ -743,6 +763,7 @@ class UniversityAccountRepository(
 
     /** Call only after a successful device authentication. */
     suspend fun remove() = accountOperations.change {
+        studentHubRepository.clear()
         teachingCache.clear()
         documentsCache.clear()
         session.disconnect()
@@ -752,7 +773,7 @@ class UniversityAccountRepository(
         mutableSyncAction.value = UisSyncActionState()
         pendingSubjectByEventId = emptyMap()
         mutableLastCheckOutcome.value = null
-        check(preferences.edit().remove(CIPHERTEXT).remove(IV)
+        check(preferences.edit().remove(CIPHERTEXT).remove(IV).remove("student_owner_key")
             .remove(EARNED_CREDITS).remove(REQUIRED_CREDITS).remove(INITIAL_IMPORT_DONE)
             .remove(PROGRESS_BASELINE).remove(AUTO_INVALID_DAY).apply {
                 UisSyncSection.entries.forEach { remove("uis_auto_last_${it.name}") }

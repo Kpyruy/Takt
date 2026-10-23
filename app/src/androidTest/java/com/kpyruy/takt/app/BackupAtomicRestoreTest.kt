@@ -187,7 +187,7 @@ class BackupAtomicRestoreTest {
             old.execSQL("INSERT INTO courses(id,code,title,credits,semester,status,requirementType) VALUES('old','OLD','Old',5,1,'enrolled','COMPULSORY')")
             old.version = 18
         }
-        val db = Room.databaseBuilder(context, TaktDatabase::class.java, name).addMigrations(TaktDatabase.MIGRATION_18_19).build()
+        val db = Room.databaseBuilder(context, TaktDatabase::class.java, name).addMigrations(TaktDatabase.MIGRATION_18_19, TaktDatabase.MIGRATION_19_20).build()
         try {
             assertEquals(listOf("old"), db.courseDao().getAllSnapshot().map { it.id })
             val marker = BackupRestoreDecision(UUID.randomUUID().toString(), true)

@@ -42,6 +42,19 @@ class UisSession {
         execute(current) { current.checkSession() }
     }
 
+    internal suspend fun readStudentHubOverview(): com.kpyruy.takt.core.model.StudentHubSnapshot = operations.withLock {
+        val current=client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        try { request(current) { current.readStudentHubOverview() } }
+        catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
+    }
+    internal suspend fun readStudentStudy(study: com.kpyruy.takt.core.model.StudentStudy): com.kpyruy.takt.core.model.StudentStudy = operations.withLock {
+        val current=client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        try { request(current) { current.readStudentStudy(study) } }
+        catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
+    }
+
     internal suspend fun readStudyPlan(): UisStudyPlan = operations.withLock {
         val current = client ?: error("UIS session is not connected")
         check(mutableState.value == UisResult.CONNECTED)

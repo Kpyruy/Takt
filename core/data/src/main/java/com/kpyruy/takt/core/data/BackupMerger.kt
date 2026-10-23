@@ -5,7 +5,7 @@ import java.util.Locale
 /** Each selection names the source to take from a backup; unselected sections stay local. */
 enum class BackupSection {
     SUBJECTS, ICONS, PROGRESS, SCHEDULE, PERIODS, MATERIALS,
-    LANGUAGE, APPEARANCE, CURRENT_SEMESTER, PREFERENCES, TEACHERS,
+    LANGUAGE, APPEARANCE, CURRENT_SEMESTER, PREFERENCES, TEACHERS, STUDIES,
 }
 
 object BackupMerger {
@@ -30,7 +30,7 @@ object BackupMerger {
             wallpaperRecorded = true,
             wallpaper = value.wallpaper?.copy(name = ""),
         )
-        return (a.teaching ?: BackupTeaching()) == (b.teaching ?: BackupTeaching()) && sameItems(a.courses, b.courses) &&
+        return a.studentHub == b.studentHub && (a.teaching ?: BackupTeaching()) == (b.teaching ?: BackupTeaching()) && sameItems(a.courses, b.courses) &&
             sameItems(a.scheduleRules, b.scheduleRules) &&
             sameItems(a.oneOffEvents, b.oneOffEvents) &&
             sameItems(a.lessonAbsences, b.lessonAbsences) &&
@@ -168,6 +168,7 @@ object BackupMerger {
             examMaterials = if (materials) local.examMaterials.filterNot { covered(it.courseId) } +
                 incoming.examMaterials.mapNotNull { item -> mapped(item.courseId)?.let { item.copy(courseId = it) } }
                 else local.examMaterials,
+            studentHub = if (BackupSection.STUDIES in fromBackup) incoming.studentHub else local.studentHub,
             settings = settings,
             version = BackupPayload.CURRENT_VERSION,
         )

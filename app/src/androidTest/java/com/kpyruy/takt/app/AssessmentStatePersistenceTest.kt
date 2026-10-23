@@ -29,7 +29,7 @@ class AssessmentStatePersistenceTest {
             old.execSQL("INSERT INTO grade_items(id,courseId,title,type,earnedPoints,maxPoints,recordedAtEpochMillis,completed,requiredForExam,minimumPointsForExam) VALUES('test','course','Test','TEST',6,10,1,1,1,5)")
             old.version = 17
         }
-        val db = Room.databaseBuilder(context,TaktDatabase::class.java,name).addMigrations(TaktDatabase.MIGRATION_17_18, TaktDatabase.MIGRATION_18_19).build()
+        val db = Room.databaseBuilder(context,TaktDatabase::class.java,name).addMigrations(TaktDatabase.MIGRATION_17_18, TaktDatabase.MIGRATION_18_19, TaktDatabase.MIGRATION_19_20).build()
         try {
             val grades = RoomGradeRepository(db)
             val original = grades.observeItems("course").first().single()

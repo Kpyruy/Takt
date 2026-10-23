@@ -374,4 +374,5 @@ internal fun BackupPayload.hasNoUserContent(): Boolean =
     courses.isEmpty() && scheduleRules.isEmpty() && oneOffEvents.isEmpty() &&
         lessonAbsences.isEmpty() && scheduleExceptions.isEmpty() && gradeItems.isEmpty() &&
         gradeScales.isEmpty() && gradeOverrides.isEmpty() && studyTasks.isEmpty() &&
-        courseNotes.isEmpty() && examInfo.isEmpty() && examMaterials.isEmpty()
+        courseNotes.isEmpty() && examInfo.isEmpty() && examMaterials.isEmpty() &&
+        (studentHub == null || studentHub.studies.isEmpty() && studentHub.identity == null && studentHub.displayName.isBlank())

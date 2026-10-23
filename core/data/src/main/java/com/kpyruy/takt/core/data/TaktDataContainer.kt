@@ -42,6 +42,7 @@ class TaktDataContainer(context: Context) {
             TaktDatabase.MIGRATION_16_17,
             TaktDatabase.MIGRATION_17_18,
             TaktDatabase.MIGRATION_18_19,
+            TaktDatabase.MIGRATION_19_20,
         )
         .build()
 
@@ -56,7 +57,7 @@ class TaktDataContainer(context: Context) {
     val teachingStore = TeachingStore(java.io.File(context.filesDir, "teaching.json"))
     val backupRepository = RoomBackupRepository(database, settingsRepository, WallpaperStore(context.applicationContext), teachingStore)
     val universityAccountRepository = UniversityAccountRepository(context, studyPlanRepository,
-        scheduleRepository, settingsRepository, teachingStore, backupRepository)
+        scheduleRepository, settingsRepository, teachingStore, backupRepository, RoomStudentHubStore(database))
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val planningSnapshot: StateFlow<PlanningSnapshot?> = backupRepository.restoreStatus.flatMapLatest { status ->
         if (status == BackupRestoreStatus.READY) observePlanningSnapshot(

@@ -5,6 +5,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupPristineTest {
+    @Test fun aPersonalStudentProfilePreventsSilentReplacement() {
+        assertFalse(BackupPayload(studentHub = com.kpyruy.takt.core.model.StudentHubSnapshot(displayName = "My profile").toBackupStudentHub()).hasNoUserContent())
+    }
+
     @Test fun emptyNewInstallCanRestoreEvenAfterChoosingAppearance() {
         assertTrue(BackupPayload(settings = BackupSettings(themeFamily = "PURPLE")).hasNoUserContent())
     }

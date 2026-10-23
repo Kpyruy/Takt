@@ -35,6 +35,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     private var operationCancellation: AtomicBoolean? = null
     private val cookies = mutableListOf<Cookie>()
     private var challenge: LoginForm? = null
+    private var primaryStudyContext: Pair<String, String>? = null
     private var teachingPlan: UisStudyPlan? = null
     private var documentFolders: Pair<Set<String>, List<UisDocumentsParser.Folder>>? = null
     private val teachingSyllabi = linkedMapOf<Pair<String, String>, Map<String, String>>()
@@ -56,7 +57,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
 
     fun login(login: String, password: String): UisResult = safely {
         stage = UisStage.LOGIN_FORM
-        cookies.clear(); challenge = null; teachingPlan = null; teachingSyllabi.clear(); documentFolders = null
+        cookies.clear(); challenge = null; primaryStudyContext = null; teachingPlan = null; teachingSyllabi.clear(); documentFolders = null
         val page = exchange(origin.resolve("system/login.pl?lang=sk")!!)
         val form = form(page) ?: throw ProtocolFailure(UisFailureReason.LOGIN_FORM_MISSING)
         form.fields["credential_0"] = login
@@ -98,16 +99,91 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     }
 
     fun readStudyPlan(): UisStudyPlan {
-        val page = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=en")!!)
+        val target = primaryStudyContext?.let { (id, period) -> "auth/studijni/studijni_povinnosti.pl?studium=$id;obdobi=$period;lang=en" } ?: "auth/studijni/studijni_povinnosti.pl?lang=en"
+        val page = exchange(origin.resolve(target)!!)
         check(isAuthenticated(page)) { "UIS session expired while reading the study plan" }
         val english = UisStudyPlanParser.parse(page.html)
+        primaryStudyContext = english.studyId to english.periodId
         teachingPlan = english
-        val slovakPage = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?lang=sk")!!)
+        val slovakPage = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?studium=${english.studyId};obdobi=${english.periodId};lang=sk")!!)
         check(isAuthenticated(slovakPage)) { "UIS session expired while reading Slovak course names" }
         val slovak = UisStudyPlanParser.slovakTitles(slovakPage.html)
         return english.copy(courses = english.courses.map { course ->
             course.copy(titleSk = slovak[course.code])
         })
+    }
+
+    /** All requests are read-only and scoped explicitly; archive browsing cannot select the live import. */
+    fun readStudentHubOverview(): com.kpyruy.takt.core.model.StudentHubSnapshot {
+        val page = exchange(origin.resolve("auth/student/moje_studium.pl?lang=en")!!)
+        if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        val portal = UisStudentParser.portal(page.html)
+        // Visiting another portal context must not replace the study already used by live imports.
+        val currentId = primaryStudyContext?.first?.takeIf { id -> portal.studies.any { it.id == id } }
+            ?: portal.currentStudyId
+        val overview = portal.copy(currentStudyId = currentId, viewedStudyId = currentId)
+        var personId: String? = null
+        val studies = overview.studies.map { study ->
+            val details = exchange(origin.resolve("auth/student/studium.pl?studium=${study.id};lang=en")!!)
+            if (!isAuthenticated(details)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+            val (enriched, id) = UisStudentParser.studyDetails(details.html, study)
+            if (study.id == overview.currentStudyId) personId = id
+            enriched
+        }
+        studies.firstOrNull { it.id == overview.currentStudyId }?.let { current ->
+            current.periodId?.let { primaryStudyContext = current.id to it }
+        }
+        return overview.copy(studies=studies, identity=overview.identity?.copy(personId=personId,studentNumber=personId))
+    }
+
+    fun readStudentStudy(study: com.kpyruy.takt.core.model.StudentStudy): com.kpyruy.takt.core.model.StudentStudy {
+        require(study.id.matches(Regex("[1-9][0-9]*")))
+        val period = requireNotNull(study.periodId) { "UIS study period missing" }
+        require(period.matches(Regex("[1-9][0-9]*")))
+        val target = origin.resolve("auth/studijni/studijni_povinnosti.pl?studium=${study.id};obdobi=$period;lang=en")!!
+        val planPage = exchange(target)
+        if (!isAuthenticated(planPage)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        val plan = UisStudyPlanParser.parse(planPage.html)
+        require(plan.studyId == study.id) { "UIS returned a different study" }
+        val slovakPage = exchange(origin.resolve("auth/studijni/studijni_povinnosti.pl?studium=${study.id};obdobi=${plan.periodId};lang=sk")!!)
+        if (!isAuthenticated(slovakPage)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        val slovakTitles = UisStudyPlanParser.slovakTitles(slovakPage.html)
+        val results = readStudyResults(study.id,plan.periodId)
+        val courses = plan.courses.map { c ->
+            val r=results[c.code]
+            val cached=study.courses.firstOrNull { it.id=="uis:${study.id}:${c.subjectId}" }
+            com.kpyruy.takt.core.model.Course("uis:${study.id}:${c.subjectId}",c.code,c.title,c.credits,c.semester,c.status,
+                c.requirementType,c.syllabusUrl,c.gradingType,titleEn=c.title,titleSk=slovakTitles[c.code]?:cached?.titleSk,officialGrade=if(r?.gradeState==UisResultFieldState.CONFIRMED)r.grade else cached?.officialGrade,fulfilledOn=if(r?.fulfilledOnState==UisResultFieldState.CONFIRMED)r.fulfilledOn else cached?.fulfilledOn)
+        }
+        val feesPage = exchange(origin.resolve("auth/student/financovani.pl?studium=${study.id};obdobi=${plan.periodId};lang=en")!!)
+        if (!isAuthenticated(feesPage)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        val fees=UisStudentParser.fees(feesPage.html,study.id)
+        var scholarshipsPage=exchange(origin.resolve("auth/student/vypl_stip_student.pl?studium=${study.id};obdobi=${plan.periodId};lang=en")!!)
+        if (!isAuthenticated(scholarshipsPage)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        val document=Jsoup.parse(scholarshipsPage.html,scholarshipsPage.url.toString())
+        // Some accounts require submitting the date-range form. Preserve duplicate hidden fields.
+        val range=document.select("form").firstOrNull { it.selectFirst("select[name=od_mesic]")!=null }
+        if(range!=null) {
+            val fields=range.select("input[name],select[name]").filter { !it.hasAttr("disabled") }.mapNotNull { element ->
+                val name=element.attr("name")
+                if(element.tagName()=="select") name to (element.selectFirst("option[selected]")?:element.selectFirst("option"))!!.attr("value")
+                else if(element.attr("type")=="hidden"||name=="zobraz") name to element.attr("value") else null
+            }.toMutableList()
+            // Include every period returned by UIS for the chosen study, with a complete year window.
+            fields.removeAll { it.first in setOf("od_mesic","od_rok","do_mesic","do_rok","lang") }
+            val now=LocalDate.now()
+            val firstYear=range.select("select[name=od_rok] option[value]").mapNotNull { it.attr("value").toIntOrNull() }.minOrNull()?:now.year
+            val lastYear=range.select("select[name=do_rok] option[value]").mapNotNull { it.attr("value").toIntOrNull() }.maxOrNull()?:now.year
+            fields.addAll(listOf("od_mesic" to "1","od_rok" to firstYear.toString(),"do_mesic" to "12","do_rok" to lastYear.toString(),"lang" to "en"))
+            val url=scholarshipsPage.url.resolve(range.attr("action"))?:error("UIS scholarship form missing")
+            require(url.encodedPath=="/auth/student/vypl_stip_student.pl")
+            scholarshipsPage=exchange(url,referer=scholarshipsPage.url,repeatedFields=fields)
+            if (!isAuthenticated(scholarshipsPage)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        }
+        val scholarships=UisStudentParser.scholarships(scholarshipsPage.html,study.id)
+        return study.copy(courses=courses,earnedCredits=study.earnedCredits?:plan.earnedCredits,
+            requiredCredits=study.requiredCredits?:plan.requiredCredits,currentSemester=study.currentSemester?:plan.currentSemester,
+            fees=fees,scholarships=scholarships,feesLoaded=true,scholarshipsLoaded=true,updatedAtEpochMillis=System.currentTimeMillis(),periodId=plan.periodId)
     }
 
     fun readStudyResults(studyId: String, periodId: String): Map<String, UisStudyResult> {
@@ -454,15 +530,15 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return LoginForm(target, fields)
     }
 
-    private fun exchange(url: HttpUrl, fields: Map<String, String>? = null, referer: HttpUrl? = null, destinationAllowed: ((HttpUrl) -> Boolean)? = null): Page {
+    private fun exchange(url: HttpUrl, fields: Map<String, String>? = null, referer: HttpUrl? = null, destinationAllowed: ((HttpUrl) -> Boolean)? = null, repeatedFields: List<Pair<String,String>>? = null): Page {
         checkRequestActive()
         if (!sameOrigin(url)) throw ProtocolFailure(UisFailureReason.UNSAFE_DESTINATION)
         var request = Request.Builder().url(url).header("Accept-Language", "sk")
             .header("Cache-Control", "no-store")
-            .apply { if (fields != null) {
+            .apply { if (fields != null || repeatedFields != null) {
                 header("Origin", origin.toString().trimEnd('/'))
                 header("Referer", (referer ?: origin.resolve("system/login.pl?lang=sk")!!).toString())
-                post(FormBody.Builder().apply { fields.forEach { (key, value) -> add(key, value) } }.build())
+                post(FormBody.Builder().apply { (repeatedFields ?: fields!!.toList()).forEach { (key, value) -> add(key, value) } }.build())
             } }.build()
         repeat(6) {
             checkRequestActive()

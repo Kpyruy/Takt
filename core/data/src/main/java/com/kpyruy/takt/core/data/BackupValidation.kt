@@ -14,6 +14,7 @@ internal fun BackupPayload.validated(): BackupPayload {
     section("version") {
         require(version in 1..BackupPayload.CURRENT_VERSION) { "Unsupported Takt backup version: $version" }
     }
+    section("studentHub") { studentHub?.validated() }
     val courseIds = courses.map { it.id }.toSet()
     section("courses") {
         unique(courses.map { it.id })
