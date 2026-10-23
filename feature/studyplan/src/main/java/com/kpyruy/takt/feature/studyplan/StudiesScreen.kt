@@ -24,6 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -135,6 +138,7 @@ fun StudiesContent(
     var editName by rememberSaveable { mutableStateOf(false) }
     var nameDraft by rememberSaveable(snapshot?.displayName, snapshot?.ownerKey) { mutableStateOf(snapshot?.displayName?.takeIf { it.isNotBlank() } ?: snapshot?.identity?.name.orEmpty()) }
     var search by rememberSaveable { mutableStateOf(false) }
+    var filterMenu by rememberSaveable { mutableStateOf(false) }
     var expandedSemesters by rememberSaveable(study?.id, currentSemester) { mutableStateOf(currentSemester?.let(::setOf).orEmpty()) }
     val detailChanged by rememberUpdatedState(onDetailChanged)
     LaunchedEffect(detail != null) { detailChanged(detail != null) }
@@ -162,7 +166,13 @@ fun StudiesContent(
             }
             ScreenHeader(title = detailTitle,
                 navigation = if (detail != null) ({ TaktIconButton(Icons.AutoMirrored.Outlined.ArrowBack, t(UiKey.ACTION_BACK), { detail = null }, Modifier.testTag("studies-back")) }) else null,
-                action = if (detail == null || detail == "profile") ({ TaktIconButton(Icons.Outlined.Settings, t(UiKey.TEXT_SETTINGS), onOpenSettings, Modifier.testTag("studies-settings")) }) else null)
+                action = if (detail == null || detail == "profile") ({
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (detail == null) TaktIconButton(Icons.Outlined.School, t(UiKey.STUDIES_SELECT_STUDY),
+                            { selector = true }, Modifier.testTag("studies-study-selector"))
+                        TaktIconButton(Icons.Outlined.Settings, t(UiKey.TEXT_SETTINGS), onOpenSettings, Modifier.testTag("studies-settings"))
+                    }
+                }) else null)
         }
         when {
             detail == "profile" -> profileItems(snapshot, study, onEditName = { editName = true },
@@ -172,7 +182,6 @@ fun StudiesContent(
                 StudyPane { ReadOnlyCourse(archivedCourse, onClick = null); RecordField(t(UiKey.STUDIES_STUDY), study?.title); Text(t(UiKey.STUDIES_ARCHIVE_NOTE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             else -> {
-                item(key = "study") { StudySelectorCard(study, archived, localCourses.isNotEmpty(), onClick = { selector = true }) }
                 item(key = "tabs") {
                     TaktSegmentedTabs(listOf(t(UiKey.STUDIES_OVERVIEW), t(UiKey.STUDIES_PROGRESS), t(UiKey.STUDIES_FINANCES)), tab, { tab = it },
                         modifier = Modifier.testTag("studies-tabs"), tabTag = { "studies-tab-$it" })
@@ -193,12 +202,26 @@ fun StudiesContent(
                     1 -> {
                         item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged }) }
                         item {
-                            TaktSegmentedTabs(listOf(t(UiKey.TEXT_PLAN), t(UiKey.TEXT_ACTIVE), t(UiKey.TEXT_COMPLETED)), filter, { filter = it },
-                                modifier = Modifier.tourTarget("progress-tabs"), tabTag = { "studies-progress-filter-$it" })
-                        }
-                        if (courses.isNotEmpty()) item {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                TextButton(onClick = { search = true }, modifier = Modifier.testTag("progress-search-open")) { Icon(Icons.Outlined.Search, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(t(UiKey.TEXT_FIND_A_SUBJECT)) }
+                            val filterLabels = listOf(t(UiKey.TEXT_ALL), t(UiKey.TEXT_ACTIVE), t(UiKey.TEXT_COMPLETED))
+                            Row(Modifier.fillMaxWidth().testTag("studies-progress-tools"),
+                                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = { search = true }, enabled = courses.isNotEmpty(),
+                                    modifier = Modifier.testTag("progress-search-open"), contentPadding = PaddingValues(vertical = 12.dp)) {
+                                    Icon(Icons.Outlined.Search, null, Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp)); Text(t(UiKey.TEXT_FIND_A_SUBJECT))
+                                }
+                                Box(Modifier.tourTarget("progress-tabs")) {
+                                    TaktIconButton(if (filter == 0) Icons.Outlined.FilterList else Icons.Outlined.FilterAlt,
+                                        t(UiKey.TEXT_COURSE_FILTERS), { filterMenu = true },
+                                        Modifier.testTag("studies-progress-filter-open").semantics { stateDescription = filterLabels[filter] })
+                                    TaktChoiceMenu(filterMenu, { filterMenu = false }) {
+                                        filterLabels.forEachIndexed { index, label ->
+                                            TaktChoiceMenuItem(text = { Text(label) }, onClick = { filter = index; filterMenu = false },
+                                                modifier = Modifier.testTag("studies-progress-filter-$index").semantics { selected = filter == index },
+                                                trailingIcon = if (filter == index) ({ Icon(Icons.Outlined.Check, null, Modifier.size(18.dp)) }) else null)
+                                        }
+                                    }
+                                }
                             }
                         }
                         if (courses.isEmpty()) item {
@@ -233,8 +256,8 @@ fun StudiesContent(
                 Modifier.fillMaxWidth().padding(top = 2.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } }
     }
-    if (selector) TaktFullSheet(onDismissRequest = { selector = false }, containerColor = MaterialTheme.colorScheme.surface) {
-        LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    if (selector) TaktFullSheet(onDismissRequest = { selector = false }) {
+        LazyColumn(Modifier.fillMaxWidth().testTag("studies-selector-body").padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item { Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(t(UiKey.STUDIES_SELECT_STUDY), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
                 TaktIconButton(Icons.Outlined.Close, t(UiKey.ACTION_CLOSE), { selector = false })
@@ -242,7 +265,7 @@ fun StudiesContent(
             val currentStudies = snapshot?.studies.orEmpty().filter { it.id == snapshot?.currentStudyId }
             if (currentStudies.isNotEmpty()) item { Muted(t(UiKey.STUDIES_CURRENT)) }
             items(currentStudies, key = { it.id }) { item ->
-                StudyChoiceRow(item, item.id == study?.id) { onSelectStudy(item.id) }
+                StudyChoiceRow(item, item.id == study?.id, current = true) { onSelectStudy(item.id) }
             }
             val otherStudies = snapshot?.studies.orEmpty().filter { it.id != snapshot?.currentStudyId }
             if (otherStudies.isNotEmpty()) item { Muted(t(UiKey.STUDIES_HISTORY)) }
@@ -263,7 +286,7 @@ fun StudiesContent(
 }
 
 @Composable
-private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, onSelect: () -> Unit) {
+private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, current: Boolean = false, onSelect: () -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
         .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = .12f) else Color.Transparent)
         .testTag("studies-select-${study.id}")
@@ -273,7 +296,9 @@ private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, onSelect: () 
         RadioButton(selected, onClick = null)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(study.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            val metadata = listOfNotNull(study.degree, study.periodLabel).joinToString(" · ")
+            study.university?.takeIf { it.isNotBlank() }?.let { Muted(it) }
+            val metadata = listOfNotNull(study.degree, study.periodLabel,
+                study.currentSemester?.takeIf { current && it > 0 }?.let { tf(UiKey.STUDIES_YEAR, (it + 1) / 2) }).joinToString(" · ")
             if (metadata.isNotBlank()) Muted(metadata)
         }
     }
@@ -283,23 +308,6 @@ private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, onSelect: () 
 private fun StudyPane(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     GlassSurface(modifier.fillMaxWidth(), shape = RoundedCornerShape(23.dp)) {
         Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
-    }
-}
-
-@Composable
-private fun StudySelectorCard(study: StudentStudy?, archived: Boolean, hasLocalCourses: Boolean, onClick: () -> Unit) {
-    StudyPane(Modifier.testTag("studies-study-selector").clickable(onClick = onClick)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-            Icon(Icons.Outlined.School, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(study?.title ?: if (hasLocalCourses) t(UiKey.STUDIES_LOCAL_STUDY) else unavailable(), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Muted(listOfNotNull(study?.university, study?.periodLabel, study?.degree).joinToString(" · ").ifBlank { unavailable() })
-                if (study != null) Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                    Text(t(if (archived) UiKey.STUDIES_PREVIOUS else UiKey.STUDIES_CURRENT) + (study.currentSemester?.takeIf { !archived && it > 0 }?.let { " · " + tf(UiKey.STUDIES_YEAR, (it + 1) / 2) } ?: ""), Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                }
-            }
-            Icon(Icons.Outlined.UnfoldMore, t(UiKey.STUDIES_SELECT_STUDY), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-        }
     }
 }
 

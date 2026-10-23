@@ -65,6 +65,52 @@ class StudiesNativeUiTest {
         }
     }
 
+    @Test fun progressUsesALeftSearchAndAPopupWithExclusiveStatusChoices() {
+        show()
+        compose.onNodeWithTag("studies-tab-1").performClick()
+        compose.onNodeWithTag("studies-progress-filter-0").assertDoesNotExist()
+        val search = compose.onNodeWithTag("progress-search-open").fetchSemanticsNode().boundsInRoot
+        val tools = compose.onNodeWithTag("studies-progress-tools").fetchSemanticsNode().boundsInRoot
+        val filter = compose.onNodeWithTag("studies-progress-filter-open").fetchSemanticsNode().boundsInRoot
+        assertEquals(tools.left, search.left, 1f)
+        assertTrue(search.right <= filter.left)
+        compose.onNodeWithTag("studies-progress-filter-open").performClick()
+        compose.onNodeWithTag("studies-progress-filter-0").assertIsSelected().assertTextContains("All")
+        compose.onNodeWithTag("studies-progress-filter-2").performClick()
+        compose.onNodeWithTag("studies-readonly-course-shared").assertDoesNotExist()
+        compose.onNodeWithTag("studies-progress-filter-open").performClick()
+        compose.onNodeWithTag("studies-progress-filter-2").assertIsSelected()
+        compose.onNodeWithTag("studies-progress-filter-0").assertIsNotSelected()
+        compose.onNodeWithTag("studies-progress-filter-1").performClick()
+        compose.onNodeWithTag("studies-readonly-course-shared").assertIsDisplayed()
+        compose.onNodeWithTag("studies-progress-filter-open").performClick()
+        capture("studies-status-filter.png")
+    }
+
+    @Test fun studySelectorUsesWallpaperMaterialAcrossTheWholeSheet() {
+        val wallpaper = android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888).apply { eraseColor(0xFF945CA0.toInt()) }
+        val settings = AppSettings(themeMode = AppThemeMode.DARK, themeFamily = ThemeFamily.PURPLE)
+        compose.setContent {
+            TaktI18n.use(AppLanguage.ENGLISH)
+            TaktTheme(settings) {
+                com.kpyruy.takt.core.ui.components.TaktGlassBackground(photoPreview = wallpaper) {
+                    Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                        StudiesContent(StudentHubState(snapshot), settings = settings)
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("studies-study-selector").performClick()
+        val bounds = compose.onNodeWithTag("studies-selector-body").fetchSemanticsNode().boundsInWindow
+        compose.waitUntil(5_000) {
+            val shot = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+            val pixel = shot.getPixel((bounds.left + 6).toInt(), (bounds.top + 10).toInt())
+            shot.recycle()
+            android.graphics.Color.red(pixel) > 70
+        }
+        capture("studies-themed-selector.png")
+    }
+
     @Test fun cachedRefreshNeverAddsALoadingPane() {
         show(StudentHubState(snapshot, loading = true))
         compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
@@ -151,10 +197,20 @@ class StudiesNativeUiTest {
         compose.onNodeWithTag("studies-tabs").assertIsDisplayed()
         compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
         val selector = compose.onNodeWithTag("studies-study-selector").fetchSemanticsNode().boundsInRoot
+        val settings = compose.onNodeWithTag("studies-settings").fetchSemanticsNode().boundsInRoot
         val tabs = compose.onNodeWithTag("studies-tabs").fetchSemanticsNode().boundsInRoot
         val credits = compose.onNodeWithTag("studies-credit-card").fetchSemanticsNode().boundsInRoot
+        assertTrue(selector.right <= settings.left)
+        assertEquals(selector.top, settings.top, 1f)
+        assertEquals(selector.width, settings.width, 1f)
+        assertEquals(selector.height, settings.height, 1f)
         assertTrue(selector.bottom <= tabs.top)
         assertTrue(tabs.bottom <= credits.top)
+        compose.onNodeWithText("Automation & Control").assertDoesNotExist()
+        compose.onNodeWithTag("studies-study-selector").performClick()
+        compose.onNodeWithText("Automation & Control").assertExists()
+        compose.onNodeWithText("STU").assertExists()
+        compose.onNodeWithTag("studies-selector-done").performClick()
         compose.onNodeWithTag("studies-profile").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("studies-isic").performScrollTo().assertIsDisplayed()
     }
@@ -263,7 +319,10 @@ class StudiesNativeUiTest {
         compose.onNodeWithTag("studies-study-selector").performClick()
         compose.onNodeWithTag("studies-select-previous").performClick()
         compose.onNodeWithTag("studies-selector-done").performClick()
-        compose.onNodeWithText("Applied Informatics").assertExists()
+        compose.onNodeWithText("Applied Informatics").assertDoesNotExist()
+        compose.onNodeWithTag("studies-study-selector").performClick()
+        compose.onNodeWithTag("studies-select-previous").assertIsSelected()
+        compose.onNodeWithTag("studies-selector-done").performClick()
         compose.runOnIdle { assertEquals("current", selected?.currentStudyId); assertEquals("previous", selected?.viewedStudyId) }
     }
 
@@ -283,7 +342,9 @@ class StudiesNativeUiTest {
         compose.onNodeWithText("Навчання").assertExists()
         compose.onNodeWithText("Огляд").assertExists()
         compose.onNodeWithTag("studies-tab-2").assertTextEquals("Фінанси")
+        compose.onNodeWithTag("studies-study-selector").performClick()
         compose.onNodeWithText("Automation & Control").assertExists()
+        compose.onNodeWithTag("studies-selector-done").performClick()
         compose.onNodeWithTag("studies-screen").performScrollToNode(hasTestTag("studies-profile"))
         compose.onNodeWithTag("studies-profile").performClick()
         compose.onNodeWithText("Профіль студента").assertExists()
@@ -336,6 +397,7 @@ class StudiesNativeUiTest {
         compose.onNodeWithText("Štúdium").assertExists()
         compose.onNodeWithText("Prehľad").assertExists()
         compose.onNodeWithTag("studies-tab-2").assertTextEquals("Financie")
+        compose.onNodeWithTag("studies-study-selector").performClick()
         compose.onNodeWithText("Automatizácia a robotika").assertExists()
         compose.onNodeWithText("Automation & Control").assertDoesNotExist()
     }

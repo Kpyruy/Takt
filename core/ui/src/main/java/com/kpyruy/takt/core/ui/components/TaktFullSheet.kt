@@ -1,6 +1,5 @@
 package com.kpyruy.takt.core.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,7 +38,6 @@ object TaktSheetMaterialShape : Shape {
 @Composable
 fun TaktFullSheet(
     onDismissRequest: () -> Unit,
-    containerColor: Color? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
@@ -56,9 +54,9 @@ fun TaktFullSheet(
         dragHandle = null,
     ) {
         // Keep the glass clip inside the sheet's draggable/offset wrapper.
-        val material = if (containerColor == null) Modifier.glassSurface(TaktSheetMaterialShape)
-            else Modifier.background(containerColor, TaktSheetMaterialShape)
-        Column(Modifier.fillMaxWidth().clipToBounds().then(material).navigationBarsPadding()) {
+        // Sample the themed wallpaper through the entire dialog, including window-edge pixels.
+        Column(Modifier.fillMaxWidth().clipToBounds()
+            .glassSurface(TaktSheetMaterialShape, extendBackdrop = true).navigationBarsPadding()) {
             BottomSheetDefaults.DragHandle(
                 modifier = Modifier.align(Alignment.CenterHorizontally).semantics {
                     dismiss {
