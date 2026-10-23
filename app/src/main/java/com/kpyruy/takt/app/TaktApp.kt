@@ -265,6 +265,7 @@ fun TaktApp(
             icon = icon,
             selected = currentRoute == destination.route,
             onClick = {
+                showGlobalAdd = false
                 navigateRoot(destination)
             },
         )
@@ -288,7 +289,8 @@ fun TaktApp(
             if (showRootNavigation) {
                 TaktBottomNavigation(
                     items = navItems,
-                    centerContent = { TaktAddFab { showGlobalAdd = true } },
+                    centerSelected = showGlobalAdd,
+                    centerContent = { TaktAddFab(selected = showGlobalAdd) { showGlobalAdd = true } },
                 )
             }
         },

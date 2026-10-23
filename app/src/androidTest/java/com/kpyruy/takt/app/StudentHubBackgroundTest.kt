@@ -81,9 +81,11 @@ class StudentHubBackgroundTest {
             repository.refreshStudentHubInBackground()
             assertEquals(1, portalRequests.get())
             release.countDown()
-            val loaded = withTimeout(10_000) { repository.studentHubRepository.state.first {
+            val loaded = try { withTimeout(10_000) { repository.studentHubRepository.state.first {
                 !it.loading && it.snapshot?.viewedStudy()?.scholarshipsLoaded == true
-            } }.snapshot!!
+            } }.snapshot!! } catch (error: Exception) {
+                throw AssertionError("Hub state=${repository.studentHubRepository.state.value}; requests=${server.requestCount}", error)
+            }
             assertEquals("Automatizácia", loaded.studies.single().titleSk)
             assertEquals("Automation", loaded.studies.single().titleEn)
             assertTrue(loaded.studies.single().feesLoaded)

@@ -53,6 +53,16 @@ class StudiesIntegrationUiTest {
         compose.onNodeWithTag("studies-back").performClick()
         compose.onNodeWithTag("studies-tab-2").assertIsSelected()
         compose.onNodeWithTag("studies-tab-0").performClick()
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(400)
+        compose.waitForIdle()
+        // The disconnected SAF reminder is an unrelated overlay above this row in the fixture.
+        val dismiss = SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsActions.Dismiss)
+        if (compose.onAllNodes(dismiss).fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNode(dismiss).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.Dismiss) { it() }
+            compose.waitForIdle()
+        }
         compose.onNodeWithTag("studies-profile").performScrollTo().performClick()
         compose.onNodeWithTag("studies-profile-hero").assertIsDisplayed();capture("studies-profile.png")
         compose.onNodeWithTag("studies-edit-profile").performClick()

@@ -1,6 +1,18 @@
 package com.kpyruy.takt.feature.studyplan
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.semantics.contentDescription
+import com.kpyruy.takt.core.ui.motion.TaktMotion
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -132,6 +144,8 @@ fun StudiesContent(
     }
     val currentSemester = if (archived) study?.currentSemester else settings.effectiveCurrentSemester(courses) ?: study?.currentSemester
     var tab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
+    val creditVisibility = remember { MutableTransitionState(tab == 0) }
+    creditVisibility.targetState = tab == 0
     var filter by rememberSaveable(initialProgressFilter) { mutableIntStateOf(initialProgressFilter) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var selector by rememberSaveable { mutableStateOf(false) }
@@ -187,10 +201,17 @@ fun StudiesContent(
                         modifier = Modifier.testTag("studies-tabs"), tabTag = { "studies-tab-$it" })
                 }
                 if (archived) item { StudyPane { Text(t(UiKey.STUDIES_ARCHIVE_NOTE), style = MaterialTheme.typography.bodySmall); snapshot?.currentStudyId?.let { id -> TextButton(onClick = { onSelectStudy(id) }, modifier = Modifier.testTag("studies-return-current")) { Text(t(UiKey.STUDIES_RETURN_CURRENT)) } } } }
-                if (state.problem != null && !state.loading) item { StudyStatus(state, onRefresh, onOpenSettings) }
+                if (state.problem in setOf(StudentHubProblem.SIGN_IN_REQUIRED, StudentHubProblem.SECOND_FACTOR_REQUIRED, StudentHubProblem.SAVE_FAILED) && !state.loading)
+                    item { StudyStatus(state, onRefresh, onOpenSettings) }
+                if (creditVisibility.currentState || creditVisibility.targetState) item(key = "credits") {
+                    AnimatedVisibility(creditVisibility, modifier = Modifier.clipToBounds(),
+                        enter = expandVertically(TaktMotion.content(), expandFrom = Alignment.Top) + slideInVertically(TaktMotion.content()) { -it } + fadeIn(TaktMotion.content()),
+                        exit = shrinkVertically(TaktMotion.content(), shrinkTowards = Alignment.Top) + slideOutVertically(TaktMotion.content()) { -it } + fadeOut(TaktMotion.content())) {
+                        CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged })
+                    }
+                }
                 when (tab) {
                     0 -> {
-                        item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged }) }
                         item { SectionHeading(t(UiKey.STUDIES_FINANCES), action = { TextButton(onClick = { tab = 2 }) { Text(t(UiKey.STUDIES_VIEW_ALL)) } }) }
                         item(key = "finance-tiles") { FinanceSummary(study) { tab = 2 } }
                         item(key = "profile-isic") { StudyPane {
@@ -200,7 +221,6 @@ fun StudiesContent(
                         } }
                     }
                     1 -> {
-                        item(key = "credits") { CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged }) }
                         item {
                             val filterLabels = listOf(t(UiKey.TEXT_ALL), t(UiKey.TEXT_ACTIVE), t(UiKey.TEXT_COMPLETED))
                             Row(Modifier.fillMaxWidth().testTag("studies-progress-tools"),
@@ -305,9 +325,9 @@ private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, current: Bool
 }
 
 @Composable
-private fun StudyPane(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+private fun StudyPane(modifier: Modifier = Modifier, verticalPadding: Dp = 17.dp, spacing: Dp = 10.dp, content: @Composable ColumnScope.() -> Unit) {
     GlassSurface(modifier.fillMaxWidth(), shape = RoundedCornerShape(23.dp)) {
-        Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = verticalPadding), verticalArrangement = Arrangement.spacedBy(spacing), content = content)
     }
 }
 
@@ -316,8 +336,7 @@ private fun CreditCard(study: StudentStudy?, courses: List<Course>, semester: In
     val earned = study?.earnedCredits ?: courses.takeIf { it.isNotEmpty() }?.filter { it.status == CourseStatus.FULFILLED }?.sumOf { it.credits }
     // Planned local credits are not the official required-credit total.
     val required = study?.requiredCredits
-    StudyPane(Modifier.testTag("studies-credit-card")) {
-        Muted(t(UiKey.STUDIES_STUDY_PROGRESS))
+    StudyPane(Modifier.testTag("studies-credit-card").semantics { contentDescription = t(UiKey.STUDIES_STUDY_PROGRESS) }, verticalPadding = 12.dp, spacing = 8.dp) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(earned?.toString() ?: "—", fontSize = 35.sp, lineHeight = 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
             Text(tf(UiKey.STUDIES_CREDITS, "", required?.toString() ?: "—").trim(), Modifier.padding(start = 5.dp, bottom = 6.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -343,13 +362,13 @@ private fun FinanceSummary(study: StudentStudy?, onClick: () -> Unit) {
             modifier, "studies-payments-value", onClick)
     }
     val scholarships: @Composable (Modifier) -> Unit = { modifier ->
-        FinanceTile(t(UiKey.STUDIES_LAST_SCHOLARSHIP), scholarship?.let { money(it.amountMinor, it.currency) } ?: unavailable(),
-            scholarship == null, Icons.Outlined.AccountBalance, scholarship?.paidOn?.let { "${t(UiKey.STUDIES_PAID)} · ${dateText(it)}" },
+        FinanceTile(t(UiKey.STUDIES_LAST_SCHOLARSHIP), scholarship?.let { money(it.amountMinor, it.currency) } ?: money(0L, "EUR", currencyCode = true),
+            false, Icons.Outlined.AccountBalance, scholarship?.paidOn?.let { "${t(UiKey.STUDIES_PAID)} · ${dateText(it)}" },
             modifier, "studies-scholarship-value", onClick)
     }
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        if (maxWidth < 280.dp * fontScale) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (maxWidth < 300.dp * fontScale) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             payments(Modifier.fillMaxWidth()); scholarships(Modifier.fillMaxWidth())
         } else Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             payments(Modifier.weight(1f).fillMaxHeight()); scholarships(Modifier.weight(1f).fillMaxHeight())
@@ -521,10 +540,12 @@ private fun NavigationRow(icon: ImageVector, title: String, subtitle: String, ta
 }
 private fun unavailable() = t(UiKey.STUDIES_UNAVAILABLE)
 private fun dateText(date: LocalDate): String = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(TaktI18n.locale))
-private fun money(minor: Long, currency: String): String = runCatching {
+private fun money(minor: Long, currency: String, currencyCode: Boolean = false): String = runCatching {
     val unit = Currency.getInstance(currency)
     val digits = unit.defaultFractionDigits.coerceAtLeast(0)
-    NumberFormat.getCurrencyInstance(TaktI18n.locale).apply { this.currency = unit; minimumFractionDigits = digits; maximumFractionDigits = digits }.format(java.math.BigDecimal.valueOf(minor, digits))
+    if (currencyCode) NumberFormat.getNumberInstance(TaktI18n.locale).apply { minimumFractionDigits = digits; maximumFractionDigits = digits }
+        .format(java.math.BigDecimal.valueOf(minor, digits)) + " " + currency
+    else NumberFormat.getCurrencyInstance(TaktI18n.locale).apply { this.currency = unit; minimumFractionDigits = digits; maximumFractionDigits = digits }.format(java.math.BigDecimal.valueOf(minor, digits))
 }.getOrElse { java.math.BigDecimal.valueOf(minor, 2).toPlainString() + " " + currency }
 private fun Map<String, Long>?.money(): String = when { this == null -> unavailable(); isEmpty() -> t(UiKey.STUDIES_NO_OUTSTANDING); else -> entries.joinToString(" · ") { (currency, amount) -> money(amount, currency) } }
 private fun StudentFee.outstandingMinor(): Long? = when { status == StudentFeeStatus.PAID || status == StudentFeeStatus.CANCELLED -> 0L; paidMinor != null -> (amountMinor - paidMinor!!).coerceAtLeast(0L); status == StudentFeeStatus.UNPAID -> amountMinor; else -> null }

@@ -111,6 +111,33 @@ class StudiesNativeUiTest {
         capture("studies-themed-selector.png")
     }
 
+    @Test fun refreshFailuresStaySilentAndEmptyScholarshipIsNumeric() {
+        show(StudentHubState(snapshot.copy(studies = listOf(current.copy(scholarships = emptyList(), scholarshipsLoaded = false))), problem = StudentHubProblem.UNAVAILABLE))
+        compose.onNodeWithTag("studies-status").assertDoesNotExist()
+        compose.onNodeWithTag("studies-screen").performScrollToNode(hasText("0.00 EUR"))
+        compose.onNodeWithTag("studies-scholarship-value", useUnmergedTree = true).assertTextEquals("0.00 EUR")
+    }
+
+    @Test fun creditCardIsCompactAndCollapsesUnderTabsInProgress() {
+        show()
+        compose.onNodeWithText("Study progress").assertDoesNotExist()
+        val original = compose.onNodeWithTag("studies-credit-card").getUnclippedBoundsInRoot()
+        assertTrue(original.bottom - original.top < 150.dp)
+        compose.mainClock.autoAdvance = false
+        try {
+            compose.onNodeWithTag("studies-tab-1").performClick()
+            compose.mainClock.advanceTimeBy(100)
+            val moving = compose.onNodeWithTag("studies-credit-card").getUnclippedBoundsInRoot()
+            assertTrue(moving.top < original.top)
+            compose.mainClock.advanceTimeBy(600)
+            compose.onNodeWithTag("studies-credit-card").assertDoesNotExist()
+            compose.onNodeWithTag("studies-progress-tools").assertIsDisplayed()
+            compose.onNodeWithTag("studies-tab-0").performClick()
+            compose.mainClock.advanceTimeBy(600)
+            compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
+        } finally { compose.mainClock.autoAdvance = true }
+    }
+
     @Test fun cachedRefreshNeverAddsALoadingPane() {
         show(StudentHubState(snapshot, loading = true))
         compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
@@ -170,7 +197,7 @@ class StudiesNativeUiTest {
         compose.runOnIdle { assertEquals(1, picks) }
     }
 
-    @Test fun unavailableScholarshipFitsNarrowSlovakLayoutWithLargeFonts() {
+    @Test fun zeroScholarshipFitsNarrowSlovakLayoutWithLargeFonts() {
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, 1.5f)) {
@@ -181,8 +208,8 @@ class StudiesNativeUiTest {
                 } }
             }
         }
-        compose.onNodeWithTag("studies-screen").performScrollToNode(hasText("Nedostupné"))
-        compose.onNodeWithTag("studies-scholarship-value", useUnmergedTree = true).assertTextEquals("Nedostupné")
+        compose.onNodeWithTag("studies-screen").performScrollToNode(hasText("0,00 EUR"))
+        compose.onNodeWithTag("studies-scholarship-value", useUnmergedTree = true).assertTextEquals("0,00 EUR")
             .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
                 val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
                 assertTrue(action(layouts)); assertEquals(1, layouts.single().lineCount); assertFalse(layouts.single().hasVisualOverflow)

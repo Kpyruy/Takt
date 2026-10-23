@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -41,7 +45,7 @@ import com.kpyruy.takt.core.ui.motion.TaktMotion
 data class TaktNavItem(val label: String, val icon: ImageVector, val selected: Boolean, val onClick: () -> Unit)
 
 @Composable
-fun TaktBottomNavigation(items: List<TaktNavItem>, centerContent: (@Composable () -> Unit)? = null) {
+fun TaktBottomNavigation(items: List<TaktNavItem>, centerSelected: Boolean = false, centerContent: (@Composable () -> Unit)? = null) {
     require(items.size == 4)
     val switchTab = com.kpyruy.takt.core.ui.motion.rememberTabSwitchGuard()
     val selected = items.indexOfFirst { it.selected }.coerceAtLeast(0)
@@ -51,19 +55,27 @@ fun TaktBottomNavigation(items: List<TaktNavItem>, centerContent: (@Composable (
             .glassSurface(shape, sampleContent = true).testTag("root-navigation")) {
             val centerWidth = if (centerContent != null) 56.dp else 0.dp
             val width = (maxWidth - 10.dp - centerWidth) / 4
-            val target = width * selected + if (selected >= 2) centerWidth else 0.dp
+            val centerActive = centerSelected && centerContent != null
+            val target = if (centerActive) width * 2 else width * selected + if (selected >= 2) centerWidth else 0.dp
+            val lensWidth = androidx.compose.animation.core.animateDpAsState(if (centerActive) centerWidth else width, TaktMotion.menu(), label = "navigation-lens-width")
+            val lensHeight = androidx.compose.animation.core.animateDpAsState(if (centerActive) 56.dp else 60.dp, TaktMotion.menu(), label = "navigation-lens-height")
             val offset = androidx.compose.animation.core.animateDpAsState(target,
                 TaktMotion.menu(), label = "navigation-lens")
             Box(Modifier.padding(5.dp)) {
                 // Read the moving position during placement, avoiding a rail recomposition
                 // on every120/144Hz frame. This offset overload also preserves RTL placement.
-                Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.value.roundToPx(), 0) }.width(width).height(60.dp)
+                Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.value.roundToPx(), ((60.dp - lensHeight.value) / 2).roundToPx()) }
+                    .layout { measurable, _ ->
+                        val w = lensWidth.value.roundToPx(); val h = lensHeight.value.roundToPx()
+                        val pane = measurable.measure(Constraints.fixed(w, h))
+                        layout(w, h) { pane.placeRelative(0, 0) }
+                    }
                     .glassSurface(shape, MaterialTheme.colorScheme.primaryContainer)
                     .testTag("navigation-lens"))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     items.forEachIndexed { index, item ->
                         if (index == 2 && centerContent != null) Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) { centerContent() }
-                        NavigationTab(item, width, shape) { if (!item.selected) switchTab(item.onClick) }
+                        NavigationTab(item.copy(selected = item.selected && !centerActive), width, shape) { if (!item.selected || centerActive) switchTab(item.onClick) }
                     }
                 }
             }
@@ -89,10 +101,10 @@ private fun NavigationTab(item: TaktNavItem, width: androidx.compose.ui.unit.Dp,
 }
 
 @Composable
-fun TaktAddFab(onClick: () -> Unit) {
+fun TaktAddFab(selected: Boolean = false, onClick: () -> Unit) {
     val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
-        Modifier.size(52.dp).glassSurface(CircleShape, MaterialTheme.colorScheme.primaryContainer)
+        Modifier.size(52.dp).semantics { this.selected = selected }
             .clip(CircleShape).taktPressFeedback(source).clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick).testTag("root-add").tourTarget("add-button"),
         contentAlignment = Alignment.Center,
     ) {
