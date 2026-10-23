@@ -27,4 +27,5 @@ dependencies {
     implementation("org.jsoup:jsoup:1.18.3")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
 }

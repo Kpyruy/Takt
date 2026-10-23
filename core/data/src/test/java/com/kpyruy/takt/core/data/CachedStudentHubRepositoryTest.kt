@@ -2,6 +2,7 @@ package com.kpyruy.takt.core.data
 
 import com.kpyruy.takt.core.model.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.test.*
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.IOException
@@ -9,6 +10,43 @@ import java.io.IOException
 class CachedStudentHubRepositoryTest {
     private fun source()=StudentHubSnapshot(StudentIdentity(name="Alex"),listOf(StudentStudy("101","Current",active=true),
         StudentStudy("202","Previous",active=false)),"101","101",ownerKey="owner")
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun transientFailureRetriesInBackgroundAndKeepsCachedRecords() = runTest {
+        val store = InMemoryStudentHubStore(); store.write(source())
+        var attempts = 0
+        val repo = CachedStudentHubRepository(store, backgroundScope,
+            { attempts++; if (attempts == 1) throw IOException("offline"); source() },
+            { it.copy(feesLoaded = true, scholarshipsLoaded = true) }, { true }, { "owner" }, retryDelaysMillis = listOf(100L, 200L))
+        runCurrent()
+        repo.refresh(); runCurrent()
+        assertEquals(1, attempts); assertEquals("Alex", repo.state.value.snapshot!!.identity!!.name)
+        advanceTimeBy(100); runCurrent()
+        assertEquals(2, attempts); assertNull(repo.state.value.problem)
+        assertTrue(store.read()!!.viewedStudy()!!.feesLoaded)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun retriesAreBoundedAndAccountRemovalCancelsPendingWork() = runTest {
+        val store = InMemoryStudentHubStore(); var attempts = 0
+        val repo = CachedStudentHubRepository(store, backgroundScope, { attempts++; throw IOException("offline") },
+            { it }, { true }, { "owner" }, retryDelaysMillis = listOf(100L, 200L))
+        repo.refresh(); runCurrent()
+        advanceTimeBy(100); runCurrent(); advanceTimeBy(200); runCurrent()
+        advanceTimeBy(60_000); runCurrent(); assertEquals(3, attempts)
+        repo.refresh(); runCurrent(); assertEquals(4, attempts)
+        repo.clear(); advanceTimeBy(60_000); runCurrent()
+        assertEquals(4, attempts); assertNull(repo.state.value.snapshot)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test fun authenticationFailureDoesNotKeepRetryingWithoutTheUser() = runTest {
+        var attempts = 0
+        val repo = CachedStudentHubRepository(InMemoryStudentHubStore(), backgroundScope,
+            { attempts++; throw TeachingAuthenticationRequired() }, { it }, { true }, { "owner" }, retryDelaysMillis = listOf(100L))
+        repo.refresh(); runCurrent(); advanceTimeBy(60_000); runCurrent()
+        assertEquals(1, attempts); assertEquals(StudentHubProblem.SIGN_IN_REQUIRED, repo.state.value.problem)
+    }
+
     @Test fun cachedProfileIsImmediateAndFailureDoesNotDiscardData()=runBlocking {
         val scope=CoroutineScope(SupervisorJob()+Dispatchers.Unconfined);val store=InMemoryStudentHubStore();store.write(source())
         try {

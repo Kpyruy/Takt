@@ -16,6 +16,7 @@ class CachedStudentHubRepository(
     private val ownerKey: () -> String?,
     private val coordinate: suspend (suspend () -> Unit) -> Unit = { it() },
     private val stableWrite: suspend (suspend () -> Unit) -> Unit = { it() },
+    private val retryDelaysMillis: List<Long> = listOf(2_000L, 8_000L, 30_000L),
 ) : StudentHubRepository {
     private val mutable=MutableStateFlow(StudentHubState())
     override val state=mutable.asStateFlow()
@@ -23,6 +24,7 @@ class CachedStudentHubRepository(
     private var requestGeneration=0L
     private val writes=Mutex()
     private val requests=Mutex()
+    private var retryJob: Job? = null
     private fun accepted(value:StudentHubSnapshot?)=value?.takeIf { !hasAccount() || ownerKey()!=null && it.ownerKey==ownerKey() }
     init { scope.launch {
         try { store.snapshots.collect { current -> mutable.value=mutable.value.copy(snapshot=accepted(current)) } }
@@ -47,10 +49,12 @@ class CachedStudentHubRepository(
         }
         loadViewed()
     }
-    private suspend fun request(action:suspend ()->Unit) {
+    private suspend fun request(attempt:Int=0, expectedGeneration:Long=generation.get(), action:suspend ()->Unit) {
         requests.withLock {
+            if (generation.get() != expectedGeneration) return@withLock
+            if (attempt == 0) { retryJob?.cancel(); retryJob = null }
             if(!hasAccount()){mutable.value=mutable.value.copy(problem=StudentHubProblem.SIGN_IN_REQUIRED);return@withLock}
-            requestGeneration=generation.get()
+            requestGeneration=expectedGeneration
             mutable.value=mutable.value.copy(loading=true,problem=null)
             try { coordinate { action() } }
             catch(cancelled:CancellationException){throw cancelled}
@@ -59,7 +63,16 @@ class CachedStudentHubRepository(
                 is TeachingSessionUnavailable -> StudentHubProblem.SECOND_FACTOR_REQUIRED
                 is IllegalArgumentException, is IllegalStateException -> StudentHubProblem.UNRECOGNIZED_RESPONSE
                 else->StudentHubProblem.UNAVAILABLE
-            }) }
+            })
+                if (mutable.value.problem in setOf(StudentHubProblem.UNAVAILABLE, StudentHubProblem.UNRECOGNIZED_RESPONSE)
+                    && attempt < retryDelaysMillis.size && generation.get() == expectedGeneration) {
+                    // No account/session or backup lock is held while waiting. A new request supersedes this timer.
+                    retryJob = scope.launch {
+                        delay(retryDelaysMillis[attempt])
+                        request(attempt + 1, expectedGeneration, action)
+                    }
+                }
+            }
             finally { mutable.value=mutable.value.copy(loading=false) }
         }
     }
@@ -85,5 +98,5 @@ class CachedStudentHubRepository(
         catch(cancelled:CancellationException){throw cancelled}
         catch(_:Exception){mutable.value=mutable.value.copy(problem=StudentHubProblem.SAVE_FAILED)}
     }
-    suspend fun clear() = writes.withLock { generation.incrementAndGet();stableWrite { store.clear() };mutable.value=StudentHubState() }
+    suspend fun clear() = writes.withLock { generation.incrementAndGet();retryJob?.cancel();retryJob=null;stableWrite { store.clear() };mutable.value=StudentHubState() }
 }
