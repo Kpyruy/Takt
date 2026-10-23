@@ -43,9 +43,9 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
     }
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag("home-assessment-${item.id}")) {
         Row(
-            Modifier.fillMaxWidth().padding(8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             EntityIconTile(subjectColor, Modifier.size(40.dp)) { foreground ->
                 Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.testTag("home-assessment-glyph-${item.id}"))

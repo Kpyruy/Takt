@@ -43,8 +43,8 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
     SwipeCompletionBox(completed = task.completed, onCompletedChange = onCompletedChange) {
         Row(Modifier.fillMaxWidth().testTag("home-task-${task.id}").animateContentSize()
             .glassSurface(tint = if (overdue) MaterialTheme.colorScheme.errorContainer else androidx.compose.ui.graphics.Color.Unspecified)
-            .padding(8.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            .padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             EntityIconTile(com.kpyruy.takt.core.ui.theme.taktSubjectColor(task.courseId), Modifier.size(40.dp)) { foreground ->
                 IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
                     modifier = Modifier.size(40.dp)) {
