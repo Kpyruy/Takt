@@ -445,13 +445,7 @@ private fun SelectedDayAgenda(
         }
 
         if (events.isEmpty()) {
-            SectionCard {
-                Text(t(UiKey.TEXT_THERE_ARE_NO_CLASSES_ON_THIS_DAY))
-                Text(
-                    t(UiKey.TEXT_ADD_A_CLASS_OR_ONE_OFF_EVENT_WITH_THE_BUTTON_AT_THE_BOTTOM_RIGHT),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            CalendarEmptyDay(date)
         } else {
             DayTimelineView(
                 events = events,

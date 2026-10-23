@@ -17,26 +17,23 @@ import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconToggleButton
 import com.kpyruy.takt.core.ui.components.glassSurface
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.kpyruy.takt.core.model.StudyTask
 import com.kpyruy.takt.core.ui.components.SwipeCompletionBox
 import com.kpyruy.takt.core.ui.components.EntityIconTile
+import com.kpyruy.takt.core.ui.components.WorkRequirementIcons
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolean) -> Unit) {
+fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean) -> Unit) {
     val today = LocalDate.now()
     val due = task.dueDate?.let { when (it) {
         today -> t(UiKey.TEXT_TODAY)
@@ -49,7 +46,7 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
             .glassSurface(tint = if (overdue) MaterialTheme.colorScheme.errorContainer else androidx.compose.ui.graphics.Color.Unspecified)
             .padding(8.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            EntityIconTile(MaterialTheme.colorScheme.primary, Modifier.size(40.dp)) { foreground ->
+            EntityIconTile(com.kpyruy.takt.core.ui.theme.taktSubjectColor(task.courseId), Modifier.size(40.dp)) { foreground ->
                 IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
                     modifier = Modifier.size(40.dp)) {
                     Icon(if (task.completed) Icons.Outlined.CheckCircle else Icons.Outlined.Assignment,
@@ -60,12 +57,14 @@ fun HomeTaskRow(task: StudyTask, courseTitle: String, onCompletedChange: (Boolea
                 Text(task.title, style = MaterialTheme.typography.titleSmall,
                     color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null)
-                Text(listOfNotNull(courseTitle, due).joinToString(" · "), style = MaterialTheme.typography.bodySmall,
+                Text(listOfNotNull(courseCode, due).joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (task.requiredForExam) Text(t(UiKey.TEXT_REQUIRED_FOR_EXAM) + task.minimumPointsForExam?.let { t(uiMessage(UiKey.FORMAT_MIN_VALUE_PTS, it.pointText())) }.orEmpty(),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (task.requiredForExam && task.completed && !task.meetsAdmissionRequirement)
-                    Text(t(UiKey.TEXT_THRESHOLD_FOR_ADMISSION_NOT_MET), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                WorkRequirementIcons(
+                    requiredForExam = task.requiredForExam,
+                    minimumPointsForExam = task.minimumPointsForExam,
+                    admissionWarning = task.completed && !task.meetsAdmissionRequirement,
+                    tagPrefix = "home-task-${task.id}",
+                )
             }
             task.maxPoints?.let { maximum ->
                 Text(if (task.earnedPoints != null) t(uiMessage(UiKey.FORMAT_VALUE_VALUE_PTS, task.earnedPoints?.pointText(), maximum.pointText())) else t(uiMessage(UiKey.FORMAT_UP_TO_VALUE_PTS, maximum.pointText())),

@@ -28,6 +28,7 @@ import com.kpyruy.takt.core.model.GradeItem
 import com.kpyruy.takt.core.model.GradeItemType
 import com.kpyruy.takt.core.ui.theme.taktSubjectColor
 import com.kpyruy.takt.core.ui.components.EntityIconTile
+import com.kpyruy.takt.core.ui.components.WorkRequirementIcons
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -57,13 +58,13 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
                 }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (item.isAwaitingResult) Text(t(UiKey.TEXT_AWAITING_GRADE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (!item.contributesToGrade) Text(t(UiKey.TEXT_EXCLUDED_FROM_THE_FINAL_GRADE), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (item.requiredForExam) {
-                    val threshold = item.minimumPointsForExam?.let { t(uiMessage(UiKey.FORMAT_MIN_VALUE_PTS, it.pointText())) }.orEmpty()
-                    Text(t(uiMessage(UiKey.FORMAT_REQUIRED_FOR_EXAMVALUE_BC3F4853, threshold)), style = MaterialTheme.typography.labelSmall,
-                        color = if (item.completed && !item.meetsAdmissionRequirement) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                WorkRequirementIcons(
+                    requiredForExam = item.requiredForExam,
+                    minimumPointsForExam = item.minimumPointsForExam,
+                    admissionWarning = item.completed && !item.meetsAdmissionRequirement,
+                    contributesToGrade = item.contributesToGrade,
+                    tagPrefix = "home-assessment-${item.id}",
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(

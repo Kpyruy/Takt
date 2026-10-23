@@ -206,8 +206,11 @@ internal fun CalendarPeriodArrows(
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier.height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        TaktIconButton(Icons.Default.ChevronLeft, t(UiKey.TEXT_PREVIOUS_PERIOD), onPrevious, Modifier.size(40.dp))
-        TaktIconButton(Icons.Default.ChevronRight, t(UiKey.TEXT_THE_NEXT_PERIOD), onNext, Modifier.size(40.dp))
+    Row(modifier = modifier.height(48.dp), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TaktIconButton(Icons.Default.ChevronLeft, t(UiKey.TEXT_PREVIOUS_PERIOD), onPrevious,
+            Modifier.size(40.dp).testTag("calendar-previous-period"))
+        TaktIconButton(Icons.Default.ChevronRight, t(UiKey.TEXT_THE_NEXT_PERIOD), onNext,
+            Modifier.size(40.dp).testTag("calendar-next-period"))
     }
 }

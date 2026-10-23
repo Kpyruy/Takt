@@ -1484,5 +1484,6 @@ object UiKey {
     const val WORK_EXCLUDED_FROM_GRADE_DESCRIPTION = "work.excluded_from_grade.description"
     const val WORK_REQUIRED_FOR_EXAM_DESCRIPTION = "work.required_for_exam.description"
     const val WORK_ADMISSION_WARNING_DESCRIPTION = "work.admission_warning.description"
+    const val WORK_MINIMUM_FOR_EXAM = "work.minimum_for_exam"
     const val DOCUMENTS_FOLDER = "documents.folder"
 }

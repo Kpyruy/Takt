@@ -1486,5 +1486,6 @@ internal val staticTranslations: Map<String, LocalizedText> = mapOf(
     UiKey.WORK_EXCLUDED_FROM_GRADE_DESCRIPTION to LocalizedText("This work does not count toward the final grade.", "Ця робота не враховується в підсумковій оцінці.", "Táto práca sa nezapočítava do výslednej známky."),
     UiKey.WORK_REQUIRED_FOR_EXAM_DESCRIPTION to LocalizedText("Complete this work to qualify for the exam.", "Цю роботу потрібно виконати для допуску до іспиту.", "Túto prácu treba splniť na pripustenie ku skúške."),
     UiKey.WORK_ADMISSION_WARNING_DESCRIPTION to LocalizedText("The minimum score for exam admission has not been reached.", "Мінімального бала для допуску до іспиту ще не досягнуто.", "Minimálny počet bodov na pripustenie ku skúške ešte nebol dosiahnutý."),
+    UiKey.WORK_MINIMUM_FOR_EXAM to LocalizedText("Minimum score for exam admission: __ARG0__ pts", "Мінімальний бал для допуску до іспиту: __ARG0__ б.", "Minimálny počet bodov na pripustenie ku skúške: __ARG0__"),
     UiKey.DOCUMENTS_FOLDER to LocalizedText("Documents/Takt", "Documents/Takt", "Documents/Takt"),
 )

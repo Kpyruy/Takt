@@ -1,14 +1,6 @@
 package com.kpyruy.takt.feature.studyplan
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.semantics.contentDescription
@@ -144,8 +136,6 @@ fun StudiesContent(
     }
     val currentSemester = if (archived) study?.currentSemester else settings.effectiveCurrentSemester(courses) ?: study?.currentSemester
     var tab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
-    val creditVisibility = remember { MutableTransitionState(tab == 0) }
-    creditVisibility.targetState = tab == 0
     var filter by rememberSaveable(initialProgressFilter) { mutableIntStateOf(initialProgressFilter) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var selector by rememberSaveable { mutableStateOf(false) }
@@ -196,20 +186,14 @@ fun StudiesContent(
                 StudyPane { ReadOnlyCourse(archivedCourse, onClick = null); RecordField(t(UiKey.STUDIES_STUDY), study?.title); Text(t(UiKey.STUDIES_ARCHIVE_NOTE), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             else -> {
-                item(key = "tabs") {
-                    TaktSegmentedTabs(listOf(t(UiKey.STUDIES_OVERVIEW), t(UiKey.STUDIES_PROGRESS), t(UiKey.STUDIES_FINANCES)), tab, { tab = it },
-                        modifier = Modifier.testTag("studies-tabs"), tabTag = { "studies-tab-$it" })
+                item(key = "tabs-and-credits") {
+                    StudiesTabsAndCredits(tab, { tab = it }) {
+                        CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged })
+                    }
                 }
                 if (archived) item { StudyPane { Text(t(UiKey.STUDIES_ARCHIVE_NOTE), style = MaterialTheme.typography.bodySmall); snapshot?.currentStudyId?.let { id -> TextButton(onClick = { onSelectStudy(id) }, modifier = Modifier.testTag("studies-return-current")) { Text(t(UiKey.STUDIES_RETURN_CURRENT)) } } } }
                 if (state.problem in setOf(StudentHubProblem.SIGN_IN_REQUIRED, StudentHubProblem.SECOND_FACTOR_REQUIRED, StudentHubProblem.SAVE_FAILED) && !state.loading)
                     item { StudyStatus(state, onRefresh, onOpenSettings) }
-                if (creditVisibility.currentState || creditVisibility.targetState) item(key = "credits") {
-                    AnimatedVisibility(creditVisibility, modifier = Modifier.clipToBounds(),
-                        enter = expandVertically(TaktMotion.content(), expandFrom = Alignment.Top) + slideInVertically(TaktMotion.content()) { -it } + fadeIn(TaktMotion.content()),
-                        exit = shrinkVertically(TaktMotion.content(), shrinkTowards = Alignment.Top) + slideOutVertically(TaktMotion.content()) { -it } + fadeOut(TaktMotion.content())) {
-                        CreditCard(study, courses, currentSemester, onChooseSemester.takeUnless { archived || uisManaged })
-                    }
-                }
                 when (tab) {
                     0 -> {
                         item { SectionHeading(t(UiKey.STUDIES_FINANCES), action = { TextButton(onClick = { tab = 2 }) { Text(t(UiKey.STUDIES_VIEW_ALL)) } }) }
@@ -305,6 +289,29 @@ fun StudiesContent(
     if (search) CourseSearchSheet(courses, { id -> search = false; openCourse(id) }, { search = false })
 }
 
+/** The collapsing slot starts at the rail's actual bottom edge. Its gap is part of the
+ * same measured motion, so removing the card never removes an extra lazy-list gap. */
+@Composable
+private fun StudiesTabsAndCredits(tab: Int, onTab: (Int) -> Unit, credits: @Composable () -> Unit) {
+    val reveal by androidx.compose.animation.core.animateFloatAsState(
+        if (tab == 0) 1f else 0f, TaktMotion.content(), label = "studies-credit-reveal")
+    Column(Modifier.fillMaxWidth()) {
+        TaktSegmentedTabs(listOf(t(UiKey.STUDIES_OVERVIEW), t(UiKey.STUDIES_PROGRESS), t(UiKey.STUDIES_FINANCES)),
+            tab, onTab, modifier = Modifier.testTag("studies-tabs"), tabTag = { "studies-tab-$it" })
+        androidx.compose.ui.layout.Layout(
+            content = { if (reveal > 0f) credits() },
+            modifier = Modifier.fillMaxWidth().clipToBounds().testTag("studies-credit-slot"),
+        ) { measurables, constraints ->
+            val card = measurables.firstOrNull()?.measure(constraints.copy(minHeight = 0))
+            val fullHeight = (card?.height ?: 0) + 14.dp.roundToPx()
+            val visibleHeight = (fullHeight * reveal).toInt().coerceAtLeast(0)
+            layout(constraints.maxWidth, visibleHeight) {
+                card?.placeRelative(0, visibleHeight - card.height)
+            }
+        }
+    }
+}
+
 @Composable
 private fun StudyChoiceRow(study: StudentStudy, selected: Boolean, current: Boolean = false, onSelect: () -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
@@ -379,8 +386,13 @@ private fun FinanceSummary(study: StudentStudy?, onClick: () -> Unit) {
 @Composable
 private fun FinanceTile(label: String, value: String, unavailable: Boolean, icon: ImageVector, note: String?, modifier: Modifier, valueTag: String, onClick: () -> Unit) {
     StudyPane(modifier.clickable(onClick = onClick)) {
-        Icon(icon, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
-        Muted(label)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            Icon(icon, null, Modifier.size(18.dp).testTag("$valueTag-icon"), tint = MaterialTheme.colorScheme.primary)
+            // Full translated labels wrap beside the icon instead of drifting to a separate row.
+            Text(label, Modifier.weight(1f).testTag("$valueTag-label"), style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Text(value, Modifier.fillMaxWidth().testTag(valueTag),
             style = if (unavailable) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.headlineSmall,
             fontWeight = if (unavailable) FontWeight.Medium else FontWeight.SemiBold)

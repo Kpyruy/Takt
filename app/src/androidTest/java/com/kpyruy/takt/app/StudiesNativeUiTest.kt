@@ -126,16 +126,43 @@ class StudiesNativeUiTest {
         compose.mainClock.autoAdvance = false
         try {
             compose.onNodeWithTag("studies-tab-1").performClick()
-            compose.mainClock.advanceTimeBy(100)
-            val moving = compose.onNodeWithTag("studies-credit-card").getUnclippedBoundsInRoot()
-            assertTrue(moving.top < original.top)
-            compose.mainClock.advanceTimeBy(600)
+            val tops = mutableListOf<Float>()
+            repeat(20) { frame ->
+                compose.mainClock.advanceTimeByFrame()
+                compose.waitForIdle()
+                val tabs = compose.onNodeWithTag("studies-tabs").fetchSemanticsNode().boundsInRoot
+                val slot = compose.onNodeWithTag("studies-credit-slot").fetchSemanticsNode().boundsInRoot
+                val tools = compose.onNodeWithTag("studies-progress-tools").fetchSemanticsNode().boundsInRoot
+                if (slot.height > 0f) {
+                    assertEquals("Mask must begin at the buttons, with no invisible gap", tabs.bottom, slot.top, 1f)
+                    assertEquals("Constant list spacing throughout every frame", slot.bottom + with(compose.density) { 14.dp.toPx() }, tools.top, 2f)
+                } else {
+                    // Semantics represents a fully clipped zero-height slot with Rect.Zero.
+                    assertEquals("Final spacing has no hidden disappearing lazy item", tabs.bottom + with(compose.density) { 14.dp.toPx() }, tools.top, 2f)
+                }
+                tops += tools.top
+                if (frame in listOf(2, 6, 10, 16)) capture("credits-frame-$frame.png")
+            }
+            assertTrue("Every frame moves continuously upward", tops.zipWithNext().all { (a, b) -> b <= a + 1f })
+            val finalTail = tops.zipWithNext().takeLast(8)
+            assertTrue("No terminal 14dp jump", finalTail.all { (a, b) -> kotlin.math.abs(a - b) < with(compose.density) { 4.dp.toPx() } })
             compose.onNodeWithTag("studies-credit-card").assertDoesNotExist()
-            compose.onNodeWithTag("studies-progress-tools").assertIsDisplayed()
             compose.onNodeWithTag("studies-tab-0").performClick()
             compose.mainClock.advanceTimeBy(600)
             compose.onNodeWithTag("studies-credit-card").assertIsDisplayed()
         } finally { compose.mainClock.autoAdvance = true }
+    }
+
+    @Test fun financeLabelsStayBesideTheirIcons() {
+        show(language = AppLanguage.SLOVAK)
+        listOf("studies-payments-value", "studies-scholarship-value").forEach { tag ->
+            compose.onNodeWithTag("studies-screen", useUnmergedTree = true).performScrollToNode(hasTestTag("$tag-label"))
+            val icon = compose.onNodeWithTag("$tag-icon", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            val label = compose.onNodeWithTag("$tag-label", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+            assertTrue(label.left >= icon.right)
+            assertEquals(icon.center.y, label.center.y, 1f)
+        }
+        capture("studies-finance-labels.png")
     }
 
     @Test fun cachedRefreshNeverAddsALoadingPane() {

@@ -93,8 +93,7 @@ internal fun HomeTasksSection(
         HomeWorkPlanner.overdue(tasks, assessments, today, filter)
     }
     val upcoming = remember(entries, overdue) { entries.filterNot { it in overdue } }
-    val courseTitles = remember(courses) { courses.associate { it.id to it.title } }
-    val courseCodes = remember(courses) { courses.associate { it.id to it.code } }
+    val courseCodes = remember(courses) { courses.associate { it.id to it.code.ifBlank { it.id } } }
     val filterCourses = remember(courses, tasks, assessments) {
         val ids = tasks.mapTo(mutableSetOf()) { it.courseId }
         CourseWork.actionable(assessments).forEach { ids.add(it.courseId) }
@@ -120,10 +119,10 @@ internal fun HomeTasksSection(
         } else {
             val renderEntry: @Composable (HomeWorkEntry) -> Unit = { entry ->
                 when (entry) {
-                    is HomeWorkEntry.Task -> HomeTaskRow(entry.value, courseTitles[entry.courseId] ?: entry.courseId) {
+                    is HomeWorkEntry.Task -> HomeTaskRow(entry.value, courseCodes[entry.courseId] ?: entry.courseId) {
                         onTaskCompleted(entry.value, it)
                     }
-                    is HomeWorkEntry.Graded -> HomeAssessmentRow(entry.value, courseTitles[entry.courseId] ?: entry.courseId) {
+                    is HomeWorkEntry.Graded -> HomeAssessmentRow(entry.value, courseCodes[entry.courseId] ?: entry.courseId) {
                         onOpenAssessment(entry.value)
                     }
                 }

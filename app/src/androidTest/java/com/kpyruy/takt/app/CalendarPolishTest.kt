@@ -1,6 +1,7 @@
 package com.kpyruy.takt.app
 
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.kpyruy.takt.core.model.*
@@ -9,6 +10,7 @@ import java.time.LocalTime
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -25,6 +27,16 @@ class CalendarPolishTest {
             }
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("root-navigation").fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun periodArrowButtonsHaveAVisibleGapAndKeepTheirActions() {
+        compose.onNodeWithText("Календар").performClick()
+        val previous = compose.onNodeWithTag("calendar-previous-period")
+        val next = compose.onNodeWithTag("calendar-next-period")
+        previous.assertHasClickAction().assertIsDisplayed()
+        next.assertHasClickAction().assertIsDisplayed()
+        val gap = next.getUnclippedBoundsInRoot().left - previous.getUnclippedBoundsInRoot().right
+        assertTrue("Calendar arrows need a small visible gap", gap >= 4.dp)
     }
 
     @Test fun dayWeekStripAndWeekPeriodArrowsChangeTheVisibleDates() {
