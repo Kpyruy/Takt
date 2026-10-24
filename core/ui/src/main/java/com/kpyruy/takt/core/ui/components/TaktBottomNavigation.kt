@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +44,17 @@ import com.kpyruy.takt.core.ui.i18n.t
 import com.kpyruy.takt.core.ui.motion.TaktMotion
 
 data class TaktNavItem(val label: String, val icon: ImageVector, val selected: Boolean, val onClick: () -> Unit)
+
+/** Keep Add's visual selection until the closing sheet has started leaving the screen. */
+@Composable
+fun rememberAddSelection(adding: Boolean): Boolean {
+    var held by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(adding) }
+    androidx.compose.runtime.LaunchedEffect(adding) {
+        if (!adding) kotlinx.coroutines.delay(110)
+        held = adding
+    }
+    return adding || held
+}
 
 @Composable
 fun TaktBottomNavigation(items: List<TaktNavItem>, centerSelected: Boolean = false, centerContent: (@Composable () -> Unit)? = null) {

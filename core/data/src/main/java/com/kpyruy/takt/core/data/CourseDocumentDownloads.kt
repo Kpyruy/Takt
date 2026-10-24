@@ -35,7 +35,7 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
         val key = "${ownerKey ?: accountScope}-${key(course, document)}"
         val name = preferences.getString("cache-name:$key", null)
         val old = name?.takeIf { it == File(it).name }?.let { File(cache, it) }?.takeIf { it.isFile }
-        if (!refresh && old != null) return@withContext result(old,
+        if (!refresh && old != null && (document.contentRevision == null || preferences.getString("revision:$key", null) == document.contentRevision)) return@withContext result(old,
             preferences.getString("display:$key", document.fileName ?: document.title)!!,
             preferences.getString("mime:$key", document.mimeType) ?: "application/octet-stream")
         val temporary = File.createTempFile("partial-", ".tmp", cache)
@@ -50,6 +50,7 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
             old?.takeIf { it != target }?.let { previous -> cleanupScope.launch { delay(60_000); previous.delete() } }
             val mime = downloaded.mimeType ?: document.mimeType ?: "application/octet-stream"
             preferences.edit().putString("cache-name:$key", target.name).putString("display:$key", display)
+                .putString("revision:$key", document.contentRevision)
                 .putString("mime:$key", mime).apply()
             // A bounded preview cache; public copies are unaffected by eviction.
             var bytes = target.length(); var count = 1
@@ -61,7 +62,7 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
                 val cachedName = preferences.getString(entry, null)
                 if (cachedName == null || !File(cache, cachedName).isFile) {
                     val oldKey = entry.removePrefix("cache-name:")
-                    preferences.edit().remove(entry).remove("display:$oldKey").remove("mime:$oldKey").apply()
+                    preferences.edit().remove(entry).remove("display:$oldKey").remove("mime:$oldKey").remove("revision:$oldKey").apply()
                 }
             }
             result(target, display, mime)

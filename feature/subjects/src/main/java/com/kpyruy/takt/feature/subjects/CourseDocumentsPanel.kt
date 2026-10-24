@@ -34,6 +34,9 @@ private data class CourseDocumentsView(
     val savedUris: Map<String, android.net.Uri> = emptyMap(),
 )
 
+private fun currentSavedKeys(listing: CourseDocumentListing?, uris: Map<String, android.net.Uri>) =
+    listing?.files.orEmpty().filterNot { it.hasDownloadUpdate }.map { "${it.folderId}:${it.documentId}" }.filter { it in uris }.toSet()
+
 private suspend fun storedDocumentsView(course: Course, activeCodes: Set<String>, repository: CourseDocumentsRepository,
     downloads: CourseDocumentDownloads, fallback: CourseDocumentListing? = null): CourseDocumentsView {
     val listing = repository.cachedDocuments(course, activeCodes) ?: fallback
@@ -41,7 +44,11 @@ private suspend fun storedDocumentsView(course: Course, activeCodes: Set<String>
     val saved = listing?.files.orEmpty().mapNotNull { doc ->
         downloads.saved(course, doc)?.let { "${doc.folderId}:${doc.documentId}" to it }
     }.toMap()
-    return CourseDocumentsView(listing, files, saved)
+    val linked = listing?.copy(files = listing.files.map { doc ->
+        if ("${doc.folderId}:${doc.documentId}" in saved)
+            doc.copy(downloadedRevision = doc.downloadedRevision ?: doc.contentRevision) else doc
+    })
+    return CourseDocumentsView(linked, files, saved)
 }
 
 @Composable
@@ -96,7 +103,7 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
     var loading by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     var working by remember { mutableStateOf<String?>(null) }
-    var saved by remember { mutableStateOf(initialView.savedUris.keys) }
+    var saved by remember { mutableStateOf(currentSavedKeys(initialView.listing, initialView.savedUris)) }
     var savedUris by remember { mutableStateOf(initialView.savedUris) }
     var localFiles by remember { mutableStateOf(initialView.localFiles) }
     val snackbar = remember { SnackbarHostState() }
@@ -124,6 +131,9 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
             try {
                 val local = downloads.available(course, document)
                 if (!save && local != null) { openFile(local.uri, local.mimeType); return@launch }
+                if (save && !document.hasDownloadUpdate && downloads.saved(course, document) != null) {
+                    showSaved(); return@launch
+                }
                 if (save && !connected && local != null) {
                     openFile(local.uri, local.mimeType)
                     return@launch
@@ -132,17 +142,18 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                 if (!downloads.canSave) { folderRequired = true; return@launch }
                 if (working != null) return@launch
                 folderRequired = false; working = fileKey(document); networkWork = true
-                val cached = downloads.cached(course, document, repository, refresh = save)
+                val cached = downloads.cached(course, document, repository, refresh = document.hasDownloadUpdate)
                 if (save) {
                     val uri = downloads.save(course, document, cached)
                     downloads.available(course, document)?.let { local ->
-                        repository.rememberDownloaded(course, document.copy(fileName = cached.fileName), local.fileName)
+                        repository.rememberDownloaded(course, document.copy(fileName = cached.fileName, downloadedRevision = document.contentRevision), local.fileName)
                         listing = listing?.copy(files = listing!!.files.map {
-                            if (fileKey(it) == fileKey(document)) it.copy(fileName = cached.fileName, downloadedFileName = local.fileName) else it
+                            if (fileKey(it) == fileKey(document)) it.copy(fileName = cached.fileName, downloadedFileName = local.fileName,
+                                downloadedRevision = document.contentRevision) else it
                         })
                     }
                     savedUris = savedUris + (fileKey(document) to uri)
-                    saved = saved + fileKey(document)
+                    saved = currentSavedKeys(listing, savedUris)
                     localFiles = downloads.localFiles(course)
                     onPrepared(CourseDocumentsView(listing, localFiles, savedUris))
                     showSaved()
@@ -157,31 +168,27 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
         loading = true
         try {
             val stored = storedDocumentsView(course, activeCourseCodes, repository, downloads, listing)
-            val localUrisAtStart = stored.localFiles.map { it.uri }.toSet()
-            val availableAtStart = mutableSetOf<String>()
             // Publish one coherent local view: raw inventory must not precede its saved UIS links.
             androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
                 listing = stored.listing
                 savedUris = stored.savedUris
-                saved = stored.savedUris.keys
+                saved = currentSavedKeys(stored.listing, stored.savedUris)
                 localFiles = stored.localFiles
             }
             onPrepared(stored)
-            stored.listing?.let { cached ->
-                availableAtStart += stored.savedUris.keys
-                cached.files.filterNot { fileKey(it) in stored.savedUris }.forEach { doc ->
-                    if (downloads.available(course, doc) != null) availableAtStart += fileKey(doc)
-                }
-            }
             if (!connected) return@LaunchedEffect
             failure = null
             var baseline = listing
             var found = repository.documents(course, activeCourseCodes, refresh = true)
+            val knownVersions = baseline?.files.orEmpty().associateBy(::fileKey)
+            found = found.copy(files = found.files.map { doc ->
+                doc.copy(downloadedRevision = doc.downloadedRevision ?: knownVersions[fileKey(doc)]?.downloadedRevision)
+            })
             val foundUris = found.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
             androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
                 listing = found
                 savedUris = foundUris
-                saved = foundUris.keys
+                saved = currentSavedKeys(found, foundUris)
             }
             // Resolve real attachment names only when an unindexed local file could belong
             // to this listing. The cached list and local opening remain usable throughout.
@@ -202,32 +209,22 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                     listing = found
                     downloads.saved(course, resolved)?.let { uri ->
                         savedUris = savedUris + (fileKey(resolved) to uri)
-                        saved = savedUris.keys
+                        saved = currentSavedKeys(found, savedUris)
                         downloads.available(course, resolved)?.let { repository.rememberDownloaded(course, resolved, it.fileName) }
                     }
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (_: Exception) { /* Keep unrelated/local-only files accessible if UIS metadata is unavailable. */ }
             }
-            val updatedBytes = mutableSetOf<String>()
-            for (document in found.files.filter { doc ->
-                val local = downloads.available(course, doc)
-                local != null && (fileKey(doc) in availableAtStart || local.uri in localUrisAtStart)
-            }) {
-                try {
-                    if (downloads.refreshAvailable(course, document, repository)) updatedBytes += fileKey(document)
-                    if (downloads.saved(course, document) != null)
-                        downloads.available(course, document)?.let {
-                            val originalName = downloads.cached(course, document, repository).fileName
-                            repository.rememberDownloaded(course, document.copy(fileName = originalName), it.fileName)
-                        }
-                } catch (cancelled: CancellationException) { throw cancelled }
-                catch (problem: Exception) { android.util.Log.w("CourseDocuments", "Background file refresh failed", problem) }
+            // Persist the version of each existing local copy; refreshing metadata does not fetch bytes.
+            for (document in found.files) {
+                downloads.saved(course, document)?.let {
+                    downloads.available(course, document)?.let { local -> repository.rememberDownloaded(course, document, local.fileName) }
+                }
             }
             savedUris = found.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
-            saved = savedUris.keys
+            saved = currentSavedKeys(found, savedUris)
             localFiles = downloads.localFiles(course)
-            val detected = baseline?.let { CourseDocumentChanges.between(it, found, updatedBytes) }
-                ?: CourseDocumentChanges(updated = found.files.filter { fileKey(it) in updatedBytes })
+            val detected = baseline?.let { CourseDocumentChanges.between(it, found) } ?: CourseDocumentChanges()
             if (!detected.isEmpty) scope.launch {
                 val lines = buildList {
                     if (detected.added.isNotEmpty()) add(t(uiMessage(UiKey.DOCUMENTS_ADDED, detected.added.take(3).joinToString(", ") { it.title })))
@@ -313,7 +310,7 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                                 Icon(if (document.mimeType == "application/pdf") Icons.Outlined.PictureAsPdf else Icons.Outlined.InsertDriveFile,
                                     null, tint = MaterialTheme.colorScheme.primary)
                                 Column(Modifier.weight(1f).testTag("course-document-${document.documentId}")
-                                    .clickable(enabled = working == null || fileKey(document) in saved) { handle(document, false) }.padding(vertical = 8.dp),
+                                    .clickable(enabled = working == null || fileKey(document) in savedUris) { handle(document, false) }.padding(vertical = 8.dp),
                                     verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                     Text(document.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                                     val type = (document.fileName ?: document.title).substringAfterLast('.', "").uppercase()

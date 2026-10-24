@@ -87,6 +87,7 @@ internal class CachedCourseDocumentsRepository @JvmOverloads constructor(
             val extension = com.kpyruy.takt.core.data.uis.UisDocumentsParser.extension(file.mimeType)
             val guessedName = if (file.title.lowercase(java.util.Locale.ROOT).endsWith(extension)) file.title else file.title + extension
             file.copy(downloadedFileName = old?.downloadedFileName ?: file.downloadedFileName,
+                downloadedRevision = old?.downloadedRevision ?: old?.contentRevision?.takeIf { old.downloadedFileName != null } ?: file.downloadedRevision,
                 fileName = if (file.fileName == guessedName) old?.fileName ?: file.fileName else file.fileName)
         })
         if (owner != null) stableWrite {
@@ -115,7 +116,8 @@ internal class CachedCourseDocumentsRepository @JvmOverloads constructor(
             if (current != null) {
                 val next = current.copy(files = current.files.map {
                     if (it.folderId == document.folderId && it.documentId == document.documentId)
-                        it.copy(downloadedFileName = fileName, fileName = document.fileName ?: it.fileName) else it
+                        it.copy(downloadedFileName = fileName, fileName = document.fileName ?: it.fileName,
+                            downloadedRevision = document.downloadedRevision ?: document.contentRevision) else it
                 })
                 store.write(owner, course.code, next)
                 updated = next

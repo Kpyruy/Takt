@@ -71,7 +71,9 @@ class CourseDocumentsUiTest {
                 }
                 val html = when (path) {
                     "/auth/dok_server/?lang=en" -> fixture("root.html")
-                    "/auth/dok_server/slozka.pl?ds=1;id=287891;lang=en" -> fixture("physics.html")
+                    "/auth/dok_server/slozka.pl?ds=1;id=287891;lang=en" -> fixture("physics.html").replace(
+                        Regex("(<tr><td></td><td>[^<]+</td><td></td><td></td>)<td></td>"),
+                        "${'$'}1<td>version $revision</td>")
                     else -> return MockResponse().setResponseCode(400)
                 }
                 return MockResponse().setBody("<a href='/system/logout.pl'>Logout</a>" + html)
@@ -156,8 +158,18 @@ class CourseDocumentsUiTest {
             revision = 2
             compose.onNodeWithContentDescription("Aktualizovať").performClick()
             compose.waitUntil(8_000) { requests.count { it == "/auth/dok_server/slozka.pl?ds=1;id=287891;lang=en" } >= 2 }
+            compose.waitUntil(8_000) { compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            assertEquals("Metadata refresh must not download the updated file", 1, downloads.get())
+            compose.onNodeWithTag("document-download-319089").assertContentDescriptionEquals("Stiahnuť")
+            val dismiss = SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsActions.Dismiss)
+            if (compose.onAllNodes(dismiss and hasAnyAncestor(hasTestTag("documents-updates"))).fetchSemanticsNodes().isNotEmpty())
+                compose.onNode(dismiss and hasAnyAncestor(hasTestTag("documents-updates")))
+                    .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.Dismiss) { it() }
+            compose.onNodeWithTag("document-download-319089").performScrollTo().performClick()
             try {
-                compose.waitUntil(8_000) { downloads.get() == 2 && compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+                compose.waitUntil(8_000) { downloads.get() == 2 &&
+                    compose.onAllNodesWithContentDescription("Uložené").fetchSemanticsNodes().isNotEmpty() &&
+                    runCatching { compose.activity.contentResolver.openInputStream(firstUri)!!.use { it.readBytes() }.contentEquals(currentBytes()) }.getOrDefault(false) }
             } catch (failure: Throwable) {
                 throw AssertionError("Refresh downloads=${downloads.get()}, requests=$requests", failure)
             }

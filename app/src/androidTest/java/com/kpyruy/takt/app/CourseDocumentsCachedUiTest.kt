@@ -22,6 +22,60 @@ import java.io.OutputStream
 
 class CourseDocumentsCachedUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Test fun currentSavedCheckNeverDownloadsAndChangedRevisionWaitsForExplicitUpdate() {
+        val data = (compose.activity.application as TaktApplication).dataContainer
+        assertTrue(data.documentStore.isConnected)
+        val course = Course("revision-test", "REV" + java.util.UUID.randomUUID().toString().take(8), "Versioned documents", 5, 1, CourseStatus.ENROLLED)
+        val document = CourseDocumentFile("90841", "90842", "Lecture", "text/plain", "original.txt", revision = "version-1", downloadedRevision = "version-1")
+        var catalog = CourseDocumentListing(listOf(document), true)
+        var remote = document
+        var streams = 0
+        val repository = object : CourseDocumentsRepository {
+            override suspend fun cachedDocuments(course: Course, activeCourseCodes: Set<String>) = catalog
+            override suspend fun documents(course: Course, activeCourseCodes: Set<String>, refresh: Boolean) = CourseDocumentListing(listOf(remote), true)
+            override suspend fun rememberDownloaded(course: Course, document: CourseDocumentFile, fileName: String) {
+                catalog = CourseDocumentListing(listOf(document.copy(downloadedFileName = fileName)), true)
+            }
+            override suspend fun download(document: CourseDocumentFile, output: OutputStream): DownloadedCourseDocument {
+                streams++; val bytes = remote.revision!!.toByteArray(); output.write(bytes)
+                return DownloadedCourseDocument("original.txt", "text/plain", bytes.size.toLong())
+            }
+        }
+        val downloads = CourseDocumentDownloads(compose.activity, data.documentStore, 123, "6".repeat(64))
+        val source = java.io.File(compose.activity.cacheDir, "revision-${System.nanoTime()}.txt").apply { writeText("version-1") }
+        val uri = runBlocking { data.documentStore.saveDownloadedDocument(course.code, source, "original.txt", "text/plain") }
+        try {
+            compose.activityRule.scenario.onActivity { activity -> activity.setContent {
+                TaktI18n.use(AppLanguage.ENGLISH)
+                TaktTheme { Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                    CourseDocumentsPanel(course, setOf(course.code), repository, downloads, true,
+                        { _, reply -> reply(DeviceAuthenticationResult.CANCELLED) }, {})
+                } }
+            } }
+            compose.onNodeWithTag("course-documents").performClick()
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            compose.onNodeWithTag("document-download-90842").assertContentDescriptionEquals("Saved").performClick()
+            compose.waitForIdle(); assertEquals("A current saved file needs no byte request", 0, streams)
+            remote = document.copy(revision = "version-2")
+            compose.onNodeWithContentDescription("Update").performClick()
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            compose.onNodeWithTag("document-download-90842").assertContentDescriptionEquals("Download")
+            assertEquals("Discovering an update only reads metadata", 0, streams)
+            compose.onNodeWithText("Updated: Lecture", substring = true).assertExists()
+            val dismiss = SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsActions.Dismiss)
+            compose.onAllNodes(dismiss and hasAnyAncestor(hasTestTag("documents-updates"))).fetchSemanticsNodes().firstOrNull()?.let {
+                compose.onNode(dismiss and hasAnyAncestor(hasTestTag("documents-updates")))
+                    .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.Dismiss) { action -> action() }
+            }
+            compose.onNodeWithTag("document-download-90842").performClick()
+            compose.waitUntil(5_000) { streams == 1 && compose.onAllNodesWithContentDescription("Saved").fetchSemanticsNodes().isNotEmpty() }
+            assertEquals("version-2", compose.activity.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() })
+            compose.onNodeWithTag("document-download-90842").performClick()
+            compose.waitForIdle(); assertEquals(1, streams)
+        } finally {
+            source.delete(); android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, uri)
+        }
+    }
     @Test fun savedLinksAppearTogetherWithLocalFilesAndRemainReadyOnReopen() {
         val data = (compose.activity.application as TaktApplication).dataContainer
         assertTrue(data.documentStore.isConnected)
@@ -105,17 +159,16 @@ class CourseDocumentsCachedUiTest {
                 } }
             } }
             compose.onNodeWithTag("course-documents").performClick()
-            compose.waitUntil(8_000) { resolvedNames == 1 && streams == 1 && compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            compose.waitUntil(8_000) { resolvedNames == 1 && compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            assertEquals(0, streams)
             compose.onNodeWithText("server-original.txt").assertDoesNotExist()
             compose.onAllNodesWithText("Lecture").assertCountEquals(1)
             compose.onNodeWithText("${course.code} · Files: 1").assertIsDisplayed()
             compose.onNodeWithTag("document-download-90822").assertContentDescriptionEquals("Saved")
             captureStudiesScreenshot("documents-merged-local-and-uis.png")
-            body = "updated"
             compose.onNodeWithTag("document-download-90822").performClick()
-            compose.waitUntil(8_000) { streams == 2 && runBlocking {
-                compose.activity.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() } == body
-            } }
+            compose.waitForIdle()
+            assertEquals("A saved current attachment is not downloaded again", 0, streams)
             assertEquals(listOf("server-original.txt"), runBlocking { data.documentStore.downloadedDocuments(course.code).map { it.fileName } })
         } finally {
             source.delete()

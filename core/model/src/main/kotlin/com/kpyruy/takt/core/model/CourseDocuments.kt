@@ -11,12 +11,16 @@ data class CourseDocumentFile(
     val folderPath: String? = null,
     val downloadedFileName: String? = null,
     val revision: String? = null,
+    val downloadedRevision: String? = null,
 ) {
     init {
         require(folderId.matches(Regex("[1-9][0-9]*")))
         require(documentId.matches(Regex("[1-9][0-9]*")))
     }
     val downloadUrl: String get() = "https://is.stuba.sk/auth/dok_server/slozka.pl?id=$folderId;download=$documentId"
+    val contentRevision: String? get() = revision?.takeIf { it.isNotBlank() }
+        ?: sizeLabel?.takeIf { it.isNotBlank() }?.let { "size:$it" }
+    val hasDownloadUpdate: Boolean get() = downloadedRevision != null && contentRevision != null && downloadedRevision != contentRevision
 }
 
 /** A discovered course root; only its validated id is used to construct UIS requests. */
@@ -46,7 +50,7 @@ data class CourseDocumentChanges(
             fun key(file: CourseDocumentFile) = "${file.folderId}:${file.documentId}"
             val before = old.files.associateBy(::key); val after = fresh.files.associateBy(::key)
             return CourseDocumentChanges(fresh.files.filter { key(it) !in before }, fresh.files.filter { file ->
-                before[key(file)]?.let { it.copy(downloadedFileName = null) != file.copy(downloadedFileName = null) || key(file) in changedBytes } ?: false
+                before[key(file)]?.let { it.copy(downloadedFileName = null, downloadedRevision = null) != file.copy(downloadedFileName = null, downloadedRevision = null) || key(file) in changedBytes } ?: false
             }, old.files.filter { key(it) !in after })
         }
     }

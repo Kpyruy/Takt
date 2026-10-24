@@ -18,6 +18,23 @@ class TaktNavigationSelectionTest {
     @Before fun useEnglish() {
         com.kpyruy.takt.core.ui.i18n.TaktI18n.use(com.kpyruy.takt.core.model.AppLanguage.ENGLISH)
     }
+    @Test fun addSelectionIsHeldWhileItsSheetStartsClosing() {
+        var adding by mutableStateOf(false)
+        compose.setContent { TaktTheme {
+            TaktFloatingAddFab(rememberAddSelection(adding)) { adding = true }
+        } }
+        compose.onNodeWithTag("root-add").performClick().assertIsSelected()
+        compose.runOnIdle { adding = false }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithTag("root-add").assertIsSelected()
+        compose.runOnIdle { adding = true }
+        compose.waitForIdle()
+        compose.onNodeWithTag("root-add").assertIsSelected()
+        compose.runOnIdle { adding = false }
+        compose.waitUntil(2_000) {
+            compose.onNodeWithTag("root-add").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Selected] == false
+        }
+    }
     @Test fun floatingAddAnimatesIntoAndOutOfAddingMode() {
         var selected by mutableStateOf(false)
         compose.setContent { TaktTheme { TaktFloatingAddFab(selected) { selected = true } } }

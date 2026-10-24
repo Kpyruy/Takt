@@ -40,16 +40,17 @@ data class BackupDocumentCourse(val ownerKey: String, val courseCode: String, va
 data class BackupDocumentFolder(val id: String, val label: String, val path: String)
 @Serializable
 data class BackupDocumentFile(val folderId: String, val documentId: String, val title: String, val mimeType: String,
-    val fileName: String? = null, val sizeLabel: String? = null, val folderPath: String? = null, val downloadedFileName: String? = null, val revision: String? = null)
+    val fileName: String? = null, val sizeLabel: String? = null, val folderPath: String? = null, val downloadedFileName: String? = null, val revision: String? = null,
+    val downloadedRevision: String? = null)
 @Serializable
 data class BackupDocumentListing(val files: List<BackupDocumentFile> = emptyList(), val foldersFound: Boolean = false,
     val folderUrl: String? = null, val truncated: Boolean = false, val roots: List<BackupDocumentFolder> = emptyList()) {
     fun toModel() = CourseDocumentListing(files.map { CourseDocumentFile(it.folderId,it.documentId,it.title,it.mimeType,
-        it.fileName,it.sizeLabel,it.folderPath,it.downloadedFileName,it.revision) },foldersFound,folderUrl,truncated,
+        it.fileName,it.sizeLabel,it.folderPath,it.downloadedFileName,it.revision,it.downloadedRevision) },foldersFound,folderUrl,truncated,
         roots.map { CourseDocumentFolder(it.id,it.label,it.path) })
 }
 internal fun CourseDocumentListing.toBackupListing() = BackupDocumentListing(files.map {
-    BackupDocumentFile(it.folderId,it.documentId,it.title,it.mimeType,it.fileName,it.sizeLabel,it.folderPath,it.downloadedFileName,it.revision)
+    BackupDocumentFile(it.folderId,it.documentId,it.title,it.mimeType,it.fileName,it.sizeLabel,it.folderPath,it.downloadedFileName,it.revision,it.downloadedRevision)
 },foldersFound,folderUrl,truncated,roots.map { BackupDocumentFolder(it.id,it.label,it.path) })
 internal object DocumentCatalogCodec {
     private const val MAX_BYTES = 8_000_000
@@ -83,6 +84,7 @@ internal object DocumentCatalogCodec {
                 require(file.folderPath == null || file.folderPath.length <= 4000)
                 require(file.sizeLabel == null || file.sizeLabel.length <= 128)
                 require(file.revision == null || file.revision.length <= 512)
+                require(file.downloadedRevision == null || file.downloadedRevision.length <= 512)
                 listOfNotNull(file.fileName,file.downloadedFileName).forEach { require(it.length <= 512 && it == java.io.File(it).name && !it.contains('\\') && !it.any(Char::isISOControl)) }
             }
         }

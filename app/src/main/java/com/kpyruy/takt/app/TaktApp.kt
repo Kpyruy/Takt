@@ -208,6 +208,7 @@ fun TaktApp(
     }
 
     var showGlobalAdd by remember { mutableStateOf(false) }
+    val addSelected = com.kpyruy.takt.core.ui.components.rememberAddSelection(showGlobalAdd)
     var showQuickAdd by remember { mutableStateOf(false) }
     var courseSelectionFor by remember { mutableStateOf<CreateItemType?>(null) }
     var courseSelectionDraft by remember { mutableStateOf<CreateItemDraft?>(null) }
@@ -288,16 +289,16 @@ fun TaktApp(
         snackbarHost = { if (currentRoute != SETTINGS_ROUTE) SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (showRootNavigation && snapshotState.value!!.settings.addButtonPlacement == com.kpyruy.takt.core.model.AddButtonPlacement.FLOATING)
-                TaktFloatingAddFab(selected = showGlobalAdd) { showGlobalAdd = true }
+                TaktFloatingAddFab(selected = addSelected) { showGlobalAdd = true }
         },
         containerColor = Color.Transparent,
         bottomBar = {
             if (showRootNavigation) {
                 TaktBottomNavigation(
                     items = navItems,
-                    centerSelected = showGlobalAdd,
+                    centerSelected = addSelected,
                     centerContent = if (snapshotState.value!!.settings.addButtonPlacement == com.kpyruy.takt.core.model.AddButtonPlacement.CENTER)
-                        ({ TaktAddFab(selected = showGlobalAdd) { showGlobalAdd = true } }) else null,
+                        ({ TaktAddFab(selected = addSelected) { showGlobalAdd = true } }) else null,
                 )
             }
         },

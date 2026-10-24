@@ -11,6 +11,22 @@ class PersistentCourseDocumentsTest {
     private val course = Course("uis:1:2", "DOC", "Documents", 5, 1, CourseStatus.ENROLLED)
     private val file = CourseDocumentFile("10", "20", "Lecture", "application/pdf", fileName = "lecture.pdf", downloadedFileName = "actual-name.pdf")
     private val listing = CourseDocumentListing(listOf(file), true, roots = listOf(CourseDocumentFolder("10", "DOC Documents", "Documents")))
+    @Test fun downloadedRevisionSurvivesRefreshAndBackupUntilTheUpdateIsSaved() = runBlocking {
+        val store = InMemoryCourseDocumentsStore()
+        val saved = file.copy(revision = "version-1", downloadedRevision = "version-1")
+        store.write(owner, course.code, listing.copy(files = listOf(saved)))
+        val repo = CachedCourseDocumentsRepository({ _, _, _ -> listing.copy(files = listOf(file.copy(revision = "version-2"))) },
+            { _, _ -> error("A metadata refresh must not download the attachment") }, store, { owner })
+        val changed = repo.documents(course, setOf(course.code), true).files.single()
+        assertEquals("version-1", changed.downloadedRevision)
+        assertTrue(changed.hasDownloadUpdate)
+        val portable = BackupDocumentCourse(owner, course.code, store.read(owner, course.code)!!.toBackupListing())
+        assertEquals("version-1", DocumentCatalogCodec.decode(DocumentCatalogCodec.encode(listOf(portable))).single().listing.files.single().downloadedRevision)
+        repo.rememberDownloaded(course, changed.copy(downloadedRevision = changed.contentRevision), "actual-name.pdf")
+        assertFalse(store.read(owner, course.code)!!.files.single().hasDownloadUpdate)
+        val localMarkerOnly = listing.copy(files = listOf(saved.copy(downloadedRevision = "another-local-marker")))
+        assertTrue(CourseDocumentChanges.between(listing.copy(files = listOf(saved)), localMarkerOnly).isEmpty)
+    }
     @Test fun actualAttachmentNameSurvivesRefreshAndPortableCatalogRoundTrip() = runBlocking {
         val store = InMemoryCourseDocumentsStore()
         val guessed = listing.copy(files = listOf(file.copy(fileName = "Lecture.pdf", downloadedFileName = null)))
