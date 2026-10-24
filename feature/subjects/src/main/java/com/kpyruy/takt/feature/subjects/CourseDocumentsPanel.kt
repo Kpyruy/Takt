@@ -83,6 +83,10 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
     var changes by remember { mutableStateOf(CourseDocumentChanges()) }
     var showChanges by remember { mutableStateOf(false) }
     fun fileKey(file: CourseDocumentFile) = "${file.folderId}:${file.documentId}"
+    fun linkedLocal(local: LocalCourseDocument): Boolean = local.uri in savedUris.values ||
+        listing?.files.orEmpty().any { doc -> listOfNotNull(doc.fileName, doc.downloadedFileName).any { name ->
+            CourseDocumentLocalNames.matches(local.fileName, name)
+        } }
     suspend fun openFile(uri: android.net.Uri, mime: String) = withContext(Dispatchers.Main.immediate) {
         val result = NoteAttachmentOpener.launch(context, NoteAttachmentOpener.fileIntent(uri, mime))
         if (result != NoteAttachmentOpenResult.Opened) Toast.makeText(context,
@@ -100,20 +104,26 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
             try {
                 val local = downloads.available(course, document)
                 if (!save && local != null) { openFile(local.uri, local.mimeType); return@launch }
-                if (save && downloads.saved(course, document) != null) {
-                    saved = saved + fileKey(document)
-                    showSaved()
+                if (save && !connected && local != null) {
+                    openFile(local.uri, local.mimeType)
                     return@launch
                 }
                 if (!connected) throw TeachingAuthenticationRequired()
                 if (!downloads.canSave) { folderRequired = true; return@launch }
                 if (working != null) return@launch
                 folderRequired = false; working = fileKey(document); networkWork = true
-                val cached = downloads.cached(course, document, repository)
+                val cached = downloads.cached(course, document, repository, refresh = save)
                 if (save) {
-                    downloads.save(course, document, cached)
-                    downloads.available(course, document)?.let { repository.rememberDownloaded(course, document, it.fileName) }
+                    val uri = downloads.save(course, document, cached)
+                    downloads.available(course, document)?.let { local ->
+                        repository.rememberDownloaded(course, document.copy(fileName = cached.fileName), local.fileName)
+                        listing = listing?.copy(files = listing!!.files.map {
+                            if (fileKey(it) == fileKey(document)) it.copy(fileName = cached.fileName, downloadedFileName = local.fileName) else it
+                        })
+                    }
+                    savedUris = savedUris + (fileKey(document) to uri)
                     saved = saved + fileKey(document)
+                    localFiles = downloads.localFiles(course)
                     showSaved()
                 } else openFile(cached.uri, cached.mimeType)
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -126,25 +136,62 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
         loading = true
         try {
             localFiles = downloads.localFiles(course)
+            val localUrisAtStart = localFiles.map { it.uri }.toSet()
+            val availableAtStart = mutableSetOf<String>()
             val known = repository.cachedDocuments(course, activeCourseCodes)
             (known ?: listing)?.let { cached ->
                 savedUris = cached.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
                 saved = savedUris.keys
+                availableAtStart += saved
+                cached.files.filterNot { fileKey(it) in saved }.forEach { doc ->
+                    if (downloads.available(course, doc) != null) availableAtStart += fileKey(doc)
+                }
                 listing = cached
             }
             if (!connected) return@LaunchedEffect
             failure = null
-            val baseline = listing
-            val found = repository.documents(course, activeCourseCodes, refresh = true)
+            var baseline = listing
+            var found = repository.documents(course, activeCourseCodes, refresh = true)
             listing = found
             savedUris = found.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
             saved = savedUris.keys
+            // Resolve real attachment names only when an unindexed local file could belong
+            // to this listing. The cached list and local opening remain usable throughout.
+            for (document in found.files) {
+                val unlinked = localFiles.filterNot(::linkedLocal)
+                if (unlinked.isEmpty()) break
+                if (unlinked.none {
+                        it.mimeType == document.mimeType || it.mimeType == "application/octet-stream" || document.mimeType == "application/octet-stream"
+                    }) continue
+                try {
+                    val resolved = repository.resolveDocument(course, document)
+                    // Learning a real attachment name is association metadata, not a teacher edit.
+                    baseline = baseline?.let { before -> before.copy(files = before.files.map { old ->
+                        if (fileKey(old) == fileKey(resolved) && old.fileName == CourseDocumentLocalNames.guessedName(old))
+                            old.copy(fileName = resolved.fileName) else old
+                    }) }
+                    found = found.copy(files = found.files.map { if (fileKey(it) == fileKey(document)) resolved else it })
+                    listing = found
+                    downloads.saved(course, resolved)?.let { uri ->
+                        savedUris = savedUris + (fileKey(resolved) to uri)
+                        saved = savedUris.keys
+                        downloads.available(course, resolved)?.let { repository.rememberDownloaded(course, resolved, it.fileName) }
+                    }
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { /* Keep unrelated/local-only files accessible if UIS metadata is unavailable. */ }
+            }
             val updatedBytes = mutableSetOf<String>()
-            for (document in found.files.filter { downloads.available(course, it) != null }) {
+            for (document in found.files.filter { doc ->
+                val local = downloads.available(course, doc)
+                local != null && (fileKey(doc) in availableAtStart || local.uri in localUrisAtStart)
+            }) {
                 try {
                     if (downloads.refreshAvailable(course, document, repository)) updatedBytes += fileKey(document)
                     if (downloads.saved(course, document) != null)
-                        downloads.available(course, document)?.let { repository.rememberDownloaded(course, document, it.fileName) }
+                        downloads.available(course, document)?.let {
+                            val originalName = downloads.cached(course, document, repository).fileName
+                            repository.rememberDownloaded(course, document.copy(fileName = originalName), it.fileName)
+                        }
                 } catch (cancelled: CancellationException) { throw cancelled }
                 catch (problem: Exception) { android.util.Log.w("CourseDocuments", "Background file refresh failed", problem) }
             }
@@ -176,7 +223,7 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(t(UiKey.TEXT_COURSE_DOCUMENTS), style = MaterialTheme.typography.titleLarge)
-                        val fileCount = (listing?.files?.size ?: 0) + localFiles.count { it.uri !in savedUris.values }
+                        val fileCount = (listing?.files?.size ?: 0) + localFiles.count { !linkedLocal(it) }
                         Text(course.code + if (listing != null || fileCount > 0) " · ${t(UiKey.TEXT_FILES)}: $fileCount" else "", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     }
                     TaktIconButton(Icons.Outlined.Refresh, t(UiKey.ACTION_UPDATE), { reload++ }, enabled = !loading && working == null)
@@ -211,9 +258,8 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                         }))
                     }
                 }
-                val unlinkedLocal = localFiles.filterNot { it.uri in savedUris.values }
+                val unlinkedLocal = localFiles.filterNot(::linkedLocal)
                 if (unlinkedLocal.isNotEmpty()) {
-                    Text(t(UiKey.DOCUMENTS_ON_DEVICE), style = MaterialTheme.typography.titleSmall)
                     unlinkedLocal.forEach { local ->
                         SectionCard(Modifier.animateContentSize()) {
                             Row(Modifier.fillMaxWidth().clickable { scope.launch { openFile(local.uri, local.mimeType) } }.padding(vertical = 8.dp),

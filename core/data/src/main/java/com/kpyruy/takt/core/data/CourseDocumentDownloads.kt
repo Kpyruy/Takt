@@ -94,7 +94,8 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) { }
         }
         val recovered = documents.findDownloadedDocument(course.code,
-            listOfNotNull(document.downloadedFileName, preferences.getString("saved-name:$key", null))) ?: return@withContext null
+            listOfNotNull(document.downloadedFileName, preferences.getString("saved-name:$key", null), document.fileName)
+                .map(CourseDocumentPaths::fileName)) ?: return@withContext null
         preferences.edit().putString("saved:$key", recovered.toString())
             .putString("saved-name:$key", documents.sourceDisplayName(recovered))
             .putString("saved-mime:$key", resolver.getType(recovered) ?: document.mimeType).apply()
@@ -102,7 +103,19 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
     }
 
     suspend fun localFiles(course: Course): List<LocalCourseDocument> = documents.downloadedDocuments(course.code)
-        .filterNot { preferences.contains("retired:${it.uri}") }
+        .filterNot {
+            val entry = "retired:${it.uri}"
+            if (!preferences.contains(entry)) false else {
+                // Providers can reuse a deleted document's URI for a later download.
+                if (preferences.all.any { (key, value) -> key.startsWith("saved:") && value == it.uri.toString() }) {
+                    preferences.edit().remove(entry).apply()
+                    return@filterNot false
+                }
+                if (preferences.getLong(entry, Long.MAX_VALUE) <= System.currentTimeMillis() && documents.removeDownloadedDocument(it.uri))
+                    preferences.edit().remove(entry).apply()
+                true
+            }
+        }
 
     /** Local reads never wait for the network/download mutex. */
     suspend fun available(course: Course, document: CourseDocumentFile): LocalCourseDocument? = withContext(Dispatchers.IO) {
@@ -136,11 +149,14 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
 
     suspend fun refreshSaved(course: Course, document: CourseDocumentFile, repository: CourseDocumentsRepository): Boolean {
         val old = saved(course, document) ?: return false
+        val before = withContext(Dispatchers.IO) { resolver.openInputStream(old)!!.use(::contentHash) }
         val source = cached(course, document, repository, refresh = true)
-        return save(course, document, source, replace = true) != old
+        val after = withContext(Dispatchers.IO) { source.file.inputStream().use(::contentHash) }
+        save(course, document, source)
+        return before != after
     }
 
-    suspend fun save(course: Course, document: CourseDocumentFile, source: CachedCourseDocument, replace: Boolean = false): Uri = mutex.withLock {
+    suspend fun save(course: Course, document: CourseDocumentFile, source: CachedCourseDocument): Uri = mutex.withLock {
         withContext(Dispatchers.IO) {
             check(documents.isConnected) { "Connect Documents/Takt before downloading" }
             val previous = saved(course, document)
@@ -158,26 +174,30 @@ class CourseDocumentDownloads(context: Context, private val documents: TaktDocum
                     hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
                 } } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled } catch (_: Exception) { null }
             }
-            if (previous != null && existingHash == digest) {
+            if (previous != null && existingHash == digest &&
+                documents.sourceDisplayName(previous) == CourseDocumentPaths.fileName(source.fileName)) {
                 preferences.edit().putString("saved-hash:$savedKey", digest).apply()
                 return@withContext previous
             }
             val uri = documents.saveDownloadedDocument(course.code, source.file, source.fileName, source.mimeType)
             currentCoroutineContext().ensureActive()
             check(preferences.edit().putString("saved:$savedKey", uri.toString())
+                .remove("retired:$uri")
                 .putString("saved-hash:$savedKey", digest)
                 .putString("saved-name:$savedKey", documents.sourceDisplayName(uri))
                 .putString("saved-mime:$savedKey", source.mimeType).commit()) { "Could not index saved document" }
-            if (replace && previous != null && previous != uri) {
-                preferences.edit().putLong("retired:$previous", System.currentTimeMillis() + 60_000).apply()
-                cleanupScope.launch {
-                    // Give a viewer already opening the previous URI time to acquire its file descriptor.
-                    delay(60_000)
-                    if (documents.removeDownloadedDocument(previous)) preferences.edit().remove("retired:$previous").apply()
-                }
+            if (previous != null && previous != uri) {
+                preferences.edit().putLong("retired:$previous", 0L).apply()
+                if (documents.removeDownloadedDocument(previous)) preferences.edit().remove("retired:$previous").apply()
             }
             uri
         }
+    }
+
+    private fun contentHash(input: InputStream): String {
+        val hash = MessageDigest.getInstance("SHA-256"); val buffer = ByteArray(32 * 1024)
+        while (true) { val count = input.read(buffer); if (count < 0) break; hash.update(buffer, 0, count) }
+        return hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
     }
 
     private companion object { val cleanupScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO) }

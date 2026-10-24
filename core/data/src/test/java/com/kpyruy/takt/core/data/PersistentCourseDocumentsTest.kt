@@ -11,6 +11,26 @@ class PersistentCourseDocumentsTest {
     private val course = Course("uis:1:2", "DOC", "Documents", 5, 1, CourseStatus.ENROLLED)
     private val file = CourseDocumentFile("10", "20", "Lecture", "application/pdf", fileName = "lecture.pdf", downloadedFileName = "actual-name.pdf")
     private val listing = CourseDocumentListing(listOf(file), true, roots = listOf(CourseDocumentFolder("10", "DOC Documents", "Documents")))
+    @Test fun actualAttachmentNameSurvivesRefreshAndPortableCatalogRoundTrip() = runBlocking {
+        val store = InMemoryCourseDocumentsStore()
+        val guessed = listing.copy(files = listOf(file.copy(fileName = "Lecture.pdf", downloadedFileName = null)))
+        store.write(owner, course.code, guessed)
+        val repo = CachedCourseDocumentsRepository({ _, _, _ -> guessed }, { _, _ -> error("No byte download") }, store, { owner },
+            details = { it.copy(fileName = "original.pdf") })
+        val resolved = repo.resolveDocument(course, guessed.files.single())
+        assertEquals("original.pdf", resolved.fileName)
+        assertEquals("original.pdf", repo.documents(course, setOf(course.code), true).files.single().fileName)
+        val portable = BackupDocumentCourse(owner, course.code, store.read(owner, course.code)!!.toBackupListing())
+        assertEquals("original.pdf", DocumentCatalogCodec.decode(DocumentCatalogCodec.encode(listOf(portable))).single().listing.files.single().fileName)
+    }
+
+    @Test fun metadataResponseCannotSwitchTheDocumentIdentity() = runBlocking {
+        val store = InMemoryCourseDocumentsStore(); store.write(owner, course.code, listing)
+        val repo = CachedCourseDocumentsRepository({ _, _, _ -> listing }, { _, _ -> error("No") }, store, { owner },
+            details = { it.copy(documentId = "99") })
+        assertTrue(runCatching { repo.resolveDocument(course, file) }.isFailure)
+        assertEquals(listing, store.read(owner, course.code))
+    }
     @Test fun restartReadsTheCatalogWithoutNetworkThenRefreshUsesKnownRoots() = runBlocking {
         val store = InMemoryCourseDocumentsStore(); store.write(owner, course.code, listing)
         var loads = 0

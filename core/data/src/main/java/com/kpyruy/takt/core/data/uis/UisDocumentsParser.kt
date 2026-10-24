@@ -13,7 +13,8 @@ internal object UisDocumentsParser {
     private val base = "https://is.stuba.sk/auth/dok_server/".toHttpUrl()
     internal data class Folder(val id: String, val label: String, val path: String, val code: String? = null)
     internal data class Link(val id: String, val documentId: String?, val url: HttpUrl, val parameters: Map<String, String>)
-    internal data class FolderPage(val files: List<CourseDocumentFile>, val subfolders: List<Folder>, val pages: List<HttpUrl>, val recognized: Boolean)
+    internal data class FolderPage(val files: List<CourseDocumentFile>, val subfolders: List<Folder>, val pages: List<HttpUrl>, val recognized: Boolean,
+        val readLinks: Map<String, HttpUrl> = emptyMap())
 
     fun courseFolders(html: String, activeCodes: Set<String>, origin: HttpUrl = base): List<Folder> {
         val doc = Jsoup.parse(html)
@@ -35,6 +36,7 @@ internal object UisDocumentsParser {
         val doc = Jsoup.parse(html)
         val files = mutableListOf<CourseDocumentFile>()
         val children = mutableListOf<Folder>()
+        val readLinks = linkedMapOf<String, HttpUrl>()
         var recognized = false
         for (table in doc.select("table")) {
             val headers = table.select("tr").firstOrNull { it.select("th").isNotEmpty() }
@@ -61,6 +63,9 @@ internal object UisDocumentsParser {
                         }.joinToString(" | ").take(512).takeIf { it.isNotBlank() }
                         files += CourseDocumentFile(folder.id, target.documentId, title, mime,
                             suggested, cells.getOrNull(sizeColumn)?.text()?.takeIf { it.isNotBlank() }, folder.path, revision = revision)
+                        row.select("a[href]").firstNotNullOfOrNull {
+                            readLink(it.attr("href"), folder.id, target.documentId, origin)
+                        }?.let { readLinks[target.documentId] = it }
                     } else if (childTable && target.documentId == null && target.id != folder.id &&
                         target.parameters.keys.all { it in setOf("id", "ds", "lang", "on") }) {
                         children += Folder(target.id, title, "${folder.path} / $title")
@@ -74,7 +79,41 @@ internal object UisDocumentsParser {
                 target.parameters.keys.none { it in pageParameters }) return@mapNotNull null
             target.url
         }.distinct()
-        return FolderPage(files.distinctBy { it.documentId }, children.distinctBy { it.id }, pages, recognized)
+        return FolderPage(files.distinctBy { it.documentId }, children.distinctBy { it.id }, pages, recognized, readLinks)
+    }
+
+    /** Read-page signatures stay in the authenticated client, never in portable metadata. */
+    fun readLink(href: String, folderId: String, documentId: String, origin: HttpUrl = base): HttpUrl? {
+        val url = origin.resolve(href) ?: return null
+        if (url.scheme != origin.scheme || url.host != origin.host || url.port != origin.port ||
+            url.username.isNotEmpty() || url.password.isNotEmpty() || url.fragment != null ||
+            url.encodedPath != "/auth/dok_server/dokumenty_cteni.pl") return null
+        val pairs = (url.encodedQuery ?: return null).split(';', '&').filter { it.isNotEmpty() }.map {
+            (decode(it.substringBefore('=')) ?: return null) to (decode(it.substringAfter('=', "")) ?: return null)
+        }
+        if (pairs.map { it.first }.distinct().size != pairs.size) return null
+        val values = pairs.toMap()
+        if (values["id"] != folderId || values["dok"] != documentId || values.any { (key, value) -> when (key) {
+            "id", "dok" -> false
+            "on" -> value != "0"
+            "lang" -> value !in setOf("en", "sk", "cz")
+            "serializace" -> value.isEmpty() || value.length > 1024 || value.any { it.isISOControl() }
+            else -> true
+        } }) return null
+        return url
+    }
+
+    fun documentDetails(html: String, expected: CourseDocumentFile): CourseDocumentFile {
+        val fields = Jsoup.parse(html).select("tr").mapNotNull { row ->
+            val cells = row.children().filter { it.tagName() == "td" }
+            if (cells.size == 2) normalize(cells[0].text()).removeSuffix(":") to cells[1] else null
+        }.toMap()
+        val attachment = fields["attachment"] ?: fields["priloha"] ?: error("UIS document attachment name missing")
+        val name = attachment.textNodes().joinToString("") { it.text() }.substringBefore(" [").trim()
+        require(name.isNotBlank() && name.length <= 512 && name != "." && name != ".." &&
+            name.none { it == '/' || it == '\\' || it.isISOControl() }) { "Invalid UIS attachment name" }
+        val title = (fields["name"] ?: fields["nazov"] ?: fields["nazev"])?.text()?.trim()?.takeIf { it.isNotBlank() }
+        return expected.copy(fileName = name, title = title?.take(2000) ?: expected.title)
     }
 
     private val pageParameters = setOf("strana", "page", "offset", "od", "pos", "zacatek")

@@ -23,6 +23,7 @@ interface CourseDocumentsRepository {
     val cacheOwnerKey: String? get() = null
     suspend fun cachedDocuments(course: Course, activeCourseCodes: Set<String>): CourseDocumentListing? = null
     suspend fun rememberDownloaded(course: Course, document: CourseDocumentFile, fileName: String) {}
+    suspend fun resolveDocument(course: Course, document: CourseDocumentFile): CourseDocumentFile = document
     suspend fun documents(course: Course, activeCourseCodes: Set<String>, refresh: Boolean = false): CourseDocumentListing
     suspend fun download(document: CourseDocumentFile, output: OutputStream): DownloadedCourseDocument
 }
@@ -35,6 +36,7 @@ internal class CachedCourseDocumentsRepository @JvmOverloads constructor(
     private val ownerKey: () -> String? = { null },
     private val loadKnown: (suspend (Course, Set<String>, Boolean, List<com.kpyruy.takt.core.model.CourseDocumentFolder>) -> CourseDocumentListing)? = null,
     private val stableWrite: suspend (suspend () -> Unit) -> Unit = { it() },
+    private val details: suspend (CourseDocumentFile) -> CourseDocumentFile = { it },
 ) : CourseDocumentsRepository {
     private val mutex = Mutex()
     private val monitor = Any()
@@ -80,8 +82,13 @@ internal class CachedCourseDocumentsRepository @JvmOverloads constructor(
         val loaded = loadKnown?.invoke(course, activeCourseCodes.toSet(), refresh, previous?.roots.orEmpty())
             ?: load(course, activeCourseCodes.toSet(), refresh)
         val savedNames = previous?.files.orEmpty().associateBy { it.folderId to it.documentId }
-        val result = loaded.copy(files = loaded.files.map { file -> file.copy(downloadedFileName =
-            savedNames[file.folderId to file.documentId]?.downloadedFileName ?: file.downloadedFileName) })
+        val result = loaded.copy(files = loaded.files.map { file ->
+            val old = savedNames[file.folderId to file.documentId]
+            val extension = com.kpyruy.takt.core.data.uis.UisDocumentsParser.extension(file.mimeType)
+            val guessedName = if (file.title.lowercase(java.util.Locale.ROOT).endsWith(extension)) file.title else file.title + extension
+            file.copy(downloadedFileName = old?.downloadedFileName ?: file.downloadedFileName,
+                fileName = if (file.fileName == guessedName) old?.fileName ?: file.fileName else file.fileName)
+        })
         if (owner != null) stableWrite {
             synchronized(monitor) { check(revision == generation && owner == ownerKey()) { "UIS account changed while loading documents" } }
             val current = store.read(owner, course.code)
@@ -108,7 +115,7 @@ internal class CachedCourseDocumentsRepository @JvmOverloads constructor(
             if (current != null) {
                 val next = current.copy(files = current.files.map {
                     if (it.folderId == document.folderId && it.documentId == document.documentId)
-                        it.copy(downloadedFileName = fileName) else it
+                        it.copy(downloadedFileName = fileName, fileName = document.fileName ?: it.fileName) else it
                 })
                 store.write(owner, course.code, next)
                 updated = next
@@ -118,6 +125,29 @@ internal class CachedCourseDocumentsRepository @JvmOverloads constructor(
             check(revision == generation)
             updated?.let { listings[key(course)] = it }
         }
+    }
+
+    override suspend fun resolveDocument(course: Course, document: CourseDocumentFile): CourseDocumentFile = mutex.withLock {
+        val revision = synchronized(monitor) { generation }
+        val owner = ownerKey()
+        val before = cachedDocuments(course, setOf(course.code)) ?: return@withLock document
+        check(before.files.any { it.folderId == document.folderId && it.documentId == document.documentId })
+        val resolved = details(document)
+        check(resolved.folderId == document.folderId && resolved.documentId == document.documentId)
+        val updated = before.copy(files = before.files.map {
+            if (it.folderId == document.folderId && it.documentId == document.documentId)
+                it.copy(fileName = resolved.fileName) else it
+        })
+        if (owner != null) stableWrite {
+            synchronized(monitor) { check(revision == generation && owner == ownerKey()) }
+            check(store.read(owner, course.code) == before) { "Document catalog changed while reading metadata" }
+            store.write(owner, course.code, updated)
+        }
+        synchronized(monitor) {
+            check(revision == generation && owner == ownerKey())
+            listings[key(course)] = updated
+        }
+        updated.files.first { it.folderId == document.folderId && it.documentId == document.documentId }
     }
 
     override suspend fun download(document: CourseDocumentFile, output: OutputStream): DownloadedCourseDocument {

@@ -22,6 +22,57 @@ import java.io.OutputStream
 
 class CourseDocumentsCachedUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Test fun originalFilenameMergesLocalAndUisRowsAndManualRefreshDoesNotDuplicateFiles() {
+        val data = (compose.activity.application as TaktApplication).dataContainer
+        assertTrue(data.documentStore.isConnected)
+        val course = Course("merged-test", "MERGE" + java.util.UUID.randomUUID().toString().take(8), "Merged documents", 5, 1, CourseStatus.ENROLLED)
+        val document = CourseDocumentFile("90821", "90822", "Lecture", "text/plain", "Lecture.txt")
+        var body = "old content"
+        var streams = 0
+        var resolvedNames = 0
+        val repository = object : CourseDocumentsRepository {
+            override val cacheOwnerKey = "8".repeat(64)
+            override suspend fun cachedDocuments(course: Course, activeCourseCodes: Set<String>) = CourseDocumentListing(listOf(document), true)
+            override suspend fun documents(course: Course, activeCourseCodes: Set<String>, refresh: Boolean) = CourseDocumentListing(listOf(document), true)
+            override suspend fun resolveDocument(course: Course, document: CourseDocumentFile): CourseDocumentFile {
+                resolvedNames++
+                return document.copy(fileName = "server-original.txt")
+            }
+            override suspend fun download(document: CourseDocumentFile, output: OutputStream): DownloadedCourseDocument {
+                streams++; output.write(body.toByteArray())
+                return DownloadedCourseDocument("server-original.txt", "text/plain", body.length.toLong())
+            }
+        }
+        val downloads = CourseDocumentDownloads(compose.activity, data.documentStore, 123, repository.cacheOwnerKey)
+        val source = java.io.File(compose.activity.cacheDir, "merge-${System.nanoTime()}.txt").apply { writeText(body) }
+        val uri = runBlocking { data.documentStore.saveDownloadedDocument(course.code, source, "server-original.txt", "text/plain") }
+        try {
+            compose.activityRule.scenario.onActivity { activity -> activity.setContent {
+                TaktI18n.use(AppLanguage.ENGLISH)
+                TaktTheme { Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                    CourseDocumentsPanel(course, setOf(course.code), repository, downloads, true,
+                        { _, reply -> reply(DeviceAuthenticationResult.CANCELLED) }, {})
+                } }
+            } }
+            compose.onNodeWithTag("course-documents").performClick()
+            compose.waitUntil(8_000) { resolvedNames == 1 && streams == 1 && compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            compose.onNodeWithText("server-original.txt").assertDoesNotExist()
+            compose.onAllNodesWithText("Lecture").assertCountEquals(1)
+            compose.onNodeWithText("${course.code} · Files: 1").assertIsDisplayed()
+            compose.onNodeWithTag("document-download-90822").assertContentDescriptionEquals("Saved")
+            captureStudiesScreenshot("documents-merged-local-and-uis.png")
+            body = "updated"
+            compose.onNodeWithTag("document-download-90822").performClick()
+            compose.waitUntil(8_000) { streams == 2 && runBlocking {
+                compose.activity.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() } == body
+            } }
+            assertEquals(listOf("server-original.txt"), runBlocking { data.documentStore.downloadedDocuments(course.code).map { it.fileName } })
+        } finally {
+            source.delete()
+            android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, uri)
+        }
+    }
+
     @Test fun cachedListAndLocalOpenWorkDuringRefreshAndChangesAreNamed() {
         val data = (compose.activity.application as TaktApplication).dataContainer
         val course = Course("cached-test", "CACHED", "Cached documents", 5, 1, CourseStatus.ENROLLED)

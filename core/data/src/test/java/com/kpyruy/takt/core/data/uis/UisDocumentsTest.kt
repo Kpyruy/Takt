@@ -27,6 +27,42 @@ class UisDocumentsTest {
     }
     private fun resource(name: String) = javaClass.getResource("/documents/$name")!!.readText()
 
+    @Test fun documentReadPageProvidesActualAttachmentNameWithoutKeepingViewTokens() {
+        val document = CourseDocumentFile("10", "20", "Lecture title", "application/pdf", "Lecture title.pdf")
+        val parsed = UisDocumentsParser.documentDetails("""
+            <table><tr><td><b>Name:</b></td><td>Lecture title</td></tr>
+            <tr><td><b>Attachment:</b></td><td>lecture_original.pdf [ <span data-mime="pdf"></span>
+            document PDF, 1.81 MiB]<input type=submit name=download value=Download></td></tr></table>
+        """.trimIndent(), document)
+        assertEquals("lecture_original.pdf", parsed.fileName)
+        assertEquals(document.documentId, parsed.documentId)
+        assertEquals(document.title, parsed.title)
+        assertTrue(runCatching { UisDocumentsParser.documentDetails("<title>Login</title>", document) }.isFailure)
+    }
+
+    @Test fun documentMetadataUsesOnlyTheExpectedReadPageAndIdentity() {
+        connect()
+        server.enqueue(page("""<table><tr><td>Name:</td><td>Lecture</td></tr>
+            <tr><td>Attachment:</td><td>original.pdf [ <span data-mime=pdf></span> document PDF]</td></tr></table>"""))
+        val file = client.readCourseDocumentDetails(CourseDocumentFile("10", "20", "Lecture", "application/pdf"))
+        assertEquals("original.pdf", file.fileName)
+        assertEquals("/auth/dok_server/dokumenty_cteni.pl?id=10;dok=20;on=0;lang=en", server.takeRequest().path)
+        server.enqueue(MockResponse().setResponseCode(302).setHeader("Location", "/auth/dok_server/dokumenty_cteni.pl?id=10;dok=99"))
+        assertTrue(runCatching { client.readCourseDocumentDetails(file) }.isFailure)
+    }
+
+    @Test fun folderReadLinkKeepsItsSignatureOnlyInEphemeralMetadata() {
+        val origin = server.url("/auth/dok_server/")
+        val url = "dokumenty_cteni.pl?id=10;on=0;dok=20;serializace=synthetic-token"
+        val folder = UisDocumentsParser.folder("""<table><tr><th>Name</th><th>Attachment</th><th>Display</th></tr>
+            <tr><td>Lecture</td><td><a href="slozka.pl?id=10;download=20"><span data-mime=pdf></span></a></td>
+            <td><a href="$url">Read</a></td></tr></table>""", UisDocumentsParser.Folder("10", "DOC", "DOC"), origin)
+        assertEquals("synthetic-token", folder.readLinks.getValue("20").query!!.substringAfter("serializace="))
+        assertFalse(folder.files.single().toString().contains("synthetic-token"))
+        assertNull(UisDocumentsParser.readLink(url.replace("dok=20", "dok=21"), "10", "20", origin))
+        assertNull(UisDocumentsParser.readLink("https://elsewhere.example/auth/dok_server/$url", "10", "20", origin))
+    }
+
     @Test fun productionClientDiscoversHiddenExactCourseNodesAndSixRealPdfRows() {
         connect()
         server.enqueue(page(resource("root.html")))

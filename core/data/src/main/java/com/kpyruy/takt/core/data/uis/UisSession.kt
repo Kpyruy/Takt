@@ -90,6 +90,13 @@ class UisSession {
         return@withLock try { request(current) { current.readCourseDocuments(code, activeCodes, refresh, knownFolders) } }
         catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
     }
+    internal suspend fun readCourseDocumentDetails(document: com.kpyruy.takt.core.model.CourseDocumentFile): com.kpyruy.takt.core.model.CourseDocumentFile = operations.withLock {
+        val current = client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
+        check(mutableState.value == UisResult.CONNECTED)
+        try { request(current) { current.readCourseDocumentDetails(document) } }
+        catch (expired: com.kpyruy.takt.core.data.TeachingAuthenticationRequired) { if (client === current) disconnect(); throw expired }
+    }
+
     internal suspend fun downloadCourseDocument(document: com.kpyruy.takt.core.model.CourseDocumentFile, output: java.io.OutputStream): com.kpyruy.takt.core.model.DownloadedCourseDocument = operations.withLock {
         val current = client ?: throw com.kpyruy.takt.core.data.TeachingSessionUnavailable()
         check(mutableState.value == UisResult.CONNECTED)

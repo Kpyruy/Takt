@@ -251,41 +251,95 @@ class TaktDocumentStore(
     /** Store an explicit UIS download beside this course's existing materials. */
     suspend fun saveDownloadedDocument(courseCode: String, source: java.io.File, name: String, mime: String): Uri = mutex.withLock {
         withContext(Dispatchers.IO) {
+            recoverDownloadedDocument()
             val root = requireRoot()
             val code = CourseDocumentPaths.courseFolder(courseCode)
             val folder = root.findFile(code) ?: root.createDirectory(code) ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_COURSE_FOLDER)
-            val target = folder.createFile(mime, CourseDocumentPaths.fileName(name)) ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_FILE)
+            writeDownloadedDocument(folder, source, name, mime)
+        }
+    }
+
+    /** A private undo file protects replacement without creating public name-suffixed copies. */
+    private suspend fun writeDownloadedDocument(folder: DocumentFile, source: java.io.File, name: String, mime: String): Uri {
+            val cleanName = CourseDocumentPaths.fileName(name)
+            val previous = folder.findFile(cleanName) ?: folder.listFiles().firstOrNull { CourseDocumentLocalNames.matches(it.name.orEmpty(), cleanName) }
+            require(previous == null || previous.isFile) { UiKey.TEXT_COULD_NOT_CREATE_THE_FILE }
+            val target = previous ?: folder.createFile(mime, cleanName) ?: error(UiKey.TEXT_COULD_NOT_CREATE_THE_FILE)
+            if (previous != null) {
+                resolver.openInputStream(previous.uri).use { input ->
+                    requireNotNull(input) { UiKey.TEXT_COULD_NOT_READ_THE_FILE }
+                    downloadUndo.outputStream().use { output -> copyCancellable(input, output); output.fd.sync() }
+                }
+                check(preferences.edit().putString("download_undo_uri", previous.uri.toString()).commit())
+            }
             try {
                 source.inputStream().use { input -> resolver.openOutputStream(target.uri, "wt").use { output ->
                     copyCancellable(input, requireNotNull(output))
                 } }
-                target.uri
-            } catch (failure: Throwable) { target.delete(); throw failure }
+                check(documentDigest(target.uri).contentEquals(source.inputStream().use(::streamDigest))) { UiKey.TEXT_COULD_NOT_WRITE_THE_FILE }
+                check(preferences.edit().remove("download_undo_uri").commit())
+                downloadUndo.delete()
+                return target.uri
+            } catch (failure: Throwable) {
+                if (previous == null) target.delete()
+                else withContext(kotlinx.coroutines.NonCancellable) {
+                    try { recoverDownloadedDocument() } catch (restoreFailure: Exception) { failure.addSuppressed(restoreFailure) }
+                }
+                throw failure
+            }
+    }
+
+    private val downloadUndo get() = java.io.File(context.filesDir, "course-document-undo.bin")
+    private fun streamDigest(input: java.io.InputStream): ByteArray {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(32 * 1024)
+        while (true) { val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
+        return digest.digest()
+    }
+    private fun documentDigest(uri: Uri) = resolver.openInputStream(uri).use {
+        streamDigest(requireNotNull(it) { UiKey.TEXT_COULD_NOT_READ_THE_FILE })
+    }
+    private fun recoverDownloadedDocument() {
+        val raw = preferences.getString("download_undo_uri", null)
+        if (raw == null) { downloadUndo.delete(); return }
+        check(downloadUndo.isFile) { UiKey.TEXT_COULD_NOT_READ_THE_FILE }
+        val uri = Uri.parse(raw)
+        val expected = downloadUndo.inputStream().use(::streamDigest)
+        if (!runCatching { documentDigest(uri).contentEquals(expected) }.getOrDefault(false)) {
+            downloadUndo.inputStream().use { input -> resolver.openOutputStream(uri, "wt").use { output ->
+                input.copyTo(requireNotNull(output) { UiKey.TEXT_COULD_NOT_WRITE_THE_FILE })
+            } }
+            check(documentDigest(uri).contentEquals(expected)) { UiKey.TEXT_COULD_NOT_WRITE_THE_FILE }
         }
+        check(preferences.edit().remove("download_undo_uri").commit())
+        downloadUndo.delete()
     }
 
     /** Recover only a known file name inside the user-selected course folder; never creates a folder. */
-    suspend fun findDownloadedDocument(courseCode: String, names: List<String>): Uri? = withContext(Dispatchers.IO) {
+    suspend fun findDownloadedDocument(courseCode: String, names: List<String>): Uri? = mutex.withLock { withContext(Dispatchers.IO) {
         val raw = preferences.getString("tree_uri", null) ?: return@withContext null
         if (!isConnected) return@withContext null
+        recoverDownloadedDocument()
         val selected = DocumentFile.fromTreeUri(context, Uri.parse(raw)) ?: return@withContext null
         val root = if (selected.name == "Takt") selected else selected.findFile("Takt") ?: return@withContext null
         val folder = root.findFile(CourseDocumentPaths.courseFolder(courseCode)) ?: return@withContext null
         names.distinct().firstNotNullOfOrNull { name ->
             name.takeIf { it.length in 1..512 && it == java.io.File(it).name && !it.contains('\\') && it !in setOf(".","..") && !it.any(Char::isISOControl) }
-                ?.let(folder::findFile)?.takeIf { it.isFile }?.uri
+                ?.let { valid -> folder.findFile(valid) ?: folder.listFiles().firstOrNull { CourseDocumentLocalNames.matches(it.name.orEmpty(), valid) } }
+                ?.takeIf { it.isFile }?.uri
         }
-    }
+    } }
 
-    suspend fun downloadedDocuments(courseCode: String): List<LocalCourseDocument> = withContext(Dispatchers.IO) {
+    suspend fun downloadedDocuments(courseCode: String): List<LocalCourseDocument> = mutex.withLock { withContext(Dispatchers.IO) {
         val raw = preferences.getString("tree_uri", null) ?: return@withContext emptyList()
         if (!isConnected) return@withContext emptyList()
+        recoverDownloadedDocument()
         val selected = DocumentFile.fromTreeUri(context, Uri.parse(raw)) ?: return@withContext emptyList()
         val root = if (selected.name == "Takt") selected else selected.findFile("Takt") ?: return@withContext emptyList()
         root.findFile(CourseDocumentPaths.courseFolder(courseCode))?.listFiles().orEmpty().filter { it.isFile }
             .map { LocalCourseDocument(it.uri, it.name ?: "", it.type ?: "application/octet-stream") }
             .filter { it.fileName.isNotBlank() }.sortedBy { it.fileName }
-    }
+    } }
 
     suspend fun removeDownloadedDocument(uri: Uri) = withContext(Dispatchers.IO) {
         // Callers only supply a previously indexed URI after publishing its replacement.

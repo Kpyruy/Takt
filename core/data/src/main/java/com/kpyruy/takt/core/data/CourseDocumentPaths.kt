@@ -17,3 +17,16 @@ internal object CourseDocumentPaths {
         return stem + suffix
     }
 }
+
+/** Course-local filenames can differ in Unicode composition or case across document providers. */
+object CourseDocumentLocalNames {
+    fun guessedName(document: com.kpyruy.takt.core.model.CourseDocumentFile): String {
+        val extension = com.kpyruy.takt.core.data.uis.UisDocumentsParser.extension(document.mimeType)
+        return if (document.title.lowercase(java.util.Locale.ROOT).endsWith(extension)) document.title else document.title + extension
+    }
+    fun matches(localName: String, remoteName: String): Boolean {
+        fun normalized(value: String) = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC)
+            .lowercase(java.util.Locale.ROOT)
+        return normalized(localName) == normalized(CourseDocumentPaths.fileName(remoteName))
+    }
+}

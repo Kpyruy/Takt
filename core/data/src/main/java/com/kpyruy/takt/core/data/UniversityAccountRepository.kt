@@ -158,6 +158,10 @@ class UniversityAccountRepository(
     val teachingRepository: CourseTeachingRepository get() = teachingCache
     private val documentsCache = CachedCourseDocumentsRepository(
         store = documentsStore,
+        details = { document -> withAccountSession {
+            ensureTeachingSession()
+            session.readCourseDocumentDetails(document)
+        } },
         ownerKey = { preferences.getString("student_owner_key", null) },
         stableWrite = { action -> coordinated(action) },
         loadKnown = { course, activeCodes, refresh, roots -> withAccountSession {

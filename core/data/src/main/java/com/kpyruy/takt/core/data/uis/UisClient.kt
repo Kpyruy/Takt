@@ -39,6 +39,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     private var teachingPlan: UisStudyPlan? = null
     private var documentFolders: Pair<Set<String>, List<UisDocumentsParser.Folder>>? = null
     private val teachingSyllabi = linkedMapOf<Pair<String, String>, Map<String, String>>()
+    private val documentReadLinks = linkedMapOf<String, HttpUrl>()
     private val http = OkHttpClient.Builder()
         .followRedirects(false).followSslRedirects(false)
         .connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS)
@@ -57,7 +58,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
 
     fun login(login: String, password: String): UisResult = safely {
         stage = UisStage.LOGIN_FORM
-        cookies.clear(); challenge = null; primaryStudyContext = null; teachingPlan = null; teachingSyllabi.clear(); documentFolders = null
+        cookies.clear(); challenge = null; primaryStudyContext = null; teachingPlan = null; teachingSyllabi.clear(); documentFolders = null; documentReadLinks.clear()
         val page = exchange(origin.resolve("system/login.pl?lang=sk")!!)
         val form = form(page) ?: throw ProtocolFailure(UisFailureReason.LOGIN_FORM_MISSING)
         form.fields["credential_0"] = login
@@ -269,6 +270,10 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
                 })
                 if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
                 val parsed = UisDocumentsParser.folder(page.html, folder, documentBase)
+                parsed.readLinks.forEach { (id, link) ->
+                    documentReadLinks["${folder.id}:$id"] = link
+                    while (documentReadLinks.size > 512) documentReadLinks.remove(documentReadLinks.keys.first())
+                }
                 // Empty recognized tables are real empty folders, while a UIS error page is stale metadata.
                 if (!parsed.recognized && parsed.pages.isEmpty()) {
                     if (validateHints && folder.id in rootIds && validatedRoots.add(folder.id)) throw StaleDocumentFolder()
@@ -303,6 +308,18 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
     }
 
     /** Copies a single deliberately selected attachment without retaining its bytes in memory. */
+    fun readCourseDocumentDetails(document: com.kpyruy.takt.core.model.CourseDocumentFile): com.kpyruy.takt.core.model.CourseDocumentFile {
+        val base = origin.resolve("auth/dok_server/")!!
+        val url = documentReadLinks["${document.folderId}:${document.documentId}"]
+            ?: base.resolve("dokumenty_cteni.pl?id=${document.folderId};dok=${document.documentId};on=0;lang=en")!!
+        val page = exchange(url, destinationAllowed = { next ->
+            next.encodedPath in setOf("/system/login.pl", "/auth/system/login.pl") ||
+                UisDocumentsParser.readLink(next.toString(), document.folderId, document.documentId, base) != null
+        })
+        if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+        return UisDocumentsParser.documentDetails(page.html, document)
+    }
+
     fun downloadCourseDocument(document: com.kpyruy.takt.core.model.CourseDocumentFile, output: java.io.OutputStream): com.kpyruy.takt.core.model.DownloadedCourseDocument =
         downloadCourseDocument(document, output, AtomicBoolean(false))
 

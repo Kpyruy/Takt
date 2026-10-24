@@ -45,6 +45,16 @@ class CourseDocumentsUiTest {
         val downloads = java.util.concurrent.atomic.AtomicInteger()
         val assets = instrumentation.context.assets
         val pdf = assets.open("course-document.pdf").use { it.readBytes() }
+        // Failed earlier runs can leave this exact synthetic attachment in the review tree.
+        // Start the download-count scenario without an already-saved fixture to refresh.
+        runBlocking {
+            if (data.documentStore.isConnected) data.documentStore.downloadedDocuments("FYZI_6B")
+                .filter { it.fileName == "lecture.pdf" }.forEach { local ->
+                    val bytes = compose.activity.contentResolver.openInputStream(local.uri)!!.use { it.readBytes() }
+                    if (bytes.contentEquals(pdf) || bytes.contentEquals(pdf + "\n% revision 2\n".toByteArray()))
+                        android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, local.uri)
+                }
+        }
         var revision = 1
         fun currentBytes() = if (revision == 1) pdf else pdf + "\n% revision 2\n".toByteArray()
         fun fixture(name: String) = assets.open(name).bufferedReader().use { it.readText() }
@@ -146,14 +156,17 @@ class CourseDocumentsUiTest {
             revision = 2
             compose.onNodeWithContentDescription("Aktualizovať").performClick()
             compose.waitUntil(8_000) { requests.count { it == "/auth/dok_server/slozka.pl?ds=1;id=287891;lang=en" } >= 2 }
-            compose.onNodeWithTag("document-download-319089").performScrollTo().performClick()
-            compose.waitUntil(8_000) { downloads.get() == 2 && runBlocking { store.saved(course, doc) } != firstUri }
+            try {
+                compose.waitUntil(8_000) { downloads.get() == 2 && compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
+            } catch (failure: Exception) {
+                throw AssertionError("Refresh downloads=${downloads.get()}, requests=$requests", failure)
+            }
             compose.waitForIdle()
             val secondUri = runBlocking { store.saved(course, doc) }!!
-            assertNotEquals(firstUri, secondUri)
+            assertEquals(firstUri, secondUri)
             assertArrayEquals(currentBytes(), compose.activity.contentResolver.openInputStream(secondUri)!!.use { it.readBytes() })
-            // A replaced copy remains readable briefly for a viewer already opening its previous URI.
-            assertArrayEquals(pdf, compose.activity.contentResolver.openInputStream(firstUri)!!.use { it.readBytes() })
+            // Refresh updates the same public file rather than keeping a duplicate version.
+            assertArrayEquals(currentBytes(), compose.activity.contentResolver.openInputStream(firstUri)!!.use { it.readBytes() })
             var opened: android.content.Intent? = null
             val monitor = object : android.app.Instrumentation.ActivityMonitor() {
                 override fun onStartActivity(intent: android.content.Intent): android.app.Instrumentation.ActivityResult? {
