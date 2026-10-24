@@ -161,8 +161,61 @@ class StudiesNativeUiTest {
             val label = compose.onNodeWithTag("$tag-label", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
             assertTrue(label.left >= icon.right)
             assertEquals(icon.center.y, label.center.y, 1f)
+            compose.onNodeWithTag("$tag-label", useUnmergedTree = true)
+                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                    val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+                    assertTrue(action(layouts))
+                    assertEquals("Finance label must stay on one line", 1, layouts.single().lineCount)
+                    assertFalse("Finance label must fit in full", layouts.single().hasVisualOverflow)
+                }
         }
         capture("studies-finance-labels.png")
+    }
+
+    @Test fun financeLabelsFitAcrossLanguagesAndTextSizes() {
+        var language by mutableStateOf(AppLanguage.ENGLISH)
+        var fontScale by mutableFloatStateOf(1f)
+        var width by mutableIntStateOf(340)
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                TaktI18n.use(language)
+                TaktTheme { Box(Modifier.width(width.dp).fillMaxHeight()) {
+                    StudiesContent(StudentHubState(snapshot), settings = AppSettings(language = language), uisManaged = true)
+                } }
+            }
+        }
+        AppLanguage.entries.forEach { locale ->
+            listOf(1f, 1.5f).forEach { scale ->
+                listOf(340, 360).forEach { screenWidth ->
+                    compose.runOnIdle { language = locale; fontScale = scale; width = screenWidth }
+                    listOf("studies-payments-value", "studies-scholarship-value").forEach { tag ->
+                        compose.onNodeWithTag("studies-screen", useUnmergedTree = true).performScrollToNode(hasTestTag("$tag-label"))
+                        compose.onNodeWithTag("$tag-label", useUnmergedTree = true)
+                            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                                val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+                                assertTrue(action(layouts))
+                                assertEquals("$locale, scale $scale", 1, layouts.single().lineCount)
+                                assertFalse("$locale, scale $scale, width $screenWidth", layouts.single().hasVisualOverflow)
+                            }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun uisStudySemesterWinsOverRestoredCourseAndManualFallbacks() {
+        val restored = live.copy(semester = 5)
+        compose.setContent {
+            TaktI18n.use(AppLanguage.ENGLISH)
+            TaktTheme {
+                StudiesContent(StudentHubState(snapshot), localCourses = listOf(restored),
+                    settings = AppSettings(currentSemester = 5), uisManaged = true)
+            }
+        }
+        compose.onNodeWithText("Semester 3 · winter").assertIsDisplayed()
+        compose.onNodeWithTag("studies-tab-1").performClick()
+        compose.onNodeWithTag("semester-5-active").assertDoesNotExist()
     }
 
     @Test fun cachedRefreshNeverAddsALoadingPane() {

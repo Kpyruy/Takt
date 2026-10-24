@@ -323,10 +323,10 @@ class UniversityAccountRepository(
         mutableImportProgress.value = previous.copy(running = true, error = null)
         return try {
             val plan = session.readStudyPlan()
+            settingsRepo.setUisCurrentSemester(plan.currentSemester)
             val results = if (UisSyncSection.PROGRESS in sections) session.readStudyResults(plan.studyId, plan.periodId)
                 else emptyMap()
             val courses = plan.toCourses(results)
-            settingsRepo.setUisCurrentSemester(plan.currentSemester)
             if (applyAllowed && (UisSyncSection.SUBJECTS in sections ||
                 UisSyncSection.PROGRESS in sections && settingsRepo.settings.value.uisAutoSync.applyProgressAutomatically)) {
                 val localForImport = study.observeCourses().first()
@@ -470,13 +470,19 @@ class UniversityAccountRepository(
 
     private suspend fun importAfterLoginStable(manual: Boolean) {
         if (session.state.value != UisResult.CONNECTED || studyPlanRepository == null) return
-        if (!manual && preferences.getBoolean(INITIAL_IMPORT_DONE, false)) return
+        val alreadyImported = preferences.getBoolean(INITIAL_IMPORT_DONE, false)
         val previous = mutableImportProgress.value
         mutableImportProgress.value = UisImportProgress(running = true)
         try {
             val plan = session.readStudyPlan()
-            val courses = plan.toCourses(session.readStudyResults(plan.studyId, plan.periodId))
+            // The authenticated plan is sufficient to determine the semester, even when
+            // results fail or reconnecting does not need to repeat the initial import.
             settingsRepository?.setUisCurrentSemester(plan.currentSemester)
+            if (!manual && alreadyImported) {
+                mutableImportProgress.value = previous
+                return
+            }
+            val courses = plan.toCourses(session.readStudyResults(plan.studyId, plan.periodId))
             val (period, timetable) = session.readStudyContext(plan.studyId, plan.periodId)
             val localCourses = studyPlanRepository.observeCourses().first()
             val localRules = scheduleRepository?.observeRules()?.first().orEmpty()

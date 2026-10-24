@@ -32,6 +32,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -134,7 +136,11 @@ fun StudiesContent(
         (if (archived) study!!.courses else localCourses.ifEmpty { study?.courses.orEmpty() })
             .map { it.copy(title = settings.displayCourseTitle(it)) }
     }
-    val currentSemester = if (archived) study?.currentSemester else settings.effectiveCurrentSemester(courses) ?: study?.currentSemester
+    val currentSemester = when {
+        archived -> study?.currentSemester
+        uisManaged -> settings.uisCurrentSemester ?: study?.currentSemester
+        else -> settings.effectiveCurrentSemester(courses) ?: study?.currentSemester
+    }
     var tab by rememberSaveable(initialTab) { mutableIntStateOf(initialTab) }
     var filter by rememberSaveable(initialProgressFilter) { mutableIntStateOf(initialProgressFilter) }
     var detail by rememberSaveable { mutableStateOf<String?>(null) }
@@ -375,7 +381,7 @@ private fun FinanceSummary(study: StudentStudy?, onClick: () -> Unit) {
     }
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        if (maxWidth < 300.dp * fontScale) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (maxWidth < 320.dp * fontScale) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             payments(Modifier.fillMaxWidth()); scholarships(Modifier.fillMaxWidth())
         } else Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             payments(Modifier.weight(1f).fillMaxHeight()); scholarships(Modifier.weight(1f).fillMaxHeight())
@@ -389,9 +395,11 @@ private fun FinanceTile(label: String, value: String, unavailable: Boolean, icon
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Icon(icon, null, Modifier.size(18.dp).testTag("$valueTag-icon"), tint = MaterialTheme.colorScheme.primary)
-            // Full translated labels wrap beside the icon instead of drifting to a separate row.
-            Text(label, Modifier.weight(1f).testTag("$valueTag-label"), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val style = MaterialTheme.typography.labelSmall
+            BasicText(label, Modifier.weight(1f).testTag("$valueTag-label"),
+                style = style.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                maxLines = 1, softWrap = false,
+                autoSize = TextAutoSize.StepBased(minFontSize = style.fontSize * 0.75f, maxFontSize = style.fontSize))
         }
         Text(value, Modifier.fillMaxWidth().testTag(valueTag),
             style = if (unavailable) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.headlineSmall,
