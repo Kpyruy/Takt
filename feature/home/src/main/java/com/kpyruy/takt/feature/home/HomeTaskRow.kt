@@ -54,7 +54,7 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
                         task.title, tint = foreground, modifier = Modifier.size(27.dp))
                 }
             }
-            Column(Modifier.weight(1f).offset(y = 5.dp)) {
+            Column(Modifier.weight(1f).offset(y = 3.dp)) {
                 HomeWorkTitle(task.title, courseCode, completed = task.completed,
                     titleColor = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 WorkRequirementIcons(

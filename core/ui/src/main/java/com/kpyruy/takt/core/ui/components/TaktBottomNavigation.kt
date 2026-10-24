@@ -102,22 +102,29 @@ private fun NavigationTab(item: TaktNavItem, width: androidx.compose.ui.unit.Dp,
 
 @Composable
 fun TaktAddFab(selected: Boolean = false, onClick: () -> Unit) {
+    TaktAddControl(selected, Modifier, onClick)
+}
+
+@Composable
+private fun TaktAddControl(selected: Boolean, iconModifier: Modifier, onClick: () -> Unit) {
     val source = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
         Modifier.size(52.dp).semantics { this.selected = selected }
             .clip(CircleShape).taktPressFeedback(source).clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick).testTag("root-add").tourTarget("add-button"),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Default.Add, t(UiKey.TEXT_ADD), Modifier.size(30.dp), tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Default.Add, t(UiKey.TEXT_ADD), Modifier.size(30.dp).then(iconModifier), tint = MaterialTheme.colorScheme.primary)
     }
 }
 
 /** Standalone add control for the optional four-tab navigation layout. */
 @Composable
 fun TaktFloatingAddFab(selected: Boolean = false, onClick: () -> Unit) {
+    val rotation = androidx.compose.animation.core.animateFloatAsState(if (selected) 45f else 0f,
+        TaktMotion.standard(), label = "floating-add-mode")
     Box(Modifier.size(56.dp).glassSurface(CircleShape,
         if (selected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Unspecified)
         .testTag("floating-add"), contentAlignment = Alignment.Center) {
-        TaktAddFab(selected, onClick)
+        TaktAddControl(selected, Modifier.graphicsLayer { rotationZ = rotation.value }, onClick)
     }
 }

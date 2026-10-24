@@ -54,6 +54,18 @@ class StudiesNativeUiTest {
 
     @After fun resetLanguage() { TaktI18n.use(AppLanguage.ENGLISH) }
 
+    @Test fun paymentsShowNumericPlaceholderUntilTheFetchedBalanceArrives() {
+        var state by mutableStateOf(StudentHubState(snapshot.copy(studies = listOf(current.copy(feesLoaded = false)))))
+        compose.setContent {
+            TaktI18n.use(AppLanguage.SLOVAK)
+            TaktTheme { StudiesContent(state, settings = AppSettings(language = AppLanguage.SLOVAK)) }
+        }
+        compose.onNodeWithTag("studies-screen", useUnmergedTree = true).performScrollToNode(hasTestTag("studies-payments-value"))
+        compose.onNodeWithTag("studies-payments-value", useUnmergedTree = true).assertTextEquals("0,00 EUR")
+        compose.runOnIdle { state = StudentHubState(snapshot) }
+        compose.onNodeWithTag("studies-payments-value", useUnmergedTree = true).assertTextEquals("22,00 EUR")
+    }
+
     private fun show(state: StudentHubState = StudentHubState(snapshot), language: AppLanguage = AppLanguage.ENGLISH,
                      settings: AppSettings = AppSettings(), uisManaged: Boolean = false, courseClick: (String) -> Unit = {}, courseStatus: (Course) -> Unit = {}, gradeRepository: GradeRepository? = null, openRecord: (String) -> Unit = {}, detailChanged: (Boolean) -> Unit = {}) {
         compose.setContent {

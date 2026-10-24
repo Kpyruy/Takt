@@ -370,7 +370,10 @@ private fun FinanceSummary(study: StudentStudy?, onClick: () -> Unit) {
         ?.minByOrNull { it.dueDate ?: LocalDate.MAX }
     val scholarship = study?.takeIf { it.scholarshipsLoaded }?.scholarships?.maxByOrNull { it.paidOn ?: LocalDate.MIN }
     val payments: @Composable (Modifier) -> Unit = { modifier ->
-        FinanceTile(t(UiKey.STUDIES_PAYMENTS_DUE), outstanding.money(), outstanding == null, Icons.Outlined.AccountBalanceWallet,
+        val amount = outstanding?.takeIf { it.isNotEmpty() }?.entries?.joinToString(" · ") { (currency, minor) ->
+            money(minor, currency, currencyCode = true)
+        } ?: money(0L, "EUR", currencyCode = true)
+        FinanceTile(t(UiKey.STUDIES_PAYMENTS_DUE), amount, false, Icons.Outlined.AccountBalanceWallet,
             payment?.let { it.title + (it.dueDate?.let { date -> " · ${dateText(date)}" } ?: "") },
             modifier, "studies-payments-value", onClick)
     }

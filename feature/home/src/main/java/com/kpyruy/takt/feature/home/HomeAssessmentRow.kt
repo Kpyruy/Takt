@@ -52,7 +52,7 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
             EntityIconTile(subjectColor, Modifier.size(46.dp)) { foreground ->
                 Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(27.dp).testTag("home-assessment-glyph-${item.id}"))
             }
-            Column(Modifier.weight(1f).offset(y = 5.dp)) {
+            Column(Modifier.weight(1f).offset(y = 3.dp)) {
                 HomeWorkTitle(item.title, courseCode)
                 WorkRequirementIcons(
                     requiredForExam = item.requiredForExam,

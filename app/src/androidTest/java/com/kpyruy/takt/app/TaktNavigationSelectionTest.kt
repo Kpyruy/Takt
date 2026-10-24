@@ -11,9 +11,38 @@ import com.kpyruy.takt.core.ui.theme.TaktTheme
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Before
 
 class TaktNavigationSelectionTest {
     @get:Rule val compose = createComposeRule()
+    @Before fun useEnglish() {
+        com.kpyruy.takt.core.ui.i18n.TaktI18n.use(com.kpyruy.takt.core.model.AppLanguage.ENGLISH)
+    }
+    @Test fun floatingAddAnimatesIntoAndOutOfAddingMode() {
+        var selected by mutableStateOf(false)
+        compose.setContent { TaktTheme { TaktFloatingAddFab(selected) { selected = true } } }
+        fun glyphWidth() = compose.onNodeWithContentDescription("Add", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.width
+        compose.mainClock.autoAdvance = false
+        try {
+            val idle = glyphWidth()
+            compose.onNodeWithTag("root-add").performClick()
+            compose.mainClock.advanceTimeBy(64)
+            val entering = glyphWidth()
+            assertTrue("The glyph moves during entry", entering > idle + 1f)
+            compose.mainClock.advanceTimeBy(400)
+            val active = glyphWidth()
+            assertTrue("Entry settles at the active angle", active > entering)
+            compose.onNodeWithTag("root-add").assertIsSelected()
+            captureStudiesScreenshot("navigation-floating-add-active.png")
+            compose.runOnIdle { selected = false }
+            compose.mainClock.advanceTimeBy(64)
+            val leaving = glyphWidth()
+            assertTrue("The glyph animates back", leaving < active && leaving > idle)
+            compose.mainClock.advanceTimeBy(400)
+            assertEquals(idle, glyphWidth(), 1f)
+            compose.onNodeWithTag("root-add").assertIsNotSelected()
+        } finally { compose.mainClock.autoAdvance = true }
+    }
     @Test fun sharedLensMovesToAddAndReturnsToTheChosenTab() {
         compose.setContent {
             var selected by remember { mutableIntStateOf(0) }
