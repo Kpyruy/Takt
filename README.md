@@ -2,27 +2,34 @@
 
 Takt is an offline-first Android study planner for university schedules, grades, deadlines, and study progress.
 
-Version 0.3.0 is an early release. Takt is built with Kotlin and Jetpack Compose, and its schedule, grades, and study plan are separate modules.
+Takt is built with Kotlin and Jetpack Compose. Version 0.4.0 is being prepared for release; the gallery below shows the current release candidate. Download the latest published build from Releases.
 
 ## Screenshots
 
+Captured from the **0.4.0 development preview** on an Android 15 emulator, in English with fictional study data. A fresh installation starts with an empty study plan.
+
 | Today | Weekly schedule |
 | :---: | :---: |
-| <img src="docs/screenshots/today.png" alt="Takt 0.3.0 Today screen with a class timeline, breaks and upcoming work" width="260"><br>Classes, breaks, deadlines and task filters. | <img src="docs/screenshots/week-list.png" alt="Takt 0.3.0 weekly list grouping classes and tasks by day" width="260"><br>A weekly overview of classes and upcoming work. |
-| Exam preparation | Study progress |
-| <img src="docs/screenshots/exam.png" alt="Exam date, target grade, points needed and eligibility requirements" width="260"><br>Target grades, achievable points and exam eligibility. | <img src="docs/screenshots/progress.png" alt="Study plan with credit totals, semesters and subject status" width="260"><br>Credits, semesters and subject completion in one place. |
-| Course notes | Custom themes |
-| <img src="docs/screenshots/notes.png" alt="Course notes with readable previews and a saved lecture link" width="260"><br>Course notes with previews, links and attachments. | <img src="docs/screenshots/appearance.png" alt="Named custom theme Blue hour with a live appearance preview" width="260"><br>Named themes with a live preview before applying. |
+| <img src="docs/screenshots/today.png" alt="Today: Classes, deadlines and compact task requirements." width="260"><br>Classes, deadlines and compact task requirements. | <img src="docs/screenshots/week-list.png" alt="Weekly schedule: Classes and work grouped by day." width="260"><br>Classes and work grouped by day. |
+| Studies overview | Study progress |
+| <img src="docs/screenshots/studies.png" alt="Studies overview: Credits, university records and finances in one place." width="260"><br>Credits, university records and finances in one place. | <img src="docs/screenshots/progress.png" alt="Study progress: All semesters, course results and status filters." width="260"><br>All semesters, course results and status filters. |
+| University finances | Student profile |
+| <img src="docs/screenshots/finances.png" alt="University finances: Fees, ISIC renewal and scholarship history." width="260"><br>Fees, ISIC renewal and scholarship history. | <img src="docs/screenshots/student-profile.png" alt="Student profile: Student identity and current or previous studies." width="260"><br>Student identity and current or previous studies. |
+| Course documents | Appearance |
+| <img src="docs/screenshots/documents.png" alt="Course documents: Linked local files with clear download status." width="260"><br>Linked local files with clear download status. | <img src="docs/screenshots/appearance.png" alt="Appearance: Themes, card styles and Add-button placement." width="260"><br>Themes, card styles and Add-button placement. |
+| Exam preparation | Course notes |
+| <img src="docs/screenshots/exam.png" alt="Exam preparation: Points, target grades and exam eligibility." width="260"><br>Points, target grades and exam eligibility. | <img src="docs/screenshots/notes.png" alt="Course notes: Readable notes alongside your course materials." width="260"><br>Readable notes alongside your course materials. |
 
-Captured from the signed **0.3.0** release on an Android 15 Pixel 6 emulator, using English and fictional study data. A new installation starts with an empty study plan, not the example schedule.
+## What's new in 0.4.0
 
-## What's new in 0.3.0
+- **Studies** combines the student profile, progress, university fees, ISIC records and scholarship history. Switch between current and previous studies while keeping the current timetable separate.
+- **Instant course documents:** saved links and local files appear together, with UIS metadata checked in the background. Current files open locally; an updated document gets a download icon and a named notification, and replaces the old file when downloaded.
+- **More personal navigation:** choose the central Add button or an animated floating button, and pick course colors from a palette or return to Automatic.
+- **Clearer work cards:** single-line titles and course codes, compact requirement icons with full explanations, and aligned points and dates.
+- **More reliable UIS state:** automatic semester selection also works after restoring a backup; cached student records refresh in the background with retries.
+- **More useful backups:** university records, course folder links and downloaded-file associations travel with the backup, and the restore preview shows study-related changes.
 
-- Liquid Glass interface with updated navigation, calendar, subject pages and notes.
-- Named custom color themes, personal background images and three card styles. Appearance and background images are included in backups.
-- STU UIS course documents with file names and downloads to the connected `Documents/Takt/<COURSE_CODE>` folder.
-- Cached course teachers and consultation hours that refresh in the background and travel with backups.
-- Safer backup validation and restore recovery, prompt UIS request cancellation, and editor drafts that remain available after failed saves or activity recreation.
+Downloaded document bytes remain in `Documents/Takt/<COURSE_CODE>` and are not embedded in the backup. Copy those files separately when moving devices and reconnect the folder in Takt.
 
 ## Install
 
@@ -40,7 +47,7 @@ You can use Takt entirely offline. Optional STU UIS integration can import your 
 - `feature:home` — dashboard and today's timetable
 - `feature:calendar` — timetable/calendar
 - `feature:subjects` — subjects and grade tracking
-- `feature:studyplan` — six-semester study plan and credit progress
+- `feature:studyplan` — student profile, study history, credit progress and university finances
 - `feature:settings` — app preferences, language, and backup controls
 
 ## Current target

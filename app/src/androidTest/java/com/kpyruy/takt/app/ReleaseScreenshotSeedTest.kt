@@ -30,7 +30,8 @@ class ReleaseScreenshotSeedTest {
             "Use -e releaseScreenshots true only on a disposable emulator",
             InstrumentationRegistry.getArguments().getString("releaseScreenshots") == "true",
         )
-        val data = TaktDataContainer(InstrumentationRegistry.getInstrumentation().targetContext)
+        assumeTrue("Release fixtures are emulator-only", android.os.Build.MODEL.contains("sdk_gphone") || android.os.Build.HARDWARE == "ranchu")
+        val data = (InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as TaktApplication).dataContainer
         val today = LocalDate.now()
         val monday = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
 
