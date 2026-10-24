@@ -17,4 +17,13 @@ class CourseDocumentPathsTest {
         assertTrue(CourseDocumentPaths.fileName("a".repeat(500)+".pdf").length <= 150)
         assertEquals("course", CourseDocumentPaths.courseFolder("..."))
     }
+    @Test fun unicodeNamesFitARealFilesystemComponentWithoutBreakingCodePoints() {
+        val name = CourseDocumentPaths.fileName("ž🙂".repeat(100) + ".pdf")
+        assertTrue(name.toByteArray(Charsets.UTF_8).size <= 180)
+        assertTrue(name.length <= 150)
+        assertTrue(name.endsWith(".pdf"))
+        assertFalse(name.contains('\uFFFD'))
+        assertEquals(name, String(name.toByteArray(Charsets.UTF_8), Charsets.UTF_8))
+    }
+
 }

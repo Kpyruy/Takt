@@ -32,7 +32,7 @@ class RoomBackupRepository(
     private val mutex get() = runtime.mutex
     private val mutableRestoreStatus get() = runtime.status
     val restoreStatus: StateFlow<BackupRestoreStatus> = mutableRestoreStatus.asStateFlow()
-    override val changes: Flow<Unit> get() = merge(teachingStore?.snapshot?.map { Unit } ?: emptyFlow(), database.studentHubDao().observe().map { Unit })
+    override val changes: Flow<Unit> get() = merge(teachingStore?.snapshot?.map { Unit } ?: emptyFlow(), database.studentHubDao().observe().map { Unit }, database.courseDocumentsDao().observe().map { Unit })
 
     suspend fun <T> withStableData(read: suspend () -> T): T = withContext(Dispatchers.IO) { mutex.withLock {
         recoverPendingLocked(); read()
@@ -65,6 +65,8 @@ class RoomBackupRepository(
                 courseNotes = database.studyContentDao().getNotesSnapshot().map { it.toBackup() },
                 examInfo = database.examDao().getExamInfoSnapshot().map { it.toBackup() },
                 examMaterials = database.examDao().getMaterialsSnapshot().map { it.toBackup() },
+                courseDocuments = database.courseDocumentsDao().read()?.let { DocumentCatalogCodec.decode(it.payloadJson) }
+                    ?.filter { entry -> courses.any { it.code == entry.courseCode } },
                 studentHub = database.studentHubDao().read()?.let { StudentHubCodec.json.decodeFromString<BackupStudentHub>(it.payloadJson).validated() },
                 teaching = teachingStore?.snapshot?.value?.forCourses(courses.map { it.code }),
                 settings = settings.toBackup().copy(wallpaperRecorded = wallpaperStore != null &&
@@ -241,6 +243,8 @@ class RoomBackupRepository(
         val studyDao = database.studyContentDao()
         val examDao = database.examDao()
 
+        database.courseDocumentsDao().clear()
+        payload.courseDocuments?.let { database.courseDocumentsDao().put(com.kpyruy.takt.core.database.CourseDocumentsEntity(payloadJson = DocumentCatalogCodec.encode(it))) }
         database.studentHubDao().clear()
         payload.studentHub?.let { database.studentHubDao().put(com.kpyruy.takt.core.database.StudentHubEntity(payloadJson = StudentHubCodec.json.encodeToString(it))) }
         examDao.deleteAllMaterials()

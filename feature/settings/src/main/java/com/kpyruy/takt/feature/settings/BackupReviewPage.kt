@@ -188,6 +188,15 @@ fun BackupReviewPage(
         if (BackupSection.MATERIALS in differing) BackupChoice(BackupSection.MATERIALS, selected, ::toggle, sourceName, t(UiKey.TEXT_NOTES_AND_MATERIALS),
             t(uiMessage(UiKey.FORMAT_NOTES_VALUE_VALUE_MATERIALS_VALUE_VALUE, local.courseNotes.size, source.courseNotes.size, local.examMaterials.size, source.examMaterials.size))) {
             BackupNoteChanges(local, source)
+            if (local.courseDocuments.orEmpty() != source.courseDocuments.orEmpty()) {
+                Text(t(UiKey.DOCUMENTS_SAVED_CATALOG), style = MaterialTheme.typography.titleSmall)
+                Text("${t(UiKey.TEXT_PHONE)}: ${local.courseDocuments.orEmpty().sumOf { it.listing.files.size }}")
+                Text("$sourceName: ${source.courseDocuments.orEmpty().sumOf { it.listing.files.size }}")
+                source.courseDocuments.orEmpty().forEach { catalog ->
+                    Text("${catalog.courseCode} · ${catalog.listing.files.size}")
+                    catalog.listing.files.take(8).forEach { Text(it.title, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
             Text(t(UiKey.TEXT_NOTES_AND_MATERIALS_ARE_MATCHED_BY_COURSE_CODE),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

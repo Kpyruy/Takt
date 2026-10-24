@@ -24,10 +24,11 @@ data class BackupPayload(
     val examMaterials: List<BackupExamMaterial> = emptyList(),
     val teaching: BackupTeaching? = null,
     val studentHub: BackupStudentHub? = null,
+    val courseDocuments: List<BackupDocumentCourse>? = null,
     val settings: BackupSettings = BackupSettings(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 11
+        const val CURRENT_VERSION = 12
     }
 }
 

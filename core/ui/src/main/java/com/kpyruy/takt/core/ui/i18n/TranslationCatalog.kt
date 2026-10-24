@@ -4,6 +4,14 @@ import com.kpyruy.takt.core.model.UiKey
 
 /** Explicit values for every language; keys never double as display text. */
 internal val staticTranslations: Map<String, LocalizedText> = mapOf(
+    UiKey.DOCUMENTS_ON_DEVICE to LocalizedText("On this device", "На цьому пристрої", "V tomto zariadení"),
+    UiKey.DOCUMENTS_ADDED to LocalizedText("Added: __ARG0__", "Додано: __ARG0__", "Pridané: __ARG0__"),
+    UiKey.DOCUMENTS_UPDATED to LocalizedText("Updated: __ARG0__", "Оновлено: __ARG0__", "Aktualizované: __ARG0__"),
+    UiKey.DOCUMENTS_REMOVED to LocalizedText("Removed: __ARG0__", "Видалено: __ARG0__", "Odstránené: __ARG0__"),
+    UiKey.DOCUMENTS_CHANGE_DETAILS to LocalizedText("Details", "Докладніше", "Podrobnosti"),
+    UiKey.DOCUMENTS_CHANGED_TITLE to LocalizedText("Document changes", "Зміни документів", "Zmeny dokumentov"),
+    UiKey.DOCUMENTS_SAVED_CATALOG to LocalizedText("Saved document lists", "Збережені списки документів", "Uložené zoznamy dokumentov"),
+
     UiKey.APPEARANCE_ADD_PLACEMENT to LocalizedText("Add button", "Кнопка додавання", "Tlačidlo pridania"),
     UiKey.APPEARANCE_ADD_CENTER to LocalizedText("In navigation", "У навігації", "V navigácii"),
     UiKey.APPEARANCE_ADD_FLOATING to LocalizedText("Floating button", "Окрема кнопка", "Plávajúce tlačidlo"),

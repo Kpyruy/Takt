@@ -230,48 +230,76 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
         return UisTeachingParser.teachers(page.html)
     }
 
-    fun readCourseDocuments(code: String, activeCourseCodes: Set<String>, refresh: Boolean = false): com.kpyruy.takt.core.model.CourseDocumentListing {
+    // Keep the three-argument JVM entry point for existing callers and reflection users.
+    fun readCourseDocuments(code: String, activeCourseCodes: Set<String>, refresh: Boolean = false): com.kpyruy.takt.core.model.CourseDocumentListing =
+        readCourseDocuments(code, activeCourseCodes, refresh, emptyList())
+
+    fun readCourseDocuments(code: String, activeCourseCodes: Set<String>, refresh: Boolean,
+        knownFolders: List<com.kpyruy.takt.core.model.CourseDocumentFolder>): com.kpyruy.takt.core.model.CourseDocumentListing {
         if (code !in activeCourseCodes) return com.kpyruy.takt.core.model.CourseDocumentListing(emptyList(), false)
         val documentBase = origin.resolve("auth/dok_server/")!!
-        val roots = documentFolders?.takeIf { !refresh && it.first == activeCourseCodes }?.second ?: run {
+        fun discover(): List<UisDocumentsParser.Folder> {
             val page = exchange(documentBase.resolve("?lang=en")!!, destinationAllowed = { next ->
                 next.encodedPath in setOf("/auth/dok_server/", "/auth/dok_server/index.pl", "/system/login.pl", "/auth/system/login.pl")
             })
             if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
-            UisDocumentsParser.courseFolders(page.html, activeCourseCodes, documentBase).also {
-                documentFolders = activeCourseCodes.toSet() to it
+            val roots = UisDocumentsParser.courseFolders(page.html, activeCourseCodes, documentBase)
+            documentFolders = activeCourseCodes.toSet() to roots
+            return roots.filter { it.code == code }
+        }
+        fun traverse(matching: List<UisDocumentsParser.Folder>, validateHints: Boolean): com.kpyruy.takt.core.model.CourseDocumentListing {
+            val queue = java.util.ArrayDeque<Pair<UisDocumentsParser.Folder, HttpUrl>>()
+            var truncated = matching.size > 16
+            fun enqueue(folder: UisDocumentsParser.Folder, url: HttpUrl) {
+                if (queue.size >= 128) truncated = true else queue.add(folder to url)
             }
-        }
-        val matching = roots.filter { it.code == code }
-        val queue = java.util.ArrayDeque<Pair<UisDocumentsParser.Folder, HttpUrl>>()
-        var truncated = matching.size > 16
-        fun enqueue(folder: UisDocumentsParser.Folder, url: HttpUrl) {
-            if (queue.size >= 128) truncated = true else queue.add(folder to url)
-        }
-        matching.take(16).forEach { enqueue(it, documentBase.resolve("slozka.pl?ds=1;id=${it.id};lang=en")!!) }
-        val visited = mutableSetOf<String>()
-        val files = linkedMapOf<String, com.kpyruy.takt.core.model.CourseDocumentFile>()
-        var pageCount = 0
-        while (queue.isNotEmpty() && pageCount < 40 && files.size < 512) {
-            val (folder, url) = queue.removeFirst()
-            if (!visited.add(url.toString())) continue
-            pageCount++
-            val page = exchange(url, destinationAllowed = { next ->
-                if (next.encodedPath in setOf("/system/login.pl", "/auth/system/login.pl")) true
-                else UisDocumentsParser.link(next.toString(), documentBase)?.let { it.id == folder.id && it.documentId == null } == true
-            })
-            if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
-            val parsed = UisDocumentsParser.folder(page.html, folder, documentBase)
-            parsed.files.forEach { if (files.size < 512) files["${it.folderId}:${it.documentId}"] = it else truncated = true }
-            parsed.subfolders.forEach { child ->
-                if (child.path.count { it == '/' } >= 12) truncated = true
-                else enqueue(child, documentBase.resolve("slozka.pl?ds=1;id=${child.id};lang=en")!!)
+            matching.take(16).forEach { enqueue(it, documentBase.resolve("slozka.pl?ds=1;id=${it.id};lang=en")!!) }
+            val rootIds = matching.map { it.id }.toSet()
+            val validatedRoots = mutableSetOf<String>()
+            val visited = mutableSetOf<String>()
+            val files = linkedMapOf<String, com.kpyruy.takt.core.model.CourseDocumentFile>()
+            var pageCount = 0
+            while (queue.isNotEmpty() && pageCount < 40 && files.size < 512) {
+                val (folder, url) = queue.removeFirst()
+                if (!visited.add(url.toString())) continue
+                pageCount++
+                val page = exchange(url, destinationAllowed = { next ->
+                    if (next.encodedPath in setOf("/system/login.pl", "/auth/system/login.pl")) true
+                    else UisDocumentsParser.link(next.toString(), documentBase)?.let { it.id == folder.id && it.documentId == null } == true
+                })
+                if (!isAuthenticated(page)) throw com.kpyruy.takt.core.data.TeachingAuthenticationRequired()
+                val parsed = UisDocumentsParser.folder(page.html, folder, documentBase)
+                // Empty recognized tables are real empty folders, while a UIS error page is stale metadata.
+                if (!parsed.recognized && parsed.pages.isEmpty()) {
+                    if (validateHints && folder.id in rootIds && validatedRoots.add(folder.id)) throw StaleDocumentFolder()
+                    throw ProtocolFailure(UisFailureReason.RESPONSE_FORMAT)
+                }
+                parsed.files.forEach { if (files.size < 512) files["${it.folderId}:${it.documentId}"] = it else truncated = true }
+                parsed.subfolders.forEach { child ->
+                    if (child.path.count { it == '/' } >= 12) truncated = true
+                    else enqueue(child, documentBase.resolve("slozka.pl?ds=1;id=${child.id};lang=en")!!)
+                }
+                parsed.pages.forEach { enqueue(folder, it) }
             }
-            parsed.pages.forEach { enqueue(folder, it) }
+            truncated = truncated || queue.isNotEmpty()
+            return com.kpyruy.takt.core.model.CourseDocumentListing(files.values.toList(), matching.isNotEmpty(),
+                matching.singleOrNull()?.let { "https://is.stuba.sk/auth/dok_server/slozka.pl?ds=1;id=${it.id};lang=en" }, truncated,
+                matching.map { com.kpyruy.takt.core.model.CourseDocumentFolder(it.id, it.label, it.path) })
         }
-        truncated = truncated || queue.isNotEmpty()
-        return com.kpyruy.takt.core.model.CourseDocumentListing(files.values.toList(), matching.isNotEmpty(),
-            matching.singleOrNull()?.let { "https://is.stuba.sk/auth/dok_server/slozka.pl?ds=1;id=${it.id};lang=en" }, truncated)
+        // Refresh always fetches current folder contents; it does not discard a useful discovered address.
+        val hints = if (knownFolders.isNotEmpty()) knownFolders.distinctBy { it.id }.map {
+            UisDocumentsParser.Folder(it.id, it.label, it.path, code)
+        } else documentFolders?.takeIf { it.first == activeCourseCodes }?.second?.filter { it.code == code }
+        if (!hints.isNullOrEmpty()) {
+            try { return traverse(hints, validateHints = true) }
+            catch (_: StaleDocumentFolder) { /* Rescan only stale folder metadata. */ }
+            catch (failure: HttpFailure) { if (failure.status !in setOf(404, 410)) throw failure }
+            catch (failure: ProtocolFailure) { if (failure.reason != UisFailureReason.UNSAFE_DESTINATION) throw failure }
+            documentFolders = null
+        } else if (!refresh && hints != null) {
+            return traverse(emptyList(), validateHints = false)
+        }
+        return traverse(discover(), validateHints = false)
     }
 
     /** Copies a single deliberately selected attachment without retaining its bytes in memory. */
@@ -591,6 +619,7 @@ internal class UisClient(private val origin: HttpUrl = "https://is.stuba.sk/".to
             if (error is IOException || error is HttpFailure) UisResult.UNAVAILABLE else UisResult.UNEXPECTED_RESPONSE
         }
     }
+    private class StaleDocumentFolder : Exception()
     private class HttpFailure(val status: Int) : Exception()
     private class ProtocolFailure(val reason: UisFailureReason) : Exception()
     private class LoginForm(val url: HttpUrl, val fields: MutableMap<String, String>)

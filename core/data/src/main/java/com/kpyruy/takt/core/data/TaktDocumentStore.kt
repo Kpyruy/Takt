@@ -264,6 +264,34 @@ class TaktDocumentStore(
         }
     }
 
+    /** Recover only a known file name inside the user-selected course folder; never creates a folder. */
+    suspend fun findDownloadedDocument(courseCode: String, names: List<String>): Uri? = withContext(Dispatchers.IO) {
+        val raw = preferences.getString("tree_uri", null) ?: return@withContext null
+        if (!isConnected) return@withContext null
+        val selected = DocumentFile.fromTreeUri(context, Uri.parse(raw)) ?: return@withContext null
+        val root = if (selected.name == "Takt") selected else selected.findFile("Takt") ?: return@withContext null
+        val folder = root.findFile(CourseDocumentPaths.courseFolder(courseCode)) ?: return@withContext null
+        names.distinct().firstNotNullOfOrNull { name ->
+            name.takeIf { it.length in 1..512 && it == java.io.File(it).name && !it.contains('\\') && it !in setOf(".","..") && !it.any(Char::isISOControl) }
+                ?.let(folder::findFile)?.takeIf { it.isFile }?.uri
+        }
+    }
+
+    suspend fun downloadedDocuments(courseCode: String): List<LocalCourseDocument> = withContext(Dispatchers.IO) {
+        val raw = preferences.getString("tree_uri", null) ?: return@withContext emptyList()
+        if (!isConnected) return@withContext emptyList()
+        val selected = DocumentFile.fromTreeUri(context, Uri.parse(raw)) ?: return@withContext emptyList()
+        val root = if (selected.name == "Takt") selected else selected.findFile("Takt") ?: return@withContext emptyList()
+        root.findFile(CourseDocumentPaths.courseFolder(courseCode))?.listFiles().orEmpty().filter { it.isFile }
+            .map { LocalCourseDocument(it.uri, it.name ?: "", it.type ?: "application/octet-stream") }
+            .filter { it.fileName.isNotBlank() }.sortedBy { it.fileName }
+    }
+
+    suspend fun removeDownloadedDocument(uri: Uri) = withContext(Dispatchers.IO) {
+        // Callers only supply a previously indexed URI after publishing its replacement.
+        runCatching { android.provider.DocumentsContract.deleteDocument(resolver, uri) }.getOrDefault(false)
+    }
+
     suspend fun resolve(uri: String): Uri? = withContext(Dispatchers.IO) {
         if (!uri.startsWith("takt://")) return@withContext runCatching { Uri.parse(uri) }.getOrNull()
         val path = TaktMaterialReference.decode(uri) ?: return@withContext null

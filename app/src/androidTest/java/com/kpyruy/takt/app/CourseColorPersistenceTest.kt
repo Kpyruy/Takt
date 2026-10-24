@@ -53,7 +53,7 @@ class CourseColorPersistenceTest {
             old.version = 20
         }
         val db = Room.databaseBuilder(context, TaktDatabase::class.java, name)
-            .addMigrations(TaktDatabase.MIGRATION_20_21).build()
+            .addMigrations(TaktDatabase.MIGRATION_20_21, TaktDatabase.MIGRATION_21_22).build()
         try {
             val course = RoomStudyPlanRepository(db).observeCourse("own").first()!!
             assertEquals("Existing", course.title)

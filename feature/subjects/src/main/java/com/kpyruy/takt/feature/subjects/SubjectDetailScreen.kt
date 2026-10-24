@@ -106,7 +106,7 @@ fun SubjectDetailScreen(
     val documentFolderState by documentStore.status.collectAsStateWithLifecycle()
     val documentAccountGeneration by (courseDocumentsRepository?.accountGeneration ?: remember { kotlinx.coroutines.flow.MutableStateFlow(0L) }).collectAsStateWithLifecycle()
     val documentsContext = androidx.compose.ui.platform.LocalContext.current
-    val downloads = remember(documentStore, documentAccountGeneration) { com.kpyruy.takt.core.data.CourseDocumentDownloads(documentsContext, documentStore, documentAccountGeneration) }
+    val downloads = remember(documentStore, documentAccountGeneration) { com.kpyruy.takt.core.data.CourseDocumentDownloads(documentsContext, documentStore, documentAccountGeneration, courseDocumentsRepository?.cacheOwnerKey) }
     val course by remember(repository, courseId) { repository.observeCourse(courseId) }.collectAsStateWithLifecycle(initialValue = null)
     val allCourses by remember(repository) { repository.observeCourses() }.collectAsStateWithLifecycle(initialValue = emptyList())
     val gradeItems by remember(gradeRepository, courseId) { gradeRepository.observeItems(courseId) }.collectAsStateWithLifecycle(initialValue = emptyList())

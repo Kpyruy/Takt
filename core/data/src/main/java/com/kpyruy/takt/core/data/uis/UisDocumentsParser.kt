@@ -13,7 +13,7 @@ internal object UisDocumentsParser {
     private val base = "https://is.stuba.sk/auth/dok_server/".toHttpUrl()
     internal data class Folder(val id: String, val label: String, val path: String, val code: String? = null)
     internal data class Link(val id: String, val documentId: String?, val url: HttpUrl, val parameters: Map<String, String>)
-    internal data class FolderPage(val files: List<CourseDocumentFile>, val subfolders: List<Folder>, val pages: List<HttpUrl>)
+    internal data class FolderPage(val files: List<CourseDocumentFile>, val subfolders: List<Folder>, val pages: List<HttpUrl>, val recognized: Boolean)
 
     fun courseFolders(html: String, activeCodes: Set<String>, origin: HttpUrl = base): List<Folder> {
         val doc = Jsoup.parse(html)
@@ -35,12 +35,14 @@ internal object UisDocumentsParser {
         val doc = Jsoup.parse(html)
         val files = mutableListOf<CourseDocumentFile>()
         val children = mutableListOf<Folder>()
+        var recognized = false
         for (table in doc.select("table")) {
             val headers = table.select("tr").firstOrNull { it.select("th").isNotEmpty() }
                 ?.select("th")?.map { normalize(it.text()) }.orEmpty()
             val nameColumn = headers.indexOfFirst { it in setOf("name", "nazov", "nazev") }
             if (nameColumn < 0) continue
             val childTable = headers.any { it in setOf("enter folder", "vstup do zlozky", "vstup do slozky") }
+            if (childTable || headers.any { it in setOf("attachment", "priloha", "download", "subor", "soubor") }) recognized = true
             for (row in table.select("tr")) {
                 val cells = row.children().filter { it.tagName() == "td" }
                 if (cells.size <= nameColumn) continue
@@ -53,8 +55,12 @@ internal object UisDocumentsParser {
                         val suggested = anchor.attr("download").takeIf { it.isNotBlank() }
                             ?: (title + extension(mime).takeUnless { title.lowercase(Locale.ROOT).endsWith(it) }.orEmpty())
                         val sizeColumn = headers.indexOfFirst { it in setOf("size", "velkost", "velikost") }
+                        val revision = headers.mapIndexedNotNull { index, name ->
+                            if (name in setOf("document date", "modifications", "last modified", "datum dokumentu", "zmeny", "datum zmeny", "posledna zmena"))
+                                cells.getOrNull(index)?.text()?.trim()?.takeIf { it.isNotBlank() } else null
+                        }.joinToString(" | ").take(512).takeIf { it.isNotBlank() }
                         files += CourseDocumentFile(folder.id, target.documentId, title, mime,
-                            suggested, cells.getOrNull(sizeColumn)?.text()?.takeIf { it.isNotBlank() }, folder.path)
+                            suggested, cells.getOrNull(sizeColumn)?.text()?.takeIf { it.isNotBlank() }, folder.path, revision = revision)
                     } else if (childTable && target.documentId == null && target.id != folder.id &&
                         target.parameters.keys.all { it in setOf("id", "ds", "lang", "on") }) {
                         children += Folder(target.id, title, "${folder.path} / $title")
@@ -68,7 +74,7 @@ internal object UisDocumentsParser {
                 target.parameters.keys.none { it in pageParameters }) return@mapNotNull null
             target.url
         }.distinct()
-        return FolderPage(files.distinctBy { it.documentId }, children.distinctBy { it.id }, pages)
+        return FolderPage(files.distinctBy { it.documentId }, children.distinctBy { it.id }, pages, recognized)
     }
 
     private val pageParameters = setOf("strana", "page", "offset", "od", "pos", "zacatek")

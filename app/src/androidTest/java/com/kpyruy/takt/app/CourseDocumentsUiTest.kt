@@ -131,6 +131,8 @@ class CourseDocumentsUiTest {
             subject()
             compose.onNodeWithTag("document-download-319089").performScrollTo().performClick()
             compose.waitUntil(8_000) { downloads.get() == 1 && compose.onAllNodesWithContentDescription("Uložené").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitForIdle()
+            assertTrue("The selected Documents tree must remain accessible", data.documentStore.isConnected)
             compose.onNodeWithTag("documents-folder-required").assertDoesNotExist()
             compose.onNodeWithTag("documents-retry").assertDoesNotExist()
             val course = runBlocking { data.studyPlanRepository.observeCourses().first().first { it.code == "FYZI_6B" } }
@@ -140,16 +142,17 @@ class CourseDocumentsUiTest {
             assertArrayEquals(pdf, compose.activity.contentResolver.openInputStream(firstUri)!!.use { it.readBytes() })
             assertTrue(firstUri.toString().contains("FYZI_6B"))
             capture("documents-physics-saved.png")
+            compose.waitUntil(8_000) { compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
             revision = 2
             compose.onNodeWithContentDescription("Aktualizovať").performClick()
-            compose.waitUntil(8_000) { requests.count { it == "/auth/dok_server/?lang=en" } >= 2 }
+            compose.waitUntil(8_000) { requests.count { it == "/auth/dok_server/slozka.pl?ds=1;id=287891;lang=en" } >= 2 }
             compose.onNodeWithTag("document-download-319089").performScrollTo().performClick()
             compose.waitUntil(8_000) { downloads.get() == 2 && runBlocking { store.saved(course, doc) } != firstUri }
             compose.waitForIdle()
             val secondUri = runBlocking { store.saved(course, doc) }!!
             assertNotEquals(firstUri, secondUri)
             assertArrayEquals(currentBytes(), compose.activity.contentResolver.openInputStream(secondUri)!!.use { it.readBytes() })
-            // Public copies are intentional and cannot be silently overwritten by a teacher update.
+            // A replaced copy remains readable briefly for a viewer already opening its previous URI.
             assertArrayEquals(pdf, compose.activity.contentResolver.openInputStream(firstUri)!!.use { it.readBytes() })
             var opened: android.content.Intent? = null
             val monitor = object : android.app.Instrumentation.ActivityMonitor() {
@@ -194,8 +197,8 @@ class CourseDocumentsUiTest {
             assertTrue(requests.none { it.contains("tree_config_ajax") || it.contains("oznacit") })
             repoType.getDeclaredMethod("clear").invoke(repository)
             compose.waitUntil(5_000) { compose.onAllNodesWithTag("course-documents-sheet").fetchSemanticsNodes().isEmpty() }
-            android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, firstUri)
-            android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, secondUri)
+            runCatching { android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, firstUri) }
+            runCatching { android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, secondUri) }
         } finally { clientType.getDeclaredMethod("close").invoke(client); server.shutdown() }
     }
 

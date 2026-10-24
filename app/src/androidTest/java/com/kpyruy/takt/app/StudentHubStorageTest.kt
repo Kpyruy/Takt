@@ -25,7 +25,7 @@ class StudentHubStorageTest {
             old.execSQL("INSERT INTO courses(id,code,title,credits,semester,status,requirementType) VALUES('own','OWN','Existing',5,1,'enrolled','COMPULSORY')")
             old.version=19
         }
-        val db=Room.databaseBuilder(context,TaktDatabase::class.java,name).addMigrations(TaktDatabase.MIGRATION_19_20, TaktDatabase.MIGRATION_20_21).build()
+        val db=Room.databaseBuilder(context,TaktDatabase::class.java,name).addMigrations(TaktDatabase.MIGRATION_19_20, TaktDatabase.MIGRATION_20_21, TaktDatabase.MIGRATION_21_22).build()
         try{assertEquals("own",db.courseDao().getAllSnapshot().single().id);assertNull(RoomStudentHubStore(db).read())}
         finally{db.close();context.deleteDatabase(name)}
     }

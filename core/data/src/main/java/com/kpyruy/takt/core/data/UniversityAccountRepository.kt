@@ -89,6 +89,7 @@ class UniversityAccountRepository(
     teachingStore: TeachingStore = TeachingStore(),
     private val backupCoordinator: RoomBackupRepository? = null,
     studentHubStore: StudentHubStore = InMemoryStudentHubStore(),
+    documentsStore: CourseDocumentsStore = InMemoryCourseDocumentsStore(),
 ) {
     val session = com.kpyruy.takt.core.data.uis.UisSession()
     private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -156,6 +157,13 @@ class UniversityAccountRepository(
     )
     val teachingRepository: CourseTeachingRepository get() = teachingCache
     private val documentsCache = CachedCourseDocumentsRepository(
+        store = documentsStore,
+        ownerKey = { preferences.getString("student_owner_key", null) },
+        stableWrite = { action -> coordinated(action) },
+        loadKnown = { course, activeCodes, refresh, roots -> withAccountSession {
+            ensureTeachingSession()
+            session.readCourseDocuments(course.code, activeCodes, refresh, roots)
+        } },
         load = { course, activeCodes, refresh -> withAccountSession {
             ensureTeachingSession()
             session.readCourseDocuments(course.code, activeCodes, refresh)
@@ -752,6 +760,7 @@ class UniversityAccountRepository(
             }
             edit.putString("student_owner_key",studentOwnerKey(cleanLogin))
             check(edit.commit()) { "Could not save UIS credentials" }
+            if (!sameAccount) documentsCache.clear() // Publish the new owner after its durable preference commit.
             if (!sameAccount) settingsRepository?.setUisCurrentSemester(null)
             activeState.value = true
             if (!sameAccount) mutableInitialImportComplete.value = false

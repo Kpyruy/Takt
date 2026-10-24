@@ -30,7 +30,7 @@ object BackupMerger {
             wallpaperRecorded = true,
             wallpaper = value.wallpaper?.copy(name = ""),
         )
-        return a.studentHub == b.studentHub && (a.teaching ?: BackupTeaching()) == (b.teaching ?: BackupTeaching()) && sameItems(a.courses, b.courses) &&
+        return a.courseDocuments.orEmpty().sortedBy { it.ownerKey + it.courseCode } == b.courseDocuments.orEmpty().sortedBy { it.ownerKey + it.courseCode } && a.studentHub == b.studentHub && (a.teaching ?: BackupTeaching()) == (b.teaching ?: BackupTeaching()) && sameItems(a.courses, b.courses) &&
             sameItems(a.scheduleRules, b.scheduleRules) &&
             sameItems(a.oneOffEvents, b.oneOffEvents) &&
             sameItems(a.lessonAbsences, b.lessonAbsences) &&
@@ -136,6 +136,12 @@ object BackupMerger {
                 else phoneSettings.semesterPeriods,
         )
         return local.copy(
+            courseDocuments = if (materials && incoming.courseDocuments != null) {
+                val incomingCatalog = incoming.courseDocuments.mapNotNull { entry -> destinationByCode[entry.courseCode.uppercase(Locale.ROOT)]?.let { entry.copy(courseCode = it.code) } }
+                val keys = incomingCatalog.map { it.ownerKey to it.courseCode }.toSet()
+                (local.courseDocuments.orEmpty().filterNot { (it.ownerKey to it.courseCode) in keys } + incomingCatalog)
+                    .groupBy { it.ownerKey }.values.flatMap { it.takeLast(32) }.takeLast(128)
+            } else local.courseDocuments,
             teaching = if (BackupSection.TEACHERS in fromBackup && incoming.teaching != null) {
                 val old = local.teaching ?: BackupTeaching()
                 val codes = destinationByCode.keys

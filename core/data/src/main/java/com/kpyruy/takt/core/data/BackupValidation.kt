@@ -179,6 +179,7 @@ internal fun BackupPayload.validated(): BackupPayload {
         val codes = courses.map { teachingCode(it.code) }.toSet()
         require(teaching?.teams.orEmpty().all { teachingCode(it.courseCode) in codes }) { "Teaching team references a missing course" }
     }
+    section("courseDocuments") { courseDocuments?.let { DocumentCatalogCodec.encode(it); require(it.all { entry -> courses.any { course -> course.code == entry.courseCode } }) } }
     section("settings") { settings.validate(courseIds) }
     return this
 }

@@ -1,6 +1,8 @@
 package com.kpyruy.takt.core.data.uis
 
+import com.kpyruy.takt.core.model.CourseDocumentListing
 import com.kpyruy.takt.core.model.CourseDocumentFile
+import com.kpyruy.takt.core.model.CourseDocumentFolder
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -69,6 +71,150 @@ class UisDocumentsTest {
         assertEquals(setOf("30", "31"), listing.files.map { it.documentId }.toSet())
         repeat(4) { assertFalse(server.takeRequest().path!!.contains("999")) }
         assertFalse(listing.truncated)
+    }
+
+    private fun emptyFolder() = """<table><tr><th>Name</th><th>Attachment</th></tr></table>"""
+    private fun fileFolder(folderId: String, documentId: String) = """<table><tr><th>Name</th><th>Attachment</th></tr>
+        <tr><td>Lecture</td><td><a href="slozka.pl?id=$folderId;download=$documentId"><span data-mime="pdf"></span></a></td></tr></table>"""
+
+    @Test fun discoveredRootsCanBeReusedAfterClientRestartAndOnRefresh() {
+        connect()
+        server.enqueue(page("""<a href="slozka.pl?id=10">FYZI_6B Physics</a>"""))
+        server.enqueue(page(fileFolder("10", "20")))
+        val discovered = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"))
+        repeat(2) { server.takeRequest() }
+        assertEquals(listOf("10"), discovered.roots.map { it.id })
+        client.close()
+        val restarted = UisClient(server.url("/"))
+        try {
+            // Establish a fresh authenticated transport, without copying any in-memory folder index.
+            server.enqueue(MockResponse().setBody("""<form method="post" action="/system/login.pl"><input name="credential_0"><input name="credential_1" type="password"></form>"""))
+            server.enqueue(MockResponse().setBody("""{"need2FA":"false"}"""))
+            server.enqueue(MockResponse().setResponseCode(302).setHeader("Location", "/auth/").addHeader("Set-Cookie", "UISAuth=fake; Path=/"))
+            server.enqueue(page(""))
+            assertEquals(UisResult.CONNECTED, restarted.login("student", "password"))
+            repeat(4) { server.takeRequest() }
+            for (refresh in listOf(false, true)) {
+                server.enqueue(page(fileFolder("10", "21")))
+                val loaded = restarted.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), refresh, discovered.roots)
+                assertEquals("21", loaded.files.single().documentId)
+                assertEquals(discovered.roots, loaded.roots)
+                assertEquals("/auth/dok_server/slozka.pl?ds=1;id=10;lang=en", server.takeRequest().path)
+            }
+            assertEquals(12, server.requestCount)
+        } finally { restarted.close() }
+    }
+
+    @Test fun cachedRootFallsBackOnlyWhenGoneUnknownOrRedirectedElsewhere() {
+        connect()
+        val hint = listOf(CourseDocumentFolder("10", "FYZI_6B Old", "Old semester / FYZI_6B Old"))
+        val staleResponses = listOf(
+            MockResponse().setResponseCode(404), MockResponse().setResponseCode(410),
+            page("<p>The requested folder does not exist.</p>"),
+            MockResponse().setResponseCode(302).setHeader("Location", "/auth/dok_server/slozka.pl?id=999"),
+            MockResponse().setResponseCode(302).setHeader("Location", "https://elsewhere.example/auth/dok_server/slozka.pl?id=10"),
+        )
+        for (stale in staleResponses) {
+            server.enqueue(stale)
+            server.enqueue(page("""<a href="slozka.pl?id=11">FYZI_6B Physics</a>"""))
+            server.enqueue(page(fileFolder("11", "22")))
+            val loaded = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), true, hint)
+            assertEquals("22", loaded.files.single().documentId)
+            assertEquals(listOf("11"), loaded.roots.map { it.id })
+            assertTrue(server.takeRequest().path!!.contains("id=10"))
+            assertEquals("/auth/dok_server/?lang=en", server.takeRequest().path)
+            assertTrue(server.takeRequest().path!!.contains("id=11"))
+        }
+        assertEquals(4 + staleResponses.size * 3, server.requestCount)
+    }
+
+    @Test fun recognizedEmptyCachedFolderIsValidAndNeverRescansRoot() {
+        connect()
+        val roots = listOf(CourseDocumentFolder("10", "FYZI_6B Physics", "Physics"))
+        for (body in listOf(emptyFolder(), """<table><tr><th>Názov</th><th>Vstup do zložky</th></tr></table>""")) {
+            server.enqueue(page(body))
+            val loaded = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), true, roots)
+            assertTrue(loaded.foldersFound)
+            assertTrue(loaded.files.isEmpty())
+            assertEquals(roots, loaded.roots)
+            assertTrue(server.takeRequest().path!!.contains("id=10"))
+        }
+        assertEquals(6, server.requestCount)
+    }
+
+    @Test fun discoveryRetainsEverySemesterRootAndReusesEachOfThem() {
+        connect()
+        server.enqueue(page("""<a href="slozka.pl?id=10">FYZI_6B Current</a><a href="slozka.pl?id=11">FYZI_6B Previous</a>"""))
+        server.enqueue(page(fileFolder("10", "20")))
+        server.enqueue(page(fileFolder("11", "21")))
+        val discovered = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"))
+        assertEquals(listOf("10", "11"), discovered.roots.map { it.id })
+        assertNull(discovered.folderUrl)
+        repeat(3) { server.takeRequest() }
+        server.enqueue(page(emptyFolder()))
+        server.enqueue(page(emptyFolder()))
+        val refreshed = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), true, discovered.roots)
+        assertEquals(discovered.roots, refreshed.roots)
+        assertTrue(server.takeRequest().path!!.contains("id=10"))
+        assertTrue(server.takeRequest().path!!.contains("id=11"))
+        assertEquals(9, server.requestCount)
+    }
+
+    @Test fun cachedRootPreservesSubfolderPaginationAndRejectsUnrelatedNavigation() {
+        connect()
+        server.enqueue(page("""<nav><a href="slozka.pl?id=999">Faculty</a></nav>
+            <table><tr><th>Name</th><th>Enter folder</th></tr><tr><td>Lectures</td><td><a href="slozka.pl?id=11">Enter</a></td></tr></table>
+            <a href="slozka.pl?id=10;strana=2">Next</a>"""))
+        server.enqueue(page(fileFolder("11", "20")))
+        server.enqueue(page(fileFolder("10", "21")))
+        val listing = client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), true,
+            listOf(CourseDocumentFolder("10", "FYZI_6B Physics", "Physics")))
+        assertEquals(setOf("20", "21"), listing.files.map { it.documentId }.toSet())
+        assertFalse(listing.truncated)
+        repeat(3) { assertFalse(server.takeRequest().path!!.contains("999")) }
+        assertEquals(7, server.requestCount)
+    }
+
+    @Test fun cachedAuthenticationAndHttpFailuresPropagateWithoutRescanning() {
+        connect()
+        val roots = listOf(CourseDocumentFolder("10", "FYZI_6B Physics", "Physics"))
+        server.enqueue(MockResponse().setBody("<form><input name=credential_1></form>"))
+        assertTrue(runCatching { client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), false, roots) }
+            .exceptionOrNull() is com.kpyruy.takt.core.data.TeachingAuthenticationRequired)
+        server.takeRequest()
+        for (statusCode in listOf(401, 403, 500)) {
+            server.enqueue(MockResponse().setResponseCode(statusCode))
+            assertTrue(runCatching { client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), false, roots) }.isFailure)
+            assertTrue(server.takeRequest().path!!.contains("id=10"))
+        }
+        assertEquals(8, server.requestCount)
+    }
+
+    @Test fun cachedNetworkFailurePropagatesWithoutRootSearch() {
+        connect()
+        server.enqueue(MockResponse().setBody(authenticated + "x".repeat(8192)).setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY))
+        val failure = runCatching { client.readCourseDocuments("FYZI_6B", setOf("FYZI_6B"), false,
+            listOf(CourseDocumentFolder("10", "FYZI_6B Physics", "Physics"))) }.exceptionOrNull()
+        assertTrue("Expected IO failure, got $failure", failure is java.io.IOException)
+        assertEquals(5, server.requestCount)
+    }
+
+    @Test fun folderMetadataRejectsInvalidIdsBeforeTheyCanBecomeRequests() {
+        for (id in listOf("", "0", "-1", "10;delete=1", "https://elsewhere.example")) {
+            assertTrue(runCatching { CourseDocumentFolder(id, "Physics", "Physics") }.isFailure)
+        }
+    }
+
+    @Test fun listingRevisionDetectsAnEditWithoutDownloadingAnUnsavedFile() {
+        fun parsed(date: String) = UisDocumentsParser.folder("""<table><tr><th>Name</th><th>Modifications</th><th>Attachment</th></tr>
+            <tr><td>Lecture</td><td>$date</td><td><a href="slozka.pl?id=10;download=20"><span data-mime="pdf"></span></a></td></tr></table>""",
+            UisDocumentsParser.Folder("10","Physics","Physics")).files.single()
+        val before = parsed("20.10.2026"); val after = parsed("21.10.2026")
+        assertNotEquals(before.revision,after.revision)
+        val changes = com.kpyruy.takt.core.model.CourseDocumentChanges.between(
+            CourseDocumentListing(listOf(before),true),CourseDocumentListing(listOf(after),true))
+        assertEquals(listOf(after),changes.updated)
+        assertEquals(0,server.requestCount)
     }
 
     @Test fun followsTheSuppliedSameAttachmentRedirectAndStreamsTheActualWordDocument() {

@@ -2,6 +2,14 @@ package com.kpyruy.takt.core.model
 
 /** Stable identifiers: translated display text belongs only in the UI catalogs. */
 object UiKey {
+    const val DOCUMENTS_ON_DEVICE = "documents.on_device"
+    const val DOCUMENTS_ADDED = "documents.changes.added"
+    const val DOCUMENTS_UPDATED = "documents.changes.updated"
+    const val DOCUMENTS_REMOVED = "documents.changes.removed"
+    const val DOCUMENTS_CHANGE_DETAILS = "documents.changes.details"
+    const val DOCUMENTS_CHANGED_TITLE = "documents.changes.title"
+    const val DOCUMENTS_SAVED_CATALOG = "documents.saved_catalog"
+
     const val APPEARANCE_ADD_PLACEMENT = "appearance.add_placement"
     const val APPEARANCE_ADD_CENTER = "appearance.add_center"
     const val APPEARANCE_ADD_FLOATING = "appearance.add_floating"

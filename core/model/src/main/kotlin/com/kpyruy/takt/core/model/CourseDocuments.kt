@@ -1,6 +1,6 @@
 package com.kpyruy.takt.core.model
 
-/** Memory-only UIS metadata. Downloading an attachment is always a separate user action. */
+/** Cached UIS metadata; background downloads only refresh copies the user already saved. */
 data class CourseDocumentFile(
     val folderId: String,
     val documentId: String,
@@ -9,6 +9,8 @@ data class CourseDocumentFile(
     val fileName: String? = null,
     val sizeLabel: String? = null,
     val folderPath: String? = null,
+    val downloadedFileName: String? = null,
+    val revision: String? = null,
 ) {
     init {
         require(folderId.matches(Regex("[1-9][0-9]*")))
@@ -17,11 +19,35 @@ data class CourseDocumentFile(
     val downloadUrl: String get() = "https://is.stuba.sk/auth/dok_server/slozka.pl?id=$folderId;download=$documentId"
 }
 
+/** A discovered course root; only its validated id is used to construct UIS requests. */
+data class CourseDocumentFolder(val id: String, val label: String, val path: String) {
+    init { require(id.matches(Regex("[1-9][0-9]*"))) }
+}
+
 data class CourseDocumentListing(
     val files: List<CourseDocumentFile>,
     val foldersFound: Boolean,
     val folderUrl: String? = null,
     val truncated: Boolean = false,
+    val roots: List<CourseDocumentFolder> = emptyList(),
 )
 
 data class DownloadedCourseDocument(val fileName: String, val mimeType: String, val byteCount: Long)
+
+/** Compares remote metadata; a saved local filename is not a teacher edit. */
+data class CourseDocumentChanges(
+    val added: List<CourseDocumentFile> = emptyList(),
+    val updated: List<CourseDocumentFile> = emptyList(),
+    val removed: List<CourseDocumentFile> = emptyList(),
+) {
+    val isEmpty get() = added.isEmpty() && updated.isEmpty() && removed.isEmpty()
+    companion object {
+        fun between(old: CourseDocumentListing, fresh: CourseDocumentListing, changedBytes: Set<String> = emptySet()): CourseDocumentChanges {
+            fun key(file: CourseDocumentFile) = "${file.folderId}:${file.documentId}"
+            val before = old.files.associateBy(::key); val after = fresh.files.associateBy(::key)
+            return CourseDocumentChanges(fresh.files.filter { key(it) !in before }, fresh.files.filter { file ->
+                before[key(file)]?.let { it.copy(downloadedFileName = null) != file.copy(downloadedFileName = null) || key(file) in changedBytes } ?: false
+            }, old.files.filter { key(it) !in after })
+        }
+    }
+}
