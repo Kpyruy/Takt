@@ -158,7 +158,7 @@ class CourseDocumentsUiTest {
             compose.waitUntil(8_000) { requests.count { it == "/auth/dok_server/slozka.pl?ds=1;id=287891;lang=en" } >= 2 }
             try {
                 compose.waitUntil(8_000) { downloads.get() == 2 && compose.onAllNodesWithTag("documents-loading").fetchSemanticsNodes().isEmpty() }
-            } catch (failure: Exception) {
+            } catch (failure: Throwable) {
                 throw AssertionError("Refresh downloads=${downloads.get()}, requests=$requests", failure)
             }
             compose.waitForIdle()

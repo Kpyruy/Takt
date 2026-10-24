@@ -28,6 +28,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+private data class CourseDocumentsView(
+    val listing: CourseDocumentListing? = null,
+    val localFiles: List<LocalCourseDocument> = emptyList(),
+    val savedUris: Map<String, android.net.Uri> = emptyMap(),
+)
+
+private suspend fun storedDocumentsView(course: Course, activeCodes: Set<String>, repository: CourseDocumentsRepository,
+    downloads: CourseDocumentDownloads, fallback: CourseDocumentListing? = null): CourseDocumentsView {
+    val listing = repository.cachedDocuments(course, activeCodes) ?: fallback
+    val files = downloads.localFiles(course)
+    val saved = listing?.files.orEmpty().mapNotNull { doc ->
+        downloads.saved(course, doc)?.let { "${doc.folderId}:${doc.documentId}" to it }
+    }.toMap()
+    return CourseDocumentsView(listing, files, saved)
+}
+
 @Composable
 fun CourseDocumentsPanel(
     course: Course,
@@ -42,12 +58,15 @@ fun CourseDocumentsPanel(
 ) {
     if (repository == null) return
     val onlineEligible = course.status == CourseStatus.ENROLLED && course.code in activeCourseCodes
-    var hasLocalFiles by remember(course.id) { mutableStateOf(false) }
-    LaunchedEffect(course.id, downloadsReady, onlineEligible) {
-        if (!onlineEligible) hasLocalFiles = downloads.localFiles(course).isNotEmpty()
-    }
-    if (!onlineEligible && !hasLocalFiles) return
+    var prepared by remember(course.id, downloads, repository) { mutableStateOf<CourseDocumentsView?>(null) }
     var open by remember(course.id) { mutableStateOf(false) }
+    LaunchedEffect(course, activeCourseCodes, downloadsReady, downloads, open) {
+        if (!open) try {
+            prepared = storedDocumentsView(course, activeCourseCodes, repository, downloads, prepared?.listing)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { /* Opening the sheet can retry an unavailable local catalog. */ }
+    }
+    if (!onlineEligible && prepared?.localFiles.isNullOrEmpty()) return
     SectionCard {
         Row(Modifier.fillMaxWidth().testTag("course-documents").clickable { open = true }.padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -61,24 +80,25 @@ fun CourseDocumentsPanel(
         }
     }
     if (open) CourseDocumentsSheet(course, activeCourseCodes, repository, downloads, connected && onlineEligible, authenticate,
-        onSettings, onFolderSettings, downloadsReady, { open = false })
+        onSettings, onFolderSettings, downloadsReady, prepared ?: CourseDocumentsView(), { prepared = it }, { open = false })
 }
 
 @Composable
 private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>, repository: CourseDocumentsRepository,
     downloads: CourseDocumentDownloads, connected: Boolean,
     authenticate: (String, (DeviceAuthenticationResult) -> Unit) -> Unit,
-    onSettings: () -> Unit, onFolderSettings: () -> Unit, downloadsReady: Boolean, onDismiss: () -> Unit) {
+    onSettings: () -> Unit, onFolderSettings: () -> Unit, downloadsReady: Boolean,
+    initialView: CourseDocumentsView, onPrepared: (CourseDocumentsView) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var listing by remember { mutableStateOf<CourseDocumentListing?>(null) }
+    var listing by remember { mutableStateOf(initialView.listing) }
     var failure by remember { mutableStateOf<Throwable?>(null) }
     var loading by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     var working by remember { mutableStateOf<String?>(null) }
-    var saved by remember { mutableStateOf(setOf<String>()) }
-    var savedUris by remember { mutableStateOf(mapOf<String, android.net.Uri>()) }
-    var localFiles by remember { mutableStateOf(emptyList<LocalCourseDocument>()) }
+    var saved by remember { mutableStateOf(initialView.savedUris.keys) }
+    var savedUris by remember { mutableStateOf(initialView.savedUris) }
+    var localFiles by remember { mutableStateOf(initialView.localFiles) }
     val snackbar = remember { SnackbarHostState() }
     var changes by remember { mutableStateOf(CourseDocumentChanges()) }
     var showChanges by remember { mutableStateOf(false) }
@@ -124,6 +144,7 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
                     savedUris = savedUris + (fileKey(document) to uri)
                     saved = saved + fileKey(document)
                     localFiles = downloads.localFiles(course)
+                    onPrepared(CourseDocumentsView(listing, localFiles, savedUris))
                     showSaved()
                 } else openFile(cached.uri, cached.mimeType)
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -132,29 +153,36 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
         }
     }
     LaunchedEffect(downloadsReady) { if (downloadsReady) folderRequired = false }
-    LaunchedEffect(course.id, activeCourseCodes, reload, connected) {
+    LaunchedEffect(course.id, activeCourseCodes, reload, connected, downloadsReady) {
         loading = true
         try {
-            localFiles = downloads.localFiles(course)
-            val localUrisAtStart = localFiles.map { it.uri }.toSet()
+            val stored = storedDocumentsView(course, activeCourseCodes, repository, downloads, listing)
+            val localUrisAtStart = stored.localFiles.map { it.uri }.toSet()
             val availableAtStart = mutableSetOf<String>()
-            val known = repository.cachedDocuments(course, activeCourseCodes)
-            (known ?: listing)?.let { cached ->
-                savedUris = cached.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
-                saved = savedUris.keys
-                availableAtStart += saved
-                cached.files.filterNot { fileKey(it) in saved }.forEach { doc ->
+            // Publish one coherent local view: raw inventory must not precede its saved UIS links.
+            androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                listing = stored.listing
+                savedUris = stored.savedUris
+                saved = stored.savedUris.keys
+                localFiles = stored.localFiles
+            }
+            onPrepared(stored)
+            stored.listing?.let { cached ->
+                availableAtStart += stored.savedUris.keys
+                cached.files.filterNot { fileKey(it) in stored.savedUris }.forEach { doc ->
                     if (downloads.available(course, doc) != null) availableAtStart += fileKey(doc)
                 }
-                listing = cached
             }
             if (!connected) return@LaunchedEffect
             failure = null
             var baseline = listing
             var found = repository.documents(course, activeCourseCodes, refresh = true)
-            listing = found
-            savedUris = found.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
-            saved = savedUris.keys
+            val foundUris = found.files.mapNotNull { doc -> downloads.saved(course, doc)?.let { fileKey(doc) to it } }.toMap()
+            androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                listing = found
+                savedUris = foundUris
+                saved = foundUris.keys
+            }
             // Resolve real attachment names only when an unindexed local file could belong
             // to this listing. The cached list and local opening remain usable throughout.
             for (document in found.files) {
@@ -214,7 +242,10 @@ private fun CourseDocumentsSheet(course: Course, activeCourseCodes: Set<String>,
         catch (problem: Exception) {
             android.util.Log.w("CourseDocuments", "Document listing failed", problem)
             if (listing == null) failure = problem
-        } finally { loading = false }
+        } finally {
+            loading = false
+            onPrepared(CourseDocumentsView(listing, localFiles, savedUris))
+        }
     }
     TaktFullSheet(onDismissRequest = onDismiss) {
         Box(Modifier.fillMaxWidth()) {

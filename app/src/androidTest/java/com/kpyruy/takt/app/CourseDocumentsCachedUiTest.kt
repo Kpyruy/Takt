@@ -22,6 +22,56 @@ import java.io.OutputStream
 
 class CourseDocumentsCachedUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Test fun savedLinksAppearTogetherWithLocalFilesAndRemainReadyOnReopen() {
+        val data = (compose.activity.application as TaktApplication).dataContainer
+        assertTrue(data.documentStore.isConnected)
+        val course = Course("instant-links", "LINK" + java.util.UUID.randomUUID().toString().take(8), "Saved links", 5, 1, CourseStatus.ENROLLED)
+        val document = CourseDocumentFile("90831", "90832", "Linked lecture", "text/plain", "original.txt", downloadedFileName = "original.txt")
+        val cached = CourseDocumentListing(listOf(document), true)
+        var metadataGate = CompletableDeferred<Unit>()
+        val metadataStarted = CompletableDeferred<Unit>()
+        val networkGate = CompletableDeferred<Unit>()
+        val repository = object : CourseDocumentsRepository {
+            override suspend fun cachedDocuments(course: Course, activeCourseCodes: Set<String>): CourseDocumentListing {
+                metadataStarted.complete(Unit); metadataGate.await(); return cached
+            }
+            override suspend fun documents(course: Course, activeCourseCodes: Set<String>, refresh: Boolean): CourseDocumentListing {
+                networkGate.await(); return cached
+            }
+            override suspend fun download(document: CourseDocumentFile, output: OutputStream): DownloadedCourseDocument = error("No download before background refresh completes")
+        }
+        val downloads = CourseDocumentDownloads(compose.activity, data.documentStore, 123, "7".repeat(64))
+        val source = java.io.File(compose.activity.cacheDir, "links-${System.nanoTime()}.txt").apply { writeText("saved") }
+        val uri = runBlocking { data.documentStore.saveDownloadedDocument(course.code, source, "original.txt", "text/plain") }
+        try {
+            compose.activityRule.scenario.onActivity { activity -> activity.setContent {
+                TaktI18n.use(AppLanguage.ENGLISH)
+                TaktTheme { Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+                    CourseDocumentsPanel(course, setOf(course.code), repository, downloads, true,
+                        { _, reply -> reply(DeviceAuthenticationResult.CANCELLED) }, {})
+                } }
+            } }
+            compose.onNodeWithTag("course-documents").performClick()
+            compose.waitUntil(5_000) { metadataStarted.isCompleted }
+            compose.waitForIdle()
+            compose.onNodeWithText("original.txt").assertDoesNotExist()
+            metadataGate.complete(Unit)
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("course-document-90832").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("document-download-90832").assertContentDescriptionEquals("Saved")
+            compose.onNodeWithText("${course.code} · Files: 1").assertIsDisplayed()
+            metadataGate = CompletableDeferred()
+            compose.onNodeWithContentDescription("Close").performClick()
+            compose.onNodeWithTag("course-documents").performClick()
+            compose.onNodeWithTag("course-document-90832").assertIsDisplayed()
+            compose.onNodeWithText("original.txt").assertDoesNotExist()
+            compose.onNodeWithTag("document-download-90832").assertContentDescriptionEquals("Saved")
+            captureStudiesScreenshot("documents-instant-saved-links.png")
+        } finally {
+            metadataGate.complete(Unit); networkGate.complete(Unit); source.delete()
+            android.provider.DocumentsContract.deleteDocument(compose.activity.contentResolver, uri)
+        }
+    }
+
     @Test fun originalFilenameMergesLocalAndUisRowsAndManualRefreshDoesNotDuplicateFiles() {
         val data = (compose.activity.application as TaktApplication).dataContainer
         assertTrue(data.documentStore.isConnected)
