@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -44,7 +45,7 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
     SwipeCompletionBox(completed = task.completed, onCompletedChange = onCompletedChange) {
         Row(Modifier.fillMaxWidth().testTag("home-task-${task.id}").animateContentSize()
             .glassSurface(tint = if (overdue) MaterialTheme.colorScheme.errorContainer else androidx.compose.ui.graphics.Color.Unspecified)
-            .padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
+            .padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             EntityIconTile(com.kpyruy.takt.core.ui.theme.taktSubjectColor(task.courseId), Modifier.size(46.dp)) { foreground ->
                 IconToggleButton(checked = task.completed, onCheckedChange = onCompletedChange,
@@ -53,7 +54,7 @@ fun HomeTaskRow(task: StudyTask, courseCode: String, onCompletedChange: (Boolean
                         task.title, tint = foreground, modifier = Modifier.size(27.dp))
                 }
             }
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).offset(y = 5.dp)) {
                 HomeWorkTitle(task.title, courseCode, completed = task.completed,
                     titleColor = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 WorkRequirementIcons(

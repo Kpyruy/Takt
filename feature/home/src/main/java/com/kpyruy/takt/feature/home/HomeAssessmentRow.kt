@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.Quiz
@@ -44,14 +45,14 @@ internal fun HomeAssessmentRow(item: GradeItem, courseCode: String, onClick: () 
     }
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag("home-assessment-${item.id}")) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             EntityIconTile(subjectColor, Modifier.size(46.dp)) { foreground ->
                 Icon(icon, contentDescription = null, tint = foreground, modifier = Modifier.size(27.dp).testTag("home-assessment-glyph-${item.id}"))
             }
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).offset(y = 5.dp)) {
                 HomeWorkTitle(item.title, courseCode)
                 WorkRequirementIcons(
                     requiredForExam = item.requiredForExam,
